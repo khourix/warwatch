@@ -44,7 +44,9 @@ jobs:
           git config user.name "warwatch-bot"
           git config user.email "warwatch-bot@users.noreply.github.com"
           git add $WW/history 2>/dev/null || true
-          git diff --cached --quiet || (git commit -m "history: $(date -u +%FT%H:%MZ)" && git pull --rebase -q && git push -q)
+          # history files are append-only; .gitattributes merges concurrent appends (union).
+          # Best effort: a failed history push must not fail the dashboard build.
+          git diff --cached --quiet || (git commit -m "history: $(date -u +%FT%H:%MZ)" && git pull --rebase -q && git push -q) || (git rebase --abort; echo "history push skipped")
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/
