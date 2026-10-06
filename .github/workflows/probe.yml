@@ -1,0 +1,81 @@
+name: probe
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Probe round 4
+        run: |
+          cat > p.py <<'PY'
+          import csv, io, json, re, time, zipfile, urllib.request, urllib.parse, datetime as dt
+          H = {"User-Agent": "Mozilla/5.0 (compatible; warwatch research)"}
+          def raw(u, params=None, data=None, t=40, hdr=None):
+              if params:
+                  u += "?" + urllib.parse.urlencode(params)
+              h = dict(H); h.update(hdr or {})
+              try:
+                  return urllib.request.urlopen(urllib.request.Request(u, headers=h, data=data), timeout=t).read()
+              except Exception as e:
+                  return ("ERR %s" % e).encode()
+          def txt(*a, **k):
+              return raw(*a, **k).decode("utf-8", "replace")
+          def sec(n): print("=== " + n, flush=True)
+          sec("GDELT files")
+          print(txt("http://data.gdeltproject.org/gdeltv2/lastupdate.txt")[:300])
+          day = (dt.date.today() - dt.timedelta(days=3)).strftime("%Y%m%d")
+          b = raw("http://data.gdeltproject.org/events/%s.export.CSV.zip" % day, t=90)
+          print("daily zip bytes", len(b), b[:60] if len(b) < 300 else "")
+          try:
+              z = zipfile.ZipFile(io.BytesIO(b)); rows = list(csv.reader(io.TextIOWrapper(z.open(z.namelist()[0]), encoding="utf-8", errors="replace"), delimiter="\t"))
+              print("rows", len(rows), "cols", len(rows[0]))
+              from collections import Counter
+              c = Counter((r[53], r[28][:2]) for r in rows if len(r) > 53 and r[53] in ("UP","IR","IS","YM","RS") and r[28][:2] in ("15","19","13"))
+              print(sorted(c.items()))
+          except Exception as e:
+              print("ZIPERR", e)
+          sec("IODA")
+          now = int(time.time())
+          for ds in ("bgp", "ping-slash24", "merit-nt"):
+              t = txt("https://api.ioda.inetintel.cc.gatech.edu/v2/signals/raw/country/IR", {"from": now - 86400 * 3, "until": now, "datasource": ds})
+              print(ds, t[:260].replace("\n", " "))
+          sec("ASAM")
+          t = txt("https://msi.nga.mil/api/publications/asam", {"output": "json", "dateMin": "2026-06-01", "dateMax": "2026-10-06"})
+          try:
+              d = json.loads(t)["asam"]; print(len(d), json.dumps(d[0])[:500]); print([x["date"] for x in d[:3]])
+          except Exception:
+              print(t[:200])
+          sec("NOTAM")
+          for u, kw in [("https://aviationweather.gov/api/data/notam", {"icaos": "OIIX"}),
+                        ("https://aviationweather.gov/api/data/notam", {"ids": "OIIX"}),
+                        ("https://www.safeairspace.net/iran/", None),
+                        ("https://www.easa.europa.eu/en/domains/air-operations/czibs/czib-2026-09", None)]:
+              t = txt(u, kw); print(u, kw, len(t), t[:150].replace("\n", " "))
+          body = urllib.parse.urlencode({"searchType": "0", "designatorsForLocation": "OIIX", "formatType": "ICAO", "offset": "0", "notamsOnly": "false"}).encode()
+          t = txt("https://notams.aim.faa.gov/notamSearch/search", data=body, hdr={"Content-Type": "application/x-www-form-urlencoded"})
+          print("FAA POST", len(t), t[:300].replace("\n", " "))
+          sec("STOOQ")
+          for s in ["lmt.us", "rtx.us", "rhm.de", "usdils", "usdtry", "usdrub", "usduah", "xauusd", "cl.f", "^spx", "ita.us"]:
+              t = txt("https://stooq.com/q/d/l/", {"s": s, "i": "d", "d1": "20260901", "d2": "20261006"}); print(s, t[:110].replace("\n", " | "))
+          sec("USGS")
+          t = txt("https://earthquake.usgs.gov/fdsnws/event/1/count", {"format": "geojson", "starttime": "2026-01-01", "minlatitude": 24, "maxlatitude": 40, "minlongitude": 44, "maxlongitude": 64, "minmagnitude": 2.5}); print(t[:100])
+          sec("KALSHI")
+          t = txt("https://api.elections.kalshi.com/trade-api/v2/events", {"limit": 200, "status": "open", "with_nested_markets": "true"})
+          try:
+              d = json.loads(t); ev = d["events"]; print(len(ev), d.get("cursor", "")[:20])
+              for e in ev:
+                  if re.search(r"Iran|Ukraine|Israel|Houthi|Russia|NATO|Taiwan", e["title"]):
+                      m = e["markets"][0] if e.get("markets") else {}
+                      print(e["title"][:70], m.get("last_price"), m.get("volume"), m.get("close_time"))
+          except Exception:
+              print(t[:200])
+          sec("PIZZINT")
+          print(txt("https://www.pizzint.watch/api/dashboard-data")[:300].replace("\n", " "))
+          sec("TZEVAADOM")
+          print(txt("https://api.tzevaadom.co.il/alerts-history")[:250].replace("\n", " "))
+          sec("ADSB types")
+          d = json.loads(txt("https://api.adsb.lol/v2/mil"))
+          from collections import Counter
+          print(Counter(a.get("t") for a in d["ac"]).most_common(40)); print(sorted(d["ac"][0].keys()))
+          PY
+          python3 p.py
