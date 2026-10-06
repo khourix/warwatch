@@ -4,12 +4,18 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch design and tweet
+      - name: Tweet and substack
         run: |
           set +e
           H='User-Agent: Mozilla/5.0 (compatible; warwatch)'
-          echo "##### TWEET"; curl -sL -m 30 -H "$H" https://api.fxtwitter.com/aj_geo_analysis/status/2107131375094477074 | head -c 3500; echo
-          echo "##### DESIGN raw github"
-          for p in design-md/nvidia/DESIGN.md design-md/nvidia/README.md; do echo "== $p"; curl -sL -m 30 -H "$H" -w "\nHTTP %{http_code}\n" https://raw.githubusercontent.com/VoltAgent/awesome-design-md/main/$p | head -c 14000; done
-          echo "##### DESIGN site"
-          curl -sL -m 30 -H "$H" -w "\nHTTP %{http_code}\n" https://getdesign.md/design-md/nvidia/preview.html | head -c 6000
+          echo "##### TWEET"; curl -sL -m 30 -H "$H" https://api.fxtwitter.com/aj_geo_analysis/status/2107131375094477074 | python3 -c "import sys,json; d=json.load(sys.stdin); t=d.get('tweet',{}); print(t.get('text')); print(json.dumps(t.get('author',{}).get('description'))); print(json.dumps(t.get('author',{}).get('website'))); print([u for u in (t.get('entities') or {}).get('urls',[])] if isinstance(t.get('entities'),dict) else '')" 2>&1 | head -c 3000
+          echo; echo "##### PROFILE"; curl -sL -m 30 -H "$H" https://api.fxtwitter.com/aj_geo_analysis | head -c 2500
+      - name: Typography tokens
+        run: |
+          curl -sL -m 30 https://raw.githubusercontent.com/VoltAgent/awesome-design-md/main/design-md/nvidia/DESIGN.md > d.md
+          python3 - <<'PY'
+          s=open('d.md').read()
+          i=s.find('typography:'); print(s[i:i+3800])
+          j=s.find('rounded:'); print(s[j:j+500]); k=s.find('spacing:'); print(s[k:k+600])
+          m=s.find("## Do"); print(s[m:m+2500])
+          PY
