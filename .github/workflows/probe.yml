@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - name: Probe round 5
+      - name: Probe round 6
         run: |
           cat > p.py <<'PY'
           import csv, io, json, re, time, urllib.request, urllib.parse, datetime as dt, ssl
@@ -23,44 +23,32 @@ jobs:
           def sec(n): print("=== " + n, flush=True)
           sec("IODA structure")
           now = int(time.time())
-          for cc in ("IR", "YE", "IL", "UA"):
-              t = txt("https://api.ioda.inetintel.cc.gatech.edu/v2/signals/raw/country/%s" % cc, {"from": now - 86400 * 160, "until": now, "datasource": "bgp"})
+          for days in (3, 14, 30, 60, 90):
+              t = txt("https://api.ioda.inetintel.cc.gatech.edu/v2/signals/raw/country/IR", {"from": now - 86400 * days, "until": now, "datasource": "bgp"})
               try:
-                  d = json.loads(t); s = d["data"][0][0]
-                  print(cc, {k: (v if k != "values" else (len(v), v[:6], v[-3:])) for k, v in s.items()})
+                  d = json.loads(t); print(days, "OK", len(t), str(d["data"])[:100])
+                  if days == 3:
+                      s0 = d["data"][0][0]; print({k: (v if k != "values" else (len(v), v[:4])) for k, v in s0.items()})
               except Exception as e:
-                  print(cc, "ERR", e, t[:300])
-          sec("ASAM")
-          for u in ["https://msi.nga.mil/api/publications/asam", "https://msi.nga.mil/api/publications/asam?output=json", "https://msi.nga.mil/api/publications/asam?output=json&sort=date&dateMin=2026-06-01",
-                    "https://msi.nga.mil/api/publications/asam?output=json&dateMin=2026-06-01&dateMax=2026-10-06&navArea=A",
-                    "https://msi.nga.mil/swagger/v1/swagger.json", "https://msi.nga.mil/api/swagger/v1/swagger.json", "https://msi.nga.mil/api/swagger.json"]:
-              t = txt(u); print(u, len(t), t[:200].replace("\n", " "))
-          sec("NOTAM")
-          ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
-          for u in ["https://pilotweb.nas.faa.gov/PilotWeb/notamRetrievalByICAOAction.do?method=displayByICAOs&reportType=RAW&formatType=ICAO&retrieveLocId=OIIX&actionType=notamRetrievalByICAOs",
-                    "https://notams.aim.faa.gov/notamSearch/", "https://safeairspace.net/iran/", "https://www.safeairspace.net/iran/",
-                    "https://www.easa.europa.eu/en/domains/air-operations/czibs/czib-2026-09"]:
-              t = txt(u, ctx=ctx); print(u[:90], len(t), t[:160].replace("\n", " "))
-          sec("YAHOO")
-          for s in ["LMT", "RHM.DE", "ILS=X", "UAH=X", "GC=F", "ITA", "^TA125.TA"]:
-              t = txt("https://query1.finance.yahoo.com/v8/finance/chart/" + urllib.parse.quote(s), {"range": "3mo", "interval": "1d"})
-              try:
-                  r = json.loads(t)["chart"]["result"][0]; c = r["indicators"]["quote"][0]["close"]; print(s, len(c), c[-3:])
-              except Exception:
-                  print(s, t[:120].replace("\n", " "))
-          sec("KALSHI market keys")
-          d = json.loads(txt("https://api.elections.kalshi.com/trade-api/v2/events", {"limit": 200, "status": "open", "with_nested_markets": "true"}))
-          for e in d["events"]:
-              if re.search(r"Iran|Ukraine|Israel|Houthi|Russia|Taiwan|war|strike", e["title"], re.I):
-                  m = e["markets"][0]; print(e["title"][:60], {k: m[k] for k in m if k in ("last_price", "last_price_dollars", "yes_bid", "yes_bid_dollars", "volume", "volume_fp", "liquidity")})
-                  break
-          sec("PIZZINT")
-          d = json.loads(txt("https://www.pizzint.watch/api/dashboard-data"))
-          print(list(d.keys())); x = d["data"]; print(len(x)); print({k: (v if k != "address" else "...") for k, v in x[0].items()})
-          print({k: str(v)[:120] for k, v in d.items() if k != "data"})
-          sec("TZEVAADOM")
-          d = json.loads(txt("https://api.tzevaadom.co.il/alerts-history"))
-          ts = [a["time"] for g in d for a in g["alerts"]]
-          print(len(d), len(ts), dt.datetime.utcfromtimestamp(min(ts)), dt.datetime.utcfromtimestamp(max(ts)))
+                  print(days, "ERR", t[:120])
+          for ds in ("ping-slash24", "merit-nt"):
+              t = txt("https://api.ioda.inetintel.cc.gatech.edu/v2/signals/raw/country/IR", {"from": now - 86400 * 30, "until": now, "datasource": ds}); print(ds, len(t), t[:80])
+          sec("GDELT verify")
+          import zipfile, io
+          from collections import Counter
+          day = (dt.date.today() - dt.timedelta(days=3)).strftime("%Y%m%d")
+          b = raw("http://data.gdeltproject.org/events/%s.export.CSV.zip" % day, t=90)
+          z = zipfile.ZipFile(io.BytesIO(b)); rows = list(csv.reader(io.TextIOWrapper(z.open(z.namelist()[0]), encoding="utf-8", errors="replace"), delimiter="\t"))
+          print(len(rows), rows[0][:4], rows[0][26:34], rows[0][49:57])
+          c = Counter((r[51], r[28]) for r in rows if len(r) > 51 and r[51] in ("UP", "IR", "IS", "YM", "LE", "PL", "RS"))
+          print(sorted((k, v) for k, v in c.items() if k[1] in ("15", "19", "13", "18")))
+          print("older day", raw("http://data.gdeltproject.org/events/20260301.export.CSV.zip", t=90)[:4], len(raw("http://data.gdeltproject.org/events/20260301.export.CSV.zip", t=90)))
+          sec("FRANKFURTER")
+          for u in ["https://api.frankfurter.dev/v1/2026-09-01..?from=EUR&to=ILS,PLN,TRY,CZK", "https://api.frankfurter.app/2026-09-01..?from=EUR&to=ILS,PLN"]:
+              t = txt(u); print(u, t[:200])
+          sec("MARITIME")
+          for u in ["https://www.ukmto.org/recent-incidents", "https://www.maritimeglobalsecurity.org/", "https://www.maritime.dot.gov/msci-advisories",
+                    "https://www.ukmto.org/api/incidents", "https://gcaptain.com/feed/", "https://www.icc-ccs.org/index.php/piracy-reporting-centre/live-piracy-report"]:
+              t = txt(u); print(u, len(t), t[:100].replace("\n", " "))
           PY
           python3 p.py
