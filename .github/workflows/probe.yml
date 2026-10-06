@@ -14,31 +14,12 @@ jobs:
       - name: Probe round 14
         run: |
           cat > p.py <<'PY'
-          import gzip, json, os, sys, time, urllib.request, urllib.parse, urllib.error
+          import os, sys, time
           sys.path.insert(0, "warwatch")
           import osint
-          UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-          def txt(u, params=None):
-              if params: u += ("&" if "?" in u else "?") + urllib.parse.urlencode(params)
-              try: return urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA}), timeout=60).read().decode()
-              except Exception as e: return "ERR %s" % e
-          ident = json.loads(txt("https://hapi.humdata.org/api/v2/encode_app_identifier", {"application": "warwatch", "email": "warwatch@users.noreply.github.com"}))["encoded_app_identifier"]
-          for loc in ["UKR", "IRN", "YEM", "ISR", "PSE", "LBN", "POL", "LTU"]:
-              tot = {}; off = 0; n = 0
-              while True:
-                  r = json.loads(txt("https://hapi.humdata.org/api/v2/coordination-context/conflict-events", {"app_identifier": ident, "location_code": loc, "output_format": "json", "limit": 10000, "offset": off}))
-                  d = r.get("data", [])
-                  for x in d:
-                      k = (x["reference_period_start"][:7], x["event_type"]); tot[k] = tot.get(k, 0) + x["events"]
-                  n += len(d)
-                  if len(d) < 10000 or off > 100000: break
-                  off += 10000
-              months = sorted({k[0] for k in tot}); types = sorted({k[1] for k in tot})
-              print("HAPI", loc, "rows", n, "months", months[0] if months else None, months[-1] if months else None, types, [ (m, tot.get((m, "political_violence"), 0), tot.get((m, "demonstration"), 0)) for m in months[-4:]])
-          class FakeS: pass
-          for name, boxes in {"hormuz": [(24, 28, 54, 60)], "gulf": [(24, 30, 48, 58)], "redsea": [(12, 20, 38, 45)], "medeast": [(31, 36, 28, 36)], "world": [(-85, 85, -179, 179)]}.items():
+          for name, boxes in {"gulf": [(22, 30, 48, 60)], "world": [(-85, 85, -179, 179)]}.items():
               try:
-                  sh = osint.fetch_aisstream(os.environ["AISSTREAM_API_KEY"], boxes, seconds=15)
+                  sh = osint.fetch_aisstream(os.environ["AISSTREAM_API_KEY"], boxes, seconds=25)
                   print("AIS", name, len(sh), [(s["n"], s["type"]) for s in list(sh.values())[:4]], "mil", [(s["n"], s["mmsi"]) for s in sh.values() if int(s["type"] or 0) in (35, 55)][:5])
               except Exception as e: print("AIS", name, "fail", e)
           PY

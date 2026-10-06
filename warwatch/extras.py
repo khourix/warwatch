@@ -199,7 +199,11 @@ def parse_poly(payload, min_volume=50000):
             q = m.get("question") or e.get("title", "")
             if not is_war(q + " " + e.get("title", "")):
                 continue
-            out.append({"q": q, "p": p, "vol": vol, "end": (m.get("endDate") or e.get("endDate") or "")[:10],
+            try:
+                tok = json.loads(m.get("clobTokenIds") or "[]")[0]
+            except (ValueError, IndexError, TypeError):
+                tok = ""
+            out.append({"q": q, "p": p, "vol": vol, "end": (m.get("endDate") or e.get("endDate") or "")[:10], "tok": tok,
                         "src": "Polymarket", "theatre": theatre_of_text(q),
                         "url": "https://polymarket.com/event/" + (e.get("slug") or "")})
     return out
@@ -241,6 +245,7 @@ def parse_kalshi(payload, min_volume=5000):
             m, vol, p = best
             sub = m.get("yes_sub_title") or ""
             out.append({"q": title + (f": {sub}" if sub and sub.lower() not in title.lower() else ""), "p": p, "vol": vol,
+                        "kser": e.get("series_ticker") or "", "ktk": m.get("ticker") or "",
                         "end": (m.get("close_time") or "")[:10], "src": "Kalshi", "theatre": th,
                         "url": "https://kalshi.com/markets/" + (e.get("event_ticker") or "").lower()})
     return out
@@ -263,8 +268,64 @@ def fetch_kalshi(pages=4):
     return out
 
 
+def downsample(pts, n=90):
+    """Keep at most n points, always the first and last."""
+    if len(pts) <= n:
+        return pts
+    step = (len(pts) - 1) / (n - 1)
+    return [pts[round(i * step)] for i in range(n)]
+
+
+def parse_poly_history(payload):
+    """CLOB prices-history -> [[YYYY-MM-DD HH:MM, probability]]."""
+    out = []
+    for h in payload.get("history", []):
+        try:
+            out.append([dt.datetime.fromtimestamp(int(h["t"]), dt.timezone.utc).strftime("%Y-%m-%d"), round(float(h["p"]), 4)])
+        except (KeyError, ValueError, TypeError):
+            continue
+    return downsample(out)
+
+
+def parse_kalshi_history(payload):
+    out = []
+    for c in payload.get("candlesticks", []):
+        try:
+            p = float((c.get("price") or {}).get("close_dollars") or (c.get("yes_bid") or {}).get("close_dollars"))
+            out.append([dt.datetime.fromtimestamp(int(c["end_period_ts"]), dt.timezone.utc).strftime("%Y-%m-%d"), round(p, 4)])
+        except (KeyError, ValueError, TypeError):
+            continue
+    return downsample(out)
+
+
+def fetch_history(m):
+    try:
+        if m["src"] == "Polymarket" and m.get("tok"):
+            return parse_poly_history(S.get("https://clob.polymarket.com/prices-history?" + urllib.parse.urlencode(
+                {"market": m["tok"], "interval": "max", "fidelity": 360}), retries=2, wait=3))
+        if m["src"] == "Kalshi" and m.get("kser") and m.get("ktk"):
+            now = int(time.time())
+            return parse_kalshi_history(S.get(f"https://api.elections.kalshi.com/trade-api/v2/series/{m['kser']}/markets/{m['ktk']}/candlesticks?"
+                                              + urllib.parse.urlencode({"start_ts": now - 120 * 86400, "end_ts": now, "period_interval": 1440}), retries=2, wait=3))
+    except Exception:
+        return []
+    return []
+
+
 def fetch_markets():
-    return sorted(fetch_poly() + fetch_kalshi(), key=lambda m: -m["vol"])[:40]
+    top = sorted(fetch_poly() + fetch_kalshi(), key=lambda m: -m["vol"])[:40]
+    for m in top:
+        h = fetch_history(m)
+        if h:
+            today = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d")
+            if h[-1][0] < today:
+                h.append([today, round(m["p"], 4)])   # end the line at today's price
+            else:
+                h[-1] = [today, round(m["p"], 4)]
+            m["h"] = h
+        m.pop("tok", None), m.pop("kser", None), m.pop("ktk", None)
+        time.sleep(0.2)
+    return top
 
 
 def parse_pizza(payload):

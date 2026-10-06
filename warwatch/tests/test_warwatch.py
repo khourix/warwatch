@@ -357,6 +357,13 @@ class TestOsint(unittest.TestCase):
         self.assertIn("Suspicious Activity", out[0]["t"])
         self.assertTrue(out[0]["tx"].startswith("UKMTO has received"))
 
+    def test_market_history(self):
+        h = extras.parse_poly_history({"history": [{"t": 1762387203 + i * 21600, "p": 0.1 + i / 1000} for i in range(300)]})
+        self.assertEqual(len(h), 90)
+        self.assertEqual(h[0][1], 0.1)
+        k = extras.parse_kalshi_history({"candlesticks": [{"end_period_ts": 1759032000, "price": {"close_dollars": "0.0800"}}]})
+        self.assertEqual(k[0][1], 0.08)
+
     def test_firms_parse(self):
         import osint
         t = "latitude,longitude,bright_ti4,acq_date,confidence,frp\n48.1,37.2,340,2026-10-05,n,12.5\n48.2,37.3,330,2026-10-05,l,3\n"

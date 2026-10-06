@@ -339,6 +339,7 @@ const LAYERS = [
   ['inc','Maritime incidents (UKMTO and news)','#f5c518'], ['nga','Hazard warnings (NGA)','#ff9f43'], ['czib','Airspace bulletins (EASA)','#ff4d9d'],
   ['fires','Fires and thermal anomalies (NASA)','#ff6b3d'], ['choke','Chokepoints','#58a6ff'], ['hubs','GPS-jamming sample zones','#7dd3fc'],
   ['adv','US travel-advisory shading','#ff8a1f'], ['cities','Cities','#ffe9a8'], ['labels','Country names','#c4dcf2']];
+const T0 = Date.now();
 const OBJ = {mil:[], sqk:[], ships:[], inc:[], nga:[], czib:[], fires:[], choke:[], city:[], hub:[], country:[]};
 const thOfCountry = {};
 let scaleEls = [], labs = [], lblScale = 1;
@@ -938,7 +939,8 @@ function renderSystem(){
     <li>Warning or Alert driven only by slow, late-published data is labelled <b>lagging only</b>: a confirmed build-up, not an early warning.</li>
     <li>This counts agreement across independent evidence. It is not a probability, and a single signal is a prompt to look closer, never a forecast.</li></ul>
     <h3>Reading the map</h3><ul><li>Click any aircraft, ship, incident or warning for details. Click a country to open its theatre.</li><li>Click a legend item to hide or show an aircraft type. Use the layer list to switch layers, and the label-size buttons if text is hard to read.</li><li>Press <span class="kw">/</span> to search everything.</li></ul></div>
-  <div><h3>Not available, and what replaces it</h3><ul>${D.unavailable.map(u => `<li><b>${esc(u.n)}</b>: ${esc(u.w)}</li>`).join('')}</ul></div></div>`;
+  <div><h3>How often each source is read</h3><table class="st">${(D.updates || []).map(u => `<tr><td><b>${esc(u.s)}</b></td><td>${esc(u.e)}</td><td style="color:var(--dim)">${esc(u.l)}</td></tr>`).join('')}</table>
+  <h3>Not available, and what replaces it</h3><ul>${D.unavailable.map(u => `<li><b>${esc(u.n)}</b>: ${esc(u.w)}</li>`).join('')}</ul></div></div>`;
 }
 $('#system').addEventListener('click', e => { const o = e.target.closest('[data-open]'); if (o) { e.preventDefault(); openModal(o.dataset.open, []); return; } const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); go(g.dataset.go); return; } if (e.target.closest('[data-sg]')) { e.preventDefault(); TF.st = 'none'; go('signals'); } });
 
@@ -947,6 +949,10 @@ if (D.demo) $('#demo').hidden = false;
 buildMap(); renderLayers(); syncLayers();
 const h0 = location.hash.slice(1);
 go(TABS.some(t => t[0] === h0) ? h0 : 'overview', true);
+</script>
+<script>
+// pick up the 30-minute rebuilds without a manual reload (only when the tab is visible and no card or chart is open)
+setInterval(() => { try { if (!document.hidden && $('#modal').style.display !== 'flex' && Date.now() - T0 > 25 * 60e3) location.reload(); } catch (e) {} }, 60e3);
 </script>
 </body>
 </html>
