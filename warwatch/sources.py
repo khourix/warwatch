@@ -129,7 +129,7 @@ def fetch_census(hs6_list, names, key, since="2022-01"):
     now = dt.date.today()
     for hs in hs6_list:
         q = urllib.parse.urlencode({"get": "CTY_CODE,CTY_NAME,ALL_VAL_MO", "COMM_LVL": "HS6",
-                                    "I_COMMODITY": hs, "time": f"from {since} to {now.year}-{now.month:02d}",
+                                    "E_COMMODITY": hs, "time": f"from {since} to {now.year}-{now.month:02d}",
                                     "key": key})
         for t, v in parse_census(get("https://api.census.gov/data/timeseries/intltrade/exports/hs?" + q), names):
             tot[t] = tot.get(t, 0.0) + v
@@ -171,7 +171,7 @@ def parse_sam(p):
     return by
 
 
-def fetch_sam(ccodes, key, days=365):
+def fetch_sam(ccodes, key, days=360):
     end = dt.date.today()
     start = end - dt.timedelta(days=days)
     by = {}
