@@ -38,7 +38,7 @@ def get(url, data=None, retries=3, raw=False, wait=6):
         except Exception as e:
             err = e
             time.sleep(wait * (i + 1))
-    raise RuntimeError(f"{str(err)[:100]} @ {url.split('?')[0][:70]}")
+    raise RuntimeError(f"{str(err)[:230]} @ {url.split('?')[0][:60]}")
 
 
 def month_range(n_months=36, today=None):

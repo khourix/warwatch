@@ -16,7 +16,7 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: warwatch
+  group: warwatch-${{ github.event.inputs.only != '' && 'partial' || 'full' }}
   cancel-in-progress: false
 env:
   WW: warwatch
@@ -40,6 +40,7 @@ jobs:
           path: site/
           retention-days: 30
       - name: Commit history (public data only)
+        if: github.event.inputs.only == ''
         run: |
           git config user.name "warwatch-bot"
           git config user.email "warwatch-bot@users.noreply.github.com"
@@ -52,6 +53,7 @@ jobs:
           path: site/
   deploy:
     needs: build
+    if: github.event.inputs.only == ''      # a partial test run must not replace the live page
     runs-on: ubuntu-latest
     continue-on-error: true      # stays green until Pages is switched on (Settings > Pages > Source: GitHub Actions)
     environment:
