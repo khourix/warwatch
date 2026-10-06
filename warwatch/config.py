@@ -18,8 +18,8 @@ THEATRES = {
     "ukraine": "Ukraine",
     "mideast": "Middle East",
 }
-THRESH_SIGNAL = 2.5   # a domain fires at or above this robust z
-THRESH_WATCH = 1.5
+THRESH_SIGNAL = 3.0   # a domain fires at or above this robust z (calibrated: ~5% Watch on pure noise)
+THRESH_WATCH = 2.0
 USER_AGENT = "warwatch/0.2 (public-data research; github.com/khourix/warwatch)"
 
 # destination sets for trade series (ISO2 as Eurostat uses; names as Census prints)
@@ -54,7 +54,8 @@ GDELT = {   # theatre -> (id, query)
 }
 WIKI = {
     "global": ["Conscription", "Mobilization", "Nuclear_warfare"],
-    "mideast": ["Strait_of_Hormuz", "Houthi_movement"],
+    "mideast": ["Strait_of_Hormuz", "Houthi_movement", "Hezbollah", "Islamic_Revolutionary_Guard_Corps"],
+    "europe_east": ["Kaliningrad_Oblast", "NATO"],
     "ukraine": ["Russo-Ukrainian_War"],
     "medical": ["Blood_donation", "Tourniquet"],
     "vehicles": ["Toyota_Hilux", "Technical_(vehicle)"],

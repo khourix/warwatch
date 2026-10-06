@@ -98,8 +98,8 @@ not remove this.
   counts either way. A flat history that changes scores the maximum (6).
 - **Domain score:** mean of the two strongest series (a lone series is
   discounted to 70 percent).
-- **Level per theatre:** Normal; Watch (one domain at 2.5 or more, or two at
-  1.5 or more); Warning (two); Alert (three or more). Fewer than two
+- **Level per theatre:** Normal; Watch (one domain at 3.0 or more, or two at
+  2.0 or more); Warning (two); Alert (three or more). Fewer than two
   scorable domains gives "insufficient data". The level counts agreeing
   domains and is not a probability.
 

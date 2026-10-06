@@ -130,9 +130,7 @@ for th in C.BOXES:
         "Transports and tankers surge before operations.", _adsb(th, "lift"))
 
 # ---- attention: news, pageviews, advisories --------------------------------------------
-for th, (sid, q) in C.GDELT.items():
-    add(sid, f"News volume: {C.THEATRES[th]} (GDELT)", "attention", th, "daily", False,
-        "Fastest signal, also moved by non-military news.", _slow(sid, lambda q=q: S.fetch_gdelt(q)))
+# GDELT news volume was retired: it rate-limits every GitHub runner address (verified 2026-10-06).
 for key, arts in C.WIKI.items():
     dom = key if key in C.DOMAINS else "attention"
     th = key if key in C.THEATRES else "global"

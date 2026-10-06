@@ -256,7 +256,7 @@ def render(result, generated, demo=False):
         panels.append(
             f'<div class="panel p-{t}"><div class="wrap"><div class="phead"><h2>{E(name)}: {E(lv)}</h2>'
             f'<p>{E(MEANING[lv])} Scores show how far each signal is from its own recent normal, in standard '
-            f'deviations. Above +2.5 counts as unusual.</p></div>'
+            f'deviations. Above +{C.THRESH_SIGNAL:.1f} counts as unusual.</p></div>'
             f'<h3 style="margin:0 0 12px;font-size:20px">Biggest movers</h3><div class="movers">{mv or "<p>No signals have enough history yet.</p>"}</div>'
             f'{panel(t, v, series)}</div></div>')
         rules.append(f'#t-{t}:checked~main .p-{t}{{display:block}}'
@@ -302,7 +302,7 @@ def render(result, generated, demo=False):
 <div class="wrap health" id="health"><h2>Data health</h2><p>Every source is checked on each refresh. A failed source keeps its last good data and is marked stale; it is never read as calm.</p>
 <div class="hstats">{health}</div></div></main>
 <section class="method"><div class="wrap"><h2>How to read this</h2><ul>
-<li><b>Score.</b> How far a signal is from its own usual range for that time of year, in standard deviations. Roughly 1 in 50 calm readings crosses +2.5 by chance.</li>
+<li><b>Score.</b> How far a signal is from its own usual range for that time of year, in standard deviations. About 1 in 100 calm readings crosses +{C.THRESH_SIGNAL:.1f} by chance.</li>
 <li><b>Levels.</b> Watch: one group strongly unusual, or two mildly. Warning: two groups. Alert: three or more. The level counts agreeing groups; it is not a probability of war.</li>
 <li><b>Leads or lags.</b> Contract awards and trade statistics are published weeks to months late and can only confirm. Tenders, news, flights, shipping and attention data are fast and can lead.</li>
 <li><b>Coverage.</b> US and EU supply data first, then Ukraine and the Middle East. Global signals appear in every theatre.</li>
