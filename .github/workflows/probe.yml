@@ -1,0 +1,24 @@
+name: probe
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe leading-indicator sources
+        run: |
+          set +e
+          H='User-Agent: Mozilla/5.0 (compatible; warwatch research)'
+          p() { echo; echo "=== $1"; shift; curl -sL -m 40 -H "$H" -w "\n[HTTP %{http_code} %{size_download}B]" "$@" | head -c 700; echo; }
+          p NGA-warnings 'https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active&navArea=9'
+          p NGA-warnings-area4 'https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active&navArea=4'
+          p UKMTO 'https://www.ukmto.org/recent-incidents'
+          p EASA-CZIB 'https://www.easa.europa.eu/en/domains/air-operations/czibs'
+          p Polymarket 'https://gamma-api.polymarket.com/public-search?q=Iran&limit_per_type=3'
+          p adsb-point 'https://api.adsb.lol/v2/point/26/52/250'
+          p IODA 'https://api.ioda.inetintel.cc.gatech.edu/v2/signals/raw/country/UA?from=1790000000&until=1790086400&datasource=bgp'
+          p GoogleNewsRSS 'https://news.google.com/rss/search?q=Kaliningrad+troops+when:1d&hl=en-US&gl=US&ceid=US:en'
+          p ISW-RSS 'https://www.understandingwar.org/feeds.xml'
+          p worldatlas 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json' -r 0-300
+          p portwatch-ports 'https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Ports_Data/FeatureServer/0/query?where=1%3D1&outFields=*&resultRecordCount=2&f=json'
+          p gpsjam 'https://gpsjam.org/data/2026-10-04-h3_4.csv'
+          p IEA-OREF 'https://www.oref.org.il/WarningMessages/alert/alerts.json'
