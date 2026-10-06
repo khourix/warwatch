@@ -14,13 +14,13 @@ SERIES = []
 DOD = 4   # USAspending: current month plus the 3-month DoD publication delay
 
 
-def add(id, label, domain, theatre, kind, lag, why, fetch, direction="up", needs=(), drop=None):
+def add(id, label, domain, theatre, kind, lag, why, fetch, direction="up", needs=(), drop=None, url=""):
     """drop: newest months to discard before scoring because they are still
     incomplete. Default: 1 (the current partial month) for monthly series."""
     if drop is None:
         drop = 1 if kind == "monthly" else 0
     SERIES.append(dict(id=id, label=label, domain=domain, theatre=theatre, kind=kind, lag=lag, why=why,
-                       fetch=fetch, direction=direction, needs=list(needs), drop=drop))
+                       fetch=fetch, direction=direction, needs=list(needs), drop=drop, url=url))
 
 
 def _key(name):
@@ -149,3 +149,29 @@ add("brent", "Brent crude, USD (FRED)", "markets", "mideast", "daily", False, "O
     lambda: S.fetch_fred("DCOILBRENTEU", _key("FRED_API_KEY")), needs=["FRED_API_KEY"])
 add("vix", "VIX (FRED)", "markets", "global", "daily", False, "Equity fear gauge.",
     lambda: S.fetch_fred("VIXCLS", _key("FRED_API_KEY")), needs=["FRED_API_KEY"])
+
+
+# ---- added after reading AJ Signal (ajsignalnotnoise.substack.com) ----------------
+# The author's public posts name: pork-free MRE rations and ration ceilings, hot-weather
+# boots, blood-bank drawdowns, Toyota-class pickup shipments, diesel and jet-fuel stress,
+# and Gulf shipping chokepoints. Boots, pickups and chokepoints were already covered.
+add("us_rations_awards", "US composite food package (MRE ration) awards (PSC 8970)", "kit", "global", "monthly", True,
+    "Field rations are bought ahead of ground operations; DoD data is ~90 days late, so it confirms.",
+    lambda: S.fetch_usaspending(psc=["8970"]), drop=DOD, url="https://www.usaspending.gov/")
+add("us_shelter_awards", "US tents, tarpaulins and shelter awards (PSC 8340)", "kit", "global", "monthly", True,
+    "Forward-deployed forces need shelter; confirms rather than leads.",
+    lambda: S.fetch_usaspending(psc=["8340"]), drop=DOD, url="https://www.usaspending.gov/")
+add("us_individual_equipment_awards", "US individual equipment awards (PSC 8465)", "kit", "global", "monthly", True,
+    "Packs, helmets-adjacent kit and field gear; confirms rather than leads.",
+    lambda: S.fetch_usaspending(psc=["8465"]), drop=DOD, url="https://www.usaspending.gov/")
+add("us_blood_bank_naics", "US blood and organ bank contract awards (NAICS 621991)", "medical", "global", "monthly", True,
+    "Blood-bank contracting is one of the author's three headline indicators; confirms rather than leads.",
+    lambda: S.fetch_usaspending(naics=["621991"]), drop=DOD, url="https://www.usaspending.gov/")
+add("diesel_nyh", "Diesel, New York Harbor, USD per gallon (FRED)", "markets", "global", "daily", False,
+    "Diesel stress shows up before crude when refineries and shipping lanes are hit.",
+    lambda: S.fetch_fred("DDFUELNYH", _key("FRED_API_KEY")), needs=["FRED_API_KEY"],
+    url="https://fred.stlouisfed.org/series/DDFUELNYH")
+add("jet_fuel_gulf", "Jet fuel, US Gulf Coast, USD per gallon (FRED)", "markets", "global", "daily", False,
+    "Military and airlift demand moves jet fuel before civil demand does.",
+    lambda: S.fetch_fred("DJFUELUSGULF", _key("FRED_API_KEY")), needs=["FRED_API_KEY"],
+    url="https://fred.stlouisfed.org/series/DJFUELUSGULF")
