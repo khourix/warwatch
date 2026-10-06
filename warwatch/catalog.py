@@ -443,12 +443,23 @@ for th in ("iran", "yemen"):
         _snap(f"ukmto_{th}", lambda t=th: __import__("osint").ukmto_recent(t)), url="https://www.ukmto.org/recent-incidents", sub="Sea")
 
 
+# ============ ACLED conflict-event counts via HDX HAPI (the open route to ACLED data; ~2 months behind) ============
+HAPI_LOC = {"ukraine": ("UKR",), "europe_east": ("POL", "LTU", "LVA", "EST"), "iran": ("IRN",), "yemen": ("YEM",), "israel": ("ISR", "PSE", "LBN")}
+for th, locs in HAPI_LOC.items():
+    add(f"acled_demo_{th}", f"Demonstrations per month, {TH[th]} region (ACLED via HDX HAPI)", "behavioral", th, "monthly", True,
+        "Protest waves and unrest precede and accompany regime stress, mobilisation and war decisions. ACLED data through the open HDX HAPI feed, about two months behind.",
+        (lambda l=locs: S.fetch_hapi_events(l, ("demonstration",))), drop=0, url="https://hapi.humdata.org/", sub="Unrest")
+    if th != "europe_east":
+        add(f"acled_viol_{th}", f"Political violence and civilian-targeting events per month, {TH[th]} region (ACLED via HDX HAPI)", "geospatial", th, "monthly", True,
+            "Counts of armed clashes, strikes and attacks on civilians coded by ACLED. Reactive, so it confirms escalation. Open HDX HAPI feed, about two months behind.",
+            (lambda l=locs: S.fetch_hapi_events(l, ("political_violence", "civilian_targeting"))), drop=0, url="https://hapi.humdata.org/", sub="Conflict events")
+
 # ============ How often each source is worth fetching (hours between full fetches) ============
 # Slow-moving sources are re-read from their cache in between, so the page can rebuild every 30 minutes
 # for the live layers without hammering rate-limited APIs.
 for _s in SERIES:
     _id = _s["id"]
-    if _id.startswith(("us_", "eu_", "dod_")) and _s["kind"] == "monthly":
+    if _id.startswith(("us_", "eu_", "dod_", "acled_")) and _s["kind"] == "monthly":
         _s["every"] = 20      # trade and contract data change monthly, after a lag
     elif "FRED_API_KEY" in _s["needs"] or "TWELVEDATA_API_KEY" in _s["needs"]:
         _s["every"] = 6       # daily closes; Twelve Data free plan allows 800 requests a day

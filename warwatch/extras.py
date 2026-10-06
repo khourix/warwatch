@@ -392,7 +392,7 @@ def collect():
         key = os.environ.get("AISSTREAM_API_KEY")
         if key:
             try:
-                boxes = [C.BOXES[t] for t in ("iran", "yemen", "israel", "ukraine")]
+                boxes = [C.BOXES[t] for t in ("iran", "yemen", "israel", "ukraine", "europe_east")] + [(30, 46, -6, 36), (12, 32, 32, 45)]   # Gulf and Red Sea coverage is thin on aisstream
                 for m in osint.fetch_aisstream(key, boxes).values():
                     if m["lat"] is None or int(m["type"] or 0) not in (35, 55):
                         continue
