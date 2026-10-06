@@ -33,7 +33,8 @@ def collect(only=None):
             rec.update(status="awaiting_key", error="needs " + ", ".join(missing))
         else:
             try:
-                rec["points"] = s["fetch"]()
+                pts = s["fetch"]()
+                rec["points"] = pts[:-s["drop"]] if s["drop"] else pts
             except Exception as e:
                 rec.update(status="error", error=str(e)[:200])
         out.append(rec)

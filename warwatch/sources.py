@@ -152,7 +152,7 @@ def _ted_month(cpvs, mo):
 
 def fetch_ted(cpvs, months=48):
     from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=6) as ex:
+    with ThreadPoolExecutor(max_workers=3) as ex:
         return sorted(ex.map(lambda mo: _ted_month(cpvs, mo), month_range(months)))
 
 
@@ -260,6 +260,8 @@ def fetch_adsb():
 
 # ---- GDELT / Wikipedia -----------------------------------------------------------
 def parse_gdelt(p):
+    if "timeline" not in p:
+        raise ValueError("GDELT returned no timeline: " + str(p)[:80])
     out = []
     for s in p.get("timeline", [])[:1]:
         for d in s.get("data", []):

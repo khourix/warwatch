@@ -118,6 +118,16 @@ class TestParsers(unittest.TestCase):
                     {"lat": 10, "lon": 0, "t": "C17"}, {"t": "C17"}]}
         self.assertEqual(S.adsb_counts(p, C.BOXES["ukraine"]), (2.0, 1.0))
 
+    def test_gdelt_without_timeline_is_an_error_not_silence(self):
+        with self.assertRaises(ValueError):
+            S.parse_gdelt({})
+
+    def test_incomplete_months_are_dropped_before_scoring(self):
+        s = [x for x in catalog.SERIES if x["id"] == "us_boots_awards"][0]
+        self.assertEqual(s["drop"], catalog.DOD)
+        self.assertEqual([x for x in catalog.SERIES if x["id"] == "eu_kit_tenders"][0]["drop"], 1)
+        self.assertEqual([x for x in catalog.SERIES if x["id"] == "wiki_conscription"][0]["drop"], 0)
+
     def test_gdelt_wiki_fred(self):
         self.assertEqual(S.parse_gdelt({"timeline": [{"data": [{"date": "20260930T000000Z", "value": 12}]}]}),
                          [("2026-09-30", 12.0)])

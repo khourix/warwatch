@@ -11,11 +11,16 @@ import sources as S
 import store
 
 SERIES = []
+DOD = 4   # USAspending: current month plus the 3-month DoD publication delay
 
 
-def add(id, label, domain, theatre, kind, lag, why, fetch, direction="up", needs=()):
-    SERIES.append(dict(id=id, label=label, domain=domain, theatre=theatre, kind=kind,
-                       lag=lag, why=why, fetch=fetch, direction=direction, needs=list(needs)))
+def add(id, label, domain, theatre, kind, lag, why, fetch, direction="up", needs=(), drop=None):
+    """drop: newest months to discard before scoring because they are still
+    incomplete. Default: 1 (the current partial month) for monthly series."""
+    if drop is None:
+        drop = 1 if kind == "monthly" else 0
+    SERIES.append(dict(id=id, label=label, domain=domain, theatre=theatre, kind=kind, lag=lag, why=why,
+                       fetch=fetch, direction=direction, needs=list(needs), drop=drop))
 
 
 def _key(name):
@@ -24,11 +29,11 @@ def _key(name):
 
 # ---- troop kit: boots and armor ---------------------------------------------
 add("us_boots_awards", "US boot and footwear contract awards (PSC 8430)", "kit", "global", "monthly", True,
-    "DoD data is published ~90 days late: confirms, never leads.", lambda: S.fetch_usaspending(psc=["8430"]))
+    "DoD data is published ~90 days late: confirms, never leads.", lambda: S.fetch_usaspending(psc=["8430"]), drop=DOD)
 add("us_footwear_naics", "US footwear manufacturing awards (NAICS 316210)", "kit", "global", "monthly", True,
-    "Catches boot orders coded by industry rather than product.", lambda: S.fetch_usaspending(naics=["316210"]))
+    "Catches boot orders coded by industry rather than product.", lambda: S.fetch_usaspending(naics=["316210"]), drop=DOD)
 add("us_armor_awards", "US body armor and protective gear awards (PSC 8470)", "kit", "global", "monthly", True,
-    "Companion to boots in troop readiness.", lambda: S.fetch_usaspending(psc=["8470"]))
+    "Companion to boots in troop readiness.", lambda: S.fetch_usaspending(psc=["8470"]), drop=DOD)
 add("us_kit_tenders", "US boot and armor tenders (SAM.gov, PSC 8430, 8470)", "kit", "global", "monthly", False,
     "Tenders are posted before awards, so this leads the award series.",
     lambda: S.fetch_sam(["8430", "8470"], _key("SAM_API_KEY")), needs=["SAM_API_KEY"])
@@ -53,16 +58,16 @@ for th, lbl in (("ukraine", "Ukraine"), ("mideast", "Middle East")):
         (lambda t=th: S.fetch_census(["870421", "870431", "870422", "870432"], C.PARTNERS[t]["names"], _key("CENSUS_API_KEY"))),
         needs=["CENSUS_API_KEY"])
 add("us_tactical_vehicle_awards", "US truck and tactical vehicle awards (PSC 2310, 2320, 2330)", "vehicles", "global",
-    "monthly", True, "DoD lag ~90 days.", lambda: S.fetch_usaspending(psc=["2310", "2320", "2330"]))
+    "monthly", True, "DoD lag ~90 days.", lambda: S.fetch_usaspending(psc=["2310", "2320", "2330"]), drop=DOD)
 add("eu_vehicle_tenders", "EU 4x4 and special vehicle tenders (TED, CPV 34113000, 34114000)", "vehicles", "global",
     "monthly", False, "Tenders lead awards.", lambda: S.fetch_ted(["34113000", "34114000"]))
 
 # ---- medical: blood and trauma -------------------------------------------------------
 add("us_medical_awards", "US medical supply awards (PSC 6510, 6515, 6545)", "medical", "global", "monthly", True,
-    "Dressings, equipment, kits. DoD lag ~90 days.", lambda: S.fetch_usaspending(psc=["6510", "6515", "6545"]))
+    "Dressings, equipment, kits. DoD lag ~90 days.", lambda: S.fetch_usaspending(psc=["6510", "6515", "6545"]), drop=DOD)
 add("us_biologics_naics", "US biological product awards (NAICS 325414: blood derivatives, plasma)", "medical",
     "global", "monthly", True, "Nearest free proxy for blood-product buying.",
-    lambda: S.fetch_usaspending(naics=["325414"]))
+    lambda: S.fetch_usaspending(naics=["325414"]), drop=DOD)
 add("us_medical_tenders", "US medical tenders (SAM.gov, PSC 6510, 6515, 6505)", "medical", "global", "monthly", False,
     "Tenders lead awards.", lambda: S.fetch_sam(["6510", "6515", "6505"], _key("SAM_API_KEY")), needs=["SAM_API_KEY"])
 add("eu_medical_tenders", "EU medical consumable tenders (TED, CPV 33140000, 33141000)", "medical", "global", "monthly",
@@ -84,7 +89,7 @@ def _sum_series(lst):
 
 # ---- infrastructure -------------------------------------------------------------------
 add("us_fencing_bridging_awards", "US fencing and bridging awards (PSC 5660, 5420)", "infrastructure", "global",
-    "monthly", True, "Border works also hit this: expect noise.", lambda: S.fetch_usaspending(psc=["5660", "5420"]))
+    "monthly", True, "Border works also hit this: expect noise.", lambda: S.fetch_usaspending(psc=["5660", "5420"]), drop=DOD)
 add("eu_fencing_tenders", "EU fencing and bridge tenders (TED, CPV 44312000, 45221110)", "infrastructure", "global",
     "monthly", False, "Civil works dominate: low weight.", lambda: S.fetch_ted(["44312000", "45221110"]))
 

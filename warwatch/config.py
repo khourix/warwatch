@@ -48,9 +48,9 @@ STATE_ISO = {"ukraine": ["UP", "BO", "MD"],
              "mideast": ["IS", "IR", "LE", "JO", "IZ", "SA", "AE", "KU", "QA", "BA", "MU"],
              "europe_east": ["PL", "LH", "LG", "EN", "FI"]}   # FIPS codes, as the feed uses
 GDELT = {   # theatre -> (id, query)
-    "ukraine": ("gdelt_ukraine", '(Ukraine OR Kyiv) (mobilization OR offensive OR "air raid")'),
+    "ukraine": ("gdelt_ukraine", '(Ukraine OR Kyiv OR Kharkiv) (mobilization OR offensive OR missile)'),
     "mideast": ("gdelt_mideast", '(Iran OR Israel OR Hezbollah OR Houthi) (strike OR missile OR mobilization)'),
-    "europe_east": ("gdelt_eastflank", '(Baltic OR Suwalki OR Kaliningrad OR "eastern flank") (troops OR drills OR buildup)'),
+    "europe_east": ("gdelt_eastflank", '(Baltic OR Kaliningrad OR Suwalki OR Lithuania) (troops OR drills OR buildup)'),
 }
 WIKI = {
     "global": ["Conscription", "Mobilization", "Nuclear_warfare"],
