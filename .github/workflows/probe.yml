@@ -3,59 +3,55 @@ on: workflow_dispatch
 jobs:
   probe:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Probe round 2
+      - name: Probe round 3
         run: |
           cat > p.py <<'PY'
-          import json, re, urllib.request, urllib.parse
+          import json, re, time, urllib.request, urllib.parse
           H = {"User-Agent": "Mozilla/5.0 (compatible; warwatch research)"}
-          def get(u, params=None):
+          def get(u, params=None, t=25):
               if params:
                   u += "?" + urllib.parse.urlencode(params)
               try:
-                  return urllib.request.urlopen(urllib.request.Request(u, headers=H), timeout=70).read().decode("utf-8", "replace")
+                  return urllib.request.urlopen(urllib.request.Request(u, headers=H), timeout=t).read().decode("utf-8", "replace")
               except Exception as e:
                   return "ERR %s" % e
-          def j(t):
-              try:
-                  return json.loads(t)
-              except Exception:
-                  print('  NOJSON', t[:120]); return {}
-          PW = "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Ports_Data/FeatureServer/0/query"
-          print("=== PORTWATCH")
-          d = j(get(PW, {"where": "portname LIKE '%Novorossiysk%'", "outFields": "*", "resultRecordCount": 2, "orderByFields": "date DESC", "f": "json"}))
-          print([f["name"] for f in d.get("fields", [])])
-          for f in d.get("features", [])[:2]:
-              print(f["attributes"])
-          for n in ["Odesa", "Haifa", "Bandar Abbas"]:
-              d = j(get(PW, {"where": "portname LIKE '%%%s%%'" % n, "outFields": "portname,date", "resultRecordCount": 1, "orderByFields": "date DESC", "f": "json"}))
-              print(n, [(f["attributes"]["portname"], f["attributes"]["date"]) for f in d.get("features", [])])
-          print("=== NGA")
-          for a in ["A", "P", "12", "4", "N", "S"]:
-              t = get("https://msi.nga.mil/api/publications/broadcast-warn", {"output": "json", "status": "active", "navArea": a})
-              try:
-                  w = json.loads(t)["broadcast-warn"]
-              except Exception:
-                  print(a, t[:100]); continue
-              print("area", a, len(w), sorted(w[0].keys()) if w else "")
-              k = 0
-              for x in w:
-                  tx = x.get("text", "")
-                  if re.search(r"MISSILE|ROCKET|FIRING|GUNNERY|EXERCISE|GPS|MILITARY|MINE", tx, re.I) and k < 4:
-                      k += 1
-                      print("  ", x.get("subregion"), x.get("issueDate"), tx[:150].replace("\n", " "))
-          print("=== GNEWS")
-          x = get("https://news.google.com/rss/search", {"q": "Ukraine mobilization after:2026-09-01 before:2026-09-02", "hl": "en-US", "gl": "US", "ceid": "US:en"})
-          print(len(re.findall("<item>", x)), re.findall("<pubDate>(.*?)</pubDate>", x)[:3], x[:120] if "ERR" in x[:5] else "")
-          print("=== EASA")
-          x = get("https://www.easa.europa.eu/en/domains/air-operations/czibs")
-          for m in re.findall(r'<a[^>]+href="([^"]*czib[^"]*)"[^>]*>(.*?)</a>', x, re.S | re.I)[:12]:
-              print(m[0], re.sub(r"<.*?>|\s+", " ", m[1]).strip()[:90])
-          print("=== POLY")
-          d = j(get("https://gamma-api.polymarket.com/public-search", {"q": "Iran", "limit_per_type": 4}))
-          for e in d.get("events", [])[:4]:
-              print(e.get("title"), e.get("closed"), e.get("endDate"))
-              for m in e.get("markets", [])[:2]:
-                  print("   ", m.get("question"), m.get("outcomePrices"), m.get("closed"), m.get("volume"))
+          print("=== PW services")
+          t = get("https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services", {"f": "json"})
+          try:
+              print([s["name"] for s in json.loads(t)["services"] if "ort" in s["name"] or "Chokepoint" in s["name"]])
+          except Exception:
+              print(t[:150])
+          print("=== GNEWS variants")
+          for q in ["Ukraine mobilization", "Ukraine mobilization when:7d", "Ukraine mobilization after:2026-09-01 before:2026-09-08"]:
+              x = get("https://news.google.com/rss/search", {"q": q, "hl": "en-US", "gl": "US", "ceid": "US:en"})
+              print(repr(q), len(re.findall("<item>", x)), re.findall("<pubDate>(.*?)</pubDate>", x)[:2], x[:60] if x.startswith("ERR") else "")
+              time.sleep(4)
+          print("=== BING news rss")
+          x = get("https://www.bing.com/news/search", {"q": "Ukraine mobilization", "format": "rss"})
+          print(len(re.findall("<item>", x)), re.findall("<pubDate>(.*?)</pubDate>", x)[:3], x[:80] if x.startswith("ERR") else "")
+          print("=== EASA json")
+          x = get("https://www.easa.europa.eu/en/domains/air-operations/czibs/export-json?page&_format=json")
+          try:
+              d = json.loads(x)
+              print(type(d).__name__, len(d))
+              rows = d if isinstance(d, list) else list(d.values())[0]
+              print(json.dumps(rows[0])[:600] if rows else "")
+              print(json.dumps(rows[1])[:300] if len(rows) > 1 else "")
+          except Exception:
+              print(x[:200])
+          print("=== ADSB point")
+          x = get("https://api.adsb.lol/v2/point/50.45/30.5/250")
+          try:
+              d = json.loads(x)
+              ac = d["ac"]
+              print(len(ac), d.get("total"), sum(1 for a in ac if "nac_p" in a), [a.get("nac_p") for a in ac[:10]])
+          except Exception:
+              print(x[:120])
+          print("=== NGA dates sample")
+          x = json.loads(get("https://msi.nga.mil/api/publications/broadcast-warn", {"output": "json", "status": "active", "navArea": "A"}))["broadcast-warn"]
+          print(sorted(w["issueDate"][-8:] for w in x)[-8:])
+          print([ (w["msgNumber"], w["msgYear"], w["subregion"]) for w in x[:3]])
           PY
           python3 p.py
