@@ -1,0 +1,70 @@
+name: probe
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      ACLED_EMAIL: ${{ secrets.ACLED_EMAIL }}
+      ACLED_PASSWORD: ${{ secrets.ACLED_PASSWORD }}
+      FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
+      AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe round 14
+        run: |
+          cat > p.py <<'PY'
+          import gzip, json, os, re, sys, urllib.request, urllib.parse, urllib.error
+          sys.path.insert(0, "warwatch")
+          UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+          def txt(u, params=None, data=None, hdr=None, t=40):
+              if params: u += ("&" if "?" in u else "?") + urllib.parse.urlencode(params)
+              h = {"User-Agent": UA, "Accept": "application/json, text/html, */*"}; h.update(hdr or {})
+              try:
+                  b = urllib.request.urlopen(urllib.request.Request(u, headers=h, data=data), timeout=t).read()
+                  return (gzip.decompress(b) if b[:2] == b"\x1f\x8b" else b).decode("utf-8", "replace")
+              except urllib.error.HTTPError as e:
+                  return "HTTP %s %s" % (e.code, e.read()[:200].decode("utf-8", "replace"))
+              except Exception as e:
+                  return "ERR %s" % str(e)[:150]
+          def sec(n): print("=== " + n, flush=True)
+          sec("ACLED")
+          em, pw = os.environ["ACLED_EMAIL"], os.environ["ACLED_PASSWORD"]
+          r = txt("https://acleddata.com/oauth/token", data=urllib.parse.urlencode({"username": em, "password": pw, "grant_type": "password", "client_id": "acled"}).encode(), hdr={"Content-Type": "application/x-www-form-urlencoded"})
+          try: at = json.loads(r)["access_token"]; print("token ok")
+          except Exception: at = ""; print("token fail", r[:150])
+          H = {"Authorization": "Bearer " + at}
+          for ep in ["acled/read?_format=json&limit=2&country=Ukraine", "cast/read?_format=json&limit=2", "conflict-index/read?_format=json&limit=2", "deleted/read?_format=json&limit=1", "user/me?_format=json"]:
+              print("EP", ep, txt("https://acleddata.com/api/" + ep, hdr=H)[:300])
+          for pg in ["https://acleddata.com/conflict-data/download-data-files", "https://acleddata.com/conflict-index", "https://acleddata.com/platform/explorer", "https://acleddata.com/platform/cast"]:
+              t = txt(pg, hdr=H); links = sorted(set(re.findall(r'href="([^"]*(?:download|\.csv|\.xlsx|\.zip|sites/default/files|/api/)[^"]*)"', t)))[:25]
+              print("PG", pg, len(t), t[:80].replace("\n", " "), links)
+          sec("HDX HAPI (ACLED-derived conflict events)")
+          enc = txt("https://hapi.humdata.org/api/v2/encode_app_identifier", {"application": "warwatch", "email": "warwatch@users.noreply.github.com"}); print("ENC", enc[:200])
+          try: ident = json.loads(enc)["encoded_app_identifier"]
+          except Exception: ident = ""
+          for ep in ["coordination-context/conflict-events", "coordination-context/national-risk"]:
+              print("HAPI", ep, txt("https://hapi.humdata.org/api/v2/" + ep, {"app_identifier": ident, "location_code": "UKR", "output_format": "json", "limit": 3})[:500])
+          sec("UCDP")
+          print(txt("https://ucdpapi.pcr.uu.se/api/gedevents/25.1?pagesize=1")[:200])
+          print(txt("https://ucdpapi.pcr.uu.se/api/gedevents/25.0.1?pagesize=1&page=0")[:200])
+          sec("Polymarket history")
+          g = json.loads(txt("https://gamma-api.polymarket.com/public-search", {"q": "Iran", "limit_per_type": 3}))
+          m = g["events"][0]["markets"][0]; print(m.get("question"), m.get("clobTokenIds"), m.get("id"))
+          tok = json.loads(m["clobTokenIds"])[0]
+          for q in [{"market": tok, "interval": "max", "fidelity": 720}, {"market": tok, "interval": "1m", "fidelity": 60}]:
+              r = txt("https://clob.polymarket.com/prices-history", q); print("PH", q["interval"], len(r), r[:300])
+          sec("Kalshi history")
+          k = json.loads(txt("https://api.elections.kalshi.com/trade-api/v2/events", {"limit": 3, "status": "open", "with_nested_markets": "true"}))
+          e = k["events"][0]; mk = e["markets"][0]; print(e.get("series_ticker"), mk.get("ticker"))
+          print(txt("https://api.elections.kalshi.com/trade-api/v2/series/%s/markets/%s/candlesticks" % (e["series_ticker"], mk["ticker"]), {"start_ts": 1759000000, "end_ts": 1759900000, "period_interval": 1440})[:300])
+          sec("AIS stream")
+          sys.path.insert(0, "warwatch")
+          import osint, config as C
+          try:
+              ships = osint.fetch_aisstream(os.environ["AISSTREAM_API_KEY"], [C.BOXES["iran"], C.BOXES["yemen"]], seconds=40)
+              print(len(ships), [ (s["n"], s["type"]) for s in list(ships.values())[:6]])
+              print("military", [(s["n"], s["mmsi"]) for s in ships.values() if int(s["type"] or 0) in (35, 55)][:10])
+          except Exception as ex: print("AIS fail", ex)
+          PY
+          python3 p.py

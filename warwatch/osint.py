@@ -394,6 +394,10 @@ def firms_url(key, box, days, date=None):
     return u + (f"/{date}" if date else "")
 
 
+def _fkey(theatre):
+    return theatre + "@" + "_".join(str(v) for v in C.FIRMS_BOX[theatre])
+
+
 def firms_counts(key, theatre, days=150, max_calls=None, today=None):
     """Daily detection counts for a theatre box, five days per call, newest first. Cached rows [date, theatre, n, mw]."""
     import store
@@ -401,7 +405,8 @@ def firms_counts(key, theatre, days=150, max_calls=None, today=None):
     cap = max_calls if max_calls is not None else int(os.environ.get("FIRMS_MAX", "6"))
     rows = store.cache_rows("firms_events")
     have = {r[0] for r in rows if r[1] == theatre}
-    box = C.BOXES[theatre]
+    box = C.FIRMS_BOX[theatre]
+    theatre = _fkey(theatre)
     new, calls = [], 0
     d = today
     while (today - d).days < days and calls < cap:
@@ -435,24 +440,30 @@ def firms_series(theatre):
     import store
     out = {}
     for d, th, n, mw in store.cache_rows("firms_events"):
-        if th == theatre:
+        if th == _fkey(theatre):
             out[d] = float(n)
     return sorted(out.items())
 
 
-def fetch_fires(key, boxes, top=500):
+def fetch_fires(key, boxes, top=250):
     """Last two days of detections across the theatre boxes for the map layer (strongest first)."""
-    pts = []
+    pts, seen = [], set()
     for th, box in boxes.items():
+        got = []
         try:
             t = S.get(firms_url(key, box, 2), raw=True, retries=2, wait=4)
             for p in parse_firms(t.decode("utf-8", "replace") if isinstance(t, bytes) else t):
-                p["th"] = th
-                pts.append(p)
+                k = (round(p["lat"], 3), round(p["lon"], 3), p["date"])
+                if k in seen:
+                    continue
+                seen.add(k)
+                p["th"] = theatre_at(p["lat"], p["lon"]) or th
+                got.append(p)
         except Exception:
             continue
-    pts.sort(key=lambda p: -p["frp"])
-    return pts[:top]
+        got.sort(key=lambda p: -p["frp"])
+        pts.extend(got[:top])
+    return pts
 
 
 # ---------------------------------------------------------------- AIS: Baltic (Digitraffic, no key) and global (aisstream, free key)
