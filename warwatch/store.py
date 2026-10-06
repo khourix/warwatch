@@ -34,3 +34,22 @@ def daily(series_id):
     for t, v in load(series_id):
         by.setdefault(t[:10], []).append(v)
     return sorted((d, sum(v) / len(v)) for d, v in by.items())
+
+
+def cache_path(series_id):
+    return os.path.join(ROOT, "cache", f"{series_id}.csv")
+
+
+def cache_save(series_id, pts):
+    """Last good full fetch of a series; overwritten each time. Public data only."""
+    os.makedirs(os.path.dirname(cache_path(series_id)), exist_ok=True)
+    with open(cache_path(series_id), "w", newline="") as f:
+        csv.writer(f).writerows((t, repr(float(v))) for t, v in pts)
+
+
+def cache_load(series_id):
+    try:
+        with open(cache_path(series_id), newline="") as f:
+            return [(r[0], float(r[1])) for r in csv.reader(f) if len(r) == 2]
+    except OSError:
+        return []

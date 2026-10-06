@@ -23,6 +23,19 @@ def add(id, label, domain, theatre, kind, lag, why, fetch, direction="up", needs
                        fetch=fetch, direction=direction, needs=list(needs), drop=drop, url=url))
 
 
+def _slow(sid, fn):
+    """Rate-limited sources run in their own workflow (slow.yml) and cache the
+    result; the dashboard run reads the cache so it never waits on them."""
+    def go():
+        if os.environ.get("WARWATCH_LIVE"):
+            return fn()
+        pts = store.cache_load(sid)
+        if not pts:
+            raise RuntimeError("first refresh pending (rate-limited source; slow job fills it)")
+        return pts
+    return go
+
+
 def _key(name):
     return os.environ.get(name, "")
 
@@ -36,7 +49,7 @@ add("us_armor_awards", "US body armor and protective gear awards (PSC 8470)", "k
     "Companion to boots in troop readiness.", lambda: S.fetch_usaspending(psc=["8470"]), drop=DOD)
 add("us_kit_tenders", "US boot and armor tenders (SAM.gov, PSC 8430, 8470)", "kit", "global", "monthly", False,
     "Tenders are posted before awards, so this leads the award series.",
-    lambda: S.fetch_sam(["8430", "8470"], _key("SAM_API_KEY")), needs=["SAM_API_KEY"])
+    _slow("us_kit_tenders", lambda: S.fetch_sam(["8430", "8470"], _key("SAM_API_KEY"))), needs=["SAM_API_KEY"])
 add("eu_kit_tenders", "EU protective footwear tenders (TED, CPV 18830000, 18800000)", "kit", "global", "monthly", False,
     "EU tenders appear within days of publication.", lambda: S.fetch_ted(["18830000", "18800000"]))
 for th, lbl in (("ukraine", "Ukraine"), ("mideast", "Middle East")):
@@ -69,7 +82,7 @@ add("us_biologics_naics", "US biological product awards (NAICS 325414: blood der
     "global", "monthly", True, "Nearest free proxy for blood-product buying.",
     lambda: S.fetch_usaspending(naics=["325414"]), drop=DOD)
 add("us_medical_tenders", "US medical tenders (SAM.gov, PSC 6510, 6515, 6505)", "medical", "global", "monthly", False,
-    "Tenders lead awards.", lambda: S.fetch_sam(["6510", "6515", "6505"], _key("SAM_API_KEY")), needs=["SAM_API_KEY"])
+    "Tenders lead awards.", _slow("us_medical_tenders", lambda: S.fetch_sam(["6510", "6515", "6505"], _key("SAM_API_KEY"))), needs=["SAM_API_KEY"])
 add("eu_medical_tenders", "EU medical consumable tenders (TED, CPV 33140000, 33141000)", "medical", "global", "monthly",
     False, "Covers blood bags, dressings, hemostatics and tourniquets.",
     lambda: S.fetch_ted(["33140000", "33141000"]))
@@ -119,7 +132,7 @@ for th in C.BOXES:
 # ---- attention: news, pageviews, advisories --------------------------------------------
 for th, (sid, q) in C.GDELT.items():
     add(sid, f"News volume: {C.THEATRES[th]} (GDELT)", "attention", th, "daily", False,
-        "Fastest signal, also moved by non-military news.", (lambda q=q: S.fetch_gdelt(q)))
+        "Fastest signal, also moved by non-military news.", _slow(sid, lambda q=q: S.fetch_gdelt(q)))
 for key, arts in C.WIKI.items():
     dom = key if key in C.DOMAINS else "attention"
     th = key if key in C.THEATRES else "global"

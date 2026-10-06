@@ -1,0 +1,40 @@
+name: slow-sources
+# Rate-limited sources (GDELT news volume, SAM.gov tenders) run here, away from the
+# dashboard build, and cache their last good result in warwatch/history/cache.
+on:
+  schedule:
+    - cron: "40 */4 * * *"    # GDELT
+    - cron: "20 4 * * *"      # SAM.gov (about 10 requests a day allowed)
+  workflow_dispatch:
+    inputs:
+      which:
+        description: "gdelt or sam"
+        required: false
+        default: "gdelt"
+permissions:
+  contents: write
+concurrency:
+  group: slow-sources
+  cancel-in-progress: false
+env:
+  WW: warwatch
+  WARWATCH_LIVE: "1"
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch and cache
+        env:
+          SAM_API_KEY: ${{ secrets.SAM_API_KEY }}
+          WHICH: ${{ github.event.inputs.which || (github.event.schedule == '20 4 * * *' && 'sam' || 'gdelt') }}
+        run: |
+          if [ "$WHICH" = "sam" ]; then IDS="us_kit_tenders,us_medical_tenders"; else IDS="gdelt_ukraine,gdelt_mideast,gdelt_eastflank"; fi
+          python3 $WW/run.py --only "$IDS" --fetch-only
+      - name: Commit cache (public data only)
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add $WW/history/cache 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "cache: $(date -u +%FT%H:%MZ)" && git pull --rebase -q && git push -q) || (git rebase --abort; echo "cache push skipped")

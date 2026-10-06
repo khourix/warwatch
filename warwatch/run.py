@@ -24,29 +24,11 @@ import stats  # noqa: E402
 import store  # noqa: E402
 
 
-def _cache_path(sid):
-    return os.path.join(store.ROOT, "cache", f"{sid}.csv")
-
-
-def _cache_save(sid, pts):
-    os.makedirs(os.path.dirname(_cache_path(sid)), exist_ok=True)
-    with open(_cache_path(sid), "w", newline="") as f:
-        csv.writer(f).writerows((t, repr(float(v))) for t, v in pts)
-
-
-def _cache_load(sid):
-    try:
-        with open(_cache_path(sid), newline="") as f:
-            return [(r[0], float(r[1])) for r in csv.reader(f) if len(r) == 2]
-    except OSError:
-        return []
-
-
 def _fetch(s, rec):
     pts = s["fetch"]()
     if not pts:
         raise RuntimeError("source returned no data")
-    _cache_save(s["id"], pts)
+    store.cache_save(s["id"], pts)
     rec["points"] = pts[:-s["drop"]] if s["drop"] else pts
 
 
@@ -71,9 +53,10 @@ def collect(only=None):
                 failed.append((s, rec))
         out.append(rec)
         print(f"{rec['status']:13} {s['id']:28} n={len(rec['points'])} {rec['error'][:80]}", flush=True)
-    if failed and not os.environ.get("WARWATCH_NO_RETRY"):
+    retry = [(s, r) for s, r in failed if "refresh pending" not in r["error"]]
+    if retry and not os.environ.get("WARWATCH_NO_RETRY"):
         time.sleep(60)
-        for s, rec in failed:
+        for s, rec in retry:
             try:
                 _fetch(s, rec)
                 rec.update(status="ok", error="")
@@ -83,7 +66,7 @@ def collect(only=None):
                 time.sleep(20)
     for s, rec in failed:
         if rec["status"] == "error":
-            old = _cache_load(s["id"])
+            old = store.cache_load(s["id"])
             if old:
                 rec.update(status="ok", stale=old[-1][0],
                            points=old[:-s["drop"]] if s["drop"] else old)
@@ -115,12 +98,15 @@ def main():
     ap.add_argument("--demo", choices=["calm", "buildup"])
     ap.add_argument("--only", default="")
     ap.add_argument("--out", default="site/index.html")
+    ap.add_argument("--fetch-only", action="store_true", help="fetch and cache, do not render")
     a = ap.parse_args()
     if a.demo:
         import demo
         series = demo.scenario(a.demo)
     else:
         series = collect(set(filter(None, a.only.split(","))))
+        if a.fetch_only:
+            return
     res = evaluate(series)
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
