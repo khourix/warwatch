@@ -6,149 +6,220 @@
 <title>Warwatch: war early-warning dashboard</title>
 <style>
 :root{
-  --bg:#070b10; --panel:#0d141b; --panel2:#121b24; --line:#223140; --ink:#e6edf3; --mute:#8b9db0; --dim:#5d7083;
-  --ocean:#0a1622; --land:#17232f; --land-th:#1f3144; --border:#6f8aa3; --border-th:#a9c7e2;
+  --bg:#070b10; --panel:#0d141b; --panel2:#131d27; --panel3:#192634; --line:#243545; --ink:#eef3f8; --mute:#9aaebf; --dim:#6a7f92;
+  --ocean:#0b1b2b; --land:#1b2b3c; --land-th:#29435c; --border:#8aa6bf; --border-th:#c4dcf2;
   --alert:#ff4d4f; --warn:#ff8a1f; --watch:#f5c518; --ok:#3ddc84; --na:#6b7a8a; --accent:#58a6ff;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;overflow:hidden}
-button{font:inherit;color:inherit;cursor:pointer}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
 a{color:var(--accent)}
-header{height:52px;flex:none;display:flex;align-items:center;gap:18px;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--line)}
-.brand{font-weight:800;letter-spacing:.14em;font-size:15px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+header{height:52px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+.brand{font-weight:800;letter-spacing:.14em;font-size:15px;display:flex;align-items:center;gap:8px;white-space:nowrap;cursor:pointer}
 .brand i{width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
-nav{display:flex;gap:2px;flex:1;overflow:hidden}
-nav button{background:none;border:0;border-bottom:3px solid transparent;padding:14px 11px 11px;color:var(--mute);font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:7px}
+nav{display:flex;gap:1px;flex:1;min-width:0;overflow:hidden}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:14px 10px 11px;color:var(--mute);font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:6px}
 nav button:hover{color:var(--ink)}
 nav button.on{color:var(--ink);border-bottom-color:var(--accent)}
 nav .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+nav .sep{width:1px;background:var(--line);margin:12px 6px}
+#search{position:relative;width:260px;flex:none}
+#search input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 10px 7px 30px;outline:none}
+#search input:focus{border-color:var(--accent)}
+#search:before{content:"\2315";position:absolute;left:10px;top:5px;color:var(--dim);font-size:16px}
+#results{position:absolute;right:0;top:40px;width:420px;max-height:70vh;overflow:auto;background:var(--panel);border:1px solid #2c4156;border-radius:10px;display:none;z-index:25;box-shadow:0 12px 40px #000a}
+#results h6{margin:0;padding:8px 12px 3px;font-size:10.5px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+#results .r{padding:6px 12px;cursor:pointer;display:flex;justify-content:space-between;gap:10px;align-items:center}
+#results .r:hover,#results .r.on{background:var(--panel2)}
+#results .r small{color:var(--dim);white-space:nowrap}
 .meta{color:var(--mute);font-size:12px;white-space:nowrap;text-align:right}
 .demo{background:#5b1e1e;color:#ffd6d6;border-radius:4px;padding:1px 7px;margin-right:8px;font-weight:700}
-main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 430px}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) clamp(470px,40vw,760px)}
 #mapwrap{position:relative;min-width:0;min-height:0;background:var(--ocean);overflow:hidden}
 #map{width:100%;height:100%;display:block;cursor:grab;touch-action:none;user-select:none}
 #map.drag{cursor:grabbing}
-.c{fill:var(--land);stroke:var(--border);stroke-width:1px;vector-effect:non-scaling-stroke;stroke-linejoin:round;cursor:pointer;transition:fill .12s}
-.c.th{fill:var(--land-th);stroke:var(--border-th);stroke-width:1.5px}
-.c:hover{fill:#2c4560}
-.c.a2{fill:#3a3a22}.c.a3{fill:#4d3418}.c.a4{fill:#561f24}
-.c.th.a2{fill:#47472a}.c.th.a3{fill:#5e3f1c}.c.th.a4{fill:#6b2429}
-.lab{font-weight:600;fill:#c8d6e4;paint-order:stroke;stroke:#050a0f;stroke-width:3px;stroke-linejoin:round;pointer-events:none;text-anchor:middle}
-.lab.big{fill:#ffffff;font-weight:700}
-.cityd{fill:#e6edf3;stroke:#05080c;stroke-width:1.5px}
-.citylab{fill:#d5e2ee;font-size:11px;paint-order:stroke;stroke:#05080c;stroke-width:3px;pointer-events:none}
+.c{fill:var(--land);stroke:var(--border);stroke-width:1.1px;vector-effect:non-scaling-stroke;stroke-linejoin:round;cursor:pointer;transition:fill .12s}
+.c.th{fill:var(--land-th);stroke:var(--border-th);stroke-width:1.8px}
+.c:hover{fill:#3a5a78}
+.c.a2{fill:#46462a}.c.a3{fill:#5e3f1c}.c.a4{fill:#6e2429}
+.c.th.a2{fill:#55552f}.c.th.a3{fill:#744d20}.c.th.a4{fill:#84292f}
+.lab{font-weight:700;fill:#f4f8fc;paint-order:stroke;stroke:#04080c;stroke-linejoin:round;pointer-events:none;text-anchor:middle;letter-spacing:.01em}
+.lab.city{text-anchor:start;fill:#ffe9a8;font-weight:600}
+.lab.sea{fill:#7fa6c9;font-style:italic;font-weight:500}
+.cityd{fill:#ffe9a8;stroke:#05080c;stroke-width:1.5px}
 .mk{cursor:pointer}
-.mk:hover .sc{filter:brightness(1.5)}
-.hub{fill:none;stroke:#7dd3fc;stroke-width:1.2px;stroke-dasharray:5 4;vector-effect:non-scaling-stroke;pointer-events:visibleStroke;cursor:pointer}
+.mk:hover .sc{filter:brightness(1.6)}
+.hub{fill:none;stroke:#7dd3fc;stroke-width:1.3px;stroke-dasharray:5 4;vector-effect:non-scaling-stroke;pointer-events:visibleStroke;cursor:pointer}
 .pin text{fill:#fff;font-weight:700;paint-order:stroke;stroke:#05080c;stroke-width:3px;text-anchor:middle;pointer-events:none}
 .pin{cursor:pointer}
-@keyframes pulse{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(2.2)}}
-.pulse{animation:pulse 2s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{0%{opacity:.75;transform:scale(1)}100%{opacity:0;transform:scale(2.4)}}
+.pulse{animation:pulse 1.8s ease-out infinite;transform-box:fill-box;transform-origin:center}
 .ovl{position:absolute;z-index:3}
-#layers{left:12px;top:12px;background:rgba(13,20,27,.92);border:1px solid var(--line);border-radius:8px;padding:6px 10px 8px;font-size:12px;backdrop-filter:blur(4px)}
+#layers{left:12px;top:12px;background:rgba(13,20,27,.94);border:1px solid var(--line);border-radius:9px;padding:6px 10px 8px;font-size:12.5px;backdrop-filter:blur(4px);max-height:calc(100% - 90px);overflow:auto}
 #layers h4{margin:2px 0 4px;font-size:11px;letter-spacing:.1em;color:var(--mute);text-transform:uppercase;cursor:pointer;display:flex;justify-content:space-between;gap:12px}
-#layers label{display:flex;align-items:center;gap:7px;padding:2px 0;cursor:pointer;color:var(--ink)}
+#layers label{display:flex;align-items:center;gap:7px;padding:2px 0;cursor:pointer}
 #layers input{accent-color:var(--accent);margin:0}
 #layers .sw{width:10px;height:10px;border-radius:2px;display:inline-block}
-#layers.min label{display:none}
+#layers.min label,#layers.min .lsz{display:none}
+.lsz{display:flex;align-items:center;gap:6px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line);color:var(--mute)}
+.lsz button{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:1px 8px}
+.lsz button.on{border-color:var(--accent);color:var(--accent)}
 #zoom{right:12px;bottom:14px;display:flex;flex-direction:column;gap:4px}
-#zoom button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:rgba(13,20,27,.92);font-size:18px;line-height:1}
+#zoom button{width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:rgba(13,20,27,.94);font-size:19px;line-height:1}
 #zoom button:hover{background:var(--panel2)}
-#legend{left:12px;bottom:12px;background:rgba(13,20,27,.88);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:11.5px;color:var(--mute);display:flex;gap:12px;flex-wrap:wrap;max-width:70%}
-#legend span{display:flex;align-items:center;gap:5px;white-space:nowrap}
-#tip{position:fixed;z-index:30;pointer-events:none;background:#05090d;border:1px solid var(--line);border-radius:6px;padding:5px 9px;font-size:12px;max-width:300px;display:none;box-shadow:0 4px 14px #0008}
-#card{right:12px;top:12px;width:320px;max-height:60%;overflow:auto;background:rgba(13,20,27,.97);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:none;font-size:13px}
-#card h3{margin:0 24px 6px 0;font-size:14px}
-#card .x{position:absolute;right:8px;top:6px;background:none;border:0;font-size:20px;color:var(--mute)}
-#card p{margin:6px 0;color:var(--mute)}
-#card .kv{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding:4px 0}
-#card .kv b{font-weight:600}
+#legend{left:12px;bottom:12px;background:rgba(13,20,27,.92);border:1px solid var(--line);border-radius:9px;padding:6px 10px;font-size:12px;color:var(--mute);display:flex;gap:4px 12px;flex-wrap:wrap;max-width:72%}
+#legend span{display:flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer;padding:1px 3px;border-radius:4px}
+#legend span:hover{background:var(--panel2)}
+#legend span.off{opacity:.35;text-decoration:line-through}
+#tip{position:fixed;z-index:30;pointer-events:none;background:#05090d;border:1px solid #33506b;border-radius:7px;padding:6px 10px;font-size:12.5px;max-width:320px;display:none;box-shadow:0 4px 14px #000a}
+#card{right:12px;top:12px;width:340px;max-height:calc(100% - 24px);overflow:auto;background:rgba(13,20,27,.98);border:1px solid #2c4156;border-radius:11px;padding:12px 14px;display:none;font-size:13px}
+#card h3{margin:0 24px 2px 0;font-size:15px}
+#card .sub{color:var(--mute);font-size:12px;margin-bottom:6px}
+#card .x{position:absolute;right:8px;top:6px;background:none;border:0;font-size:22px;color:var(--mute)}
+#card p{margin:8px 0;color:#b8c7d4}
+#card .kv{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding:4px 0}
+#card .kv span{color:var(--mute)}
+#card .kv b{font-weight:600;text-align:right}
+#card .flag{background:#4a1518;border:1px solid #a1262c;color:#ffc9cb;border-radius:6px;padding:4px 8px;margin:6px 0;font-weight:600}
+#card .btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:4px 10px;font-size:12.5px;text-decoration:none;color:var(--ink);display:inline-block}
+.btn:hover{border-color:var(--accent)}
 aside{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;min-width:0}
 .ph{padding:12px 16px 10px;border-bottom:1px solid var(--line);flex:none}
 .ph .row{display:flex;align-items:center;gap:10px}
-.ph h2{margin:0;font-size:18px;flex:1}
+.ph h2{margin:0;font-size:19px;flex:1}
+.crumbs{font-size:12px;color:var(--mute);margin-bottom:4px}
+.crumbs a{color:var(--mute);text-decoration:none}.crumbs a:hover{color:var(--ink);text-decoration:underline}
 .badge{display:inline-block;border-radius:5px;padding:2px 9px;font-weight:700;font-size:12px;letter-spacing:.04em;color:#0a0f14;white-space:nowrap}
-.ph p{margin:5px 0 0;color:var(--mute);font-size:12.5px}
-.groups{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px 12px;flex:none;border-bottom:1px solid var(--line)}
-.g{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 9px 7px;text-align:left;position:relative;overflow:hidden}
+.ph p{margin:5px 0 0;color:var(--mute);font-size:13px}
+.why{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:3px}
+.why li{display:flex;gap:8px;align-items:baseline;font-size:12.5px;cursor:pointer;padding:2px 6px;border-radius:6px}
+.why li:hover{background:var(--panel2)}
+.why b{min-width:44px;text-align:right}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px 12px;flex:none;border-bottom:1px solid var(--line)}
+.g{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:5px 9px 6px;text-align:left;position:relative;overflow:hidden;min-width:0}
 .g:hover{border-color:#3a5167}
-.g.on{border-color:var(--accent);background:#14212e}
-.g .n{font-size:11.5px;color:var(--mute);display:flex;justify-content:space-between}
-.g .z{font-size:19px;font-weight:700;line-height:1.15}
+.g.on{border-color:var(--accent);background:#162738}
+.g .n{font-size:11.5px;color:var(--mute);display:flex;justify-content:space-between;gap:4px;white-space:nowrap}
+.g .z{font-size:18px;font-weight:700;line-height:1.15}
 .g .bar{height:4px;background:#1c2a37;border-radius:2px;margin-top:3px;position:relative}
 .g .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:2px}
 .g .bar u{position:absolute;top:-1px;bottom:-1px;width:1px;background:#6c8196}
-.lh{padding:8px 16px 4px;color:var(--mute);font-size:11.5px;display:flex;justify-content:space-between;gap:10px;flex:none}
-.lh b{color:var(--ink);font-size:12.5px}
-.list{flex:1;min-height:0;overflow-y:auto;padding:0 8px 8px;scrollbar-width:thin;scrollbar-color:#2a3b4b transparent}
-.sig{display:grid;grid-template-columns:8px 1fr auto;gap:9px;align-items:center;padding:6px 8px;border-radius:7px;cursor:pointer;border:1px solid transparent}
+.tool{display:flex;gap:6px;padding:8px 12px 4px;flex:none;align-items:center;flex-wrap:wrap}
+.tool input[type=search]{flex:1;min-width:120px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:5px 9px;outline:none}
+.tool input:focus{border-color:var(--accent)}
+.chip2{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--mute)}
+.chip2.on{border-color:var(--accent);color:var(--ink);background:#162738}
+.lh{padding:6px 16px 4px;color:var(--mute);font-size:12px;display:flex;justify-content:space-between;gap:10px;flex:none}
+.lh b{color:var(--ink);font-size:13px}
+.list{flex:1;min-height:0;overflow-y:auto;padding:0 8px 10px;scrollbar-width:thin;scrollbar-color:#2a3b4b transparent}
+.sig{display:grid;grid-template-columns:6px 1fr 74px 52px;gap:10px;align-items:center;padding:6px 8px;border-radius:7px;cursor:pointer;border:1px solid transparent}
 .sig:hover{background:var(--panel2);border-color:var(--line)}
-.sig .pip{width:8px;height:30px;border-radius:3px}
-.sig .t{font-size:12.5px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.sig .s{font-size:11px;color:var(--dim)}
-.sig .v{font-weight:700;font-size:14px;text-align:right;min-width:48px}
+.sig .pip{width:6px;height:32px;border-radius:3px}
+.sig .t{font-size:13px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sig .s{font-size:11.5px;color:var(--dim)}
+.sig .v{font-weight:700;font-size:14.5px;text-align:right}
 .sig .v small{display:block;font-weight:500;font-size:10.5px;color:var(--dim)}
+.sig svg{display:block}
+.gh{padding:8px 8px 2px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
 .card2{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:8px 10px;margin:4px 0;border:1px solid var(--line);border-radius:9px;background:var(--panel2);cursor:pointer}
 .card2:hover{border-color:#3a5167}
-.card2 h3{margin:0;font-size:14px}
+.card2 h3{margin:0;font-size:14.5px}
+.card2 .dr{grid-column:1/-1;color:var(--mute);font-size:12px}
 .cells{display:flex;gap:4px;grid-column:1/-1}
-.cell{flex:1;border-radius:4px;padding:3px 0;text-align:center;font-size:10px;color:#0a0f14;font-weight:700}
+.cell{flex:1;border-radius:4px;padding:3px 0;text-align:center;font-size:10.5px;color:#0a0f14;font-weight:700}
 .mk2{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:7px 8px;border-radius:7px;text-decoration:none;color:var(--ink)}
 .mk2:hover{background:var(--panel2)}
 .mk2 small{color:var(--dim)}
-.mk2 b{font-size:16px;text-align:right}
-.note{color:var(--dim);font-size:11.5px;padding:6px 10px}
-.empty{color:var(--mute);padding:18px 12px;font-size:13px}
+.mk2 b{font-size:17px;text-align:right}
+.al{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:start;padding:7px 8px;border-radius:7px;cursor:pointer}
+.al:hover{background:var(--panel2)}
+.al .ic{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0a0f14}
+.al small{color:var(--dim)}
+.note{color:var(--dim);font-size:12px;padding:6px 10px}
+.empty{color:var(--mute);padding:16px 12px;font-size:13px}
+.empty a{cursor:pointer}
 /* modal */
-#modal{position:fixed;inset:0;z-index:20;background:rgba(2,6,10,.72);display:none;align-items:center;justify-content:center;padding:18px}
-#modal .box{background:var(--panel);border:1px solid #2c4156;border-radius:14px;width:min(860px,100%);max-height:100%;overflow:auto;padding:20px 24px;position:relative;box-shadow:0 20px 60px #000a}
-#modal .x{position:absolute;right:14px;top:10px;background:none;border:0;font-size:26px;color:var(--mute)}
-#modal h2{margin:0 36px 8px 0;font-size:19px;line-height:1.25}
+#modal{position:fixed;inset:0;z-index:20;background:rgba(2,6,10,.75);display:none;align-items:center;justify-content:center;padding:16px}
+#modal .box{background:var(--panel);border:1px solid #2c4156;border-radius:14px;width:min(960px,100%);max-height:100%;overflow:auto;padding:18px 24px 20px;position:relative;box-shadow:0 20px 60px #000a}
+#modal .x{position:absolute;right:14px;top:8px;background:none;border:0;font-size:26px;color:var(--mute)}
+#modal .nav{display:flex;gap:6px;align-items:center;margin-bottom:6px;font-size:12.5px;color:var(--mute);flex-wrap:wrap;padding-right:34px}
+#modal .nav a{color:var(--mute);cursor:pointer;text-decoration:none}
+#modal .nav a:hover{color:var(--ink);text-decoration:underline}
+#modal .nav .sp{flex:1}
+#modal h2{margin:0 0 8px 0;font-size:20px;line-height:1.25}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.chip{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:1px 10px;font-size:11.5px;color:var(--mute)}
-.top{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center;margin-bottom:12px}
-.big{font-size:42px;font-weight:800;line-height:1;text-align:center}
-.big small{display:block;font-size:12px;font-weight:600;margin-top:4px}
-.top p{margin:0 0 6px;color:#c3d0dc}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.chip{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:1px 10px;font-size:12px;color:var(--mute)}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:0}
+.kpi small{display:block;color:var(--dim);font-size:11px;letter-spacing:.05em;text-transform:uppercase}
+.kpi b{font-size:21px;line-height:1.2;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi span{font-size:11.5px;color:var(--mute)}
+.gauge{margin:0 0 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 14px 6px}
+.gauge .gt{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin-bottom:5px}
+.gauge svg{width:100%;height:34px;display:block}
+.say{margin:0 0 12px;color:#c9d6e2;font-size:13.5px;line-height:1.5}
+.say b{color:var(--ink)}
+.cwrap{background:#0a1118;border:1px solid var(--line);border-radius:10px;padding:8px 12px 8px;margin-bottom:12px;position:relative}
+.cwrap h5{margin:0 0 4px;font-size:12.5px;color:var(--mute);font-weight:600;display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.rng{display:flex;gap:4px}
+.rng button{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:0 8px;font-size:11.5px;color:var(--mute)}
+.rng button.on{border-color:var(--accent);color:var(--ink)}
+.cwrap svg{width:100%;height:auto;display:block}
+.cbub{position:absolute;pointer-events:none;background:#05090d;border:1px solid #3a5876;border-radius:6px;padding:3px 8px;font-size:12px;display:none;white-space:nowrap;z-index:2}
+.rel{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}
+.rel div{display:flex;justify-content:space-between;gap:10px;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12.5px;border-bottom:1px solid var(--line)}
+.rel div:hover{background:var(--panel2)}
+.rel div span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.warnbox{background:#2a1f10;border:1px solid #6b4a1c;border-radius:8px;padding:8px 12px;margin-bottom:12px;color:#f2d3a2;font-size:13px}
+h3.sh{margin:14px 0 6px;font-size:13px;color:var(--mute);letter-spacing:.06em;text-transform:uppercase}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .two>div{min-width:0}
-.ch{background:#0a1118;border:1px solid var(--line);border-radius:9px;padding:8px 10px 6px;margin-bottom:12px}
-.ch h5{margin:0 0 2px;font-size:12px;color:var(--mute);font-weight:600;display:flex;justify-content:space-between;gap:8px}
-.ch h5 span{color:var(--ink);font-weight:600}
-.ch svg{width:100%;height:auto;display:block}
 table.st{border-collapse:collapse;width:100%;font-size:12.5px}
 table.st td{padding:4px 0;border-top:1px solid var(--line)}
 table.st td:last-child{text-align:right;font-weight:600}
-.warnbox{background:#2a1f10;border:1px solid #6b4a1c;border-radius:8px;padding:8px 12px;margin-bottom:12px;color:#f2d3a2;font-size:13px}
-/* system */
-#system{display:none;flex:1;min-height:0;overflow:auto;padding:18px 22px}
-#system .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;max-width:1500px}
-#system h3{margin:0 0 8px;font-size:14px}
-#system p,#system li{color:var(--mute);font-size:13px}
-#system li{margin-bottom:5px}
-#system ul{padding-left:18px;margin:0 0 14px}
-#system b{color:var(--ink)}
-.kw{font-family:ui-monospace,monospace;font-size:12px;background:var(--panel2);padding:1px 5px;border-radius:4px;color:#c3d0dc}
+/* signals table and system */
+.page{display:none;flex:1;min-height:0;overflow:auto;padding:16px 22px}
+.page h3{margin:0 0 8px;font-size:15px}
+.page p,.page li{color:var(--mute);font-size:13px}
+.page li{margin-bottom:5px}
+.page ul{padding-left:18px;margin:0 0 14px}
+.page b{color:var(--ink)}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;max-width:1600px}
+.kw{font-family:ui-monospace,monospace;font-size:12px;background:var(--panel2);padding:1px 5px;border-radius:4px;color:#c9d6e2}
+.tbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.tbar select,.tbar input{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:5px 9px;outline:none}
+.tbar input{min-width:240px}
+table.sg{border-collapse:collapse;width:100%;font-size:13px}
+table.sg th{text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;position:sticky;top:-16px;background:var(--bg);white-space:nowrap}
+table.sg td{padding:6px 8px;border-bottom:1px solid #16222d;vertical-align:middle}
+table.sg tr:hover td{background:var(--panel2);cursor:pointer}
 @media(max-width:900px){
   body{overflow:auto;display:block}
   header{height:auto;flex-wrap:wrap;padding:8px 10px}
   nav{order:3;flex:1 0 100%;overflow-x:auto}
+  #search{width:100%;order:4}
   main{display:block}
   #mapwrap{height:58vh}
   aside{border-left:0}
   .list{overflow:visible}
-  #system .cols,.two{grid-template-columns:1fr}
+  .cols,.two,.rel{grid-template-columns:1fr}
   #legend{display:none}
-  .top{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .tiles{grid-template-columns:repeat(3,1fr)}
+  .page{overflow:visible}
 }
 </style>
 </head>
 <body>
 <header>
-  <div class="brand"><i></i>WARWATCH</div>
+  <div class="brand" id="brand"><i></i>WARWATCH</div>
   <nav id="tabs"></nav>
-  <div class="meta"><span class="demo" id="demo" hidden>DEMO DATA</span>Updated __GENERATED__</div>
+  <div id="search"><input id="q" type="search" placeholder="Search signals, aircraft, ships ( / )" autocomplete="off" aria-label="Search"><div id="results"></div></div>
+  <div class="meta"><span class="demo" id="demo" hidden>DEMO</span>__GENERATED__</div>
 </header>
 <main id="main">
   <div id="mapwrap">
@@ -160,7 +231,8 @@ table.st td:last-child{text-align:right;font-weight:600}
   </div>
   <aside id="panel"></aside>
 </main>
-<section id="system"></section>
+<section class="page" id="signals"></section>
+<section class="page" id="system"></section>
 <div id="tip"></div>
 <div id="modal"><div class="box" id="mbox"></div></div>
 <script id="data" type="application/json">__DATA__</script>
@@ -178,16 +250,30 @@ const MEANING = {
   'insufficient data':'Too few groups have enough history to judge yet.'};
 const T_WATCH = D.thresholds[0], T_SIG = D.thresholds[1];
 const DOM = {}; D.domains.forEach(d => DOM[d.id] = d);
-const SHORT = {logistics:'Logistics', financial:'Financial', behavioral:'Human', geospatial:'Geospatial', information:'Information', markets:'Markets'};
-const TABS = [['overview','Overview']].concat(D.order.map(t => [t, D.theatres[t].name])).concat([['system','System']]);
+const SHORT = {logistics:'Logistics', financial:'Financial', behavioral:'Human', geospatial:'Geospatial', information:'Information'};
+const THEATRES = D.order.filter(t => t !== 'global');
+const TABS = [['overview','Overview']].concat(THEATRES.map(t => [t, D.theatres[t].name])).concat([['global','Global'],['signals','All signals'],['system','System']]);
 const SERIES = {}; D.series.forEach(s => SERIES[s.id] = s);
-const CLSCOL = {lift:'#4cc9f0', tanker:'#ffd166', isr:'#c77dff', fighter:'#ff5d73', other:'#9fb3c8'};
+const CLS = {lift:['Airlift','#4cc9f0'], tanker:['Tanker','#ffd166'], isr:['Surveillance / AWACS','#c77dff'], fighter:['Fighter','#ff5d73'],
+  bomber:['Bomber','#ff8a1f'], uav:['Drone','#7ee081'], heli:['Helicopter','#9fd3ff'], other:['Other military','#9fb3c8']};
+const CLSWHY = {
+  lift:'Airlifters move troops and equipment. A surge, followed by empty return legs, marks a deployment.',
+  tanker:'Tankers extend the range of fighters and bombers. Tankers plus fighters plus AWACS together mean strike packaging.',
+  isr:'Surveillance and early-warning aircraft orbit before and during operations.',
+  fighter:'Combat aircraft on transponders are usually deployments or air policing.',
+  bomber:'Bombers are strategic signals or strike assets.',
+  uav:'Long-endurance drones collect intelligence and can strike.',
+  heli:'Military helicopters: local operations, rescue and special forces.',
+  other:'Other military aircraft: trainers, liaison, VIP and special mission.'};
+const SHIPK = {carrier:['Aircraft carrier','#ff4d4f'], amphib:['Amphibious group','#ff8a1f'], navy:['Naval vessel','#58a6ff'], tanker:['Tanker','#d9c04a'], cargo:['Cargo','#9fb3c8'], other:['Vessel','#9fb3c8']};
 let tab = 'overview', selDom = null;
+const F = {q:'', chip:'all'};
+const classOff = {};
 
 function zcol(z){ return z == null ? '#6b7a8a' : z >= T_SIG ? '#ff4d4f' : z >= T_WATCH ? '#ff8a1f' : z >= 1 ? '#d9c04a' : '#3ddc84'; }
 function fmtz(z){ return z == null ? 'n/a' : (z > 0 ? '+' : '') + z.toFixed(1); }
 function fmtv(v){
-  if (v == null) return '';
+  if (v == null || isNaN(v)) return '';
   const a = Math.abs(v);
   if (a >= 1e9) return (v/1e9).toFixed(1)+'B';
   if (a >= 1e6) return (v/1e6).toFixed(1)+'M';
@@ -197,55 +283,101 @@ function fmtv(v){
   return v.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
 }
 function levelBadge(l){ return `<span class="badge" style="background:${LEVEL[l]}">${esc(l.toUpperCase())}</span>`; }
+function thName(t){ return t === 'global' ? 'Global' : (D.theatres[t] ? D.theatres[t].name : t || 'Worldwide'); }
 function tipShow(e, html){ const t = $('#tip'); t.innerHTML = html; t.style.display = 'block'; const w = t.offsetWidth, h = t.offsetHeight; let x = e.clientX + 14, y = e.clientY + 14; if (x + w > innerWidth - 6) x = e.clientX - w - 12; if (y + h > innerHeight - 6) y = e.clientY - h - 12; t.style.left = x + 'px'; t.style.top = y + 'px'; }
 function tipHide(){ $('#tip').style.display = 'none'; }
+function ago(d){ if (!d) return ''; const t = Date.parse(d.length <= 10 ? d + 'T00:00:00Z' : d); if (isNaN(t)) return d; const days = Math.round((Date.now() - t) / 864e5); return days <= 0 ? 'today' : days === 1 ? 'yesterday' : days + ' days ago'; }
+function spark(pts, col, w, h){
+  w = w || 70; h = h || 24;
+  if (!pts || pts.length < 3) return `<svg width="${w}" height="${h}"></svg>`;
+  const v = pts.map(p => p[1]); let lo = Math.min(...v), hi = Math.max(...v); if (hi === lo) { hi += 1; lo -= 1; }
+  const X = i => 1 + i / (v.length - 1) * (w - 2), Y = x => 2 + (1 - (x - lo) / (hi - lo)) * (h - 4);
+  const d = v.map((x, i) => X(i).toFixed(1) + ',' + Y(x).toFixed(1)).join(' ');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${d}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round"/><circle cx="${X(v.length-1).toFixed(1)}" cy="${Y(v[v.length-1]).toFixed(1)}" r="2.4" fill="${col}"/></svg>`;
+}
 
-/* ------------------------------------------------------------ tabs */
+/* ------------------------------------------------------------ navigation */
 function buildTabs(){
   $('#tabs').innerHTML = TABS.map(([id, name]) => {
     const th = D.theatres[id];
     const dot = th ? `<span class="dot" style="background:${LEVEL[th.level]}"></span>` : '';
-    return `<button data-tab="${id}" class="${id===tab?'on':''}">${dot}${esc(name)}</button>`;
+    return (id === 'signals' ? '<span class="sep"></span>' : '') + `<button data-tab="${id}" class="${id===tab?'on':''}">${dot}${esc(name)}</button>`;
   }).join('');
 }
 $('#tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) go(b.dataset.tab); });
-function go(id, first){
+$('#brand').onclick = () => go('overview');
+function go(id, first, dom){
   if (!TABS.some(t => t[0] === id)) id = 'overview';
-  tab = id; selDom = null; location.hash = id; closeCard(); buildTabs();
-  const sys = id === 'system';
-  $('#main').style.display = sys ? 'none' : '';
-  $('#system').style.display = sys ? 'block' : 'none';
-  if (sys) { renderSystem(); return; }
+  tab = id; selDom = dom || null; F.q = ''; F.chip = 'all'; location.hash = id; closeCard(); buildTabs();
+  const page = id === 'signals' || id === 'system';
+  $('#main').style.display = page ? 'none' : '';
+  $('#signals').style.display = id === 'signals' ? 'block' : 'none';
+  $('#system').style.display = id === 'system' ? 'block' : 'none';
+  if (id === 'signals') { renderSignalsPage(); return; }
+  if (id === 'system') { renderSystem(); return; }
   syncLayers(); renderPins(); renderPanel(); fitTab(!first);
 }
 addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h && h !== tab) go(h); });
-addEventListener('keydown', e => { if (e.key === 'Escape') { if ($('#modal').style.display === 'flex') closeModal(); else closeCard(); } });
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if ($('#results').style.display === 'block') { hideResults(); return; } if ($('#modal').style.display === 'flex') closeModal(); else closeCard(); return; }
+  if (e.target.matches('input,select,textarea')) return;
+  if (e.key === '/') { e.preventDefault(); $('#q').focus(); }
+  if ($('#modal').style.display === 'flex') { if (e.key === 'ArrowRight') stepModal(1); if (e.key === 'ArrowLeft') stepModal(-1); }
+});
 
 /* ------------------------------------------------------------ map */
 const M = D.map;
 const svg = $('#map');
 const NS = 'http://www.w3.org/2000/svg';
 let view = {x:0, y:0, w: M ? M.w : 1000}, anim = null;
-const layerState = {mil:true, nga:true, czib:true, choke:true, hubs:true, adv:false, cities:true, labels:true};
+const layerState = {mil:true, sqk:true, ships:true, inc:true, nga:true, czib:true, fires:false, choke:true, hubs:true, adv:false, cities:true, labels:true};
 const LAYERS = [
-  ['mil','Military aircraft','#4cc9f0'], ['nga','Hazard warnings (NGA)','#ff9f43'], ['czib','Airspace bulletins (EASA)','#ff4d9d'],
-  ['choke','Chokepoints','#58a6ff'], ['hubs','GPS-jamming sample zones','#7dd3fc'], ['adv','US travel-advisory shading','#ff8a1f'],
-  ['cities','Cities','#e6edf3'], ['labels','Country names','#8b9db0']];
-const OBJ = {mil:[], nga:[], czib:[], choke:[], city:[], hub:[], country:[]};
+  ['mil','Military aircraft','#4cc9f0'], ['sqk','Emergency squawks (any aircraft)','#ff4d4f'], ['ships','Ships and carriers','#ff8a1f'],
+  ['inc','Maritime incidents (UKMTO and news)','#f5c518'], ['nga','Hazard warnings (NGA)','#ff9f43'], ['czib','Airspace bulletins (EASA)','#ff4d9d'],
+  ['fires','Fires and thermal anomalies (NASA)','#ff6b3d'], ['choke','Chokepoints','#58a6ff'], ['hubs','GPS-jamming sample zones','#7dd3fc'],
+  ['adv','US travel-advisory shading','#ff8a1f'], ['cities','Cities','#ffe9a8'], ['labels','Country names','#c4dcf2']];
+const OBJ = {mil:[], sqk:[], ships:[], inc:[], nga:[], czib:[], fires:[], choke:[], city:[], hub:[], country:[]};
 const thOfCountry = {};
-let scaleEls = [];
+let scaleEls = [], labs = [], lblScale = 1;
+try { lblScale = +localStorage.getItem('ww_lbl') || 1; } catch (e) {}
 
 function mk(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
 function clientSize(){ const r = svg.getBoundingClientRect(); return [Math.max(r.width,1), Math.max(r.height,1)]; }
+function layoutLabels(){
+  const [cw, ch] = clientSize(); const s = view.w / cw; const taken = [];
+  const hit = b => { for (const t of taken) if (b[0] < t[0] + t[2] + 3 && b[0] + b[2] + 3 > t[0] && b[1] < t[1] + t[3] + 2 && b[1] + b[3] + 2 > t[1]) return true; return false; };
+  const cur = tab;
+  labs.forEach(l => { l.pri = (l.kind === 'country' ? (l.th === cur ? 1e6 : l.th ? 4e5 : 0) + Math.sqrt(l.area)
+      : l.kind === 'city' ? (l.th === cur ? 7e5 : cur === 'overview' || cur === 'global' ? 1e5 : 1e4) : l.kind === 'sea' ? 1e3 : 3e5); });
+  const order = labs.slice().sort((a, b) => b.pri - a.pri);
+  order.forEach(l => {
+    const show = layerState.labels || l.kind === 'city';
+    const on = (l.kind === 'city' ? layerState.cities : layerState.labels);
+    l.el.style.display = 'none';
+    if (!on) return;
+    const sx = (l.x - view.x) / s, sy = (l.y - view.y) / s;
+    if (sx < -10 || sy < -10 || sx > cw + 10 || sy > ch + 10) return;
+    const big = l.kind === 'country' && l.th === cur && cur !== 'overview' && cur !== 'global';
+    const fs = (l.kind === 'city' ? 12.5 : l.kind === 'sea' ? 12 : big ? 17 : 13.5) * lblScale;
+    const w = l.text.length * fs * 0.58;
+    if (l.kind === 'country' && !big && l.th !== cur && Math.sqrt(l.area) / s < w * 0.5) return;
+    if (l.kind === 'sea' && layerState.labels === false) return;
+    const box = l.kind === 'city' ? [sx + 8, sy - fs / 2, w, fs] : [sx - w / 2, sy - fs / 2, w, fs];
+    if (hit(box)) return;
+    taken.push(box);
+    l.el.setAttribute('x', l.kind === 'city' ? l.x + 8 * s : l.x); l.el.setAttribute('y', l.y + fs * 0.35 * s);
+    l.el.style.fontSize = fs * s + 'px'; l.el.style.strokeWidth = (fs > 15 ? 5 : 4) * s + 'px'; l.el.style.display = '';
+  });
+}
 function applyView(){
   const [cw, ch] = clientSize(); const h = view.w * ch / cw;
   svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${h}`);
   const s = view.w / cw;
   scaleEls.forEach(e => e.setAttribute('transform', `scale(${s})`));
-  document.querySelectorAll('.lab').forEach(t => { const a = +t.dataset.area; const th = t.dataset.th === '1'; const vis = layerState.labels && (Math.sqrt(a) / s > 38 || (th && tab !== 'overview' && Math.sqrt(a)/s > 14)); t.style.display = vis ? '' : 'none'; t.style.fontSize = (th && tab !== 'overview' ? 13 : 11) * s + 'px'; t.style.strokeWidth = 3 * s + 'px'; });
+  layoutLabels();
 }
 function clampView(){
-  view.w = Math.min(Math.max(view.w, 140), M.w);
+  view.w = Math.min(Math.max(view.w, 120), M.w);
   const [cw, ch] = clientSize(); const h = view.w * ch / cw;
   view.x = Math.min(Math.max(view.x, 0), Math.max(0, M.w - view.w));
   view.y = Math.min(Math.max(view.y, 0), Math.max(0, M.h - h));
@@ -258,55 +390,79 @@ function fitBox(b){
 }
 function fitTab(animate){
   if (!M) return;
-  const key = TABS.some(t => t[0] === tab) && D.map.theatres[tab] ? tab : 'global';
-  const to = fitBox(M.theatres[tab === 'overview' ? 'global' : key].view);
-  flyTo(to, animate);
+  const key = tab === 'overview' ? 'global' : D.map.theatres[tab] ? tab : 'global';
+  flyTo(fitBox(M.theatres[key].view), animate);
 }
 function flyTo(to, animate){
   if (anim) cancelAnimationFrame(anim);
-  if (!animate) { view = to; clampView(); applyView(); return; }
+  const clamp = v => { const o = view; view = v; clampView(); const r = view; view = o; return r; };
+  to = clamp(to);
+  if (!animate) { view = to; applyView(); return; }
   const from = {...view}, t0 = performance.now(), dur = 450;
   const step = now => { let p = Math.min(1, (now - t0) / dur); p = 1 - Math.pow(1 - p, 3);
     view = {x: from.x + (to.x - from.x) * p, y: from.y + (to.y - from.y) * p, w: from.w + (to.w - from.w) * p}; applyView();
     if (p < 1) anim = requestAnimationFrame(step); };
   anim = requestAnimationFrame(step);
 }
+function focusXY(xy, w){
+  const [cw, ch] = clientSize(); const ww = w || Math.min(view.w, 520); const h = ww * ch / cw;
+  flyTo({x: xy[0] - ww / 2 - ww * 0.12, y: xy[1] - h / 2, w: ww}, true);
+}
 function zoomAt(f, cx, cy){
   const r = svg.getBoundingClientRect(); const [cw, ch] = [r.width, r.height];
   const fx = (cx - r.left) / cw, fy = (cy - r.top) / ch;
-  const nw = Math.min(Math.max(view.w / f, 140), M.w); const real = view.w / nw;
+  const nw = Math.min(Math.max(view.w / f, 120), M.w);
   const h = view.w * ch / cw, nh = nw * ch / cw;
   view = {x: view.x + fx * (view.w - nw), y: view.y + fy * (h - nh), w: nw}; clampView(); applyView();
 }
+const AIR = (cls, trk, col) => `<path d="M0,-7L4.6,6L0,3.6L-4.6,6Z" fill="${col}" stroke="#04080c" stroke-width="1" transform="rotate(${trk == null ? 0 : trk})"/>`;
+function shipSvg(k){ const c = (SHIPK[k] || SHIPK.other)[1]; const big = k === 'carrier' || k === 'amphib';
+  return big ? `<path d="M-13,3L-9,-3L9,-3L13,0L9,5L-9,5Z" fill="${c}" stroke="#04080c" stroke-width="1.4"/><rect x="-5" y="-6" width="6" height="3" fill="${c}" stroke="#04080c" stroke-width="1"/>`
+    : `<path d="M-7,2L-4,-3L5,-3L8,0L5,4L-5,4Z" fill="${c}" stroke="#04080c" stroke-width="1.2"/>`; }
 function buildMap(){
   if (!M) { svg.outerHTML = '<div class="empty">Basemap unavailable.</div>'; return; }
   svg.innerHTML = '';
   const g = mk('g', {id:'land'}, svg);
-  const lab = mk('g', {id:'labels'}, svg);
   M.countries.forEach((c, i) => {
     const p = mk('path', {d: c.d, class: 'c', 'data-k': 'country:' + i, 'data-n': c.name}, g);
-    c._el = p;
-    OBJ.country.push(c);
-    const t = mk('text', {x: c.cx, y: c.cy, class: 'lab', 'data-area': c.area}, lab); t.textContent = c.name; c._lab = t;
+    c._el = p; OBJ.country.push(c);
   });
   for (const th in M.theatres) (M.theatres[th].countries || []).forEach(n => { if (!thOfCountry[n]) thOfCountry[n] = th; });
+  const lab = mk('g', {id:'labels'}, svg);
+  M.countries.forEach(c => { const t = mk('text', {class: 'lab'}, lab); t.textContent = c.name; labs.push({el: t, kind: 'country', x: c.cx, y: c.cy, area: c.area, text: c.name, th: thOfCountry[c.name] || ''}); });
+  (M.seas || []).forEach(s => { const t = mk('text', {class: 'lab sea'}, lab); t.textContent = s.n; labs.push({el: t, kind: 'sea', x: s.xy[0], y: s.xy[1], area: 0, text: s.n, th: ''}); });
   const mkLayer = id => mk('g', {id: 'L' + id}, svg);
-  const gh = mkLayer('hubs'); M.hubs.forEach((h, i) => { const c = mk('circle', {cx: h.xy[0], cy: h.xy[1], r: h.r, class: 'hub', 'data-k': 'hub:' + i}, gh); OBJ.hub.push(h); });
+  const gh = mkLayer('hubs'); M.hubs.forEach((h, i) => { mk('circle', {cx: h.xy[0], cy: h.xy[1], r: h.r, class: 'hub', 'data-k': 'hub:' + i}, gh); OBJ.hub.push(h); });
+  const gf = mkLayer('fires'); (M.fires || []).forEach((f, i) => { const m = mk('g', {transform: `translate(${f.xy[0]},${f.xy[1]})`, class: 'mk', 'data-k': 'fires:' + i}, gf); const s = mk('g', {class: 'sc'}, m);
+    mk('circle', {r: 3 + Math.min(4, (f.p || 0) / 40), fill: '#ff6b3d', 'fill-opacity': .75, stroke: '#2b0f05', 'stroke-width': .8}, s); OBJ.fires.push(f); scaleEls.push(s); });
   const gc = mkLayer('choke');
   M.choke.forEach((c, i) => { const m = mk('g', {transform: `translate(${c.xy[0]},${c.xy[1]})`, class: 'mk', 'data-k': 'choke:' + i}, gc); const s = mk('g', {class: 'sc'}, m);
-    mk('circle', {r: 9, fill: 'none', stroke: '#58a6ff', 'stroke-width': 2}, s); mk('circle', {r: 3.5, fill: '#58a6ff'}, s); OBJ.choke.push(c); scaleEls.push(s); });
+    mk('circle', {r: 9, fill: 'none', stroke: '#58a6ff', 'stroke-width': 2}, s); mk('circle', {r: 3.5, fill: '#58a6ff'}, s); OBJ.choke.push(c); scaleEls.push(s);
+    const t = mk('text', {class: 'lab', 'data-x': 1}, lab); t.textContent = c.n; labs.push({el: t, kind: 'choke', x: c.xy[0], y: c.xy[1] - 14, area: 0, text: c.n, th: c.t}); });
   const gn = mkLayer('nga');
   M.nga.forEach((n, i) => { const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'nga:' + i}, gn); const s = mk('g', {class: 'sc'}, m);
-    mk('path', {d: 'M0,-8L8,6L-8,6Z', fill: '#ff9f43', stroke: '#2b1500', 'stroke-width': 1.2}, s); mk('rect', {x: -1, y: -3, width: 2, height: 5, fill: '#2b1500'}, s); OBJ.nga.push(n); scaleEls.push(s); });
+    mk('path', {d: 'M0,-9L9,7L-9,7Z', fill: '#ff9f43', stroke: '#2b1500', 'stroke-width': 1.3}, s); mk('rect', {x: -1.2, y: -3, width: 2.4, height: 5.5, fill: '#2b1500'}, s); OBJ.nga.push(n); scaleEls.push(s); });
   const gz = mkLayer('czib');
   M.czib.forEach((n, i) => { const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'czib:' + i}, gz); const s = mk('g', {class: 'sc'}, m);
-    mk('path', {d: 'M0,-8L8,0L0,8L-8,0Z', fill: '#ff4d9d', stroke: '#2a0716', 'stroke-width': 1.2}, s); OBJ.czib.push(n); scaleEls.push(s); });
+    mk('path', {d: 'M0,-9L9,0L0,9L-9,0Z', fill: '#ff4d9d', stroke: '#2a0716', 'stroke-width': 1.3}, s); OBJ.czib.push(n); scaleEls.push(s); });
+  const gi = mkLayer('inc');
+  (M.inc || []).forEach((n, i) => { const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'inc:' + i}, gi); const s = mk('g', {class: 'sc'}, m);
+    mk('circle', {r: 9, fill: '#f5c518', stroke: '#2b2200', 'stroke-width': 1.5}, s); const t = mk('text', {y: 4.5, 'text-anchor': 'middle', style: 'font-size:12px;font-weight:800;fill:#2b2200'}, s); t.textContent = '!'; OBJ.inc.push(n); scaleEls.push(s); });
+  const gs = mkLayer('ships');
+  (M.ships || []).forEach((n, i) => { const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'ships:' + i}, gs); const s = mk('g', {class: 'sc'}, m);
+    s.innerHTML = shipSvg(n.k); OBJ.ships.push(n); scaleEls.push(s);
+    if (n.k === 'carrier' || n.k === 'amphib') { const t = mk('text', {class: 'lab city'}, lab); t.textContent = n.n; labs.push({el: t, kind: 'ship', x: n.xy[0], y: n.xy[1], area: 0, text: n.n, th: n.th}); } });
   const gm = mkLayer('mil');
-  M.mil.forEach((a, i) => { const m = mk('g', {transform: `translate(${a.xy[0]},${a.xy[1]})`, class: 'mk', 'data-k': 'mil:' + i}, gm); const s = mk('g', {class: 'sc'}, m);
-    const r = mk('path', {d: 'M0,-6L4.2,5L0,3L-4.2,5Z', fill: CLSCOL[a.c] || CLSCOL.other, stroke: '#04080c', 'stroke-width': .9, transform: `rotate(${a.trk == null ? 0 : a.trk})`}, s); OBJ.mil.push(a); scaleEls.push(s); });
+  M.mil.forEach((a, i) => { const m = mk('g', {transform: `translate(${a.xy[0]},${a.xy[1]})`, class: 'mk', 'data-k': 'mil:' + i, 'data-c': a.c}, gm); const s = mk('g', {class: 'sc'}, m);
+    s.innerHTML = AIR(a.c, a.trk, (CLS[a.c] || CLS.other)[1]); OBJ.mil.push(a); a._el = m; scaleEls.push(s); });
+  const gq = mkLayer('sqk');
+  (M.sqk || []).forEach((a, i) => { const m = mk('g', {transform: `translate(${a.xy[0]},${a.xy[1]})`, class: 'mk', 'data-k': 'sqk:' + i}, gq); const s = mk('g', {class: 'sc'}, m);
+    mk('circle', {r: 15, fill: '#ff4d4f', class: 'pulse'}, s); mk('circle', {r: 10, fill: '#ff4d4f', stroke: '#fff', 'stroke-width': 2}, s);
+    const t = mk('text', {y: 4.5, 'text-anchor': 'middle', style: 'font-size:11px;font-weight:800;fill:#fff'}, s); t.textContent = a.sq; OBJ.sqk.push(a); scaleEls.push(s); });
   const gy = mkLayer('cities');
   M.cities.forEach((c, i) => { const m = mk('g', {transform: `translate(${c.xy[0]},${c.xy[1]})`, 'data-k': 'city:' + i}, gy); const s = mk('g', {class: 'sc'}, m);
-    mk('circle', {r: 3.2, class: 'cityd'}, s); const t = mk('text', {x: 6, y: 4, class: 'citylab'}, s); t.textContent = c.n; OBJ.city.push(c); scaleEls.push(s); });
+    mk('circle', {r: 3.4, class: 'cityd'}, s); OBJ.city.push(c); scaleEls.push(s);
+    const t = mk('text', {class: 'lab city'}, lab); t.textContent = c.n; labs.push({el: t, kind: 'city', x: c.xy[0], y: c.xy[1], area: 0, text: c.n, th: c.t}); });
   mk('g', {id: 'Lpins'}, svg);
   scaleEls = scaleEls.filter(e => e.isConnected);
 }
@@ -314,14 +470,14 @@ function renderPins(){
   const gp = $('#Lpins'); if (!gp) return; gp.innerHTML = '';
   const show = tab === 'overview' || tab === 'global';
   if (!show) { scaleEls = scaleEls.filter(e => e.isConnected); return; }
-  D.order.filter(t => t !== 'global').forEach(t => {
+  THEATRES.forEach(t => {
     const th = D.theatres[t], p = M.theatres[t].pin, col = LEVEL[th.level];
     const m = mk('g', {transform: `translate(${p[0]},${p[1]})`, class: 'pin', 'data-pin': t}, gp);
     const s = mk('g', {class: 'sc'}, m); scaleEls.push(s);
-    if (th.level === 'Alert' || th.level === 'Warning') mk('circle', {r: 16, fill: col, class: 'pulse'}, s);
-    mk('circle', {r: 15, fill: col, stroke: '#05080c', 'stroke-width': 2.5}, s);
+    if (th.level === 'Alert' || th.level === 'Warning') mk('circle', {r: 17, fill: col, class: 'pulse'}, s);
+    mk('circle', {r: 16, fill: col, stroke: '#05080c', 'stroke-width': 2.5}, s);
     const n = mk('text', {y: 5, style: 'font-size:13px'}, s); n.textContent = th.firing.length + '/5';
-    const l = mk('text', {y: 32, style: 'font-size:13px'}, s); l.textContent = th.name;
+    const l = mk('text', {y: 34, style: 'font-size:14px'}, s); l.textContent = th.name;
   });
   scaleEls = scaleEls.filter(e => e.isConnected); applyView();
 }
@@ -333,29 +489,37 @@ function paintCountries(){
     const th = thOfCountry[c.name];
     const inTab = hl ? th === hl : !!th;
     c._el.setAttribute('class', 'c' + (inTab ? ' th' : '') + (layerState.adv && lv[c.name] >= 2 ? ' a' + lv[c.name] : ''));
-    c._lab.setAttribute('class', 'lab' + (inTab ? ' big' : '')); c._lab.dataset.th = inTab ? '1' : '0';
   });
 }
 function renderLayers(){
   const L = $('#layers');
-  const hasData = {mil: M && M.mil.length, nga: M && M.nga.length, czib: M && M.czib.length};
+  const cnt = {mil: M && M.mil.length, sqk: M && (M.sqk || []).length, ships: M && (M.ships || []).length, inc: M && (M.inc || []).length,
+    nga: M && M.nga.length, czib: M && M.czib.length, fires: M && (M.fires || []).length};
   L.innerHTML = `<h4 id="lh"><span>Layers</span><span>${L.classList.contains('min') ? '+' : '&minus;'}</span></h4>` + LAYERS.map(([k, n, c]) =>
-    `<label><input type="checkbox" data-l="${k}" ${layerState[k] ? 'checked' : ''}><span class="sw" style="background:${c}"></span>${esc(n)}${k in hasData ? ` <span style="color:var(--dim)">(${hasData[k]})</span>` : ''}</label>`).join('');
+    `<label><input type="checkbox" data-l="${k}" ${layerState[k] ? 'checked' : ''}><span class="sw" style="background:${c}"></span>${esc(n)}${k in cnt ? ` <span style="color:var(--dim)">(${cnt[k] || 0})</span>` : ''}</label>`).join('') +
+    `<div class="lsz">Label size <button data-sz="0.9" class="${lblScale < 1 ? 'on' : ''}">A</button><button data-sz="1.15" class="${lblScale > 1 && lblScale < 1.3 ? 'on' : ''}" style="font-size:15px">A</button><button data-sz="1.4" class="${lblScale >= 1.3 ? 'on' : ''}" style="font-size:18px">A</button></div>`;
 }
 $('#layers').addEventListener('change', e => { const k = e.target.dataset.l; if (!k) return; layerState[k] = e.target.checked; syncLayers(); });
-$('#layers').addEventListener('click', e => { if (e.target.closest('#lh')) { $('#layers').classList.toggle('min'); renderLayers(); } });
+$('#layers').addEventListener('click', e => {
+  if (e.target.closest('#lh')) { $('#layers').classList.toggle('min'); renderLayers(); return; }
+  const b = e.target.closest('[data-sz]'); if (b) { lblScale = +b.dataset.sz; try { localStorage.setItem('ww_lbl', lblScale); } catch (x) {} renderLayers(); applyView(); }
+});
 function syncLayers(){
-  ['mil','nga','czib','choke','hubs','cities'].forEach(k => { const g = $('#L' + k); if (g) g.style.display = layerState[k] && !(k === 'hubs' && (tab === 'overview' || tab === 'global')) ? '' : 'none'; });
+  ['mil','sqk','ships','inc','nga','czib','fires','choke','hubs','cities'].forEach(k => { const g = $('#L' + k); if (g) g.style.display = layerState[k] && !(k === 'hubs' && (tab === 'overview' || tab === 'global')) ? '' : 'none'; });
+  OBJ.mil.forEach(a => { if (a._el) a._el.style.display = classOff[a.c] ? 'none' : ''; });
   paintCountries(); applyView(); renderLegend();
 }
 function renderLegend(){
   let h = '';
-  if (layerState.mil) h += Object.keys(CLSCOL).map(k => `<span><svg width="10" height="11"><path d="M5,0L9,10L5,8L1,10Z" fill="${CLSCOL[k]}"/></svg>${esc(D.clsnames[k] || k)}</span>`).join('');
-  if (layerState.nga) h += `<span><span style="color:#ff9f43">&#9650;</span>Hazard warning</span>`;
-  if (layerState.czib) h += `<span><span style="color:#ff4d9d">&#9670;</span>Airspace bulletin</span>`;
-  if (layerState.adv) h += `<span><i style="width:10px;height:10px;background:#5e3f1c;border:1px solid #a9c7e2;display:inline-block"></i>Level 3 advisory</span><span><i style="width:10px;height:10px;background:#6b2429;border:1px solid #a9c7e2;display:inline-block"></i>Level 4</span>`;
+  if (layerState.mil) h += Object.keys(CLS).map(k => `<span data-cls="${k}" class="${classOff[k] ? 'off' : ''}" title="Click to hide or show"><svg width="11" height="12"><path d="M5.5,0L10,11L5.5,8.5L1,11Z" fill="${CLS[k][1]}"/></svg>${esc(CLS[k][0])}</span>`).join('');
+  if (layerState.ships) h += Object.keys(SHIPK).filter(k => k !== 'other' && k !== 'cargo').map(k => `<span style="cursor:default"><i style="width:11px;height:7px;background:${SHIPK[k][1]};display:inline-block;border-radius:1px"></i>${esc(SHIPK[k][0])}</span>`).join('');
+  if (layerState.nga) h += `<span style="cursor:default"><span style="color:#ff9f43">&#9650;</span>Hazard warning</span>`;
+  if (layerState.czib) h += `<span style="cursor:default"><span style="color:#ff4d9d">&#9670;</span>Airspace bulletin</span>`;
+  if (layerState.inc) h += `<span style="cursor:default"><span style="color:#f5c518">&#9679;</span>Maritime incident</span>`;
+  if (layerState.adv) h += `<span style="cursor:default"><i style="width:10px;height:10px;background:#744d20;border:1px solid #c4dcf2;display:inline-block"></i>Advisory level 3</span><span style="cursor:default"><i style="width:10px;height:10px;background:#84292f;border:1px solid #c4dcf2;display:inline-block"></i>Level 4</span>`;
   $('#legend').innerHTML = h;
 }
+$('#legend').addEventListener('click', e => { const s = e.target.closest('[data-cls]'); if (!s) return; classOff[s.dataset.cls] = !classOff[s.dataset.cls]; syncLayers(); });
 /* map interaction */
 let drag = null, moved = false;
 svg.addEventListener('pointerdown', e => { if (e.button !== 0) return; drag = {x: e.clientX, y: e.clientY, vx: view.x, vy: view.y}; moved = false; });
@@ -373,9 +537,13 @@ $('#zhome').onclick = () => fitTab(true);
 addEventListener('resize', () => { if (M) { clampView(); applyView(); } });
 function tipFor(k){
   const [type, i] = k.split(':'); const o = OBJ[type] && OBJ[type][+i]; if (!o) return '';
-  if (type === 'mil') return `<b>${esc(o.call || o.hex || 'Aircraft')}</b><br>${esc(D.clsnames[o.c] || '')} ${o.t ? '(' + esc(o.t) + ')' : ''}`;
+  if (type === 'mil') return `<b>${esc(o.call || o.hex || 'Aircraft')}</b> ${o.t ? '(' + esc(o.t) + ')' : ''}<br>${esc(o.o || CLS[o.c][0])}${o.ct ? ' · ' + esc(o.ct) : ''}${o.alt != null ? '<br>' + o.alt + ' ft' + (o.gs ? ', ' + Math.round(o.gs) + ' kt' : '') : ''}`;
+  if (type === 'sqk') return `<b>EMERGENCY ${esc(o.sq)}</b> ${esc(o.mean)}<br>${esc(o.call || o.hex)} ${o.t ? '(' + esc(o.t) + ')' : ''}`;
+  if (type === 'ships') return `<b>${esc(o.n)}</b><br>${esc(SHIPK[o.k] ? SHIPK[o.k][0] : 'Vessel')}${o.loc ? ' · ' + esc(o.loc) : ''}`;
+  if (type === 'inc') return `<b>${esc(o.t)}</b><br>${esc(o.d || '')} ${esc(o.src || '')}`;
   if (type === 'nga') return `<b>Hazard warning ${esc(o.id)}</b><br>${esc(o.tx.slice(0, 110))}`;
   if (type === 'czib') return `<b>EASA airspace bulletin</b><br>${esc(o.n)}`;
+  if (type === 'fires') return `<b>Thermal detection</b><br>${esc(o.d || '')} · ${Math.round(o.p || 0)} MW`;
   if (type === 'choke') return `<b>${esc(o.n)}</b><br>Ship transits tracked by IMF PortWatch`;
   if (type === 'city') return `<b>${esc(o.n)}</b>`;
   if (type === 'hub') return `<b>GPS-jamming sample zone</b><br>${o.nm} nm radius`;
@@ -396,188 +564,357 @@ svg.addEventListener('click', e => {
   const pin = e.target.closest('[data-pin]'); if (pin) { go(pin.dataset.pin); return; }
   const el = e.target.closest('[data-k]'); if (!el) { closeCard(); return; }
   const [type, i] = el.dataset.k.split(':'); const o = OBJ[type][+i];
-  if (type === 'country') { const th = thOfCountry[o.name]; if (th) { go(th); return; } }
+  if (type === 'country') { const th = thOfCountry[o.name]; if (th && th !== tab) { go(th); return; } }
   openCard(type, o);
 });
+const kv = (a, b) => b == null || b === '' ? '' : `<div class="kv"><span>${a}</span><b>${b}</b></div>`;
 function openCard(type, o){
   let h = '';
-  const kv = (a, b) => `<div class="kv"><span>${a}</span><b>${b}</b></div>`;
-  if (type === 'mil') h = `<h3>${esc(o.call || 'Unidentified flight')}</h3>` + kv('Class', esc(D.clsnames[o.c] || '')) + kv('Type code', esc(o.t || 'n/a')) + kv('Heading', o.trk == null ? 'n/a' : o.trk + '°') + kv('Transponder', esc(o.hex)) +
-    `<p>Transponding military aircraft only. Tankers, AWACS and fighters appearing together, or transports surging, mark a deployment. <a target="_blank" rel="noopener" href="https://globe.adsb.lol/?icao=${encodeURIComponent(o.hex)}">Open live track</a></p>`;
-  else if (type === 'nga') h = `<h3>Hazard warning ${esc(o.id)}</h3>` + kv('Issued', esc(o.iss || 'n/a')) + `<p>${esc(o.tx)}</p><p>Source: US National Geospatial-Intelligence Agency, active navigational warnings. <a target="_blank" rel="noopener" href="https://msi.nga.mil/NavWarnings">All warnings</a></p>`;
-  else if (type === 'czib') h = `<h3>EASA airspace bulletin</h3>` + kv('Zone', esc(o.n)) + kv('Last revised', esc(o.u || 'n/a')) + `<p>EASA warns European airlines about conflict-zone risk. A fresh revision means the risk assessment changed. <a target="_blank" rel="noopener" href="https://www.easa.europa.eu/en/domains/air-operations/czibs">All bulletins</a></p>`;
-  else if (type === 'choke') h = `<h3>${esc(o.n)}</h3><p>Daily ship transits come from IMF PortWatch. A fall means shipping is avoiding or being kept out of the strait.</p><p><a href="#" data-go="${o.t}">Open ${esc(D.theatres[o.t].name)} theatre</a></p>`;
-  else if (type === 'hub') h = `<h3>GPS-jamming sample zone</h3><p>Airliners within ${o.nm} nm of this point are checked for degraded navigation accuracy. A rising share points to jamming.</p><p><a href="#" data-go="${o.t}">Open ${esc(D.theatres[o.t].name)} theatre</a></p>`;
-  else if (type === 'city') h = `<h3>${esc(o.n)}</h3>`;
-  else if (type === 'country') { const lv = (M.levels || {})[o.name]; h = `<h3>${esc(o.name)}</h3>` + kv('US travel advisory', lv ? 'Level ' + lv : 'none listed'); }
+  const goBtn = t => t && D.theatres[t] ? `<a class="btn" href="#" data-go="${t}">Open ${esc(D.theatres[t].name)}</a>` : '';
+  if (type === 'mil') h = `<h3>${esc(o.call || 'Unidentified flight')}</h3><div class="sub">${esc(CLS[o.c][0])}${o.t ? ' · type ' + esc(o.t) : ''}</div>` +
+    (o.em ? `<div class="flag">Emergency squawk ${esc(o.sq)}</div>` : '') +
+    kv('Operator', esc(o.o || 'not in public database')) + kv('Registered in', esc(o.ct)) + kv('Aircraft', esc(o.d || o.t)) + kv('Registration', esc(o.r)) +
+    kv('Altitude', o.alt == null ? '' : (o.alt === 'ground' ? 'on ground' : o.alt + ' ft')) + kv('Ground speed', o.gs ? Math.round(o.gs) + ' kt' : '') + kv('Heading', o.trk == null ? '' : o.trk + '°') +
+    kv('Squawk', esc(o.sq)) + kv('Route', esc(o.rt || 'not filed (military flights usually are not)')) + kv('Where', esc(o.th ? thName(o.th) : 'outside the five theatres')) +
+    `<p>${esc(CLSWHY[o.c])}</p><div class="btns"><a class="btn" target="_blank" rel="noopener" href="https://globe.adsb.lol/?icao=${encodeURIComponent(o.hex)}">Live track &#8599;</a>${goBtn(o.th)}</div>`;
+  else if (type === 'sqk') h = `<h3>Emergency ${esc(o.sq)}: ${esc(o.mean)}</h3><div class="sub">${esc(o.call || o.hex)}</div><div class="flag">${esc(o.why)}</div>` +
+    kv('Aircraft', esc(o.d || o.t)) + kv('Operator', esc(o.o)) + kv('Registered in', esc(o.ct)) + kv('Registration', esc(o.r)) + kv('Altitude', o.alt == null ? '' : o.alt + ' ft') + kv('Heading', o.trk == null ? '' : o.trk + '°') + kv('Where', esc(o.th ? thName(o.th) : 'outside the five theatres')) +
+    `<div class="btns"><a class="btn" target="_blank" rel="noopener" href="https://globe.adsb.lol/?icao=${encodeURIComponent(o.hex)}">Live track &#8599;</a>${goBtn(o.th)}</div>`;
+  else if (type === 'ships') h = `<h3>${esc(o.n)}</h3><div class="sub">${esc(SHIPK[o.k] ? SHIPK[o.k][0] : 'Vessel')}${o.g ? ' · ' + esc(o.g) : ''}</div>` +
+    kv('Position', esc(o.loc)) + kv('As of', esc(o.d)) + kv('Flag', esc(o.flag)) + kv('Destination', esc(o.dest)) + kv('Speed', o.spd != null ? o.spd + ' kt' : '') + kv('Where', esc(o.th ? thName(o.th) : '')) +
+    (o.tx ? `<p>${esc(o.tx)}</p>` : '') + `<p style="color:var(--dim)">${esc(o.note || '')}</p><div class="btns">${o.u ? `<a class="btn" target="_blank" rel="noopener" href="${esc(o.u)}">Source &#8599;</a>` : ''}${goBtn(o.th)}</div>`;
+  else if (type === 'inc') h = `<h3>${esc(o.t)}</h3><div class="sub">${esc(o.d || '')} · ${esc(o.src || '')}</div>` + (o.tx ? `<p>${esc(o.tx)}</p>` : '') + kv('Area', esc(o.loc)) +
+    `<div class="btns">${o.u ? `<a class="btn" target="_blank" rel="noopener" href="${esc(o.u)}">Report &#8599;</a>` : ''}${goBtn(o.th)}</div>`;
+  else if (type === 'nga') h = `<h3>Hazard warning ${esc(o.id)}</h3><div class="sub">Issued ${esc(o.iss || 'n/a')} · ${esc(ago(o.iss))}</div><p>${esc(o.tx)}</p><p style="color:var(--dim)">US National Geospatial-Intelligence Agency active navigational warnings.</p><div class="btns"><a class="btn" target="_blank" rel="noopener" href="https://msi.nga.mil/NavWarnings">All warnings &#8599;</a>${goBtn(o.th)}</div>`;
+  else if (type === 'czib') h = `<h3>EASA airspace bulletin</h3><div class="sub">${esc(o.n)}</div>` + kv('Last revised', esc(o.u || 'n/a') + (o.u ? ' (' + ago(o.u) + ')' : '')) + `<p>EASA warns European airlines about conflict-zone risk. A fresh revision means the risk assessment changed.</p><div class="btns"><a class="btn" target="_blank" rel="noopener" href="https://www.easa.europa.eu/en/domains/air-operations/czibs">All bulletins &#8599;</a>${goBtn(o.th)}</div>`;
+  else if (type === 'fires') h = `<h3>Thermal detection</h3><div class="sub">${esc(o.d || '')}</div>` + kv('Radiative power', Math.round(o.p || 0) + ' MW') + `<p>NASA VIIRS satellite thermal anomaly. Clusters inside a conflict zone usually mean shelling, strikes or burning depots, but farm fires and flares also show up.</p><div class="btns">${goBtn(o.th)}</div>`;
+  else if (type === 'choke') h = `<h3>${esc(o.n)}</h3><p>Daily ship transits come from IMF PortWatch. A fall means shipping is avoiding or being kept out of the strait.</p><div class="btns">${goBtn(o.t)}</div>`;
+  else if (type === 'hub') h = `<h3>GPS-jamming sample zone</h3><p>Airliners within ${o.nm} nm of this point are checked for degraded navigation accuracy. A rising share points to jamming.</p><div class="btns">${goBtn(o.t)}</div>`;
+  else if (type === 'city') h = `<h3>${esc(o.n)}</h3><div class="btns">${goBtn(o.t)}</div>`;
+  else if (type === 'country') { const lv = (M.levels || {})[o.name]; h = `<h3>${esc(o.name)}</h3>` + kv('US travel advisory', lv ? 'Level ' + lv : 'none listed') + `<p>This country is not one of the five watched theatres.</p>`; }
   const c = $('#card'); c.innerHTML = `<button class="x" aria-label="Close">&times;</button>` + h; c.style.display = 'block';
 }
 function closeCard(){ $('#card').style.display = 'none'; }
 $('#card').addEventListener('click', e => { if (e.target.closest('.x')) closeCard(); const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); go(g.dataset.go); } });
 
+/* ------------------------------------------------------------ alerts */
+function buildAlerts(){
+  const out = [];
+  if (!M) return out;
+  (M.sqk || []).forEach((a, i) => out.push({sev: a.sq === '7500' ? 100 : a.sq === '7700' ? 90 : 70, col: '#ff4d4f', ic: '!', title: `Emergency ${a.sq}: ${a.mean}`, sub: `${a.call || a.hex} ${a.t ? '(' + a.t + ')' : ''} ${a.o ? '· ' + a.o : ''}`.trim(), th: a.th, type: 'sqk', i, xy: a.xy, date: ''}));
+  (M.inc || []).forEach((a, i) => out.push({sev: 85, col: '#f5c518', ic: '!', title: a.t, sub: (a.src || '') + (a.loc ? ' · ' + a.loc : ''), th: a.th, type: 'inc', i, xy: a.xy, date: a.d}));
+  (M.ships || []).forEach((a, i) => { if (a.k === 'carrier' || a.k === 'amphib') out.push({sev: 60, col: '#ff8a1f', ic: 'S', title: `${a.n}: ${a.loc || ''}`, sub: a.g || (SHIPK[a.k] || [])[0], th: a.th, type: 'ships', i, xy: a.xy, date: a.d}); });
+  (M.nga || []).forEach((a, i) => { if (a.iss && Date.now() - Date.parse(a.iss) < 8 * 864e5) out.push({sev: 40, col: '#ff9f43', ic: '▲', title: 'Hazard warning ' + a.id, sub: a.tx.slice(0, 90), th: a.th, type: 'nga', i, xy: a.xy, date: a.iss}); });
+  (M.czib || []).forEach((a, i) => { if (a.u && Date.now() - Date.parse(a.u) < 21 * 864e5) out.push({sev: 35, col: '#ff4d9d', ic: '◆', title: 'EASA bulletin revised: ' + a.n, sub: 'Revised ' + a.u, th: a.th, type: 'czib', i, xy: a.xy, date: a.u}); });
+  return out.sort((a, b) => b.sev - a.sev);
+}
+const ALERTS = buildAlerts();
+function alertRows(list){
+  if (!list.length) return `<div class="empty">No live alerts right now for this view: no emergency squawks, maritime incidents, carriers or fresh warnings were reported.</div>`;
+  return list.map((a, k) => `<div class="al" data-al="${ALERTS.indexOf(a)}"><div class="ic" style="background:${a.col}">${esc(a.ic)}</div><div><div style="font-size:13px">${esc(a.title)}</div><small>${esc(a.sub)}</small></div><small>${esc(a.th ? thName(a.th) : '')}</small></div>`).join('');
+}
+function openAlert(a){
+  if (!a) return;
+  if (a.th && a.th !== tab && tab !== 'overview' && tab !== 'global') go(a.th);
+  setTimeout(() => { focusXY(a.xy, 420); openCard(a.type, OBJ[a.type][a.i]); }, 60);
+}
+
 /* ------------------------------------------------------------ panel */
-function seriesOf(theatre, dom){ return D.series.filter(s => s.t === theatre && (!dom || s.d === dom)); }
-function sigRow(s){
-  let v, sub;
-  if (s.z != null) { v = `<span style="color:${zcol(s.z)}">${fmtz(s.z)}</span><small>SD</small>`; }
-  else if (s.st === 'awaiting_key') v = `<span style="color:var(--dim)">key</span>`;
+function seriesOf(theatre, dom){ return D.series.filter(s => s.t === theatre && (!dom || dom === 'all' || s.d === dom)); }
+function sigRow(s, showTh){
+  let v;
+  if (s.z != null) v = `<span style="color:${zcol(s.z)}">${fmtz(s.z)}</span><small>SD</small>`;
+  else if (s.st === 'awaiting_key') v = `<span style="color:var(--dim)">key</span><small>needed</small>`;
   else if (s.st === 'collecting') v = `<span style="color:var(--dim)">${s.n}/${s.need}</span><small>${s.kind === 'daily' ? 'days' : 'months'}</small>`;
   else v = `<span style="color:var(--dim)">${s.st === 'error' ? 'error' : 'n/a'}</span>`;
-  sub = [s.s, s.lag ? 'confirms' : 'leads'].filter(Boolean).join(' · ') + (s.stale ? ' · stale' : '');
-  return `<div class="sig" data-id="${esc(s.id)}"><div class="pip" style="background:${zcol(s.z)};opacity:${s.z == null ? .35 : 1}"></div><div><div class="t">${esc(s.l)}</div><div class="s">${esc(sub)}</div></div><div class="v">${v}</div></div>`;
+  const sub = [showTh ? thName(s.t) : '', s.s, s.lag ? 'confirms' : 'leads'].filter(Boolean).join(' · ') + (s.stale ? ' · stale' : '');
+  return `<div class="sig" data-id="${esc(s.id)}"><div class="pip" style="background:${zcol(s.z)};opacity:${s.z == null ? .35 : 1}"></div><div><div class="t">${esc(s.l)}</div><div class="s">${esc(sub)}</div></div><div>${spark(s.pts && s.pts.slice(-60), s.z == null ? '#6b7a8a' : zcol(s.z))}</div><div class="v">${v}</div></div>`;
+}
+function matchChip(s){
+  const c = F.chip;
+  return c === 'all' || (c === 'rising' && s.z != null && s.z >= 1) || (c === 'leading' && !s.lag) || (c === 'confirming' && s.lag) || (c === 'collecting' && s.z == null);
+}
+function matchQ(s){ const q = F.q.trim().toLowerCase(); return !q || (s.l + ' ' + s.s + ' ' + s.id).toLowerCase().includes(q); }
+function marketRows(list){
+  if (!list.length) return `<div class="empty">No open war or military prediction markets matched this theatre.</div>`;
+  return list.map(m => `<a class="mk2" target="_blank" rel="noopener" href="${esc(m.url)}"><span>${esc(m.q)}<br><small>${esc(m.src)} · volume $${fmtv(m.vol)}${m.end ? ' · ends ' + esc(m.end) : ''}</small></span><b style="color:${m.p >= .5 ? 'var(--warn)' : 'var(--ink)'}">${Math.round(m.p * 100)}%</b></a>`).join('');
 }
 function marketsFor(t){ return D.markets.filter(m => t === 'global' ? !m.theatre : m.theatre === t); }
-function marketRows(list){
-  if (!list.length) return `<div class="empty">No open prediction markets matched this theatre.</div>`;
-  return list.map(m => `<a class="mk2" target="_blank" rel="noopener" href="${esc(m.url)}"><span>${esc(m.q)}<br><small>${esc(m.src)} · volume $${fmtv(m.vol)}${m.end ? ' · ends ' + esc(m.end) : ''}</small></span><b style="color:${m.p >= .5 ? 'var(--warn)' : 'var(--ink)'}">${Math.round(m.p * 100)}%</b></a>`).join('');
+function driversOf(t){
+  return seriesOf(t).filter(s => s.z != null).sort((a, b) => b.z - a.z).slice(0, 3);
 }
 function renderPanel(){
   const P = $('#panel');
   if (tab === 'overview') {
-    let h = `<div class="ph"><div class="row"><h2>Theatres</h2></div><p>Each theatre is judged from its own indicators. The level counts how many of five independent groups are unusual at once. Click a theatre to open it.</p></div><div class="list" style="padding-top:6px">`;
-    D.order.filter(t => t !== 'global').forEach(t => {
-      const th = D.theatres[t];
-      h += `<div class="card2" data-th="${t}"><h3>${esc(th.name)}</h3>${levelBadge(th.level)}<div class="cells">` +
-        D.domains.map(d => { const z = th.doms[d.id].z; return `<div class="cell" title="${esc(d.name)}: ${z == null ? 'not enough history' : fmtz(z) + ' SD'}" style="background:${zcol(z)};opacity:${z == null ? .4 : 1}">${esc(SHORT[d.id])}</div>`; }).join('') + `</div></div>`;
+    const movers = D.series.filter(s => s.z != null && s.t !== 'global').sort((a, b) => b.z - a.z).slice(0, 8);
+    let h = `<div class="ph"><div class="row"><h2>Theatres at a glance</h2></div><p>Each theatre is judged from its own indicators. The level counts how many of five independent groups are unusual at once. Click a theatre to open it.</p></div><div class="list" style="padding-top:6px">`;
+    THEATRES.concat(['global']).forEach(t => {
+      const th = D.theatres[t], dr = driversOf(t);
+      h += `<div class="card2" data-th="${t}"><h3>${esc(th.name)}${t === 'global' ? ' (US/EU procurement and markets)' : ''}</h3>${levelBadge(th.level)}<div class="cells">` +
+        D.domains.map(d => { const z = th.doms[d.id].z; return `<div class="cell" title="${esc(d.name)}: ${z == null ? 'not enough history' : fmtz(z) + ' SD'}" style="background:${zcol(z)};opacity:${z == null ? .4 : 1}">${esc(SHORT[d.id])}</div>`; }).join('') +
+        `</div><div class="dr">${dr.length ? 'Top: ' + dr.map(s => `${esc(s.l.replace(/ \(.*$/, '').slice(0, 44))} <b style="color:${zcol(s.z)}">${fmtz(s.z)}</b>`).join(' · ') : 'Still collecting history.'}</div></div>`;
     });
-    const g = D.theatres.global;
-    h += `<div class="card2" data-th="global"><h3>Global (US and EU procurement, markets)</h3>${levelBadge(g.level)}<div class="cells">` +
-      D.domains.map(d => { const z = g.doms[d.id].z; return `<div class="cell" style="background:${zcol(z)};opacity:${z == null ? .4 : 1}">${esc(SHORT[d.id])}</div>`; }).join('') + `</div></div>`;
-    const top = D.markets.slice(0, 5);
-    h += `<div class="lh"><b>Prediction markets</b><span>not scored</span></div>` + marketRows(top);
-    if (D.pizza && D.pizza[0] != null) h += `<div class="note">Pentagon pizza index now: <b>${Math.round(D.pizza[0])}</b>/100, ${D.pizza[1]} active spike${D.pizza[1] === 1 ? '' : 's'}. Weak signal (third-party scrape), shown on the Global tab as a series.</div>`;
+    h += `<div class="lh"><b>Live alerts</b><span>${ALERTS.length} active</span></div>` + alertRows(ALERTS.slice(0, 6));
+    h += `<div class="lh"><b>Biggest movers</b><span>across theatres, in standard deviations</span></div>` + movers.map(s => sigRow(s, true)).join('');
+    h += `<div class="lh"><b>War and military prediction markets</b><span>context only, not scored</span></div>` + marketRows(D.markets.slice(0, 6));
+    if (D.pizza && D.pizza[0] != null) h += `<div class="note">Pentagon pizza index now: <b>${Math.round(D.pizza[0])}</b>/100 with ${D.pizza[1]} active spike${D.pizza[1] === 1 ? '' : 's'}. A weak signal (third-party scrape); tracked as a Global series.</div>`;
     P.innerHTML = h + '</div>';
     return;
   }
   const th = D.theatres[tab];
   const ranked = D.domains.map(d => d.id).sort((a, b) => (th.doms[b].z ?? -99) - (th.doms[a].z ?? -99));
-  if (!selDom) selDom = ranked[0];
+  if (!selDom) selDom = 'all';
   const mk = marketsFor(tab);
-  let h = `<div class="ph"><div class="row"><h2>${esc(th.name)}</h2>${levelBadge(th.level)}</div><p>${esc(MEANING[th.level])} ${th.firing.length ? 'Firing: ' + th.firing.map(d => esc(SHORT[d])).join(', ') + '.' : ''}${th.basis === 'lagging only' ? ' <b style="color:var(--warn)">Lagging indicators only: a confirmed build-up, not an early warning.</b>' : ''}</p></div><div class="groups">`;
+  const al = ALERTS.filter(a => tab === 'global' ? true : a.th === tab);
+  const dr = driversOf(tab);
+  let h = `<div class="ph"><div class="crumbs"><a data-go="overview" href="#overview">Overview</a> &rsaquo; ${esc(th.name)}</div><div class="row"><h2>${esc(th.name)}</h2>${levelBadge(th.level)}</div><p>${esc(MEANING[th.level])} ${th.firing.length ? 'Firing: ' + th.firing.map(d => esc(SHORT[d])).join(', ') + '.' : ''}${th.basis === 'lagging only' ? ' <b style="color:var(--warn)">Only late-published data is firing: a confirmed build-up, not an early warning.</b>' : ''}</p>` +
+    (dr.length ? `<ul class="why">${dr.map(s => `<li data-id="${esc(s.id)}"><b style="color:${zcol(s.z)}">${fmtz(s.z)}</b><span>${esc(s.l)}</span></li>`).join('')}</ul>` : '') + `</div><div class="tiles">`;
+  h += `<button class="g ${selDom === 'all' ? 'on' : ''}" data-dom="all"><div class="n"><span>All signals</span><span>${seriesOf(tab).length}</span></div><div class="z" style="color:var(--ink)">${seriesOf(tab).filter(s => s.z != null && s.z >= T_WATCH).length}</div><div class="n" style="margin-top:1px">elevated</div></button>`;
   D.domains.forEach(d => {
     const x = th.doms[d.id], z = x.z, w = z == null ? 0 : Math.max(0, Math.min(100, z / 6 * 100));
     h += `<button class="g ${selDom === d.id ? 'on' : ''}" data-dom="${d.id}" title="${esc(d.help)}"><div class="n"><span>${esc(SHORT[d.id])}</span><span>${x.n}</span></div><div class="z" style="color:${zcol(z)}">${z == null ? 'n/a' : fmtz(z)}</div><div class="bar"><i style="width:${w}%;background:${zcol(z)}"></i><u style="left:${T_WATCH / 6 * 100}%"></u><u style="left:${T_SIG / 6 * 100}%"></u></div></button>`;
   });
-  h += `<button class="g ${selDom === 'markets' ? 'on' : ''}" data-dom="markets" title="Prediction markets: crowd odds on events. Shown for context, never scored."><div class="n"><span>Markets</span><span>${mk.length}</span></div><div class="z" style="color:var(--mute)">odds</div><div class="bar"><i style="width:0"></i></div></button></div>`;
-  if (selDom === 'markets') {
-    h += `<div class="lh"><b>Prediction markets</b><span>context only, not scored</span></div><div class="list">${marketRows(mk)}</div>`;
-  } else {
-    const list = seriesOf(tab, selDom).sort((a, b) => (b.z ?? -99) - (a.z ?? -99) || a.l.localeCompare(b.l));
-    h += `<div class="lh"><b>${esc(DOM[selDom].name)}</b><span>${list.length} signals · click one for details</span></div><div class="list">` +
-      (list.length ? list.map(sigRow).join('') : `<div class="empty">No indicator in this group is available for ${esc(th.name)} (see the System tab for why).</div>`) + `</div>`;
+  const hot = al.some(a => a.sev >= 70);
+  h += `<button class="g ${selDom === 'alerts' ? 'on' : ''}" data-dom="alerts" title="Emergency squawks, maritime incidents, carriers and fresh warnings"><div class="n"><span>Alerts</span><span>${al.length}</span></div><div class="z" style="color:${hot ? 'var(--alert)' : 'var(--mute)'}">${hot ? 'LIVE' : al.length ? 'info' : 'none'}</div></button>`;
+  h += `<button class="g ${selDom === 'markets' ? 'on' : ''}" data-dom="markets" title="War and military prediction markets, shown for context and never scored"><div class="n"><span>Markets</span><span>${mk.length}</span></div><div class="z" style="color:var(--mute)">odds</div></button></div>`;
+  if (selDom === 'markets') h += `<div class="lh"><b>War and military prediction markets</b><span>context only, not scored</span></div><div class="list">${marketRows(mk)}</div>`;
+  else if (selDom === 'alerts') h += `<div class="lh"><b>Live alerts</b><span>click one to find it on the map</span></div><div class="list">${alertRows(al)}</div>`;
+  else {
+    h += `<div class="tool"><input type="search" id="fq" placeholder="Filter signals in ${esc(th.name)}" value="${esc(F.q)}">` +
+      [['all','All'],['rising','Rising'],['leading','Leading'],['confirming','Confirming'],['collecting','No score yet']].map(([k, n]) => `<button class="chip2 ${F.chip === k ? 'on' : ''}" data-chip="${k}">${n}</button>`).join('') + `</div>`;
+    const list = seriesOf(tab, selDom).filter(s => matchChip(s) && matchQ(s)).sort((a, b) => (b.z ?? -99) - (a.z ?? -99) || a.l.localeCompare(b.l));
+    h += `<div class="lh"><b>${selDom === 'all' ? 'All signals' : esc(DOM[selDom].name)}</b><span>${list.length} shown · click one for details</span></div><div class="list" id="slist">` + sigListHtml(list, selDom === 'all') + `</div>`;
   }
   P.innerHTML = h;
 }
+function sigListHtml(list, group){
+  if (!list.length) return `<div class="empty">Nothing matches. <a data-reset="1">Clear the filter</a> or <a data-go="signals" href="#signals">browse all ${D.series.length} signals</a>.</div>`;
+  if (!group) return list.map(s => sigRow(s)).join('');
+  let out = '', last = '';
+  list.forEach(s => { if (s.d !== last) { out += `<div class="gh">${esc(DOM[s.d].name)}</div>`; last = s.d; } out += sigRow(s); });
+  return out;
+}
+$('#panel').addEventListener('input', e => { if (e.target.id === 'fq') { F.q = e.target.value; refreshList(); } });
+function refreshList(){
+  const el = $('#slist'); if (!el) return;
+  const list = seriesOf(tab, selDom).filter(s => matchChip(s) && matchQ(s)).sort((a, b) => (b.z ?? -99) - (a.z ?? -99) || a.l.localeCompare(b.l));
+  el.innerHTML = sigListHtml(list, selDom === 'all');
+  const lh = el.previousElementSibling; if (lh) lh.querySelector('span').textContent = list.length + ' shown · click one for details';
+}
 $('#panel').addEventListener('click', e => {
+  const gb = e.target.closest('[data-go]'); if (gb) { e.preventDefault(); go(gb.dataset.go); return; }
+  if (e.target.closest('[data-reset]')) { F.q = ''; F.chip = 'all'; renderPanel(); return; }
+  const ch = e.target.closest('[data-chip]'); if (ch) { F.chip = ch.dataset.chip; renderPanel(); const fq = $('#fq'); if (fq) { fq.focus(); fq.setSelectionRange(fq.value.length, fq.value.length); } return; }
+  const al = e.target.closest('[data-al]'); if (al) { openAlert(ALERTS[+al.dataset.al]); return; }
   const t = e.target.closest('[data-th]'); if (t) { go(t.dataset.th); return; }
   const g = e.target.closest('[data-dom]'); if (g) { selDom = g.dataset.dom; renderPanel(); return; }
   const s = e.target.closest('[data-id]'); if (s) openModal(s.dataset.id);
 });
 
+/* ------------------------------------------------------------ search */
+function hideResults(){ $('#results').style.display = 'none'; }
+function searchAll(q){
+  q = q.trim().toLowerCase(); if (q.length < 2) return [];
+  const out = [];
+  TABS.forEach(([id, n]) => { if (n.toLowerCase().includes(q)) out.push({g: 'Go to', t: n, s: '', run: () => go(id)}); });
+  D.series.filter(s => (s.l + ' ' + s.s + ' ' + s.id).toLowerCase().includes(q)).slice(0, 8).forEach(s => out.push({g: 'Signals', t: s.l, s: (s.z != null ? fmtz(s.z) + ' SD · ' : '') + thName(s.t), run: () => openModal(s.id)}));
+  if (M) {
+    M.mil.forEach((a, i) => { if ((a.call + ' ' + a.hex + ' ' + (a.o || '') + ' ' + (a.ct || '') + ' ' + (a.t || '') + ' ' + (a.r || '')).toLowerCase().includes(q)) out.push({g: 'Aircraft', t: (a.call || a.hex) + ' ' + (a.t || ''), s: (a.o || CLS[a.c][0]) + (a.th ? ' · ' + thName(a.th) : ''), run: () => { go(a.th || 'overview'); setTimeout(() => { focusXY(a.xy, 300); openCard('mil', a); }, 80); }}); });
+    (M.ships || []).forEach((a, i) => { if ((a.n + ' ' + (a.g || '') + ' ' + (a.loc || '')).toLowerCase().includes(q)) out.push({g: 'Ships', t: a.n, s: (a.loc || '') + (a.th ? ' · ' + thName(a.th) : ''), run: () => { go(a.th || 'overview'); setTimeout(() => { focusXY(a.xy, 700); openCard('ships', a); }, 80); }}); });
+    M.countries.forEach(c => { if (c.name.toLowerCase().includes(q)) out.push({g: 'Countries', t: c.name, s: thOfCountry[c.name] ? thName(thOfCountry[c.name]) : '', run: () => { const th = thOfCountry[c.name]; if (th) go(th); else { go('overview'); setTimeout(() => focusXY([c.cx, c.cy], 500), 80); } }}); });
+  }
+  D.markets.filter(m => m.q.toLowerCase().includes(q)).slice(0, 4).forEach(m => out.push({g: 'Markets', t: m.q, s: Math.round(m.p * 100) + '%', run: () => window.open(m.url, '_blank', 'noopener')}));
+  return out.slice(0, 40);
+}
+let resList = [], resSel = 0;
+function showResults(){
+  const L = searchAll($('#q').value); resList = L; resSel = 0; const R = $('#results');
+  if (!L.length) { R.innerHTML = $('#q').value.trim().length < 2 ? '' : '<div class="r"><span>No match</span></div>'; R.style.display = $('#q').value.trim().length < 2 ? 'none' : 'block'; return; }
+  let h = '', last = '';
+  L.forEach((r, i) => { if (r.g !== last) { h += `<h6>${esc(r.g)}</h6>`; last = r.g; } h += `<div class="r ${i === 0 ? 'on' : ''}" data-r="${i}"><span>${esc(r.t)}</span><small>${esc(r.s)}</small></div>`; });
+  R.innerHTML = h; R.style.display = 'block';
+}
+$('#q').addEventListener('input', showResults);
+$('#q').addEventListener('focus', showResults);
+$('#q').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && resList[resSel]) { const r = resList[resSel]; hideResults(); $('#q').blur(); r.run(); }
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); resSel = Math.max(0, Math.min(resList.length - 1, resSel + (e.key === 'ArrowDown' ? 1 : -1))); document.querySelectorAll('#results .r').forEach(r => r.classList.toggle('on', +r.dataset.r === resSel)); const on = document.querySelector('#results .r.on'); if (on) on.scrollIntoView({block: 'nearest'}); }
+});
+$('#results').addEventListener('mousedown', e => { const r = e.target.closest('[data-r]'); if (r) { e.preventDefault(); hideResults(); $('#q').blur(); resList[+r.dataset.r].run(); } });
+document.addEventListener('click', e => { if (!e.target.closest('#search')) hideResults(); });
+
 /* ------------------------------------------------------------ charts and modal */
-function lineChart(pts, o){
-  const W = 760, H = o.h || 170, L = 46, R = 10, T = 8, B = 20;
+const CH = {}; let chN = 0;
+function niceTicks(lo, hi){ const n = 4; const out = []; for (let i = 0; i <= n; i++) out.push(lo + (hi - lo) * i / n); return out; }
+function areaChart(pts, o){
+  const W = 880, H = o.h || 190, L = 52, R = 12, T = 10, B = 22;
   const vals = pts.map(p => p[1]);
   let lo = Math.min(...vals, ...(o.extra || [])), hi = Math.max(...vals, ...(o.extra || []));
   if (o.min != null) lo = Math.min(lo, o.min); if (o.max != null) hi = Math.max(hi, o.max);
   if (hi === lo) { hi += 1; lo -= 1; }
-  const pad = (hi - lo) * .06; lo -= pad; hi += pad;
-  const X = i => L + (pts.length < 2 ? 0 : i / (pts.length - 1)) * (W - L - R), Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
-  let s = `<svg viewBox="0 0 ${W} ${H}" data-n="${pts.length}" data-l="${L}" data-r="${R}" data-w="${W}">`;
-  (o.bands || []).forEach(b => { s += `<rect x="${L}" y="${Y(Math.min(b.b, hi))}" width="${W - L - R}" height="${Math.max(0, Y(Math.max(b.a, lo)) - Y(Math.min(b.b, hi)))}" fill="${b.c}"/>`; });
-  [lo + pad, (lo + hi) / 2, hi - pad].forEach(v => { s += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#1d2b38"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" fill="#6c8196" font-size="11">${o.fy ? o.fy(v) : fmtv(v)}</text>`; });
-  (o.lines || []).forEach(l => { if (l.y >= lo && l.y <= hi) s += `<line x1="${L}" x2="${W - R}" y1="${Y(l.y)}" y2="${Y(l.y)}" stroke="${l.c}" stroke-dasharray="${l.d || '4 4'}" stroke-width="1.2"/>${l.t ? `<text x="${W - R - 2}" y="${Y(l.y) - 3}" text-anchor="end" fill="${l.c}" font-size="10.5">${esc(l.t)}</text>` : ''}`; });
-  s += `<polyline fill="none" stroke="${o.c || '#58a6ff'}" stroke-width="1.8" stroke-linejoin="round" points="${pts.map((p, i) => X(i).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' ')}"/>`;
-  if (o.dots) pts.forEach((p, i) => { if (o.dots(p[1])) s += `<circle cx="${X(i)}" cy="${Y(p[1])}" r="3" fill="${zcol(p[1])}"/>`; });
-  const last = pts[pts.length - 1]; s += `<circle cx="${X(pts.length - 1)}" cy="${Y(last[1])}" r="4" fill="${o.c || '#58a6ff'}" stroke="#05080c" stroke-width="1.5"/>`;
-  s += `<text x="${L}" y="${H - 5}" fill="#6c8196" font-size="11">${esc(pts[0][0])}</text><text x="${W - R}" y="${H - 5}" text-anchor="end" fill="#6c8196" font-size="11">${esc(last[0])}</text>`;
-  s += `<line class="hl" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="#a9c7e2" stroke-width="1" style="display:none"/></svg>`;
+  const pad = (hi - lo) * .07; lo -= pad; hi += pad;
+  const n = pts.length, X = i => L + (n < 2 ? 0 : i / (n - 1)) * (W - L - R), Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const id = 'c' + (++chN); CH[id] = {pts, W, L, R, T, H, B, fy: o.fy, unit: o.unit || '', Y, X, lo, hi};
+  let s = `<svg viewBox="0 0 ${W} ${H}" data-ch="${id}">`;
+  (o.bands || []).forEach(b => { const y0 = Y(Math.min(b.b, hi)), y1 = Y(Math.max(b.a, lo)); s += `<rect x="${L}" y="${y0}" width="${W - L - R}" height="${Math.max(0, y1 - y0)}" fill="${b.c}"/>`; });
+  niceTicks(lo + pad, hi - pad).forEach(v => { s += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#1c2b39"/><text x="${L - 7}" y="${Y(v) + 4}" text-anchor="end" fill="#7d93a8" font-size="12">${o.fy ? o.fy(v) : fmtv(v)}</text>`; });
+  (o.lines || []).forEach(l => { if (l.y >= lo && l.y <= hi) s += `<line x1="${L}" x2="${W - R}" y1="${Y(l.y)}" y2="${Y(l.y)}" stroke="${l.c}" stroke-dasharray="${l.d || '5 4'}" stroke-width="1.3"/>${l.t ? `<text x="${W - R - 3}" y="${Y(l.y) - 4}" text-anchor="end" fill="${l.c}" font-size="11.5">${esc(l.t)}</text>` : ''}`; });
+  const line = pts.map((p, i) => X(i).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' ');
+  const col = o.c || '#58a6ff';
+  if (o.area !== false) s += `<polygon points="${L},${Y(Math.max(lo, 0) > lo ? Math.max(lo, 0) : lo)} ${line} ${X(n - 1)},${Y(Math.max(lo, 0) > lo ? Math.max(lo, 0) : lo)}" fill="${col}" fill-opacity=".13"/>`;
+  s += `<polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" points="${line}"/>`;
+  if (o.dots) pts.forEach((p, i) => { if (o.dots(p[1])) s += `<circle cx="${X(i)}" cy="${Y(p[1])}" r="3.2" fill="${zcol(p[1])}"/>`; });
+  let imax = 0, imin = 0; vals.forEach((v, i) => { if (v > vals[imax]) imax = i; if (v < vals[imin]) imin = i; });
+  if (o.extrema !== false && n > 5) { [[imax, 'high'], [imin, 'low']].forEach(([i, t]) => { s += `<circle cx="${X(i)}" cy="${Y(vals[i])}" r="3.5" fill="#0a1118" stroke="${col}" stroke-width="1.6"/>`; }); }
+  s += `<circle cx="${X(n - 1)}" cy="${Y(vals[n - 1])}" r="4.6" fill="${col}" stroke="#05080c" stroke-width="1.5"/>`;
+  [0, Math.floor((n - 1) / 2), n - 1].forEach((i, k) => { s += `<text x="${X(i)}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === 2 ? 'end' : 'middle'}" fill="#7d93a8" font-size="12">${esc(pts[i][0])}</text>`; });
+  s += `<line class="hl" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="#c4dcf2" stroke-width="1" style="display:none"/><circle class="hd" r="5" fill="#fff" stroke="${col}" stroke-width="2" style="display:none"/></svg>`;
   return s;
 }
-function chartBox(title, pts, o){
-  return `<div class="ch" data-pts='${esc(JSON.stringify(pts))}' data-fy="${o.fyname || ''}"><h5>${esc(title)}<span class="ro">&nbsp;</span></h5>${lineChart(pts, o)}</div>`;
+function chartBlock(title, pts, o, ranges){
+  const id = 'b' + (++chN);
+  CH[id] = {pts, o, title, ranges};
+  return `<div class="cwrap" data-blk="${id}"><h5><span>${esc(title)}</span>${ranges ? `<span class="rng">${ranges.map(([k, n]) => `<button data-rng="${k}" class="${k === 'all' ? 'on' : ''}">${n}</button>`).join('')}</span>` : ''}</h5><div class="cbody">${areaChart(pts, o)}</div><div class="cbub"></div></div>`;
 }
 $('#mbox').addEventListener('mousemove', e => {
-  const ch = e.target.closest('.ch'); if (!ch) return;
-  const sv = ch.querySelector('svg'); const r = sv.getBoundingClientRect(); const n = +sv.dataset.n, L = +sv.dataset.l, R = +sv.dataset.r, W = +sv.dataset.w;
-  const x = (e.clientX - r.left) / r.width * W; let i = Math.round((x - L) / (W - L - R) * (n - 1)); i = Math.max(0, Math.min(n - 1, i));
-  const pts = JSON.parse(ch.dataset.pts); const hl = sv.querySelector('.hl'); const xx = L + (n < 2 ? 0 : i / (n - 1)) * (W - L - R);
-  hl.setAttribute('x1', xx); hl.setAttribute('x2', xx); hl.style.display = '';
-  ch.querySelector('.ro').textContent = pts[i][0] + ': ' + (ch.dataset.fy === 'z' ? fmtz(pts[i][1]) + ' SD' : fmtv(pts[i][1]));
+  const sv = e.target.closest('svg[data-ch]'); if (!sv) return;
+  const c = CH[sv.dataset.ch]; if (!c) return; const r = sv.getBoundingClientRect(); const n = c.pts.length;
+  const x = (e.clientX - r.left) / r.width * c.W; let i = Math.round((x - c.L) / (c.W - c.L - c.R) * (n - 1)); i = Math.max(0, Math.min(n - 1, i));
+  const xx = c.X(i), yy = c.Y(c.pts[i][1]);
+  const hl = sv.querySelector('.hl'), hd = sv.querySelector('.hd');
+  hl.setAttribute('x1', xx); hl.setAttribute('x2', xx); hl.style.display = ''; hd.setAttribute('cx', xx); hd.setAttribute('cy', yy); hd.style.display = '';
+  const wrap = sv.closest('.cwrap'), bub = wrap.querySelector('.cbub'); const wr = wrap.getBoundingClientRect();
+  bub.innerHTML = `<b>${esc(c.pts[i][0])}</b> &nbsp;${c.fy ? c.fy(c.pts[i][1]) : fmtv(c.pts[i][1])}${c.unit ? ' ' + c.unit : ''}`; bub.style.display = 'block';
+  let left = e.clientX - wr.left + 14; if (left + bub.offsetWidth > wr.width - 6) left = e.clientX - wr.left - bub.offsetWidth - 14; bub.style.left = left + 'px'; bub.style.top = (yy / c.H * r.height + 30) + 'px';
 });
-$('#mbox').addEventListener('mouseout', e => { const ch = e.target.closest('.ch'); if (ch && !ch.contains(e.relatedTarget)) { ch.querySelector('.hl').style.display = 'none'; ch.querySelector('.ro').innerHTML = '&nbsp;'; } });
-function openModal(id){
-  const s = SERIES[id]; if (!s) return;
-  const th = s.t === 'global' ? 'Global' : D.theatres[s.t].name;
+$('#mbox').addEventListener('mouseout', e => { const sv = e.target.closest('svg[data-ch]'); if (sv && !sv.contains(e.relatedTarget)) { sv.querySelector('.hl').style.display = 'none'; sv.querySelector('.hd').style.display = 'none'; const b = sv.closest('.cwrap').querySelector('.cbub'); if (b) b.style.display = 'none'; } });
+let modalId = null, modalList = [];
+function pctRank(vals, v){ let b = 0; vals.forEach(x => { if (x <= v) b++; }); return Math.round(100 * b / vals.length); }
+function openModal(id, list){
+  const s = SERIES[id]; if (!s) return; modalId = id;
+  if (list) modalList = list; else if (!modalList.includes(id)) modalList = seriesOf(s.t, s.d).sort((a, b) => (b.z ?? -99) - (a.z ?? -99)).map(x => x.id);
+  const th = thName(s.t);
   const verdict = s.z == null ? 'No score yet' : s.z >= T_SIG ? 'Signal: unusual' : s.z >= T_WATCH ? 'Elevated' : 'Normal range';
   const dirTxt = s.dir === 'up' ? 'A warning is a <b>rise</b> above the usual level.' : s.dir === 'down' ? 'A warning is a <b>fall</b> below the usual level.' : 'A large move <b>in either direction</b> counts as a warning.';
-  let h = `<button class="x" aria-label="Close">&times;</button><h2>${esc(s.l)}</h2><div class="chips"><span class="chip">${esc(th)}</span><span class="chip">${esc(DOM[s.d].name)}</span>${s.s ? `<span class="chip">${esc(s.s)}</span>` : ''}<span class="chip" style="color:${s.lag ? 'var(--warn)' : 'var(--ok)'}">${s.lag ? 'Confirms: published late' : 'Leads: fast data'}</span><span class="chip">${s.kind === 'daily' ? 'Daily' : 'Monthly'}</span></div>`;
+  const idx = modalList.indexOf(id);
+  let h = `<button class="x" aria-label="Close">&times;</button><div class="nav"><a data-nav="overview">Overview</a>&rsaquo;<a data-nav="${s.t}">${esc(th)}</a>&rsaquo;<a data-nav="${s.t}" data-dom="${s.d}">${esc(DOM[s.d].name)}</a><span class="sp"></span>` +
+    (modalList.length > 1 ? `<a data-step="-1" title="Previous (left arrow)">&lsaquo; Prev</a><span>${idx + 1} / ${modalList.length}</span><a data-step="1" title="Next (right arrow)">Next &rsaquo;</a>` : '') + `</div>` +
+    `<h2>${esc(s.l)}</h2><div class="chips"><span class="chip">${esc(th)}</span><span class="chip">${esc(DOM[s.d].name)}</span>${s.s ? `<span class="chip">${esc(s.s)}</span>` : ''}<span class="chip" style="color:${s.lag ? 'var(--warn)' : 'var(--ok)'}">${s.lag ? 'Confirms: published late' : 'Leads: fast data'}</span><span class="chip">${s.kind === 'daily' ? 'Daily data' : 'Monthly data'}</span></div>`;
   if (s.st === 'error') h += `<div class="warnbox"><b>Fetch failed.</b> ${esc(s.er)}${s.stale ? '' : ' No earlier copy is stored, so this signal is not scored.'}</div>`;
   if (s.stale) h += `<div class="warnbox">Showing the last good copy from <b>${esc(s.stale)}</b> because the latest fetch failed.</div>`;
   if (s.st === 'awaiting_key') h += `<div class="warnbox">This signal needs a free API key (<span class="kw">${esc(s.needs.join(', '))}</span>) that has not been added yet.</div>`;
   if (s.st === 'collecting') h += `<div class="warnbox">History is still building: <b>${s.n}</b> of the <b>${s.need}</b> ${s.kind === 'daily' ? 'days' : 'months'} needed before a score is reliable. It scores itself automatically.</div>`;
-  h += `<div class="top"><div class="big" style="color:${zcol(s.z)}">${s.z == null ? 'n/a' : fmtz(s.z)}<small>${esc(verdict)}</small></div><div><p>${esc(s.why)}</p><p style="color:var(--mute)">${dirTxt} The number is how many standard deviations the latest reading sits from its own normal (a robust z-score). Watch starts at ${T_WATCH.toFixed(1)}, a signal at ${T_SIG.toFixed(1)}.</p></div></div>`;
+  const vals = (s.pts || []).map(p => p[1]);
+  const last = vals.length ? vals[vals.length - 1] : null;
+  let vs = '', trig = '';
+  if (s.z != null) {
+    const base = s.base;
+    if (base) {
+      const dv = base.med ? (s.val - base.med) / Math.abs(base.med) * 100 : null;
+      vs = dv == null ? '' : (dv >= 0 ? '+' : '') + dv.toFixed(Math.abs(dv) < 10 ? 1 : 0) + '%';
+      const up = base.med + T_SIG * base.sd, dn = base.med - T_SIG * base.sd;
+      trig = s.dir === 'up' ? `A 7-day average above <b>${fmtv(up)}</b> would count as a signal.` : s.dir === 'down' ? `A 7-day average below <b>${fmtv(dn)}</b> would count as a signal.` : `A 7-day average above <b>${fmtv(up)}</b> or below <b>${fmtv(dn)}</b> would count as a signal.`;
+    }
+  }
+  h += `<div class="kpis"><div class="kpi"><small>${s.kind === 'daily' ? '7-day average' : 'Latest month'}</small><b>${s.z != null ? fmtv(s.val) : last != null ? fmtv(last) : 'n/a'}</b><span>${esc(s.last ? 'to ' + s.last : '')}</span></div>` +
+    `<div class="kpi"><small>Normal level</small><b>${s.base ? fmtv(s.base.med) : 'n/a'}</b><span>${s.base ? 'median of ' + s.base.n + ' weeks' : s.kind === 'monthly' ? 'seasonal baseline' : ''}</span></div>` +
+    `<div class="kpi"><small>vs normal</small><b style="color:${zcol(s.z)}">${vs || 'n/a'}</b><span>${s.base ? '1 SD = ' + fmtv(s.base.sd) : ''}</span></div>` +
+    `<div class="kpi"><small>Standard deviations</small><b style="color:${zcol(s.z)}">${fmtz(s.z)}</b><span>${esc(verdict)}</span></div>` +
+    `<div class="kpi"><small>Percentile</small><b>${vals.length > 8 ? pctRank(vals, last) + '%' : 'n/a'}</b><span>of last ${vals.length} readings</span></div></div>`;
+  if (s.z != null) {
+    const lo = -3, hi = 6, X = z => 4 + (Math.max(lo, Math.min(hi, z)) - lo) / (hi - lo) * 92;
+    h += `<div class="gauge"><div class="gt"><span>Distance from normal (standard deviations)</span><span>watch ${T_WATCH.toFixed(1)} &middot; signal ${T_SIG.toFixed(1)}</span></div><svg viewBox="0 0 100 14" preserveAspectRatio="none"><rect x="4" y="5" width="${X(T_WATCH) - 4}" height="4" fill="#1f5a3a"/><rect x="${X(T_WATCH)}" y="5" width="${X(T_SIG) - X(T_WATCH)}" height="4" fill="#8a4d12"/><rect x="${X(T_SIG)}" y="5" width="${96 - X(T_SIG)}" height="4" fill="#8a2a2d"/><rect x="${X(s.z) - .6}" y="1" width="1.2" height="12" fill="${zcol(s.z)}"/></svg></div>`;
+  }
+  h += `<p class="say"><b>${esc(s.why)}</b><br><span style="color:var(--mute)">${dirTxt}${trig ? ' ' + trig : ''}</span></p>`;
   if (s.pts && s.pts.length > 1) {
-    const unit = s.kind === 'daily' ? 'daily values' : 'monthly values';
-    const vo = {h: 170, c: '#58a6ff'};
-    if (s.base) { vo.bands = [{a: s.base.med - 2 * s.base.sd, b: s.base.med + 2 * s.base.sd, c: 'rgba(88,166,255,.12)'}, {a: s.base.med - 3 * s.base.sd, b: s.base.med + 3 * s.base.sd, c: 'rgba(88,166,255,.07)'}];
-      vo.lines = [{y: s.base.med, c: '#7f93a8', t: '', d: '2 3'}, {y: s.base.med + 3 * s.base.sd, c: '#ff8a1f', t: '+3 SD'}, {y: s.base.med - 3 * s.base.sd, c: '#ff8a1f', t: '-3 SD'}];
+    const vo = {h: 200, c: '#58a6ff'};
+    if (s.base) { vo.bands = [{a: s.base.med - 2 * s.base.sd, b: s.base.med + 2 * s.base.sd, c: 'rgba(88,166,255,.13)'}, {a: s.base.med - 3 * s.base.sd, b: s.base.med + 3 * s.base.sd, c: 'rgba(88,166,255,.07)'}];
+      vo.lines = [{y: s.base.med, c: '#7f93a8', t: 'normal', d: '2 3'}, {y: s.base.med + 3 * s.base.sd, c: '#ff8a1f', t: '+3 SD'}, {y: s.base.med - 3 * s.base.sd, c: '#ff8a1f', t: '-3 SD'}];
       vo.extra = [s.base.med + 3 * s.base.sd, s.base.med - 3 * s.base.sd]; }
-    h += chartBox('Raw values: ' + unit + (s.base ? ' (shaded: normal range of weekly averages, ±2 and ±3 SD)' : ''), s.pts, vo);
+    h += chartBlock((s.kind === 'daily' ? 'Daily values' : 'Monthly values') + (s.base ? ' and the normal range (shaded: weekly averages at ±2 and ±3 SD)' : ''), s.pts, vo, s.pts.length > 40 ? [['30', '30'], ['90', '90'], ['all', 'All']] : null);
   }
   if (s.zh && s.zh.length > 1) {
-    h += chartBox('Score history in standard deviations (what the dashboard would have shown each day)', s.zh,
-      {h: 150, c: '#e6edf3', min: -4, max: 6, fy: v => v.toFixed(0), fyname: 'z', dots: v => v >= T_WATCH,
-       bands: [{a: T_SIG, b: 99, c: 'rgba(255,77,79,.14)'}, {a: T_WATCH, b: T_SIG, c: 'rgba(255,138,31,.12)'}],
-       lines: [{y: T_SIG, c: '#ff4d4f', t: 'signal ' + T_SIG.toFixed(1)}, {y: T_WATCH, c: '#ff8a1f', t: 'watch ' + T_WATCH.toFixed(1)}, {y: 0, c: '#52667a', t: '0', d: '2 3'}]});
+    h += chartBlock('Score history in standard deviations (what the dashboard would have shown each day)', s.zh,
+      {h: 170, c: '#e6edf3', min: -3, max: 6, fy: v => v.toFixed(0), unit: 'SD', dots: v => v >= T_WATCH, area: false, extrema: false,
+       bands: [{a: T_SIG, b: 99, c: 'rgba(255,77,79,.15)'}, {a: T_WATCH, b: T_SIG, c: 'rgba(255,138,31,.13)'}],
+       lines: [{y: T_SIG, c: '#ff4d4f', t: 'signal ' + T_SIG.toFixed(1)}, {y: T_WATCH, c: '#ff8a1f', t: 'watch ' + T_WATCH.toFixed(1)}, {y: 0, c: '#52667a', t: '', d: '2 3'}]}, null);
   }
-  h += `<div class="two"><div><table class="st">`;
+  const rel = modalList.filter(x => x !== id).slice(0, 8).map(x => SERIES[x]);
+  h += `<div class="two"><div><h3 class="sh">About this reading</h3><table class="st">`;
   const row = (a, b) => `<tr><td>${a}</td><td>${b}</td></tr>`;
-  if (s.z != null) {
-    h += row(s.kind === 'daily' ? 'Latest 7-day average' : 'Latest month', esc(fmtv(s.val)));
-    if (s.base) h += row('Normal level (median of 26 weeks)', esc(fmtv(s.base.med))) + row('One standard deviation', esc(fmtv(s.base.sd)));
-    h += row('Distance from normal', `<span style="color:${zcol(s.z)}">${fmtz(s.z)} SD</span>`);
-    h += row('Method', esc(s.method));
-  }
-  h += row('Observations held', s.n + (s.n ? ` (${esc(s.pts ? s.pts[0][0] : '')} to ${esc(s.last || '')})` : ''));
-  h += row('Last observation', esc(s.last || 'none'));
-  h += `</table></div><div><p style="margin:0 0 6px;color:var(--mute);font-size:12.5px">${s.kind === 'monthly' ? 'Monthly series are log-scaled and corrected for the calendar month (seasonality) before scoring, against the prior 36 months.' : 'Daily series are scored on the latest 7-day average against weekly averages of the prior 26 weeks.'} Scores are capped at ±12 SD.</p>${s.url ? `<p style="margin:0"><a target="_blank" rel="noopener" href="${esc(s.url)}">Open the data source &#8599;</a></p>` : ''}</div></div>`;
+  if (s.z != null) { h += row('Method', esc(s.method)); if (s.base) h += row('Baseline spread (1 SD)', esc(fmtv(s.base.sd))); }
+  h += row('Observations held', s.n + (s.pts && s.pts.length ? ` (${esc(s.pts[0][0])} to ${esc(s.last || '')})` : '')) + row('Last observation', esc(s.last || 'none') + (s.last ? ' (' + ago(s.last) + ')' : '')) + row('Needed to score', s.need + (s.kind === 'daily' ? ' days' : ' months'));
+  h += `</table><p style="margin:8px 0 0;color:var(--mute);font-size:12.5px">${s.kind === 'monthly' ? 'Monthly series are log-scaled and corrected for the calendar month before scoring, against the prior 36 months.' : 'Daily series are scored on the latest 7-day average against weekly averages of the prior 26 weeks.'} Scores are capped at ±12 SD.</p><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">${s.url ? `<a class="btn" target="_blank" rel="noopener" href="${esc(s.url)}">Open the data source &#8599;</a>` : ''}<a class="btn" href="#" data-nav="${s.t}" data-dom="${s.d}">Show in ${esc(th)} &rsaquo;</a></div></div>`;
+  h += `<div><h3 class="sh">Other signals in this group</h3><div class="rel">${rel.map(r => `<div data-open="${esc(r.id)}"><span>${esc(r.l.replace(/ \(.*$/, ''))}</span><b style="color:${zcol(r.z)}">${fmtz(r.z)}</b></div>`).join('') || '<span style="color:var(--dim)">No other signals in this group.</span>'}</div></div></div>`;
   $('#mbox').innerHTML = h; $('#modal').style.display = 'flex'; $('#mbox').scrollTop = 0;
 }
+function stepModal(d){ if (!modalList.length) return; const i = (modalList.indexOf(modalId) + d + modalList.length) % modalList.length; openModal(modalList[i]); }
 function closeModal(){ $('#modal').style.display = 'none'; }
-$('#modal').addEventListener('click', e => { if (e.target.id === 'modal' || e.target.closest('.x')) closeModal(); });
+$('#modal').addEventListener('click', e => {
+  if (e.target.id === 'modal' || e.target.closest('.x')) { closeModal(); return; }
+  const st = e.target.closest('[data-step]'); if (st) { stepModal(+st.dataset.step); return; }
+  const op = e.target.closest('[data-open]'); if (op) { openModal(op.dataset.open); return; }
+  const nv = e.target.closest('[data-nav]'); if (nv) { e.preventDefault(); closeModal(); go(nv.dataset.nav, false, nv.dataset.dom); return; }
+  const rg = e.target.closest('[data-rng]'); if (rg) {
+    const blk = rg.closest('.cwrap'), c = CH[blk.dataset.blk]; const k = rg.dataset.rng; const pts = k === 'all' ? c.pts : c.pts.slice(-(+k));
+    blk.querySelector('.cbody').innerHTML = areaChart(pts, c.o); blk.querySelectorAll('[data-rng]').forEach(b => b.classList.toggle('on', b === rg));
+  }
+});
 
-/* ------------------------------------------------------------ system tab */
+/* ------------------------------------------------------------ signals table and system */
+let sortKey = 'z', sortDir = -1; const TF = {th: '', dom: '', st: '', q: ''};
+function renderSignalsPage(){
+  const P = $('#signals');
+  const rows = D.series.filter(s => (!TF.th || s.t === TF.th) && (!TF.dom || s.d === TF.dom) && (!TF.st || (TF.st === 'scored' ? s.z != null : TF.st === 'rising' ? s.z != null && s.z >= 1 : TF.st === 'leading' ? !s.lag : TF.st === 'confirming' ? s.lag : s.z == null)) &&
+    (!TF.q || (s.l + ' ' + s.s + ' ' + s.id).toLowerCase().includes(TF.q.toLowerCase())));
+  const key = { z: s => s.z ?? -99, l: s => s.l.toLowerCase(), t: s => thName(s.t), d: s => s.d, lag: s => s.lag ? 1 : 0 }[sortKey];
+  rows.sort((a, b) => { const x = key(a), y = key(b); return (x < y ? -1 : x > y ? 1 : 0) * sortDir; });
+  const sel = (id, opts, cur) => `<select id="${id}">${opts.map(([v, n]) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>`;
+  P.innerHTML = `<h3>All signals (${rows.length} of ${D.series.length})</h3><div class="tbar"><input id="tq" type="search" placeholder="Search signals" value="${esc(TF.q)}">` +
+    sel('tth', [['', 'All theatres']].concat(D.order.map(t => [t, thName(t)])), TF.th) + sel('tdom', [['', 'All groups']].concat(D.domains.map(d => [d.id, d.name])), TF.dom) +
+    sel('tst', [['', 'Any status'], ['scored', 'Scored'], ['rising', 'Rising (1+ SD)'], ['leading', 'Leading'], ['confirming', 'Confirming'], ['none', 'No score yet']], TF.st) + `</div>` +
+    `<table class="sg"><thead><tr><th data-sort="l">Signal</th><th data-sort="t">Theatre</th><th data-sort="d">Group</th><th data-sort="lag">Type</th><th>Trend</th><th data-sort="z">SD</th></tr></thead><tbody>` +
+    rows.map(s => `<tr data-open="${esc(s.id)}"><td>${esc(s.l)}${s.s ? ` <span style="color:var(--dim)">· ${esc(s.s)}</span>` : ''}</td><td>${esc(thName(s.t))}</td><td>${esc(SHORT[s.d])}</td><td>${s.lag ? 'confirms' : 'leads'}</td><td>${spark(s.pts && s.pts.slice(-60), s.z == null ? '#6b7a8a' : zcol(s.z), 80, 22)}</td><td style="font-weight:700;color:${zcol(s.z)}">${s.z != null ? fmtz(s.z) : s.st === 'awaiting_key' ? 'key' : s.st === 'collecting' ? s.n + '/' + s.need : s.st === 'error' ? 'error' : 'n/a'}</td></tr>`).join('') + `</tbody></table>`;
+  const ids = rows.map(r => r.id);
+  P.querySelectorAll('tr[data-open]').forEach(tr => tr.onclick = () => openModal(tr.dataset.open, ids));
+  P.querySelectorAll('th[data-sort]').forEach(th => th.onclick = () => { if (sortKey === th.dataset.sort) sortDir = -sortDir; else { sortKey = th.dataset.sort; sortDir = sortKey === 'z' ? -1 : 1; } renderSignalsPage(); });
+  [['tth', 'th'], ['tdom', 'dom'], ['tst', 'st']].forEach(([id, k]) => $('#' + id).onchange = e => { TF[k] = e.target.value; renderSignalsPage(); });
+  $('#tq').oninput = e => { TF.q = e.target.value; const pos = e.target.selectionStart; renderSignalsPage(); const q = $('#tq'); q.focus(); q.setSelectionRange(pos, pos); };
+}
 function renderSystem(){
   const cnt = {}; D.series.forEach(s => cnt[s.st] = (cnt[s.st] || 0) + 1);
-  const awaiting = D.series.filter(s => s.st === 'awaiting_key'), err = D.series.filter(s => s.st === 'error'), col = D.series.filter(s => s.st === 'collecting');
+  const awaiting = D.series.filter(s => s.st === 'awaiting_key'), err = D.series.filter(s => s.st === 'error');
   const stale = D.series.filter(s => s.stale);
   const keys = {}; awaiting.forEach(s => s.needs.forEach(k => keys[k] = (keys[k] || 0) + 1));
+  const lk = s => `<a href="#" data-open="${esc(s.id)}">${esc(s.l)}</a>`;
   $('#system').innerHTML = `<div class="cols">
   <div><h3>Data health</h3><ul>
-    <li><b>${cnt.ok || 0}</b> signals scored</li><li><b>${cnt.collecting || 0}</b> still collecting history</li>
-    <li><b>${cnt.awaiting_key || 0}</b> waiting for a free key${Object.keys(keys).length ? ' (' + Object.keys(keys).map(k => `<span class="kw">${esc(k)}</span> ×${keys[k]}`).join(', ') + ')' : ''}</li>
+    <li><b>${cnt.ok || 0}</b> signals scored</li><li><b>${cnt.collecting || 0}</b> still collecting history (<a href="#" data-sg="none">see which</a>)</li>
+    <li><b>${cnt.awaiting_key || 0}</b> waiting for a free key${Object.keys(keys).length ? ' (' + Object.keys(keys).map(k => `<span class="kw">${esc(k)}</span> x${keys[k]}`).join(', ') + ')' : ''}</li>
     <li><b>${cnt.error || 0}</b> failed to fetch${stale.length ? `, <b>${stale.length}</b> showing a stale copy` : ''}</li></ul>
-    ${err.length ? '<h3>Failures</h3><ul>' + err.map(s => `<li><b>${esc(s.id)}</b>: ${esc(s.er)}</li>`).join('') + '</ul>' : ''}
+    ${err.length ? '<h3>Failures</h3><ul>' + err.map(s => `<li>${lk(s)}: ${esc(s.er)}</li>`).join('') + '</ul>' : ''}
+    ${awaiting.length ? '<h3>Waiting for a key</h3><ul>' + awaiting.map(s => `<li>${lk(s)} <span class="kw">${esc(s.needs.join(', '))}</span></li>`).join('') + '</ul>' : ''}
     ${D.errors.length ? '<h3>Map layers that failed</h3><ul>' + D.errors.map(e => `<li>${esc(e)}</li>`).join('') + '</ul>' : ''}
-    ${col.length ? `<h3>Collecting history</h3><p>Snapshot sources (aircraft, GPS, advisories, hazard warnings) can only record what they see now, so they need ${col[0] ? '12 weeks' : ''} before a score is meaningful. ${col.length} signals are in this state.</p>` : ''}
+    <p><a href="#" data-go="signals">Browse all ${D.series.length} signals &rsaquo;</a></p>
   </div>
   <div><h3>How the level is decided</h3><ul>
-    <li>Every signal is compared with its own history and scored in standard deviations (robust z-score).</li>
-    <li>A group (logistics, financial, human, geospatial, information) scores as the mean of its two strongest signals, so a lone spike cannot fire a group.</li>
+    <li>Every signal is compared with its own history and scored in standard deviations (a robust z-score).</li>
+    <li>A group scores as the mean of its two strongest signals, so a lone spike cannot fire a group.</li>
     <li>A group <b>fires</b> at ${T_SIG.toFixed(1)} SD and is <b>watched</b> at ${T_WATCH.toFixed(1)} SD.</li>
-    <li>Level: <b>Watch</b> = one group fires or two are watched; <b>Warning</b> = two fire; <b>Alert</b> = three or more fire.</li>
-    <li>Each theatre uses only its own indicators. Two or more groups must have data or the theatre says "insufficient data".</li>
-    <li>Warning and Alert with only slow, late-published data are labelled <b>lagging only</b>: a confirmed build-up, not an early warning.</li>
-    <li>This is an agreement counter, not a probability. A single signal is a prompt to look closer, never a forecast.</li></ul></div>
+    <li><b>Watch</b> = one group fires or two are watched; <b>Warning</b> = two fire; <b>Alert</b> = three or more fire.</li>
+    <li>Each theatre uses only its own indicators. Fewer than two groups with data gives "insufficient data".</li>
+    <li>Warning or Alert driven only by slow, late-published data is labelled <b>lagging only</b>: a confirmed build-up, not an early warning.</li>
+    <li>This counts agreement across independent evidence. It is not a probability, and a single signal is a prompt to look closer, never a forecast.</li></ul>
+    <h3>Reading the map</h3><ul><li>Click any aircraft, ship, incident or warning for details. Click a country to open its theatre.</li><li>Click a legend item to hide or show an aircraft type. Use the layer list to switch layers, and the label-size buttons if text is hard to read.</li><li>Press <span class="kw">/</span> to search everything.</li></ul></div>
   <div><h3>Not available, and what replaces it</h3><ul>${D.unavailable.map(u => `<li><b>${esc(u.n)}</b>: ${esc(u.w)}</li>`).join('')}</ul></div></div>`;
 }
+$('#system').addEventListener('click', e => { const o = e.target.closest('[data-open]'); if (o) { e.preventDefault(); openModal(o.dataset.open, []); return; } const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); go(g.dataset.go); return; } if (e.target.closest('[data-sg]')) { e.preventDefault(); TF.st = 'none'; go('signals'); } });
 
 /* ------------------------------------------------------------ start */
 if (D.demo) $('#demo').hidden = false;
 buildMap(); renderLayers(); syncLayers();
 const h0 = location.hash.slice(1);
-go(TABS.some(t => t[0] === h0) ? h0 : "overview", true);
+go(TABS.some(t => t[0] === h0) ? h0 : 'overview', true);
 </script>
 </body>
 </html>

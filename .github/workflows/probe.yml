@@ -13,68 +13,44 @@ jobs:
       - name: Probe round 7
         run: |
           cat > p.py <<'PY'
-          import json, os, re, time, urllib.request, urllib.parse, urllib.error
+          import gzip, json, re, time, urllib.request, urllib.parse, urllib.error
           UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-          def raw(u, params=None, data=None, t=40, hdr=None):
+          def rawb(u, params=None, data=None, t=40, hdr=None):
               if params: u += "?" + urllib.parse.urlencode(params)
               h = {"User-Agent": UA, "Accept": "*/*"}; h.update(hdr or {})
               try:
-                  return urllib.request.urlopen(urllib.request.Request(u, headers=h, data=data), timeout=t).read()
+                  r = urllib.request.urlopen(urllib.request.Request(u, headers=h, data=data), timeout=t); b = r.read()
+                  return gzip.decompress(b) if b[:2] == b"\x1f\x8b" else b
               except urllib.error.HTTPError as e:
-                  return ("HTTP %s %s" % (e.code, e.read()[:400])).encode()
+                  return ("HTTP %s %s" % (e.code, e.read()[:300])).encode()
               except Exception as e:
                   return ("ERR %s" % str(e)[:150]).encode()
-          def txt(*a, **k): return raw(*a, **k).decode("utf-8", "replace")
+          def txt(*a, **k): return rawb(*a, **k).decode("utf-8", "replace")
           def sec(n): print("=== " + n, flush=True)
-          sec("ACLED")
-          em, pw = os.environ["ACLED_EMAIL"], os.environ["ACLED_PASSWORD"]
-          r = txt("https://acleddata.com/oauth/token", data=urllib.parse.urlencode({"username": em, "password": pw, "grant_type": "password", "client_id": "acled"}).encode(), hdr={"Content-Type": "application/x-www-form-urlencoded"})
-          tok = json.loads(r); at = tok["access_token"]; print("expires", tok.get("expires_in"))
-          H = {"Authorization": "Bearer " + at, "Accept": "application/json"}
-          for u, q in [("https://acleddata.com/api/acled/read", {"country": "Ukraine", "limit": 2}),
-                       ("https://acleddata.com/api/acled/read", {"_format": "json", "limit": 2}),
-                       ("https://acleddata.com/api/acled/read?_format=json&country=Ukraine&limit=2", None),
-                       ("https://api.acleddata.com/acled/read", {"country": "Ukraine", "limit": 2}),
-                       ("https://acleddata.com/api/acled/cast/read", {"limit": 2}),
-                       ("https://acleddata.com/api/user/me", None)]:
-              print(u, q, txt(u, q, hdr=H)[:400].replace("\n", " "))
-          sec("UKMTO NEXT_DATA incident search")
+          sec("UKMTO chunks")
           t = txt("https://www.ukmto.org/recent-incidents")
-          m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', t, re.S); nd = m.group(1)
-          print(len(nd)); print(sorted(set(re.findall(r'"componentName":"([^"]+)"', nd))))
-          for k in ("incident", "Incident", "hodeidah", "2026"):
-              for mm in list(re.finditer(k, nd))[:4]: print(k, nd[max(0, mm.start() - 150):mm.start() + 250].replace("\n", " "))
-          bid = re.search(r'"buildId":"([^"]+)"', nd); print("buildId", bid and bid.group(1))
-          print(sorted(set(re.findall(r'"(?:url|href|src)":"([^"]+)"', nd)))[:30])
-          sec("UKMTO sitecore")
-          for u in ["https://www.ukmto.org/sitecore/api/layout/render/jss?item=/recent-incidents&sc_lang=en&sc_apikey=", "https://www.ukmto.org/api/search", "https://www.ukmto.org/_next/data/%s/en/recent-incidents.json" % (bid.group(1) if bid else "x")]:
-              print(u, txt(u)[:300].replace("\n", " "))
-          t = txt("https://www.ukmto.org/_next/static/chunks/pages/%5B%5B...path%5D%5D-b606e86c9f7b2d2d.js")
-          print(len(t), sorted(set(re.findall(r'["\'](/?[a-zA-Z0-9_/.-]*(?:api|incident)[a-zA-Z0-9_/.?=&-]*)["\']', t)))[:30])
-          sec("MGS page")
-          t = txt("https://www.maritimeglobalsecurity.org/"); print(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", t))[:800])
-          sec("USAspending POP totals")
-          for loc in ("POL", "ISR", "JOR", "KWT", "QAT", "BHR", "ARE", "ROU", "LTU", "DJI", "OMN", "SAU", "TUR", "DEU"):
-              f = {"time_period": [{"start_date": "2023-01-01", "end_date": "2026-10-01"}], "award_type_codes": ["A", "B", "C", "D"], "place_of_performance_locations": [{"country": loc}], "agencies": [{"type": "awarding", "tier": "toptier", "name": "Department of Defense"}]}
-              t = txt("https://api.usaspending.gov/api/v2/search/spending_over_time/", data=json.dumps({"group": "month", "filters": f}).encode(), hdr={"Content-Type": "application/json"})
-              try:
-                  r = json.loads(t)["results"]; v = [round(x["aggregated_amount"] / 1e6, 1) for x in r]; print(loc, len(r), sum(v), v[-14:])
-              except Exception: print(loc, t[:200])
-          sec("DoD RSS")
-          t = txt("https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=400&Site=945&max=10")
-          print(re.findall(r"<title>(.*?)</title>", t)[:10]); print(re.sub(r"<[^>]+>", " ", t)[600:1800])
-          sec("USNI middle east lines")
-          t = txt("https://news.usni.org/category/fleet-tracker/feed")
-          items = re.findall(r"<item>.*?</item>", t, re.S)
-          print([re.findall(r"<title>(.*?)</title>", it)[0] for it in items[:6]])
-          b = re.sub(r"<[^>]+>", " ", items[0]); b = re.sub(r"\s+", " ", b)
-          for mm in re.finditer(r"In the ([A-Z][A-Za-z ]+?) (?=[A-Z])", b): print(mm.group(0)[:60])
-          print([x for x in re.findall(r"USS +[A-Z][A-Za-z. ]+\([A-Z]+-\d+\)", b)][:30])
-          for mm in list(re.finditer(r"(Arabian Sea|Mediterranean|Red Sea|Persian Gulf|Gulf of Oman|Baltic|North Sea)", b))[:8]: print("..." + b[max(0, mm.start() - 120):mm.start() + 160])
-          sec("Digitraffic")
-          t = txt("https://meri.digitraffic.fi/api/ais/v1/locations", hdr={"Accept": "application/json", "Digitraffic-User": "warwatch"}); print(len(t), t[:200])
-          sec("GNEWS ukmto")
-          t = txt("https://news.google.com/rss/search", {"q": "UKMTO incident vessel", "hl": "en-US", "gl": "US", "ceid": "US:en"})
-          print([re.sub(r"<!\[CDATA\[|\]\]>", "", x)[:110] for x in re.findall(r"<title>(.*?)</title>", t)[:8]])
+          srcs = re.findall(r'<script[^>]+src="(https://www.ukmto.org/_next/static/chunks/[^"]+)"', t)
+          for u in srcs:
+              c = txt(u)
+              hits = sorted(set(re.findall(r'["\'`]((?:https?:)?//[^"\'`\s]*|/[a-zA-Z0-9_./-]*(?:api|incident|Incident|search|json)[a-zA-Z0-9_./?=&-]*)["\'`]', c)))
+              hits = [h for h in hits if "w3.org" not in h and "reactjs" not in h and "github" not in h][:15]
+              print(u.rsplit("/", 1)[-1], len(c), hits, "RecentIncident" in c)
+          sec("war.gov article")
+          for u in ["https://www.war.gov/News/Contracts/Contract/Article/4619270/contracts-for-oct-5-2026/", "https://www.defense.gov/News/Contracts/Contract/Article/4619270/contracts-for-oct-5-2026/"]:
+              c = txt(u); print(u[:40], len(c), c[:150].replace("\n", " "))
+          sec("routeset")
+          d = json.loads(txt("https://api.adsb.lol/v2/sqk/7700"))
+          print(len(d["ac"]))
+          for a in d["ac"][:2]:
+              body = json.dumps({"planes": [{"callsign": a.get("flight", "").strip(), "lat": a["lat"], "lng": a["lon"]}]}).encode()
+              print(txt("https://api.adsb.lol/api/0/routeset", data=body, hdr={"Content-Type": "application/json"})[:300])
+          sec("digitraffic gzip")
+          t = txt("https://meri.digitraffic.fi/api/ais/v1/locations", hdr={"Accept-Encoding": "gzip", "Digitraffic-User": "warwatch"}); print(len(t), t[:200])
+          v = txt("https://meri.digitraffic.fi/api/ais/v1/vessels", hdr={"Accept-Encoding": "gzip", "Digitraffic-User": "warwatch"}); print(len(v), v[:300])
+          sec("gnews incident sample")
+          x = txt("https://news.google.com/rss/search", {"q": "UKMTO when:14d", "hl": "en-US", "gl": "US", "ceid": "US:en"})
+          its = re.findall(r"<item>.*?</item>", x, re.S); print(len(its)); print(its[0][:900] if its else x[:300])
+          sec("OpenSky owner sample / adsb civil")
+          t = txt("https://api.adsb.lol/v2/point/32/35/250"); print(len(t))
           PY
           python3 p.py
