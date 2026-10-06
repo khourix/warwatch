@@ -1,0 +1,60 @@
+name: warwatch
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "comma-separated series ids (blank = all)"
+        required: false
+        default: ""
+  push:
+    branches: [main]
+    paths: ["warwatch/**/*.py", ".github/workflows/warwatch.yml"]
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: warwatch
+  cancel-in-progress: false
+env:
+  WW: warwatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests
+        run: python3 $WW/tests/test_warwatch.py
+      - name: Fetch, score, render
+        env:
+          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+          SAM_API_KEY: ${{ secrets.SAM_API_KEY }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: python3 $WW/run.py --only "${{ github.event.inputs.only }}" --out site/index.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: warwatch-dashboard
+          path: site/
+          retention-days: 30
+      - name: Commit history (public data only)
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add $WW/history 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "history: $(date -u +%FT%H:%MZ)" && git pull --rebase -q && git push -q)
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: true      # stays green until Pages is switched on (Settings > Pages > Source: GitHub Actions)
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4
