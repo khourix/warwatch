@@ -26,6 +26,11 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      - name: Basemap (Natural Earth countries, public domain)
+        run: |
+          mkdir -p $WW/assets
+          [ -s $WW/assets/countries-50m.json ] || curl -fsSL --retry 3 -o $WW/assets/countries-50m.json \
+            https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json || echo "basemap download failed; page renders without it"
       - name: Unit tests
         run: python3 $WW/tests/test_warwatch.py
       - name: Fetch, score, render
@@ -44,7 +49,7 @@ jobs:
         run: |
           git config user.name "warwatch-bot"
           git config user.email "warwatch-bot@users.noreply.github.com"
-          git add $WW/history 2>/dev/null || true
+          git add $WW/history $WW/assets 2>/dev/null || true
           # history files are append-only; .gitattributes merges concurrent appends (union).
           # Best effort: a failed history push must not fail the dashboard build.
           git diff --cached --quiet || (git commit -m "history: $(date -u +%FT%H:%MZ)" && git pull --rebase -q && git push -q) || (git rebase --abort; echo "history push skipped")

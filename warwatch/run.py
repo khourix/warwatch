@@ -3,7 +3,7 @@
 
     python3 tools/warwatch/run.py --out site/index.html
     python3 tools/warwatch/run.py --demo buildup --out site/index.html
-    python3 tools/warwatch/run.py --only us_boots_awards,wiki_conscription
+    python3 tools/warwatch/run.py --only us_boots_awards,brent
 
 A failed or key-less series is shown as such; it never turns into a calm score.
 """
@@ -19,6 +19,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import catalog  # noqa: E402
 import config as C  # noqa: E402
 import dashboard  # noqa: E402
+import extras  # noqa: E402
+import geo  # noqa: E402
 import scoring  # noqa: E402
 import stats  # noqa: E402
 import store  # noqa: E402
@@ -108,10 +110,11 @@ def main():
         if a.fetch_only:
             return
     res = evaluate(series)
+    ex = None if a.demo else extras.collect()
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     with open(a.out, "w", encoding="utf-8") as f:
-        f.write(dashboard.render(res, now, demo=bool(a.demo)))
+        f.write(dashboard.render(res, now, demo=bool(a.demo), extras=ex, topo=geo.load()))
     summ = {"generated": now, "demo": a.demo,
             "theatres": {t: {k: v[k] for k in ("level", "firing", "scorable", "basis")} for t, v in res["theatres"].items()},
             "series": {s["id"]: {"status": s["status"], "z": (s["score"] or {}).get("z"), "error": s["error"]}

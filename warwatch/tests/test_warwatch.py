@@ -11,7 +11,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ["WARWATCH_HISTORY"] = tempfile.mkdtemp()
 import catalog  # noqa: E402
 import config as C  # noqa: E402
+import dashboard  # noqa: E402
 import demo  # noqa: E402
+import extras  # noqa: E402
+import geo  # noqa: E402
 import run  # noqa: E402
 import scoring  # noqa: E402
 import sources as S  # noqa: E402
@@ -118,23 +121,80 @@ class TestParsers(unittest.TestCase):
                     {"lat": 10, "lon": 0, "t": "C17"}, {"t": "C17"}]}
         self.assertEqual(S.adsb_counts(p, C.BOXES["ukraine"]), (2.0, 1.0))
 
-    def test_gdelt_without_timeline_is_an_error_not_silence(self):
-        with self.assertRaises(ValueError):
-            S.parse_gdelt({})
-
     def test_incomplete_months_are_dropped_before_scoring(self):
         s = [x for x in catalog.SERIES if x["id"] == "us_boots_awards"][0]
         self.assertEqual(s["drop"], catalog.DOD)
         self.assertEqual([x for x in catalog.SERIES if x["id"] == "eu_kit_tenders"][0]["drop"], 1)
-        self.assertEqual([x for x in catalog.SERIES if x["id"] == "wiki_conscription"][0]["drop"], 0)
+        self.assertEqual([x for x in catalog.SERIES if x["id"] == "news_ukraine"][0]["drop"], 0)
 
-    def test_gdelt_wiki_fred(self):
-        self.assertEqual(S.parse_gdelt({"timeline": [{"data": [{"date": "20260930T000000Z", "value": 12}]}]}),
-                         [("2026-09-30", 12.0)])
-        self.assertEqual(S.parse_wiki({"items": [{"timestamp": "2026090100", "views": 40}]}), [("2026-09-01", 40.0)])
+    def test_fred_and_gnews(self):
+        self.assertEqual(S.parse_gnews_count("<rss><item>a</item><item>b</item></rss>"), 2.0)
         self.assertEqual(S.parse_fred({"observations": [{"date": "2026-01-01", "value": "."},
                                                         {"date": "2026-01-02", "value": "5.5"}]}),
                          [("2026-01-02", 5.5)])
+
+
+class TestExtras(unittest.TestCase):
+    def test_nga_coordinates_and_issue_date(self):
+        self.assertEqual(extras.parse_issue("071541Z SEP 2023"), dt.date(2023, 9, 7))
+        self.assertIsNone(extras.parse_issue("garbage"))
+        lat, lon = extras.parse_coords("MINES NEAR 45-07.10N 030-09.70E AND 12-30S 045-00W")[0]
+        self.assertAlmostEqual(lat, 45.1183, 3)
+        self.assertAlmostEqual(lon, 30.1617, 3)
+        self.assertEqual(extras.parse_coords("12-30S 045-00W"), [(-12.5, -45.0)])
+
+    def test_nga_keeps_only_hazards_with_a_position(self):
+        w = [{"navArea": "A", "msgNumber": 1, "msgYear": 2026, "issueDate": "011200Z OCT 2026",
+              "text": "BLACK SEA. MISSILE FIRING 44-00N 033-00E."},
+             {"text": "BLACK SEA. MISSILE FIRING, NO POSITION."},
+             {"text": "LIGHT UNLIT 44-00N 033-00E."}]
+        got = extras.parse_nga(w)
+        self.assertEqual(len(got), 1)
+        self.assertEqual(got[0]["issued"], "2026-10-01")
+
+    def test_navigation_degradation(self):
+        p = {"ac": [{"lat": 1, "lon": 1, "nac_p": 9}, {"lat": 1, "lon": 1, "nac_p": 3}, {"lat": 1, "lon": 1},
+                    {"nac_p": 0}]}
+        self.assertEqual(extras.parse_nav(p), (3, 1))
+
+    def test_polymarket_skips_closed_and_thin_markets(self):
+        p = {"events": [{"title": "e", "markets": [
+            {"question": "open", "outcomePrices": '["0.145","0.855"]', "volume": "72000000", "closed": False},
+            {"question": "closed", "outcomePrices": '["1","0"]', "volume": "9000000", "closed": True},
+            {"question": "thin", "outcomePrices": '["0.5","0.5"]', "volume": "100", "closed": False}]}]}
+        self.assertEqual([m["q"] for m in extras.parse_poly(p)], ["open"])
+
+    def test_czib_active_zones_only(self):
+        p = {"x": [{"status": "Active", "name": "Airspace of Syria", "coordinates": "33.5, 36.3",
+                    "updated": "<time>2026-10-01T16:25:34+03:00</time>"},
+                   {"status": "Withdrawn", "name": "old", "coordinates": "1, 1", "updated": ""}]}
+        z = extras.parse_czib(p)
+        self.assertEqual([(a["name"], a["updated"]) for a in z], [("Airspace of Syria", "2026-10-01")])
+
+    def test_advisory_levels_by_country(self):
+        got = extras.country_levels([{"Title": "Iran - Level 4: Do Not Travel"},
+                                     {"Title": "Israel, The West Bank and Gaza - Level 3: Reconsider"}, {"Title": "x"}])
+        self.assertEqual(got, {"Iran": 4, "Israel": 3})
+
+
+class TestGeoAndPage(unittest.TestCase):
+    def test_projection_is_monotonic_and_clips(self):
+        pr = geo.Proj((0, 10, 40, 50), 100, 100)
+        self.assertLess(pr.xy(2, 45)[0], pr.xy(8, 45)[0])
+        self.assertLess(pr.xy(5, 48)[1], pr.xy(5, 42)[1])
+        self.assertFalse(pr.inside(30, 45))
+
+    def test_page_renders_without_map_or_live_layers(self):
+        res = run.evaluate(demo.scenario("buildup"))
+        page = dashboard.render(res, "now", demo=True)
+        for tab in ("overview", "ukraine", "east", "mideast", "supply", "system"):
+            self.assertIn(f'id="t-{tab}"', page)
+        self.assertIn("Layer unavailable", page)
+
+    def test_collecting_series_shows_latest_value(self):
+        s = {"id": "x", "label": "Demo (a)", "why": "w", "lag": False, "direction": "up", "status": "collecting",
+             "points": [("2026-10-01", 12.0)], "score": None}
+        self.assertIn("now 12", dashboard.srow(s))
 
 
 class TestStore(unittest.TestCase):

@@ -1,312 +1,381 @@
 """One self-contained HTML file: no server, no build, no cost.
 
-Visual language follows the NVIDIA DESIGN.md (getdesign.md): black chrome and
-hero, white body, one green accent, 2px corners, hairline borders, no shadows,
-green corner squares on cards. Tabs and filters are CSS-only (radio inputs), so
-the page works with JavaScript off.
+A monitoring wall in the style of World Monitor: dark, map-centred, tabbed,
+and sized to the screen so nothing scrolls on a desktop. Tabs are CSS-only
+(radio inputs), so the page works with JavaScript off. Phones fall back to a
+normal scrolling column.
 """
 import html
 
 import config as C
+import geo
 import scoring
 
 E = html.escape
 
-# Level colours come from the design's semantic tokens, never from decoration.
 LEVEL = {
-    "Alert": ("#e52020", "#ffffff"),
-    "Warning": ("#df6500", "#ffffff"),
-    "Watch": ("#ef9100", "#000000"),
-    "Normal": ("#76b900", "#000000"),
-    "insufficient data": ("#a7a7a7", "#000000"),
+    "Alert": "#ff4d4f",
+    "Warning": "#ff8a1f",
+    "Watch": "#f5c518",
+    "Normal": "#3ddc84",
+    "insufficient data": "#6b7a8a",
 }
 MEANING = {
-    "Alert": "Three or more independent signal groups are unusual at the same time.",
-    "Warning": "Two signal groups are unusual at the same time.",
-    "Watch": "One signal group is strongly unusual, or two are mildly unusual.",
+    "Alert": "Three or more independent signal groups are unusual at once.",
+    "Warning": "Two signal groups are unusual at once.",
+    "Watch": "One group is strongly unusual, or two are mildly unusual.",
     "Normal": "Nothing is outside its usual range.",
-    "insufficient data": "Too few signal groups have enough history to judge.",
+    "insufficient data": "Too few groups have enough history to judge.",
 }
 ORDER = ["Alert", "Warning", "Watch", "Normal", "insufficient data"]
-ZMAX = 6.0   # the bar saturates at +/-6 standard deviations; the score itself goes to 12
+ZMAX = 6.0
+ADV = {1: "lv1", 2: "lv2", 3: "lv3", 4: "lv4"}
+VIEWS = {   # tab id -> (title, theatre, map view)
+    "ukraine": ("Ukraine", "ukraine", "ukraine"),
+    "east": ("Eastern flank", "europe_east", "europe_east"),
+    "mideast": ("Middle East", "mideast", "mideast"),
+}
+CHOKE = {"Hormuz": (26.6, 56.3, "Hormuz"), "Bab": (12.6, 43.3, "Bab el-Mandeb"),
+         "Suez": (30.0, 32.5, "Suez"), "Bosporus": (41.1, 29.0, "Bosporus")}
+NAME = {"ukraine": "Ukraine", "europe_east": "Eastern flank", "mideast": "Middle East", "global": "Supplier side (US and EU)"}
+HUBS_LABEL = {"ukraine": (49.0, 31.5), "europe_east": (56.5, 22.5), "mideast": (30.5, 47.0)}
 
 
-def spark(points, w=140, h=30):
-    vals = [v for _, v in points][-150:]
-    if len(vals) < 2:
-        return '<span class="nospark">no trend yet</span>'
-    lo, hi = min(vals), max(vals)
-    rng = (hi - lo) or 1
-    pts = " ".join(f"{i * w / (len(vals) - 1):.1f},{h - 3 - (v - lo) / rng * (h - 6):.1f}" for i, v in enumerate(vals))
-    return (f'<svg class="spark" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img" '
-            f'aria-label="Recent trend, {len(vals)} points"><polyline fill="none" stroke="currentColor" '
-            f'stroke-width="1.5" points="{pts}"/></svg>')
+# ---- small pieces -------------------------------------------------------------------
+def zval(s):
+    return scoring.directed(s["score"]["z"], s["direction"]) if s["status"] == "ok" and s.get("score") else None
 
 
-def zbar(z):
-    """Diverging bar: centre is normal, right is the warning direction, tick at the signal threshold."""
+def fmt(v):
+    a = abs(v)
+    if a >= 1e9:
+        return f"{v / 1e9:.1f}B"
+    if a >= 1e6:
+        return f"{v / 1e6:.1f}M"
+    if a >= 1e4:
+        return f"{v / 1e3:.0f}k"
+    return f"{v:,.0f}" if a >= 100 else f"{v:.2f}".rstrip("0").rstrip(".")
+
+
+def bar(z):
     frac = max(-1.0, min(1.0, z / ZMAX))
     left, width = (50, frac * 50) if frac >= 0 else (50 + frac * 50, -frac * 50)
-    hot = z >= C.THRESH_SIGNAL
     tick = 50 + C.THRESH_SIGNAL / ZMAX * 50
-    return (f'<span class="zbar" aria-hidden="true"><i class="zc"></i><i class="zt" style="left:{tick:.1f}%"></i>'
-            f'<i class="zf{" hot" if hot else ""}" style="left:{left:.1f}%;width:{width:.1f}%"></i></span>')
+    hot = " hot" if z >= C.THRESH_SIGNAL else ""
+    return (f'<span class="bar"><i class="c"></i><i class="t" style="left:{tick:.1f}%"></i>'
+            f'<i class="f{hot}" style="left:{left:.1f}%;width:{width:.1f}%"></i></span>')
 
 
-def row(s):
-    fast = "Leads" if not s["lag"] else "Lags"
-    speed = f'<span class="tag {"fast" if not s["lag"] else "slow"}">{fast}</span>'
-    if s["status"] == "ok":
-        z = scoring.directed(s["score"]["z"], s["direction"])
-        hot = z >= C.THRESH_SIGNAL
-        value = f'<b class="zv{" hot" if hot else ""}">{z:+.1f}</b>'
-        state = ""
+def srow(s, short=False):
+    z = zval(s)
+    speed = '<i class="dot lag" title="Published late: confirms, does not lead"></i>' if s["lag"] else \
+        '<i class="dot fast" title="Fast source: can lead"></i>'
+    if z is not None:
+        cell = f'{bar(z)}<b class="v{" hot" if z >= C.THRESH_SIGNAL else ""}">{z:+.1f}</b>'
+        cls = " hotrow" if z >= C.THRESH_SIGNAL else ""
         if s.get("stale"):
-            state = f'<span class="tag stale" title="The source failed this run; showing the last good data">Stale since {E(s["stale"][:10])}</span>'
-        main = zbar(z) + value
+            cell += '<span class="mini stale" title="Source failed; last good data shown">stale</span>'
     elif s["status"] == "collecting":
-        n = len(s["points"])
-        main = f'<span class="state">Building history ({n} reading{"s" if n != 1 else ""})</span>'
-        state = '<span class="tag wait">Collecting</span>'
+        last = s["points"][-1][1] if s["points"] else None
+        cell = (f'<span class="muted">now {fmt(last)}</span><span class="mini">{len(s["points"])} pts</span>'
+                if last is not None else '<span class="muted">collecting</span>')
+        cls = " dim"
     elif s["status"] == "awaiting_key":
-        main = '<span class="state">Needs an access key</span>'
-        state = '<span class="tag wait">Setup</span>'
+        cell, cls = '<span class="mini warn">needs key</span>', " dim"
     else:
-        main = '<span class="state bad">Source did not respond</span>'
-        state = '<span class="tag fail">Failed</span>'
-    detail = [f'<p>{E(s["why"])}</p>']
-    if s["status"] == "ok":
-        detail.append(f'<p class="meta">Method: {E(s["score"]["method"])}</p>')
-    if s["error"] and s["status"] in ("error", "awaiting_key"):
-        detail.append(f'<p class="meta">Detail: {E(s["error"][:160])}</p>')
-    if s.get("url"):
-        detail.append(f'<p class="meta"><a href="{E(s["url"])}" rel="noopener">Source</a></p>')
-    hotrow = " hotrow" if s["status"] == "ok" and scoring.directed(s["score"]["z"], s["direction"]) >= C.THRESH_SIGNAL else ""
-    return (f'<details class="sig st-{s["status"]}{" stalerow" if s.get("stale") else ""}{hotrow}" data-fast="{0 if s["lag"] else 1}">'
-            f'<summary><span class="nm">{E(s["label"])}</span><span class="vis">{main}</span>'
-            f'<span class="spk">{spark(s["points"])}</span><span class="tags">{speed}{state}</span></summary>'
-            f'<div class="more">{"".join(detail)}</div></details>')
+        cell, cls = '<span class="mini bad">no data</span>', " dim"
+    tip = f'{s["label"]} | {s["why"]}'
+    return (f'<div class="sr{cls}" title="{E(tip)}">{speed}<span class="nm">{E(s["label"].split(" (")[0])}</span>'
+            f'<span class="cell">{cell}</span></div>')
 
 
-def domain_block(label, d, mine):
-    fire = d["z"] is not None and d["z"] >= C.THRESH_SIGNAL
-    z = "not enough data" if d["z"] is None else f'{d["z"]:+.1f}'
-    badge = '<span class="tag fire">Unusual</span>' if fire else ""
-    live = sum(1 for s in mine if s["status"] == "ok")
-    return (f'<section class="dom{" fire" if fire else ""}"><header><h3>{E(label)}</h3>'
-            f'<span class="dz">Group score {z}</span>{badge}'
-            f'<span class="cnt">{live} of {len(mine)} signals live</span></header>'
-            f'{"".join(row(s) for s in mine)}</section>')
+def level_pill(lv):
+    return f'<b class="pill" style="--c:{LEVEL[lv]}">{E(lv)}</b>'
 
 
-def panel(t, view, series):
-    blocks = []
-    for dom, label in C.DOMAINS.items():
-        mine = [s for s in series if s["domain"] == dom and s["theatre"] in (t, "global")]
-        if mine:
-            blocks.append(domain_block(label, view["domains"][dom], mine))
-    return "".join(blocks)
-
-
-def movers(series, n=6):
+def domain_rows(view):
     out = []
-    for s in series:
-        if s["status"] == "ok":
-            z = scoring.directed(s["score"]["z"], s["direction"])
-            out.append((z, s))
-    out.sort(key=lambda x: -x[0])
-    return out[:n]
+    for dom, label in C.DOMAINS.items():
+        d = view["domains"][dom]
+        if d["z"] is None:
+            body = '<span class="muted">no data yet</span>'
+        else:
+            body = f'{bar(d["z"])}<b class="v{" hot" if d["z"] >= C.THRESH_SIGNAL else ""}">{d["z"]:+.1f}</b>'
+        out.append(f'<div class="sr"><i class="dot {"fast" if d["fast"] else "lag"}"></i>'
+                   f'<span class="nm">{E(label)}</span><span class="cell">{body}</span></div>')
+    return "".join(out)
 
 
-def theatre_card(t, name, v, series):
+def top_signals(series, theatre, n=9):
+    pool = [(zval(s), s) for s in series if s["theatre"] in (theatre, "global") and zval(s) is not None]
+    pool.sort(key=lambda x: -x[0])
+    return "".join(srow(s) for _, s in pool[:n]) or '<div class="sr dim"><span class="nm">No signal has enough history yet.</span></div>'
+
+
+def level_card(name, v, big=True):
     lv = v["level"]
-    bg, fg = LEVEL[lv]
     firing = ", ".join(C.DOMAINS[d] for d in v["firing"]) or "none"
-    live = sum(1 for s in series if s["status"] == "ok" and s["theatre"] in (t, "global"))
-    total = sum(1 for s in series if s["theatre"] in (t, "global"))
-    lag = '<p class="warn">Only slow-moving data is unusual, so this is a confirmation, not an early signal.</p>' \
-        if "lagging" in (v.get("basis") or "") else ""
-    return (f'<label class="tcard" for="t-{t}"><span class="cs"></span><span class="tn">{E(name)}</span>'
-            f'<span class="lvlbadge" style="background:{bg};color:{fg}">{E(lv)}</span>'
-            f'<span class="tm">{E(MEANING[lv])}</span><span class="tf">Unusual groups: {E(firing)}</span>'
-            f'<span class="tf">{live} of {total} signals live</span>{lag}</label>')
+    note = ""
+    if "lagging" in (v.get("basis") or ""):
+        note = '<p class="note">Only slow data is unusual: a confirmation, not an early signal.</p>'
+    return (f'<div class="lvl" style="--c:{LEVEL[lv]}"><div class="lh"><span class="ln">{E(name)}</span>{level_pill(lv)}</div>'
+            f'<p>{E(MEANING[lv])}</p><p class="sub">Unusual groups: {E(firing)}</p>{note}</div>')
 
 
+# ---- maps ---------------------------------------------------------------------------------
+def theatre_of(box_name):
+    return {"overview": None, "ukraine": "ukraine", "europe_east": "europe_east", "mideast": "mideast"}[box_name]
+
+
+def build_map(view, topo, extras, series, th):
+    box = geo.VIEWS[view]
+    w, h = geo.view_size(box, 1000)
+    proj = geo.Proj(box, w, h)
+    lv = {name: ADV.get(n, "") for name, n in (extras or {}).get("levels", {}).items()}
+    land = ""
+    if topo:
+        land = "".join(f'<path class="cty {c}" d="{d}"><title>{E(n)}</title></path>' for n, d, c in geo.paths(topo, proj, lv))
+    parts = [f'<svg class="map" viewBox="0 0 {w} {h}" preserveAspectRatio="xMidYMid meet" role="img" '
+             f'aria-label="Map of {view}"><rect width="{w}" height="{h}" class="sea"/>{land}']
+    ex = extras or {}
+    la0, la1, lo0, lo1 = box[2], box[3], box[0], box[1]
+    for a in ex.get("mil", []):
+        if lo0 <= a["lon"] <= lo1 and la0 <= a["lat"] <= la1:
+            x, y = proj.xy(a["lon"], a["lat"])
+            parts.append(f'<circle class="ac {"lift" if a["lift"] else "mil"}" cx="{x:.1f}" cy="{y:.1f}" r="{3.4 if a["lift"] else 2.4}">'
+                         f'<title>{"Airlift or tanker" if a["lift"] else "Military aircraft"} {E(a["t"])}</title></circle>')
+    for m in ex.get("nga", []):
+        if lo0 <= m["lon"] <= lo1 and la0 <= m["lat"] <= la1:
+            x, y = proj.xy(m["lon"], m["lat"])
+            parts.append(f'<rect class="hz" x="{x - 3.5:.1f}" y="{y - 3.5:.1f}" width="7" height="7" '
+                         f'transform="rotate(45 {x:.1f} {y:.1f})"><title>{E(m["text"])}</title></rect>')
+    for z in ex.get("czib", []):
+        if lo0 <= z["lon"] <= lo1 and la0 <= z["lat"] <= la1:
+            x, y = proj.xy(z["lon"], z["lat"])
+            parts.append(f'<circle class="cz" cx="{x:.1f}" cy="{y:.1f}" r="6"><title>EASA conflict-zone bulletin: {E(z["name"])}</title></circle>')
+    for frag, (lat, lon, nm) in CHOKE.items():
+        if lo0 <= lon <= lo1 and la0 <= lat <= la1:
+            s = next((s for s in series if s["id"] == f"portwatch_{frag.lower()}"), None)
+            z = zval(s) if s else None
+            col = "#6b7a8a" if z is None else ("#ff4d4f" if z >= C.THRESH_SIGNAL else "#3ddc84")
+            x, y = proj.xy(lon, lat)
+            tag = "no data" if z is None else f"{z:+.1f}"
+            parts.append(f'<g class="ck"><circle cx="{x:.1f}" cy="{y:.1f}" r="7" fill="none" stroke="{col}" stroke-width="2"/>'
+                         f'<text x="{x + 11:.1f}" y="{y + 4:.1f}">{E(nm)} {tag}</text></g>')
+    for t, (lat, lon) in HUBS_LABEL.items():
+        if lo0 <= lon <= lo1 and la0 <= lat <= la1 and view == "overview":
+            x, y = proj.xy(lon, lat)
+            col = LEVEL[th[t]["level"]]
+            parts.append(f'<g class="tl"><rect x="{x - 56:.1f}" y="{y - 14:.1f}" width="112" height="28" rx="3" '
+                         f'style="stroke:{col}"/><text x="{x:.1f}" y="{y - 1:.1f}" class="a">{E(NAME[t])}</text>'
+                         f'<text x="{x:.1f}" y="{y + 10:.1f}" class="b" fill="{col}">{E(th[t]["level"].upper())}</text></g>')
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def legend(extras, topo):
+    ex = extras or {}
+    n_mil = sum(1 for a in ex.get("mil", []) if not a["lift"])
+    n_lift = sum(1 for a in ex.get("mil", []) if a["lift"])
+    bits = [f'<span><i class="sw ac mil"></i>Military aircraft ({n_mil})</span>',
+            f'<span><i class="sw ac lift"></i>Airlift / tanker ({n_lift})</span>',
+            f'<span><i class="sw hz"></i>Naval-air hazard warnings ({len(ex.get("nga", []))})</span>',
+            f'<span><i class="sw cz"></i>EASA airspace bulletin ({len(ex.get("czib", []))})</span>',
+            '<span><i class="sw lv2"></i>US advisory level 2</span><span><i class="sw lv3"></i>3</span>'
+            '<span><i class="sw lv4"></i>4 (do not travel)</span>']
+    miss = []
+    if not topo:
+        miss.append("basemap")
+    miss += [e.split(":")[0] for e in ex.get("errors", [])]
+    if extras is None:
+        miss.append("live layers (demo)")
+    note = f'<span class="miss">Layer unavailable this run: {E(", ".join(miss))}</span>' if miss else ""
+    return f'<div class="legend">{"".join(bits)}{note}</div>'
+
+
+def hazard_strip(extras, view):
+    box = geo.VIEWS[view]
+    items = [m for m in (extras or {}).get("nga", []) if box[0] <= m["lon"] <= box[1] and box[2] <= m["lat"] <= box[3]][:3]
+    if not items:
+        return '<div class="hzs"><b>Hazard warnings</b><span class="muted">None active in this view (NGA broadcast warnings).</span></div>'
+    return '<div class="hzs"><b>Hazard warnings</b>' + "".join(f'<span title="{E(m["text"])}">{E(m["id"])}: {E(m["text"][:95])}</span>' for m in items) + '</div>'
+
+
+# ---- views -----------------------------------------------------------------------------------
+def poly_list(extras, n=5):
+    mk = (extras or {}).get("poly", [])[:n]
+    if not mk:
+        return '<div class="sr dim"><span class="nm">Prediction markets unavailable this run.</span></div>'
+    return "".join(f'<div class="sr" title="{E(m["q"])} | volume ${m["vol"]:,.0f}, ends {E(m["end"])}">'
+                   f'<span class="nm">{E(m["q"])}</span><span class="cell"><b class="v">{m["p"] * 100:.0f}%</b></span></div>' for m in mk)
+
+
+def theatre_view(tid, title, theatre, view, th, series, topo, extras):
+    v = th[theatre]
+    return (f'<section class="view v-{tid}"><div class="mapcol"><div class="mapbox">{build_map(view, topo, extras, series, th)}'
+            f'{legend(extras, topo)}</div>{hazard_strip(extras, view)}</div>'
+            f'<aside class="side">{level_card(title, v)}<h4>Signal groups</h4>{domain_rows(v)}'
+            f'<h4>Most unusual signals</h4>{top_signals(series, theatre)}</aside></section>')
+
+
+def overview_view(th, series, topo, extras):
+    cards = "".join(f'<div class="tc">{level_card(NAME[t], th[t])}</div>'
+                    for t in ("ukraine", "europe_east", "mideast", "global"))
+    pool = [(zval(s), s) for s in series if zval(s) is not None]
+    pool.sort(key=lambda x: -x[0])
+    movers = "".join(srow(s) for _, s in pool[:8]) or '<div class="sr dim"><span class="nm">No signal has enough history yet.</span></div>'
+    return (f'<section class="view v-overview"><div class="mapcol"><div class="mapbox">{build_map("overview", topo, extras, series, th)}'
+            f'{legend(extras, topo)}</div></div>'
+            f'<aside class="side"><div class="tcs">{cards}</div><h4>Most unusual signals, everywhere</h4>{movers}'
+            f'<h4>What traders price (Polymarket, not scored)</h4>{poly_list(extras)}</aside></section>')
+
+
+def supply_view(series):
+    def col(dom):
+        rows = [s for s in series if s["domain"] == dom]
+        rows.sort(key=lambda s: -(zval(s) if zval(s) is not None else -99))
+        live = sum(1 for s in rows if s["status"] == "ok")
+        return (f'<h4>{E(C.DOMAINS[dom])} <span class="muted">{live}/{len(rows)} live</span></h4>'
+                + "".join(srow(s) for s in rows))
+    cols = [f'<div class="col">{col("kit")}</div>',
+            f'<div class="col">{col("vehicles")}{col("infrastructure")}</div>',
+            f'<div class="col">{col("medical")}{col("markets")}</div>']
+    return (f'<section class="view v-supply"><div class="cols">{"".join(cols)}</div>'
+            '<p class="foot">Supplier-side data: what the US and EU are buying and shipping. Most of it is published weeks late, '
+            'so it confirms a build-up; the map tabs carry the fast signals. Grey dot = confirms, green dot = can lead.</p></section>')
+
+
+def system_view(series, generated, demo):
+    stat = {}
+    for s in series:
+        k = "stale" if s.get("stale") else s["status"]
+        stat[k] = stat.get(k, 0) + 1
+    hs = [("ok", "Live"), ("stale", "Stale"), ("collecting", "Building history"), ("awaiting_key", "Need a key"), ("error", "Failed")]
+    cards = "".join(f'<div class="hs"><b>{stat.get(k, 0)}</b><span>{lbl}</span></div>' for k, lbl in hs)
+    bad = [s for s in series if s["status"] in ("error", "awaiting_key")][:10]
+    badl = "".join(f'<div class="sr dim" title="{E(s["error"])}"><span class="nm">{E(s["label"])}</span>'
+                   f'<span class="cell"><span class="mini bad">{E(s["error"][:46])}</span></span></div>' for s in bad) \
+        or '<div class="sr"><span class="nm">Every source answered.</span></div>'
+    how = (f'<ul><li><b>Score.</b> Distance of each signal from its own usual range for the season, in standard deviations. '
+           f'Above +{C.THRESH_SIGNAL:.1f} is unusual; about 1 calm reading in 100 does that by chance.</li>'
+           '<li><b>Level.</b> Counts independent groups that agree: Watch (one strong or two mild), Warning (two), Alert (three or more). It is not a probability of war.</li>'
+           '<li><b>Leads or lags.</b> Green dot: fast source that can lead (flights, warnings, news, shipping, markets). Grey dot: published weeks late, so it only confirms.</li>'
+           '<li><b>Snapshot signals</b> (aircraft, hazard warnings, navigation jamming) have no history yet. They show their latest value until about 12 weeks are stored, then score.</li>'
+           '<li><b>Limits.</b> No backtest against past conflicts has been run. Public data cannot see covert moves. Treat a Watch as a reason to read primary sources.</li></ul>')
+    gaps = [("GDELT news", "blocks every cloud IP address; replaced by Google News headline counts"),
+            ("ISW, UKMTO, OREF alerts", "block automated access; no free machine feed"),
+            ("GPS-jamming map (gpsjam)", "needs a hex-grid decoder; aircraft accuracy reports used instead"),
+            ("Satellite fire detection (NASA FIRMS)", "free; needs a map key from you"),
+            ("Conflict events (ACLED)", "free for research; needs an account from you"),
+            ("Port-level shipping, UN Comtrade", "queued; trade data is the slowest source anyway")]
+    gap = "".join(f'<div class="sr"><span class="nm" title="{E(b)}"><b>{E(a)}</b> <span class="muted">{E(b)}</span></span></div>' for a, b in gaps)
+    demo_note = '<p class="demo">DEMO: synthetic data, not real observations.</p>' if demo else ""
+    return (f'<section class="view v-system"><div class="sysg"><div><h4>Data health</h4><div class="hstats">{cards}</div>'
+            f'<h4>Sources not answering</h4>{badl}<h4>Not covered yet, and why</h4>{gap}</div><div><h4>How to read this</h4>{how}{demo_note}'
+            f'<p class="foot">Public data only: USAspending, Eurostat, TED, US Census, SAM.gov, IMF PortWatch, FCDO, US State Dept, '
+            f'NGA, adsb.lol, Google News, Polymarket, FRED. Updated {E(generated)}. Source: github.com/khourix/warwatch</p></div></div></section>')
+
+
+# ---- page --------------------------------------------------------------------------------------
 CSS = """
-:root{--primary:#76b900;--primary-dark:#5a8d00;--ink:#000;--canvas:#fff;--dark:#000;--soft:#f7f7f7;--elev:#1a1a1a;
---hair:#ccc;--hair-strong:#5e5e5e;--body:#1a1a1a;--mute:#757575;--stone:#898989;--on-dark:#fff;--on-dark-mute:rgba(255,255,255,.7);
---link:#0046a4;--error:#e52020;--warn:#df6500;--ok-deep:#3f8500;
---font:'Inter','NVIDIA-EMEA',Arial,Helvetica,sans-serif}
-*{box-sizing:border-box}html{scroll-behavior:smooth}
-body{margin:0;background:var(--canvas);color:var(--ink);font:400 16px/1.5 var(--font);-webkit-font-smoothing:antialiased}
-a{color:var(--link)}
-:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
-.wrap{max-width:1280px;margin:0 auto;padding:0 24px}
-/* chrome */
-.nav{position:sticky;top:0;z-index:20;background:var(--dark);color:var(--on-dark);border-bottom:1px solid var(--hair-strong);box-shadow:0 5px 5px rgba(0,0,0,.2)}
-.nav .wrap{display:flex;align-items:center;gap:16px;height:56px}
-.brand{font-weight:700;font-size:16px;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:10px}
-.brand i{width:12px;height:12px;background:var(--primary);display:inline-block}
-.nav .upd{margin-left:auto;font-size:12px;color:var(--on-dark-mute)}
-.nav a.jump{color:var(--on-dark);font-weight:700;font-size:14px;text-decoration:none;padding:8px 12px;border:1px solid var(--hair-strong);border-radius:2px}
-.nav a.jump:hover{border-color:var(--primary)}
-.hero{background:var(--dark);color:var(--on-dark);padding:48px 0 40px}
-.hero h1{font-size:40px;line-height:1.25;margin:0 0 12px;font-weight:700;max-width:760px}
-.hero p.lead{font-size:18px;color:var(--on-dark-mute);margin:0 0 32px;max-width:760px}
-.demo{background:var(--accent,#feeeb2);color:#000;padding:10px 14px;border-radius:2px;font-weight:700;margin:0 0 24px}
-.tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+:root{--bg:#0a0f0a;--panel:#10170f;--panel2:#141d13;--line:#223020;--ink:#e6efe4;--mute:#8a9c88;--acc:#3ddc84;--warn:#ff8a1f;--bad:#ff4d4f;
+--mono:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace;--sans:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.35 var(--sans);overflow:hidden}
 input.r{position:absolute;opacity:0;pointer-events:none}
-.tcard{position:relative;display:flex;flex-direction:column;gap:8px;padding:24px;background:var(--elev);border:1px solid var(--hair-strong);border-radius:2px;cursor:pointer;min-height:200px;color:var(--on-dark)}
-.tcard:hover{border-color:var(--primary)}
-.tcard .cs{position:absolute;top:0;left:0;width:12px;height:12px;background:var(--primary)}
-.tn{font-weight:700;font-size:20px;line-height:1.25}
-.lvlbadge{align-self:flex-start;font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.4px;padding:4px 10px;border-radius:2px}
-.tm{font-size:15px;color:var(--on-dark)}
-.tf{font-size:13px;color:var(--on-dark-mute)}
-.warn{font-size:13px;color:#ef9100;margin:0}
-/* sub-nav */
-.sub{background:var(--soft);border-bottom:1px solid var(--hair);position:sticky;top:56px;z-index:10}
-.sub .wrap{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-top:10px;padding-bottom:10px}
-.sub .lab{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--mute);margin-right:4px}
-.pill{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:2px;border:1px solid var(--hair);background:var(--canvas);font-weight:700;font-size:14.4px;cursor:pointer;min-height:44px}
-.pill b{font-size:12px;padding:2px 6px;border-radius:2px}
-.sep{width:1px;align-self:stretch;background:var(--hair);margin:0 8px}
-.chip{padding:10px 14px;border-radius:2px;border:1px solid var(--hair);background:var(--canvas);font-weight:700;font-size:13px;cursor:pointer;min-height:44px;display:inline-flex;align-items:center}
-/* panels */
-.panel{display:none;padding:40px 0 24px}
-main{padding-bottom:24px}
-.phead h2{font-size:28px;line-height:1.25;margin:0 0 8px}
-.phead p{margin:0 0 24px;color:var(--body);max-width:820px}
-.movers{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin:0 0 32px}
-.mv{position:relative;border:1px solid var(--hair);border-radius:2px;padding:16px 16px 16px 20px}
-.mv::before{content:"";position:absolute;top:0;left:0;width:12px;height:12px;background:var(--primary)}
-.mv b{display:block;font-size:28px;line-height:1.25}.mv b.hot{color:var(--error)}
-.mv span{font-size:14px;color:var(--body)}
-.dom{border:1px solid var(--hair);border-radius:2px;margin:0 0 24px;position:relative;background:var(--canvas)}
-.dom::before{content:"";position:absolute;top:-1px;left:-1px;width:12px;height:12px;background:var(--primary)}
-.dom.fire{border-color:var(--error)}
-.dom header{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;padding:20px 24px 12px 28px}
-.dom h3{margin:0;font-size:20px;line-height:1.25}
-.dz{font-size:14px;color:var(--mute)}.cnt{font-size:13px;color:var(--mute);margin-left:auto}
-.sig{border-top:1px solid var(--hair)}
-.sig summary{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2.2fr) 150px minmax(0,1.5fr);gap:16px;align-items:center;padding:12px 24px 12px 28px;cursor:pointer;list-style:none;min-height:56px}
-.sig summary::-webkit-details-marker{display:none}
-.sig summary:hover{background:var(--soft)}
-.nm{font-size:15px;font-weight:700;line-height:1.4}
-.vis{display:flex;align-items:center;gap:10px}
-.zbar{position:relative;display:inline-block;width:150px;height:10px;background:var(--soft);border:1px solid var(--hair);border-radius:2px;flex:none}
-.zbar i{position:absolute;top:0;bottom:0}
-.zc{left:50%;width:1px;background:var(--stone)}
-.zt{width:1px;background:var(--warn);opacity:.7}
-.zf{background:var(--stone)}.zf.hot{background:var(--error)}
-.zv{font-size:16px;min-width:46px;text-align:right}.zv.hot{color:var(--error)}
-.state{font-size:14px;color:var(--mute)}.state.bad{color:var(--error);font-weight:700}
-.spk{color:var(--mute)}.nospark{font-size:12px;color:var(--stone)}
-.tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
-.tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:3px 8px;border-radius:2px;background:var(--soft);color:var(--body);border:1px solid var(--hair);line-height:1.2}
-.tag.fast{background:#000;color:var(--primary);border-color:#000}
-.tag.fire{background:var(--error);color:#fff;border-color:var(--error)}
-.tag.fail{background:#fff;color:var(--error);border-color:var(--error)}
-.tag.stale{background:#feeeb2;border-color:#ef9100;color:#000}
-.more{padding:4px 28px 18px;background:var(--soft);border-top:1px solid var(--hair)}
-.more p{margin:8px 0 0;font-size:15px;max-width:820px}.more .meta{font-size:13px;color:var(--mute)}
-.sig.st-error summary .nm,.sig.st-awaiting_key summary .nm,.sig.st-collecting summary .nm{font-weight:400;color:var(--body)}
-/* filters (CSS only) */
-#f-moving:checked~main .sig:not(.hotrow){display:none}
-#f-problems:checked~main .sig.st-ok:not(.stalerow){display:none}
-#f-fast:checked~main .sig[data-fast="0"]{display:none}
-#f-fast:checked~main .dom:not(:has(.sig[data-fast="1"])){display:none}
-#f-moving:checked~main .dom:not(:has(.hotrow)){display:none}
-#f-problems:checked~main .dom:not(:has(.sig:not(.st-ok))):not(:has(.stalerow)){display:none}
-.sub .chip,.sub .pill{position:relative}
-.health{margin:40px 0 0}
-.health h2,.method h2{font-size:28px;line-height:1.25;margin:0 0 8px}
-.hstats{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin:16px 0}
-.hs{border:1px solid var(--hair);border-radius:2px;padding:16px;position:relative}
-.hs::before{content:"";position:absolute;top:0;left:0;width:12px;height:12px;background:var(--primary)}
-.hs b{display:block;font-size:28px;line-height:1.25}.hs span{font-size:14px;color:var(--mute)}
-.method{background:var(--soft);border-top:1px solid var(--hair);padding:48px 0;margin-top:40px}
-.method ul{margin:12px 0 0;padding-left:20px;max-width:820px}.method li{margin:6px 0}
-footer{background:var(--dark);color:var(--on-dark-mute);padding:48px 0;font-size:14px}
-footer p{max-width:820px;margin:0 0 12px}
-@media(max-width:1024px){.tgrid{grid-template-columns:repeat(2,1fr)}.sig summary{grid-template-columns:1fr 1fr;gap:8px 16px}.spk{display:none}.tags{justify-content:flex-start}}
-@media(max-width:600px){.sub .wrap{flex-wrap:nowrap;overflow-x:auto;white-space:nowrap}.wrap{padding:0 16px}.hero h1{font-size:28px}.hero p.lead{font-size:16px}.tgrid{grid-template-columns:1fr}.nav .upd{display:none}
-.sig summary{grid-template-columns:1fr}.zbar{width:100%;max-width:220px}.dom header{padding:16px 16px 8px 20px}.sig summary,.more{padding-left:20px;padding-right:16px}.cnt{margin-left:0}}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+.app{height:100vh;display:grid;grid-template-rows:46px minmax(0,1fr)}
+.top{display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+.brand{font-weight:800;letter-spacing:.14em;font-size:13px;display:flex;align-items:center;gap:8px}
+.brand i{width:9px;height:9px;background:var(--acc);border-radius:50%;box-shadow:0 0 8px var(--acc)}
+.tabs{display:flex;gap:2px;margin-left:8px;height:100%}
+.tabs label{display:flex;align-items:center;gap:7px;padding:0 14px;cursor:pointer;color:var(--mute);font-weight:600;border-bottom:2px solid transparent;font-size:12.5px;white-space:nowrap}
+.tabs label:hover{color:var(--ink)}
+.tabs label b{width:8px;height:8px;border-radius:50%;background:var(--c,#6b7a8a)}
+.gl{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--mute);font-size:12px}
+.pill{display:inline-block;padding:2px 9px;border-radius:3px;background:var(--c);color:#06100a;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:800}
+.stage{min-height:0;position:relative}
+.view{display:none;position:absolute;inset:0;padding:10px;gap:10px;min-height:0}
+.v-overview,.v-ukraine,.v-east,.v-mideast{grid-template-columns:minmax(0,1.55fr) minmax(330px,1fr)}
+.mapcol{display:flex;flex-direction:column;gap:8px;min-height:0;min-width:0}
+.mapbox{position:relative;flex:1;min-height:0;background:#06100f;border:1px solid var(--line);border-radius:4px;overflow:hidden;display:flex}
+.map{width:100%;height:100%}
+.sea{fill:#071312}
+.cty{fill:#162216;stroke:#2c4129;stroke-width:.7}
+.cty.lv2{fill:#3a3512}.cty.lv3{fill:#5a2f12}.cty.lv4{fill:#5c1a1c}
+.ac.mil{fill:#f5c518;opacity:.9}.ac.lift{fill:#37d5ff;stroke:#06100a;stroke-width:.6}
+.hz{fill:#ff4d4f;opacity:.9}.cz{fill:none;stroke:#c792ff;stroke-width:1.6;opacity:.9}
+.ck text{fill:#d6e2d3;font:600 12px var(--sans);paint-order:stroke;stroke:#06100a;stroke-width:3px}
+.tl rect{fill:#0c150c;fill-opacity:.88;stroke-width:1.5}.tl text{text-anchor:middle;font-family:var(--sans)}
+.tl .a{fill:#e6efe4;font-size:11px;font-weight:600}.tl .b{font-size:11px;font-weight:800;letter-spacing:.08em}
+.legend{position:absolute;left:8px;bottom:8px;right:8px;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11px;color:var(--mute);background:rgba(6,16,15,.82);padding:5px 9px;border-radius:3px}
+.legend span{display:inline-flex;align-items:center;gap:5px}.legend .miss{color:var(--warn);margin-left:auto}
+.sw{width:9px;height:9px;display:inline-block;border-radius:50%}
+.sw.cz{border:2px solid #c792ff;background:none}.sw.mil{background:#f5c518}.sw.lift{background:#37d5ff}.sw.hz{background:#ff4d4f;border-radius:0;transform:rotate(45deg) scale(.85)}
+.sw.lv2{background:#3a3512;border:1px solid #6d6320;border-radius:2px}.sw.lv3{background:#5a2f12;border:1px solid #8b4a1d;border-radius:2px}.sw.lv4{background:#5c1a1c;border:1px solid #8f2c2f;border-radius:2px}
+.hzs{display:flex;gap:14px;align-items:baseline;font-size:11.5px;color:var(--mute);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:6px 10px;overflow:hidden;white-space:nowrap}
+.hzs b{color:var(--ink);flex:none}.hzs span{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.side{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:10px 12px;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+h4{margin:10px 0 5px;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:700;display:flex;justify-content:space-between}
+h4:first-child{margin-top:0}
+.lvl{border-left:3px solid var(--c);background:var(--panel2);padding:8px 10px;border-radius:3px}
+.lvl .lh{display:flex;align-items:center;justify-content:space-between;gap:8px}.lvl .ln{font-weight:700;font-size:14px}
+.lvl p{margin:3px 0 0;color:var(--ink)}.lvl .sub{color:var(--mute);font-size:11.5px}.lvl .note{color:var(--warn);font-size:11.5px}
+.tcs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.tc .lvl{height:100%}
+.tc .lvl p{font-size:11.5px}.tc .lvl .sub{display:none}
+.sr{display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:8px;align-items:center;min-height:24px;border-bottom:1px solid #1a261a}
+.sr:has(.dot)>.nm{grid-column:2}.sr:not(:has(.dot)){grid-template-columns:minmax(0,1fr) auto}
+.nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.cell{display:flex;align-items:center;gap:7px;justify-content:flex-end}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}.dot.fast{background:var(--acc)}.dot.lag{background:#5b6b59}
+.bar{position:relative;width:84px;height:7px;background:#0a110a;border:1px solid var(--line);border-radius:2px;flex:none}
+.bar i{position:absolute;top:0;bottom:0}.bar .c{left:50%;width:1px;background:#4b5e49}.bar .t{width:1px;background:var(--warn);opacity:.8}
+.bar .f{background:#5f7a5c}.bar .f.hot{background:var(--bad)}
+.v{font:700 12px var(--mono);min-width:38px;text-align:right}.v.hot{color:var(--bad)}
+.hotrow .nm{color:#fff;font-weight:600}
+.dim .nm{color:var(--mute)}.muted{color:var(--mute);font-size:11.5px}
+.mini{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);border:1px solid var(--line);padding:0 5px;border-radius:2px}
+.mini.stale{color:#f5c518;border-color:#5b4d10}.mini.bad{color:var(--bad);border-color:#5c1a1c;text-transform:none;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mini.warn{color:var(--warn);border-color:#5a3512}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;height:calc(100% - 30px);min-height:0}
+.col{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:10px 12px;overflow:hidden;min-height:0}
+
+.v-supply{display:none;flex-direction:column;gap:8px}.foot{margin:0;color:var(--mute);font-size:11.5px}
+.sysg{display:grid;grid-template-columns:1fr 1.2fr;gap:10px;height:100%;min-height:0}
+.sysg>div{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:12px 14px;overflow:hidden;min-height:0}
+.hstats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px}
+.hs{background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:8px}.hs b{display:block;font:700 22px var(--mono)}.hs span{font-size:11px;color:var(--mute)}
+.sysg ul{margin:0 0 8px;padding-left:16px}.sysg li{margin:5px 0}
+.demo{background:#f5c518;color:#000;padding:6px 9px;border-radius:3px;font-weight:700}
 """
 
 
-def render(result, generated, demo=False):
+def render(result, generated, demo=False, extras=None, topo=None):
     series, th = result["series"], result["theatres"]
-    # mark rows that are unusual right now so the "Moving" filter can find them
-    out_series = []
-    for s in series:
-        out_series.append(s)
-    names = list(C.THEATRES.items())
-    inputs, tabs, panels, rules = [], [], [], []
-    for i, (t, name) in enumerate(names):
-        bg, fg = LEVEL[th[t]["level"]]
-        inputs.append(f'<input class="r" type="radio" name="tab" id="t-{t}"{" checked" if i == 0 else ""}>')
-        tabs.append(f'<label class="pill" for="t-{t}">{E(name)} <b style="background:{bg};color:{fg}">{E(th[t]["level"])}</b></label>')
-        v = th[t]
-        top = movers([s for s in series if s["theatre"] in (t, "global")])
-        mv = "".join(f'<div class="mv"><b class="{"hot" if z >= C.THRESH_SIGNAL else ""}">{z:+.1f}</b>'
-                     f'<span>{E(s["label"])}</span></div>' for z, s in top)
-        lv = v["level"]
-        panels.append(
-            f'<div class="panel p-{t}"><div class="wrap"><div class="phead"><h2>{E(name)}: {E(lv)}</h2>'
-            f'<p>{E(MEANING[lv])} Scores show how far each signal is from its own recent normal, in standard '
-            f'deviations. Above +{C.THRESH_SIGNAL:.1f} counts as unusual.</p></div>'
-            f'<h3 style="margin:0 0 12px;font-size:20px">Biggest movers</h3><div class="movers">{mv or "<p>No signals have enough history yet.</p>"}</div>'
-            f'{panel(t, v, series)}</div></div>')
-        rules.append(f'#t-{t}:checked~main .p-{t}{{display:block}}'
-                     f'#t-{t}:checked~.sub label[for=t-{t}]{{background:var(--ink);color:var(--on-dark);border-color:var(--ink)}}')
-    for f in ("all", "moving", "fast", "problems"):
-        rules.append(f'#f-{f}:checked~.sub label[for=f-{f}]{{background:var(--primary);color:#000;border-color:var(--primary)}}')
-    cards = "".join(theatre_card(t, name, th[t], series) for t, name in names)
-    stat = {}
-    for s in series:
-        key = "stale" if s.get("stale") else s["status"]
-        stat[key] = stat.get(key, 0) + 1
-    hs = [("ok", "Live"), ("stale", "Stale (last good data)"), ("collecting", "Building history"),
-          ("awaiting_key", "Need a key"), ("error", "Failed")]
-    health = "".join(f'<div class="hs"><b>{stat.get(k, 0)}</b><span>{lbl}</span></div>' for k, lbl in hs)
-    banner = '<p class="demo">DEMO: this page shows synthetic data, not real observations.</p>' if demo else ""
-    worst = min((th[t]["level"] for t in th), key=ORDER.index)
-    headline = {
-        "Alert": "Several signal groups are unusual together.",
-        "Warning": "Two signal groups are unusual together.",
-        "Watch": "One area needs a closer look.",
-        "Normal": "No theatre is showing unusual activity.",
-        "insufficient data": "Not enough history yet to judge.",
-    }[worst]
+    worst = min((th[t]["level"] for t in th if t != "global"), key=ORDER.index)
+    tabs_def = [("overview", "Overview", worst)]
+    for tid, (title, theatre, _) in VIEWS.items():
+        tabs_def.append((tid, title, th[theatre]["level"]))
+    tabs_def += [("supply", "Supply chain", None), ("system", "System", None)]
+    inputs = "".join(f'<input class="r" type="radio" name="tab" id="t-{t}"{" checked" if i == 0 else ""}>'
+                     for i, (t, _, _) in enumerate(tabs_def))
+    def dot(lv):
+        return f"<b style='--c:{LEVEL[lv]}'></b>" if lv else ""
+    labels = "".join(f'<label for="t-{t}">{E(n)}{dot(lv)}</label>' for t, n, lv in tabs_def)
+    rules = "".join(f'#t-{t}:checked~.app .v-{t}{{display:{"flex" if t == "supply" else "grid"}}}'
+                    f'#t-{t}:checked~.app label[for=t-{t}]{{color:var(--ink);border-bottom-color:var(--acc);background:var(--panel2)}}'
+                    for t, _, _ in tabs_def)
+    views = (overview_view(th, series, topo, extras)
+             + "".join(theatre_view(tid, title, theatre, view, th, series, topo, extras) for tid, (title, theatre, view) in VIEWS.items())
+             + supply_view(series) + system_view(series, generated, demo))
+    banner = '<span class="pill" style="--c:#f5c518">DEMO DATA</span>' if demo else ""
+    responsive = ("@media(max-width:900px),(max-height:520px){body{overflow:auto}.app{height:auto;display:block}.top{flex-wrap:wrap;padding:8px}"
+                  ".stage{position:static}.view{position:static;padding:8px}.sysg{display:block}"
+                  ".mapbox{height:60vh}.cols{grid-template-columns:1fr;height:auto}.tabs{order:3;width:100%;overflow-x:auto;margin:0}.gl{margin-left:auto}"
+                  ".view{grid-template-columns:1fr!important}}")
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Warwatch: early-warning dashboard</title>
-<meta name="description" content="Public-data early-warning indicators for the US, EU, Ukraine and the Middle East.">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-<style>{CSS}{"".join(rules)}</style></head><body>
-{"".join(inputs)}
-<input class="r" type="radio" name="flt" id="f-all" checked><input class="r" type="radio" name="flt" id="f-moving">
-<input class="r" type="radio" name="flt" id="f-fast"><input class="r" type="radio" name="flt" id="f-problems">
-<header class="nav"><div class="wrap"><div class="brand"><i></i>Warwatch</div>
-<span class="upd">Updated {E(generated)}</span><a class="jump" href="#health">Data health</a></div></header>
-<section class="hero"><div class="wrap">{banner}<h1>{E(headline)}</h1>
-<p class="lead">A watch-list built only from public data. It counts how many independent signal groups (kit, vehicles, medical, infrastructure, flows, attention, markets) are unusual at once. It is decision support, not a forecast.</p>
-<div class="tgrid">{cards}</div></div></section>
-<nav class="sub" aria-label="Theatre and filters"><div class="wrap"><span class="lab">Theatre</span>{"".join(tabs)}
-<span class="sep"></span><span class="lab">Show</span>
-<label class="chip" for="f-all">All</label><label class="chip" for="f-moving">Unusual only</label>
-<label class="chip" for="f-fast">Early signals only</label><label class="chip" for="f-problems">Problems only</label></div></nav>
-<main>{"".join(panels)}
-<div class="wrap health" id="health"><h2>Data health</h2><p>Every source is checked on each refresh. A failed source keeps its last good data and is marked stale; it is never read as calm.</p>
-<div class="hstats">{health}</div></div></main>
-<section class="method"><div class="wrap"><h2>How to read this</h2><ul>
-<li><b>Score.</b> How far a signal is from its own usual range for that time of year, in standard deviations. About 1 in 100 calm readings crosses +{C.THRESH_SIGNAL:.1f} by chance.</li>
-<li><b>Levels.</b> Watch: one group strongly unusual, or two mildly. Warning: two groups. Alert: three or more. The level counts agreeing groups; it is not a probability of war.</li>
-<li><b>Leads or lags.</b> Contract awards and trade statistics are published weeks to months late and can only confirm. Tenders, news, flights, shipping and attention data are fast and can lead.</li>
-<li><b>Coverage.</b> US and EU supply data first, then Ukraine and the Middle East. Global signals appear in every theatre.</li>
-<li><b>Limits.</b> No backtest against past conflicts has been run yet. Treat a Watch as a reason to look at primary sources, not as a conclusion.</li></ul></div></section>
-<footer><div class="wrap"><p>Public data only: USAspending, Eurostat Comext, TED, US Census, SAM.gov, IMF PortWatch, FCDO and US State Department advisories, GDELT, Wikipedia, ADS-B, FRED and others. No private or client data.</p>
-<p>Open source: github.com/khourix/warwatch</p></div></footer>
-</body></html>"""
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Warwatch early-warning monitor</title>
+<meta name="description" content="Public-data early-warning monitor for the US, EU, Ukraine and the Middle East.">
+<style>{CSS}{rules}{responsive}</style></head><body>
+{inputs}
+<div class="app"><header class="top"><div class="brand"><i></i>WARWATCH</div><nav class="tabs" aria-label="Views">{labels}</nav>
+<div class="gl">{banner}<span>Updated {E(generated)}</span>{level_pill(worst)}</div></header>
+<main class="stage">{views}</main></div></body></html>"""

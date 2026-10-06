@@ -42,8 +42,11 @@ Five things changed.
 | Eurostat Comext `DS-045409` (JSON-stat) | EU exports by HS code and destination, monthly | none | yes |
 | TED `v3/notices/search` | EU tenders by CPV code, count per month | none | yes |
 | IMF PortWatch (ArcGIS) | daily ship transits per chokepoint | none | yes |
-| GDELT DOC 2.0 | daily news volume by theatre query | none, 1 request per 5 s | yes |
-| Wikipedia pageviews | daily readers of chosen articles | none | yes |
+| Google News RSS (`after:`/`before:` windows) | daily headline count for warning phrases per theatre | none | yes (rebuilt day by day) |
+| NGA broadcast warnings | active naval and air hazard notices with positions (missiles, exercises, mines, GPS) | none | no (snapshot) |
+| adsb.lol `/v2/mil` and `/v2/point` | military aircraft; airliner count and GPS accuracy (NACp) near hubs | none | no (snapshot) |
+| EASA conflict-zone bulletins (JSON export) | active zones and their last revision | none | no (snapshot) |
+| Polymarket Gamma API | prediction-market odds, display only | none | no |
 | UK FCDO travel advice (GOV.UK content API) | advisory update history per country | none | yes |
 | US State Dept advisories feed | advisory levels per country | none | yes |
 | adsb.lol `/v2/mil` | military aircraft now, counted by theatre box | none | yes (snapshot only) |
@@ -74,8 +77,10 @@ reader attention.
 - **Forward infrastructure:** fencing and bridging awards and tenders.
 - **Sea and air flows:** PortWatch transits (Hormuz, Bab el-Mandeb, Suez,
   Bosporus; a fall is the warning), ADS-B military and airlift counts.
-- **Attention and advisories:** GDELT per theatre, Wikipedia readers, UK and
-  US advisory activity.
+- **Airspace and navigation:** aircraft reporting degraded GPS near hubs,
+  airliner counts (a fall means closures), NGA hazard warnings, EASA bulletins.
+- **Advisories and news:** warning-phrase headline counts, UK and US advisory
+  activity.
 - **Markets:** Brent and VIX.
 
 Destination sets: Ukraine (UA); Middle East (Israel, Jordan, Lebanon, Saudi
@@ -138,7 +143,7 @@ not remove this.
 
 - Boots, pickups and blood are hypotheses; two of three routes lag.
 - ADS-B sees only transponding aircraft, and only from first-run onward.
-- GDELT and Wikipedia attention also rise on elections, exercises and films.
+- News counts also rise on elections, exercises and films. GDELT (blocks cloud addresses) and Wikipedia readership (reacts after events) were dropped.
 - With a few years of monthly history, seasonal factors rest on 3 to 5 points
   per month; scores are rough, which is why the level is a count.
 - Terms: all sources used here permit this use; read ACLED's terms before

@@ -129,14 +129,60 @@ for th in C.BOXES:
     add(f"adsb_{th}_lift", f"Airlift and tanker aircraft visible, {C.THEATRES[th]}", "flows", th, "daily", False,
         "Transports and tankers surge before operations.", _adsb(th, "lift"))
 
-# ---- attention: news, pageviews, advisories --------------------------------------------
-# GDELT news volume was retired: it rate-limits every GitHub runner address (verified 2026-10-06).
-for key, arts in C.WIKI.items():
-    dom = key if key in C.DOMAINS else "attention"
-    th = key if key in C.THEATRES else "global"
-    for a in arts:
-        add(f"wiki_{a.lower()}", f"Wikipedia readers: {a.replace('_', ' ')}", dom, th, "daily", False,
-            "Public curiosity spikes on events and on fear.", (lambda a=a: S.fetch_wiki(a)))
+# ---- airspace and navigation: snapshot signals, history builds from the first run -------
+import extras  # noqa: E402
+
+
+def _snap(sid, fn):
+    def go():
+        v = fn()
+        if v is not None:
+            store.append(sid, v)
+        return store.daily(sid)
+    return go
+
+
+def _gnss(theatre):
+    def f():
+        n, bad = extras.hub_stats(theatre)
+        return 100.0 * bad / n if n >= 8 else None   # too few aircraft to read a percentage
+    return f
+
+
+for th in C.HUBS:
+    add(f"gnss_{th}", f"Aircraft reporting degraded GPS, {C.THEATRES[th]} (% of traffic)", "airspace", th, "daily", False,
+        "Jamming shows up as poor navigation accuracy (NACp below 8) in airliners' own broadcasts, "
+        "often before a strike or deployment. Snapshots start now.",
+        _snap(f"gnss_{th}", _gnss(th)), url="https://api.adsb.lol/")
+    add(f"civil_{th}", f"Airliners in the air near the theatre, {C.THEATRES[th]}", "airspace", th, "daily", False,
+        "A fall means airspace is being closed or avoided. Snapshots start now.",
+        _snap(f"civil_{th}", lambda t=th: float(extras.hub_stats(t)[0]) or None), direction="down", url="https://api.adsb.lol/")
+    add(f"nga_{th}", f"New naval and air hazard warnings, last 30 days, {C.THEATRES[th]} (NGA)", "airspace", th, "daily",
+        False, "Missile firing, exercises, mines and GPS interference notices to mariners and pilots; "
+        "exercises are announced before they happen.",
+        _snap(f"nga_{th}", lambda t=th: extras.nga_recent(t)), url="https://msi.nga.mil/")
+
+def _news(th):
+    sid = f"news_{th}"
+
+    def go():
+        if os.environ.get("WARWATCH_LIVE"):
+            return S.fetch_gnews(sid, C.GNEWS[th], days=150)
+        pts = store.cache_load(sid)
+        if not pts:
+            raise RuntimeError("first refresh pending (news history fills from the news job)")
+        return pts
+    return go
+
+
+for th in C.GNEWS:
+    add(f"news_{th}", f"Headlines with warning language per day, {C.THEATRES[th]} (Google News)", "attention", th,
+        "daily", False, "Counts headlines pairing the theatre with mobilization, evacuation, airspace-closure or "
+        "troop-build-up wording. Fast, free and backfilled from the news archive; it also reacts to events, so it is "
+        "read together with the other groups.", _news(th), url="https://news.google.com/")
+add("easa_czib_updates", "Airspace risk bulletins revised in last 30 days (EASA)", "airspace", "global", "daily", False,
+    "EASA revises its conflict-zone bulletins when it sees rising danger to airliners. Snapshots start now.",
+    _snap("easa_czib_updates", lambda: extras.czib_recent()), url="https://www.easa.europa.eu/en/domains/air-operations/czibs")
 for th, slugs in C.FCDO.items():
     add(f"fcdo_{th}", f"UK travel-advice updates: {C.THEATRES[th]}", "attention", th, "daily", False,
         "A cluster of advisory rewrites precedes evacuations.", (lambda s=slugs: S.fetch_fcdo(s)))

@@ -1,0 +1,34 @@
+name: news
+# Headline counts for warning-class language (Google News RSS), extended a few days per run.
+# First run: dispatch with max_requests=500 to backfill about 150 days for each theatre.
+on:
+  schedule:
+    - cron: "40 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      max_requests:
+        description: "calls per series this run (12 = daily upkeep, 150 = full backfill)"
+        required: false
+        default: "12"
+permissions:
+  contents: write
+concurrency:
+  group: warwatch-news
+  cancel-in-progress: false
+jobs:
+  news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch headline counts
+        env:
+          WARWATCH_LIVE: "1"
+          GNEWS_MAX: ${{ github.event.inputs.max_requests || '12' }}
+        run: python3 warwatch/run.py --only news_ukraine,news_mideast,news_europe_east --fetch-only
+      - name: Commit cache (public data only)
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add warwatch/history/cache 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "news: $(date -u +%FT%H:%MZ)" && git pull --rebase -q && git push -q) || echo "push skipped"

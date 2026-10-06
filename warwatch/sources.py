@@ -4,6 +4,7 @@ function's docstring says UNVERIFIED (needs a key nobody has supplied yet).
 """
 import datetime as dt
 import json
+import os
 import time
 import urllib.error
 import urllib.parse
@@ -258,39 +259,44 @@ def adsb_counts(p, box):
     return float(tot), float(lift)
 
 
+_ADSB = {}
+
+
 def fetch_adsb():
-    return get("https://api.adsb.lol/v2/mil")
+    """One call per run: every ADS-B series reads the same snapshot."""
+    if "mil" not in _ADSB:
+        _ADSB["mil"] = get("https://api.adsb.lol/v2/mil")
+    return _ADSB["mil"]
 
 
-# ---- GDELT / Wikipedia -----------------------------------------------------------
-def parse_gdelt(p):
-    if "timeline" not in p:
-        raise ValueError("GDELT returned no timeline: " + str(p)[:80])
-    out = []
-    for s in p.get("timeline", [])[:1]:
-        for d in s.get("data", []):
-            t = d["date"]
-            out.append((f"{t[:4]}-{t[4:6]}-{t[6:8]}", float(d["value"])))
-    return sorted(out)
+# ---- Google News RSS: headline counts for warning phrases, rebuilt day by day -----
+def parse_gnews_count(xml):
+    """Number of <item> headlines in a Google News RSS response (a query returns at most 100)."""
+    return float(xml.count("<item>"))
 
 
-def fetch_gdelt(query, timespan="3months"):   # the DOC API holds a rolling 3 months
-    time.sleep(12)      # GDELT: one request per 5 seconds, and shared runner IPs get 429s
-    q = urllib.parse.urlencode({"query": query, "mode": "timelinevolraw", "format": "json", "timespan": timespan})
-    return parse_gdelt(get("https://api.gdeltproject.org/api/v2/doc/doc?" + q, retries=4, wait=20))
+def gnews_day(query, day):
+    q = urllib.parse.urlencode({"q": f"{query} after:{day} before:{day + dt.timedelta(days=1)}",
+                                "hl": "en-US", "gl": "US", "ceid": "US:en"})
+    return parse_gnews_count(get("https://news.google.com/rss/search?" + q, raw=True, retries=2, wait=10))
 
 
-def parse_wiki(p):
-    return sorted((f"{i['timestamp'][:4]}-{i['timestamp'][4:6]}-{i['timestamp'][6:8]}", float(i["views"]))
-                  for i in p.get("items", []))
-
-
-def fetch_wiki(article, days=400):
-    time.sleep(1.5)
-    end = dt.date.today() - dt.timedelta(days=1)
-    start = end - dt.timedelta(days=days)
-    return parse_wiki(get("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/"
-                          f"all-access/user/{article}/daily/{start:%Y%m%d}/{end:%Y%m%d}", retries=4, wait=15))
+def fetch_gnews(sid, query, days=120, max_requests=None, today=None):
+    """Daily headline counts for `query`. The cache (history/cache/<sid>.csv) is extended
+    by whichever days are missing, newest first, at most `max_requests` per run, so the
+    history fills over a few runs and needs only a handful of calls afterwards."""
+    import store
+    today = today or dt.date.today()
+    cap = max_requests if max_requests is not None else int(os.environ.get("GNEWS_MAX", "12"))
+    have = dict(store.cache_load(sid))
+    want = [today - dt.timedelta(days=i) for i in range(1, days + 1)]
+    for d in [d for d in want if d.isoformat() not in have][:cap]:
+        try:
+            have[d.isoformat()] = gnews_day(query, d)
+        except Exception:
+            break
+        time.sleep(1.5)
+    return sorted(have.items())[-days:]
 
 
 # ---- FRED (needs FRED_API_KEY) -------------------------------------------------

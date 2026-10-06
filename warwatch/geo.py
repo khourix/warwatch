@@ -80,6 +80,13 @@ class Proj:
         return self.lo - pad <= lon <= self.hi + pad and self.la0 - pad <= lat <= self.la1 + pad
 
 
+def view_size(box, width=1000):
+    """Pixel size (w, h) that keeps a lon/lat box undistorted under Mercator."""
+    lo, hi, la0, la1 = box
+    y = Proj._m(la1) - Proj._m(la0)
+    return width, round(width * y / math.radians(hi - lo))
+
+
 def paths(topo, proj, level_of=None):
     """-> list of (name, svg_path_d, level_class). Rings wholly outside the view are skipped."""
     out = []

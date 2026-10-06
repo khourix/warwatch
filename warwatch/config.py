@@ -9,7 +9,8 @@ DOMAINS = {
     "medical": "Blood and trauma supplies",
     "infrastructure": "Forward infrastructure",
     "flows": "Sea and air flows",
-    "attention": "Attention and advisories",
+    "airspace": "Airspace and navigation",
+    "attention": "Advisories and news",
     "markets": "Markets",
 }
 THEATRES = {
@@ -47,19 +48,20 @@ FCDO = {   # UK travel-advice slugs per theatre
 STATE_ISO = {"ukraine": ["UP", "BO", "MD"],
              "mideast": ["IS", "IR", "LE", "JO", "IZ", "SA", "AE", "KU", "QA", "BA", "MU"],
              "europe_east": ["PL", "LH", "LG", "EN", "FI"]}   # FIPS codes, as the feed uses
-GDELT = {   # theatre -> (id, query)
-    "ukraine": ("gdelt_ukraine", '(Ukraine OR Kyiv OR Kharkiv) (mobilization OR offensive OR missile)'),
-    "mideast": ("gdelt_mideast", '(Iran OR Israel OR Hezbollah OR Houthi) (strike OR missile OR mobilization)'),
-    "europe_east": ("gdelt_eastflank", '(Baltic OR Kaliningrad OR Suwalki OR Lithuania) (troops OR drills OR buildup)'),
+HUBS = {   # civil-traffic samples for GNSS-jamming and airspace-closure signals: (lat, lon, radius nm)
+    "ukraine": [(46.8, 26.5, 250)],
+    "europe_east": [(55.0, 22.5, 250)],
+    "mideast": [(31.5, 36.0, 300), (26.0, 52.0, 250)],
 }
-WIKI = {
-    "global": ["Conscription", "Mobilization", "Nuclear_warfare"],
-    "mideast": ["Strait_of_Hormuz", "Houthi_movement", "Hezbollah", "Islamic_Revolutionary_Guard_Corps"],
-    "europe_east": ["Kaliningrad_Oblast", "NATO"],
-    "ukraine": ["Russo-Ukrainian_War"],
-    "medical": ["Blood_donation", "Tourniquet"],
-    "vehicles": ["Toyota_Hilux", "Technical_(vehicle)"],
-    "kit": ["Combat_boot"],
+THEATRE_BOX = {   # lat_min, lat_max, lon_min, lon_max: where hazard warnings count toward a theatre
+    "ukraine": (43, 53, 22, 42),
+    "europe_east": (53, 66, 12, 30),
+    "mideast": (10, 40, 28, 62),
+}
+GNEWS = {   # theatre -> headline search for warning-class language (Google News RSS)
+    "ukraine": '(Ukraine OR Belarus) (mobilization OR "troops massing" OR reservists OR "airspace closed" OR "martial law")',
+    "mideast": '(Iran OR Israel OR Hezbollah OR Houthi) (mobilization OR evacuate OR "airspace closed" OR embassy OR "carrier strike group")',
+    "europe_east": '(Baltic OR Kaliningrad OR Suwalki OR Poland OR Lithuania) (troops OR exercise OR "airspace violation" OR "GPS jamming")',
 }
 CHOKEPOINTS = {  # PortWatch portname fragment -> theatre
     "Hormuz": "mideast", "Bab": "mideast", "Suez": "mideast",
