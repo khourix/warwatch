@@ -22,7 +22,7 @@ ZH_N = 60
 CLS_NAMES = {"lift": "Airlift", "tanker": "Tanker", "isr": "Surveillance / AWACS", "fighter": "Fighter", "bomber": "Bomber", "uav": "Drone", "heli": "Helicopter", "other": "Other military"}
 UNAVAILABLE = [
     ("NOTAMs (airspace closure notices)", "The FAA and ICAO feeds refuse automated requests from cloud servers (403/404). A free FAA NOTAM API key would let it through; in its place the dashboard reads US NGA hazard warnings, EASA airspace bulletins and live airliner counts."),
-    ("Ship positions outside the Baltic", "Global AIS needs a free aisstream.io key. Without one, only the Baltic (Finnish Digitraffic) is live, and US Navy units come from the weekly USNI Fleet Tracker."),
+    ("Ship tracking in the Gulf and Red Sea", "The free aisstream.io network has no receivers there (tested: zero ships in Hormuz or the Gulf of Aden while 2,300 appear worldwide), and warships often switch AIS off. US Navy units there come from the weekly USNI Fleet Tracker; Baltic, North Sea and Mediterranean AIS is live."),
     ("Conflict event data (ACLED)", "The ACLED account authenticates but the data API refuses access. The account needs data access enabled by ACLED."),
     ("Aircraft routes and owners", "Public ADS-B carries no flight plan for military aircraft. Owner is inferred from the aircraft's address block and call sign, and shown as such."),
     ("Strava heat maps, lobster and steak orders, strip-club traffic, freight-forwarder leaks, Telegram channels", "No open data, or only through private apps and terms of service that forbid scraping. Not used."),
