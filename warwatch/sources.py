@@ -480,3 +480,40 @@ def fetch_fred(series, key, days=900):
     start = (dt.date.today() - dt.timedelta(days=days)).isoformat()
     q = urllib.parse.urlencode({"series_id": series, "api_key": key, "file_type": "json", "observation_start": start})
     return parse_fred(get("https://api.stlouisfed.org/fred/series/observations?" + q))
+
+
+# ---- HDX HAPI: ACLED conflict-event counts (monthly, by admin area), free with a self-made app identifier ----
+_HAPI = {}
+
+
+def hapi_ident():
+    if "id" not in _HAPI:
+        _HAPI["id"] = get("https://hapi.humdata.org/api/v2/encode_app_identifier?" + urllib.parse.urlencode(
+            {"application": "warwatch", "email": "warwatch@users.noreply.github.com"}))["encoded_app_identifier"]
+    return _HAPI["id"]
+
+
+def parse_hapi_events(rows, types):
+    """HAPI conflict-events rows -> [(YYYY-MM, events)] summed over admin areas for the wanted event types."""
+    by = {}
+    for r in rows:
+        if r.get("event_type") in types:
+            m = str(r.get("reference_period_start"))[:7]
+            by[m] = by.get(m, 0.0) + float(r.get("events") or 0)
+    return sorted(by.items())
+
+
+def fetch_hapi_events(locations, types):
+    tot = {}
+    for loc in locations:
+        off = 0
+        while off < 200000:
+            p = get("https://hapi.humdata.org/api/v2/coordination-context/conflict-events?" + urllib.parse.urlencode(
+                {"app_identifier": hapi_ident(), "location_code": loc, "output_format": "json", "limit": 10000, "offset": off}))
+            rows = p.get("data", [])
+            for m, v in parse_hapi_events(rows, types):
+                tot[m] = tot.get(m, 0.0) + v
+            if len(rows) < 10000:
+                break
+            off += 10000
+    return sorted(tot.items())

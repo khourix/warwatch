@@ -29,6 +29,22 @@ UNAVAILABLE = [
 ]
 
 
+UPDATES = [   # (source, how often it is read, why that is enough / the free limit)
+    ("Aircraft positions, emergency squawks (adsb.lol)", "every 30 minutes", "Community feed with no stated cap; one call per layer per run."),
+    ("US Navy fleet (USNI Fleet Tracker)", "every 30 minutes, changes weekly", "USNI publishes once a week, usually Monday or Thursday."),
+    ("UKMTO incidents and maritime news", "every 30 minutes", "Incidents are posted within hours of the report."),
+    ("Ships (aisstream.io, Finnish Digitraffic)", "every 30 minutes, 75-second sample", "Free key; streams only while connected. Baltic needs no key."),
+    ("NASA FIRMS fires and thermal detections", "every 30 minutes", "Satellite passes update every ~3 hours; free limit is 5,000 requests per 10 minutes, we use about 15."),
+    ("Prediction-market odds and history", "every 30 minutes", "Polymarket and Kalshi public APIs; about 60 calls per run."),
+    ("Hazard warnings (NGA), airspace bulletins (EASA), GPS-jamming and airliner counts", "every 30 minutes, averaged per day", "Snapshots are appended and averaged into a daily value."),
+    ("Share prices (Twelve Data), FRED, ECB rates", "every 6 hours", "These publish one close per day; Twelve Data free plan allows 800 requests a day, we use about 40."),
+    ("Internet outage data (IODA), UK travel advice", "every 3 to 12 hours", "Changes slowly; the source keeps history."),
+    ("Headline counts (Google News) and GDELT events", "every 6 hours", "GDELT publishes daily files; news counts are backfilled a few days per run to stay polite."),
+    ("US contract awards, trade, EU tenders, ACLED-derived conflict counts", "once a day", "Monthly data with a 1 to 3 month publishing delay; more frequent reads add nothing."),
+    ("SAM.gov tenders", "once a day, rate-limited", "Free key allows 10 requests a day, so it runs in its own job."),
+]
+
+
 def _directed_pts(zh, direction):
     return [[lab, round(scoring.directed(z, direction), 2)] for lab, z in zh]
 
@@ -115,7 +131,7 @@ def build_data(res, generated, demo, ex, topo):
         "order": list(C.THEATRES),
         "series": [series_json(s) for s in res["series"]],
         "markets": ex.get("markets", []), "pizza": ex.get("pizza"), "errors": ex.get("errors", []),
-        "unavailable": [{"n": a, "w": b} for a, b in UNAVAILABLE], "clsnames": CLS_NAMES,
+        "unavailable": [{"n": a, "w": b} for a, b in UNAVAILABLE], "updates": [{"s": a, "e": b, "l": c} for a, b, c in UPDATES], "clsnames": CLS_NAMES,
         "map": map_json(topo, ex, ex.get("levels", {})) if topo else None,
     }
     return data

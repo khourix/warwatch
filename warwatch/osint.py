@@ -589,11 +589,14 @@ def fetch_aisstream(key, boxes, seconds=75, max_msgs=20000):
             if not fr:
                 break
             op, pl, buf = fr
-            if op == 1:
+            if op in (1, 2):   # aisstream sends JSON in binary frames
                 try:
-                    msgs.append(json.loads(pl))
+                    m = json.loads(pl)
                 except ValueError:
-                    pass
+                    continue
+                if "error" in m or "Error" in m:
+                    raise RuntimeError("aisstream: " + str(m.get("error") or m.get("Error"))[:100])
+                msgs.append(m)
             elif op == 9:
                 sock.sendall(ws_frame(pl, 10))
             elif op == 8:
