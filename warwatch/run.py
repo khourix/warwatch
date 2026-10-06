@@ -27,6 +27,13 @@ import store  # noqa: E402
 
 
 def _fetch(s, rec):
+    every = s.get("every")
+    if every and not os.environ.get("WARWATCH_FORCE"):
+        age = store.cache_age_hours(s["id"])
+        old = store.cache_load(s["id"]) if age is not None and age < every else []
+        if old:   # fetched recently enough: the source does not change faster than this
+            rec["points"] = old[:-s["drop"]] if s["drop"] else old
+            return
     pts = s["fetch"]()
     if not pts:
         raise RuntimeError("source returned no data")

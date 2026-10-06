@@ -43,6 +43,8 @@ def cache_path(series_id):
 def cache_save(series_id, pts):
     """Last good full fetch of a series; overwritten each time. Public data only."""
     os.makedirs(os.path.dirname(cache_path(series_id)), exist_ok=True)
+    with open(os.path.join(os.path.dirname(cache_path(series_id)), f"{series_id}.ts"), "w") as f:
+        f.write(dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M"))
     with open(cache_path(series_id), "w", newline="") as f:
         csv.writer(f).writerows((t, repr(float(v))) for t, v in pts)
 
@@ -68,3 +70,13 @@ def cache_rows_save(name, rows):
     os.makedirs(os.path.join(ROOT, "cache"), exist_ok=True)
     with open(os.path.join(ROOT, "cache", f"{name}.csv"), "w", newline="") as f:
         csv.writer(f).writerows(rows)
+
+
+def cache_age_hours(series_id):
+    """Hours since the series was last fetched in full, or None if never (a checkout's file times are meaningless, so a stamp file is kept)."""
+    try:
+        with open(os.path.join(os.path.dirname(cache_path(series_id)), f"{series_id}.ts")) as f:
+            t = dt.datetime.strptime(f.read().strip(), "%Y-%m-%dT%H:%M").replace(tzinfo=dt.timezone.utc)
+    except (OSError, ValueError):
+        return None
+    return (dt.datetime.now(dt.timezone.utc) - t).total_seconds() / 3600
