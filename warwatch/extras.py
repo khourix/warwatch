@@ -345,7 +345,7 @@ def collect():
         key = os.environ.get("FIRMS_MAP_KEY")
         if not key:
             return []
-        return osint.fetch_fires(key, {t: C.BOXES[t] for t in ("ukraine", "europe_east", "iran", "yemen", "israel")})
+        return osint.fetch_fires(key, C.FIRMS_BOX)
     for key, fn in (("mil", lambda: mil_positions(S.fetch_adsb())),
                     ("sqk", osint.fetch_squawks),
                     ("ships", ships),

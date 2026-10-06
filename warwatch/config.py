@@ -52,6 +52,12 @@ BOXES = {   # lat_min, lat_max, lon_min, lon_max for military ADS-B counts and h
     "israel": (27, 37, 28, 40),
 }
 THEATRE_BOX = BOXES
+FIRMS_BOX = {   # satellite thermal boxes: wider than the aircraft boxes so they cover the Levant, Iraq and the Gulf states
+    "ukraine": (44, 53, 22, 41), "europe_east": (49, 66, 14, 30),
+    "iran": (22, 40, 38, 64),      # Iran, Iraq, Kuwait, Bahrain, Qatar, UAE, northern Oman, eastern Saudi Arabia
+    "yemen": (8, 22, 34, 60),      # Yemen, Red Sea coasts, southern Oman, Horn of Africa coast
+    "israel": (28, 38, 32, 44),    # Israel, Gaza, Lebanon, Syria, Jordan, Sinai
+}
 HUBS = {   # civil-traffic samples for GNSS-jamming and airspace-closure signals: (lat, lon, radius nm)
     "ukraine": [(46.8, 26.5, 250)],
     "europe_east": [(55.0, 22.5, 250)],
