@@ -161,6 +161,14 @@ KEYS = {   # theatre -> words that tie a market to it
     "iran": r"\bIran|Hormuz|Tehran|Khamenei",
     "yemen": r"Houthi|Yemen|Red Sea|Bab el|Sanaa",
     "israel": r"Israel|Hezbollah|Lebanon|Gaza|Netanyahu|Hamas",
+    "taiwan": r"Taiwan|Taipei|Taiwan Strait|Kinmen",
+    "scs": r"South China Sea|Philippines|Scarborough|Spratly|Second Thomas",
+    "korea": r"North Korea|Kim Jong|Pyongyang|South Korea|Korean",
+    "southasia": r"India|Pakistan|Kashmir|Modi|Islamabad",
+    "libya": r"Libya|Tripoli|Haftar",
+    "sudan": r"Sudan|\bRSF\b|Khartoum",
+    "drc": r"Congo|\bM23\b|Goma|Kinshasa",
+    "venezuela": r"Venezuela|Maduro|Caracas|Cuba|Guyana|Colombia|Panama",
 }
 
 
@@ -173,7 +181,7 @@ def theatre_of_text(text):
 
 WAR = re.compile(r"\bwar\b|military|strike|invade|invasion|attack|missile|nuclear|ceasefire|cease-fire|troops|nato|bomb|conflict|houthi|hezbollah|hamas|"
                  r"drone|airstrike|blockade|hormuz|regime|offensive|escalat|annex|capture|peace deal|peace agreement|sanction|iran|russia|ukrain|taiwan|gaza|israel|"
-                 r"article 5|martial law|draft|mobiliz|coup|assassinat|kharg|invade|enter .* city|control of", re.I)
+                 r"north korea|pakistan|kashmir|venezuela|maduro|sudan|congo|libya|article 5|martial law|draft|mobiliz|coup|assassinat|kharg|invade|enter .* city|control of", re.I)
 EXCLUDE = re.compile(r"\b(nba|nfl|nhl|mlb|ufc|fifa|world cup|super bowl|oscar|grammy|bitcoin|ethereum|\bbtc\b|album|movie|box office|tweet|elon|temperature|weather|mvp|ballon|"
                      r"stanley cup|premier league|champions league|f1|formula 1)\b", re.I)
 
@@ -209,7 +217,7 @@ def parse_poly(payload, min_volume=50000):
     return out
 
 
-def fetch_poly(queries=("Iran war", "Iran strike", "Hormuz", "Ukraine ceasefire", "Russia NATO", "Israel Hezbollah", "Houthi", "Taiwan invasion", "nuclear", "military action")):
+def fetch_poly(queries=("Iran war", "Iran strike", "Hormuz", "Ukraine ceasefire", "Russia NATO", "Israel Hezbollah", "Houthi", "Taiwan invasion", "nuclear", "military action", "North Korea", "India Pakistan", "Venezuela", "South China Sea", "Sudan war")):
     seen, out = set(), []
     for q in queries:
         try:
@@ -392,7 +400,7 @@ def collect():
         key = os.environ.get("AISSTREAM_API_KEY")
         if key:
             try:
-                boxes = [C.BOXES[t] for t in ("iran", "yemen", "israel", "ukraine", "europe_east")] + [(30, 46, -6, 36), (12, 32, 32, 45)]   # Gulf and Red Sea coverage is thin on aisstream
+                boxes = [C.BOXES[t] for t in ("iran", "yemen", "israel", "ukraine", "europe_east")] + [(30, 46, -6, 36), (12, 32, 32, 45)] + [C.BOXES[t] for t in ("taiwan", "scs", "korea", "venezuela")]   # Gulf and Red Sea coverage is thin on aisstream
                 for m in osint.fetch_aisstream(key, boxes).values():
                     if m["lat"] is None or int(m["type"] or 0) not in (35, 55):
                         continue

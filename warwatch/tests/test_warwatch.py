@@ -398,5 +398,53 @@ class TestOsint(unittest.TestCase):
         self.assertFalse(extras.is_war("Will the Lakers win the NBA title?"))
         self.assertFalse(extras.is_war("Bitcoin above 100k attack on resistance?"))
 
+class TestGfw(unittest.TestCase):
+    def test_parse_presence_sums_hours_per_day(self):
+        pl = {"entries": [{"public-global-presence:v4.0": [
+            {"date": "2026-09-30", "flag": "IRN", "hours": 1, "lat": 26.7, "lon": 55.7},
+            {"date": "2026-09-30", "flag": "PAN", "hours": 13, "lat": 25, "lon": 56.6},
+            {"date": "2026-09-29", "flag": "MHL", "hours": 1.5, "lat": 23.1, "lon": 59.7}]}]}
+        self.assertEqual(S.parse_gfw_presence(pl), [("2026-09-29", 1.5), ("2026-09-30", 14.0)])
+
+
+class TestRegions(unittest.TestCase):
+    def test_every_theatre_in_one_region(self):
+        kids = [k for _, _, ks in C.REGIONS for k in ks]
+        self.assertEqual(sorted(kids), sorted(t for t in C.THEATRES if t != "global"))
+
+    def test_region_level_is_highest_child(self):
+        import dashboard
+        th = {t: {"level": "Normal"} for t in C.THEATRES}
+        th["yemen"]["level"] = "Warning"
+        r = {x["id"]: x for x in dashboard.regions_json(th)}
+        self.assertEqual(r["mideast"]["level"], "Warning")
+        self.assertEqual(r["korea_r"]["level"], "Normal")
+
+    def test_theatre_configs_complete(self):
+        for t in C.BOXES:
+            self.assertIn(t, C.THEATRES)
+            self.assertIn(t, C.GNEWS)
+            self.assertIn(t, C.GDELT_CC)
+            self.assertIn(t, C.CITIES)
+
+    def test_gdelt_backfills_new_country(self):
+        import store
+        import tempfile
+        old = store.ROOT
+        store.ROOT = tempfile.mkdtemp()
+        try:
+            day = dt.date(2026, 1, 10)
+            store.cache_rows_save("gdelt_events", [[day.isoformat(), "UP", "15", "3"]])
+            calls = []
+            orig = S.gdelt_day
+            S.gdelt_day = lambda d, ccs: calls.append(d) or {}
+            S._GDELT_DONE.clear()
+            S.gdelt_update(days=3, max_days=3, today=day + dt.timedelta(days=2))
+            self.assertIn(day, calls)   # day was cached for UP only, so it is re-read for the other countries
+        finally:
+            S.gdelt_day = orig
+            store.ROOT = old
+
+
 if __name__ == "__main__":
     unittest.main()

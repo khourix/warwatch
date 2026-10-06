@@ -22,8 +22,8 @@ ZH_N = 60
 CLS_NAMES = {"lift": "Airlift", "tanker": "Tanker", "isr": "Surveillance / AWACS", "fighter": "Fighter", "bomber": "Bomber", "uav": "Drone", "heli": "Helicopter", "other": "Other military"}
 UNAVAILABLE = [
     ("NOTAMs (airspace closure notices)", "The FAA and ICAO feeds refuse automated requests from cloud servers (403/404). A free FAA NOTAM API key would let it through; in its place the dashboard reads US NGA hazard warnings, EASA airspace bulletins and live airliner counts."),
-    ("Ship tracking in the Gulf and Red Sea", "The free aisstream.io network has no receivers there (tested: zero ships in Hormuz or the Gulf of Aden while 2,300 appear worldwide), and warships often switch AIS off. US Navy units there come from the weekly USNI Fleet Tracker; Baltic, North Sea and Mediterranean AIS is live."),
-    ("Conflict event data (ACLED)", "The ACLED account authenticates but the data API refuses access. The account needs data access enabled by ACLED."),
+    ("Live ship positions in the Gulf, Red Sea and East Mediterranean", "The free live AIS networks (aisstream.io, and Open Waters, which mirrors it) have no receivers there: zero ships in Hormuz or the Gulf of Aden while 2,300 appear worldwide. Warships often switch AIS off anyway. Instead the dashboard scores Global Fishing Watch vessel-hours per day (satellite AIS, about four days late), IMF PortWatch transits, UKMTO incidents and the weekly USNI fleet tracker; Baltic, North Sea, Black Sea and Western Mediterranean AIS is live."),
+    ("Conflict event data (ACLED API)", "The ACLED account authenticates but its data API is closed at the open tier. ACLED events arrive through the open HDX HAPI feed instead, about two months late. UCDP (Uppsala) is the planned second source once its access token arrives."),
     ("Aircraft routes and owners", "Public ADS-B carries no flight plan for military aircraft. Owner is inferred from the aircraft's address block and call sign, and shown as such."),
     ("Strava heat maps, lobster and steak orders, strip-club traffic, freight-forwarder leaks, Telegram channels", "No open data, or only through private apps and terms of service that forbid scraping. Not used."),
 ]
@@ -33,6 +33,7 @@ UPDATES = [   # (source, how often it is read, why that is enough / the free lim
     ("Aircraft positions, emergency squawks (adsb.lol)", "every 30 minutes", "Community feed with no stated cap; one call per layer per run."),
     ("US Navy fleet (USNI Fleet Tracker)", "every 30 minutes, changes weekly", "USNI publishes once a week, usually Monday or Thursday."),
     ("UKMTO incidents and maritime news", "every 30 minutes", "Incidents are posted within hours of the report."),
+    ("Vessel presence (Global Fishing Watch)", "every 12 hours", "Free token; posts daily about four days late, one call per sea box."),
     ("Ships (aisstream.io, Finnish Digitraffic)", "every 30 minutes, 75-second sample", "Free key; streams only while connected. Baltic needs no key."),
     ("NASA FIRMS fires and thermal detections", "every 30 minutes", "Satellite passes update every ~3 hours; free limit is 5,000 requests per 10 minutes, we use about 15."),
     ("Prediction-market odds and history", "every 30 minutes", "Polymarket and Kalshi public APIs; about 60 calls per run."),
@@ -121,6 +122,18 @@ def map_json(topo, ex, levels_by_country):
             "levels": levels_by_country}
 
 
+RANK = {"insufficient data": 0, "Normal": 1, "Watch": 2, "Warning": 3, "Alert": 4}
+
+
+def regions_json(theatres):
+    """Main tabs: each region's level is the highest level among its sub-theatres."""
+    out = []
+    for rid, name, kids in C.REGIONS:
+        lvl = max((theatres[k]["level"] for k in kids), key=lambda x: RANK.get(x, 0))
+        out.append({"id": rid, "name": name, "kids": kids, "level": lvl})
+    return out
+
+
 def build_data(res, generated, demo, ex, topo):
     ex = ex or {}
     data = {
@@ -129,6 +142,7 @@ def build_data(res, generated, demo, ex, topo):
         "thresholds": [C.THRESH_WATCH, C.THRESH_SIGNAL],
         "theatres": {t: theatre_json(t, v, res["series"]) for t, v in res["theatres"].items()},
         "order": list(C.THEATRES),
+        "regions": regions_json(res["theatres"]),
         "series": [series_json(s) for s in res["series"]],
         "markets": ex.get("markets", []), "pizza": ex.get("pizza"), "errors": ex.get("errors", []),
         "unavailable": [{"n": a, "w": b} for a, b in UNAVAILABLE], "updates": [{"s": a, "e": b, "l": c} for a, b, c in UPDATES], "clsnames": CLS_NAMES,

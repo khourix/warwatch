@@ -39,6 +39,7 @@ jobs:
           SAM_API_KEY: ${{ secrets.SAM_API_KEY }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+          GFW_TOKEN: ${{ secrets.GFW_TOKEN }}
           FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
           FIRMS_MAX: "12"
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}

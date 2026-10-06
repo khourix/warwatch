@@ -561,11 +561,12 @@ def parse_ais_messages(msgs):
     return ships
 
 
-def fetch_aisstream(key, boxes, seconds=75, max_msgs=20000):
+def fetch_aisstream(key, boxes, seconds=75, max_msgs=20000, host="stream.aisstream.io", path="/v0/stream"):
+    """Reads an aisstream-compatible websocket (aisstream.io, or Open Waters at ais.openwaters.io /v1/stream)."""
     ctx = ssl.create_default_context()
-    sock = ctx.wrap_socket(socket.create_connection(("stream.aisstream.io", 443), timeout=20), server_hostname="stream.aisstream.io")
+    sock = ctx.wrap_socket(socket.create_connection((host, 443), timeout=20), server_hostname=host)
     k = base64.b64encode(os.urandom(16)).decode()
-    sock.sendall(f"GET /v0/stream HTTP/1.1\r\nHost: stream.aisstream.io\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {k}\r\nSec-WebSocket-Version: 13\r\n\r\n".encode())
+    sock.sendall(f"GET {path} HTTP/1.1\r\nHost: {host}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {k}\r\nSec-WebSocket-Version: 13\r\n\r\n".encode())
     buf = b""
     while b"\r\n\r\n" not in buf:
         buf += sock.recv(4096)

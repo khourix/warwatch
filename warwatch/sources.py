@@ -17,7 +17,7 @@ TIMEOUT = 60
 PW = "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/"
 
 
-def get(url, data=None, retries=3, raw=False, wait=6, headers=None):
+def get(url, data=None, retries=3, raw=False, wait=6, headers=None, timeout=None):
     hdr = {"User-Agent": C.USER_AGENT}
     hdr.update(headers or {})
     if data is not None:
@@ -26,7 +26,7 @@ def get(url, data=None, retries=3, raw=False, wait=6, headers=None):
     err = None
     for i in range(retries):
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, data=data, headers=hdr), timeout=TIMEOUT) as r:
+            with urllib.request.urlopen(urllib.request.Request(url, data=data, headers=hdr), timeout=timeout or TIMEOUT) as r:
                 b = r.read()
                 if b[:2] == b"\x1f\x8b":
                     b = gzip.decompress(b)
@@ -373,7 +373,8 @@ def gdelt_day(day, ccs):
 
 
 def gdelt_update(days=150, max_days=None, today=None):
-    """Extend history/cache/gdelt_events.csv by the missing days (newest first, at most max_days per run)."""
+    """Extend history/cache/gdelt_events.csv by the missing days (newest first, at most max_days per run).
+    A day counts as missing while any watched country has no row for it, so adding a theatre back-fills it."""
     import store
     if _GDELT_DONE.get("v"):
         return
@@ -382,15 +383,17 @@ def gdelt_update(days=150, max_days=None, today=None):
     cap = max_days if max_days is not None else int(os.environ.get("GDELT_MAX", "6"))
     ccs = {c for v in C.GDELT_CC.values() for c in v}
     rows = store.cache_rows("gdelt_events")
-    have = {r[0] for r in rows}
+    have = {}
+    for r in rows:
+        have.setdefault(r[0], set()).add(r[1])
     want = [today - dt.timedelta(days=i) for i in range(1, days + 1)]
     new = []
-    for d in [d for d in want if d.isoformat() not in have][:cap]:
+    for d in [d for d in want if not ccs <= have.get(d.isoformat(), set())][:cap]:
         try:
             counts = gdelt_day(d, ccs)
         except RuntimeError:
             continue
-        for cc in sorted(ccs):
+        for cc in sorted(ccs - have.get(d.isoformat(), set())):
             for root in GDELT_ROOTS:
                 new.append([d.isoformat(), cc, root, str(counts.get((cc, root), 0))])
     if new:
@@ -406,6 +409,31 @@ def gdelt_series(theatre, roots):
         if cc in ccs and root in roots:
             tot[d] = tot.get(d, 0.0) + float(n)
     return sorted(tot.items())
+
+
+# ---- Global Fishing Watch vessel presence (AIS from terrestrial and satellite receivers; token needed; ~5 days late) ----------
+GFW = "https://gateway.api.globalfishingwatch.org/v3/4wings/report"
+
+
+def parse_gfw_presence(payload):
+    """4wings report -> [(date, vessel-hours)] summed over flags and cells."""
+    by = {}
+    for e in payload.get("entries", []):
+        for rows in e.values():
+            for x in rows:
+                by[x["date"]] = by.get(x["date"], 0.0) + float(x.get("hours") or 0)
+    return sorted(by.items())
+
+
+def fetch_gfw_presence(box, token, days=150, today=None):
+    """box = (lat_min, lat_max, lon_min, lon_max). Vessel-hours of AIS presence per day inside the box."""
+    la0, la1, lo0, lo1 = box
+    end = (today or dt.date.today()) - dt.timedelta(days=1)
+    start = end - dt.timedelta(days=days)
+    q = urllib.parse.urlencode({"spatial-resolution": "LOW", "temporal-resolution": "DAILY", "group-by": "FLAG", "datasets[0]": "public-global-presence:latest",
+                                "date-range": f"{start},{end}", "format": "JSON"})
+    body = {"geojson": {"type": "Polygon", "coordinates": [[[lo0, la0], [lo1, la0], [lo1, la1], [lo0, la1], [lo0, la0]]]}}
+    return parse_gfw_presence(get(GFW + "?" + q, data=body, headers={"Authorization": "Bearer " + token}, timeout=180, retries=2))
 
 
 # ---- IODA (Georgia Tech internet outage detection, no key) --------------------------------------

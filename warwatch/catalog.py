@@ -157,7 +157,8 @@ for sid, label, why, kw, sub in (
 
 # DoD spending by place of performance: where the money lands moves before the forces do
 POP = {"europe_east": ("POL", "LTU", "LVA", "EST", "ROU"), "israel": ("ISR",), "iran": ("KWT", "QAT", "BHR", "ARE", "SAU", "JOR", "OMN", "IRQ"),
-       "yemen": ("DJI", "SAU", "OMN"), "ukraine": ("UKR", "MDA", "ROU")}
+       "yemen": ("DJI", "SAU", "OMN"), "ukraine": ("UKR", "MDA", "ROU"),
+       "taiwan": ("TWN", "JPN"), "korea": ("KOR",), "scs": ("PHL", "SGP", "THA"), "venezuela": ("COL", "PAN", "HND", "CUB", "GUY")}
 BUILD = ["236220", "237990", "237310", "238910", "236210", "238120"]
 for th, ccs in POP.items():
     add(f"dod_pop_{th}", f"DoD obligations performed in {TH[th]} region ({', '.join(ccs)})", "logistics", th, "monthly", True,
@@ -212,7 +213,8 @@ def _adsb(th, cls):
     return go
 
 
-for th in C.BOXES:
+ADSB_TH = [t for t in C.BOXES if t not in ("sudan", "drc")]   # too little military traffic there to score
+for th in ADSB_TH:
     nm = TH[th]
     for cls, label, why in (
         ("mil", "Military aircraft visible over", "Transponding military flights only: aircraft with transponders off are invisible. History builds from first run."),
@@ -248,11 +250,12 @@ for th in C.HUBS:
         _snap(f"czib_{th}", lambda t=th: extras.czib_recent(box=C.BOXES[t])),
         url="https://www.easa.europa.eu/en/domains/air-operations/czibs", sub="Airspace")
 for frag, th in C.CHOKEPOINTS.items():
-    add(f"portwatch_{frag.lower()}", f"Daily ship transits: {C.CHOKE_XY[frag][2]} (IMF PortWatch)", "geospatial", th, "daily", False,
+    add(f"portwatch_{frag.lower().replace(' ', '_')}", f"Daily ship transits: {C.CHOKE_XY[frag][2]} (IMF PortWatch)", "geospatial", th, "daily", False,
         "A fall in transits signals disruption or avoidance; data posts weekly.",
         (lambda f=frag: S.fetch_portwatch(f)), direction="down", url="https://portwatch.imf.org/", sub="Sea")
 
-IODA = {"iran": "IR", "ukraine": "UA", "israel": "IL", "yemen": "YE", "europe_east": "PL"}
+IODA = {"iran": "IR", "ukraine": "UA", "israel": "IL", "yemen": "YE", "europe_east": "PL", "taiwan": "TW", "scs": "PH", "korea": "KR",
+        "southasia": "IN", "libya": "LY", "sudan": "SD", "drc": "CD", "venezuela": "VE"}
 for th, cc in IODA.items():
     u = f"https://ioda.inetintel.cc.gatech.edu/country/{cc}"
     add(f"ioda_bgp_{th}", f"Internet reachability (routed networks), {cc} (IODA)", "geospatial", th, "daily", False,
@@ -367,7 +370,7 @@ def _fires(th):
     return go
 
 
-for th in ("ukraine", "europe_east", "iran", "yemen", "israel"):
+for th in C.FIRMS_BOX:
     add(f"firms_{th}", f"Satellite thermal detections per day, {TH[th]} (NASA FIRMS)", "geospatial", th, "daily", False,
         "Infrared satellites see shelling, strikes, burning depots and refinery fires within hours. A sustained rise inside a war-risk box is an early read on kinetic activity.",
         _fires(th), needs=["FIRMS_MAP_KEY"], url="https://firms.modaps.eosdis.nasa.gov/map/", sub="Satellite")
@@ -375,7 +378,9 @@ for th in ("ukraine", "europe_east", "iran", "yemen", "israel"):
 # ============ Evacuation and maritime-incident headlines (Google News, backfilled by the news job) ============
 SEA = {"iran": 'tanker OR vessel (attacked OR struck OR seized OR "boarded") (Hormuz OR "Gulf of Oman" OR "Persian Gulf" OR UKMTO)',
        "yemen": 'ship OR vessel OR tanker (attacked OR struck OR missile OR drone) ("Red Sea" OR "Gulf of Aden" OR Houthi OR UKMTO)',
-       "ukraine": 'vessel OR ship OR tanker OR port (attacked OR struck OR drone OR mine) ("Black Sea" OR Odesa OR Novorossiysk)'}
+       "ukraine": 'vessel OR ship OR tanker OR port (attacked OR struck OR drone OR mine) ("Black Sea" OR Odesa OR Novorossiysk)',
+       "taiwan": 'vessel OR ship OR "coast guard" OR cable (blockade OR inspection OR boarded OR cut OR harassed) ("Taiwan Strait" OR Kinmen OR Matsu OR Taiwan)',
+       "scs": 'vessel OR ship OR boat OR "coast guard" (collision OR "water cannon" OR blocked OR harassed OR seized) ("South China Sea" OR "Second Thomas" OR Scarborough)'}
 
 
 def _newsq(sid, query):
@@ -399,6 +404,39 @@ add("news_evac_global", "Embassy drawdown and ordered-departure headlines per da
     url="https://news.google.com/", sub="Evacuation")
 
 
+# ============ Added theatres: currencies, commodities and equities that price their risk ============
+for sid, series, label, th, why, direction in (
+    ("fx_twd", "DEXTAUS", "Taiwan dollars per US dollar (FRED)", "taiwan", "A weaker Taiwan dollar means capital is leaving ahead of a Strait crisis.", "up"),
+    ("fx_krw", "DEXKOUS", "Korean won per US dollar (FRED)", "korea", "The won weakens first when a peninsula crisis is priced.", "up"),
+    ("fx_inr", "DEXINUS", "Indian rupees per US dollar (FRED)", "southasia", "Rupee stress shows up as India-Pakistan tension builds.", "up"),
+):
+    add(sid, label, "financial", th, "daily", False, why, (lambda s=series: S.fetch_fred(s, _key("FRED_API_KEY"))), direction=direction,
+        needs=["FRED_API_KEY"], url=FRED + series, sub="Currency")
+add("copper", "Copper price, USD per tonne (FRED, monthly)", "financial", "drc", "monthly", True,
+    "Congo's copper and cobalt belt supplies a large share of world output, so mine and route disruption moves copper.",
+    lambda: S.fetch_fred("PCOPPUSDM", _key("FRED_API_KEY"), days=2400), drop=0, needs=["FRED_API_KEY"], url=FRED + "PCOPPUSDM", sub="Commodities")
+for sid, sym, label, th, why, direction in (
+    ("taiwan_equity", "EWT", "Taiwan equity ETF (EWT)", "taiwan", "Taiwan's equity market, dominated by chip makers, falls when invasion or blockade risk is priced.", "down"),
+    ("china_equity", "FXI", "China large-cap ETF (FXI)", "scs", "Chinese equities fall on sanction and conflict risk around the South China Sea and Taiwan.", "down"),
+    ("korea_equity", "EWY", "Korea equity ETF (EWY)", "korea", "Seoul equities discount peninsula escalation.", "down"),
+    ("india_equity", "INDA", "India equity ETF (INDA)", "southasia", "Indian equities fall when cross-border escalation is priced.", "down"),
+    ("copper_miners", "COPX", "Copper miners ETF (COPX)", "drc", "Copper miners fall or spike on supply risk in Congo and Zambia.", "both"),
+    ("latam_equity", "ILF", "Latin America 40 ETF (ILF)", "venezuela", "Regional equities discount Caribbean and Venezuelan escalation.", "down"),
+):
+    add(sid, f"{label} (Twelve Data)", "financial", th, "daily", False, why, (lambda s=sym: S.fetch_twelvedata(s, _key("TWELVEDATA_API_KEY"))),
+        direction=direction, needs=["TWELVEDATA_API_KEY"], url=TD, sub="Markets")
+
+
+# ============ Vessel presence from Global Fishing Watch (fills the gaps where live AIS has no receivers) ============
+GFW_BOX = {"iran": (23, 29, 48, 60), "yemen": (11, 22, 37, 46), "israel": (31, 36, 29, 36), "ukraine": (41, 46, 27, 41), "taiwan": (21, 27, 117, 124),
+           "scs": (5, 20, 108, 121), "korea": (33, 40, 124, 131), "venezuela": (8, 14, -74, -60)}
+for th, box in GFW_BOX.items():
+    add(f"ais_presence_{th}", f"Vessel-hours at sea in the {TH[th]} waters box (Global Fishing Watch AIS)", "geospatial", th, "daily", False,
+        "Satellite and coastal AIS vessel presence from Global Fishing Watch, about five days late. A fall means traffic is avoiding the area (war-risk premiums, closures); an unusual rise means surging naval or shipping activity. It fills the gap where live AIS has no receivers.",
+        (lambda b=box: S.fetch_gfw_presence(b, _key("GFW_TOKEN"))),
+        direction="both", needs=["GFW_TOKEN"], drop=3, url="https://globalfishingwatch.org/map", sub="Sea")
+
+
 # ============ Derived indicators, built from series already collected ============
 def _package(th):
     """Tanker, surveillance and fighter aircraft present together: counts each class, multiplied by the number of classes present (strike packaging)."""
@@ -413,7 +451,7 @@ def _package(th):
     return go
 
 
-for th in C.BOXES:
+for th in ADSB_TH:
     add(f"package_{th}", f"Strike-package index over {TH[th]} (tankers + AWACS/ISR + fighters together)", "geospatial", th, "daily", False,
         "Derived: tankers, surveillance aircraft and fighters present at the same time. Packaged air power is how operations are staged; any one alone is routine. History builds from first run.",
         _package(th), url=ADS, sub="Derived")
@@ -444,7 +482,8 @@ for th in ("iran", "yemen"):
 
 
 # ============ ACLED conflict-event counts via HDX HAPI (the open route to ACLED data; ~2 months behind) ============
-HAPI_LOC = {"ukraine": ("UKR",), "europe_east": ("POL", "LTU", "LVA", "EST"), "iran": ("IRN",), "yemen": ("YEM",), "israel": ("ISR", "PSE", "LBN")}
+HAPI_LOC = {"ukraine": ("UKR",), "europe_east": ("POL", "LTU", "LVA", "EST"), "iran": ("IRN",), "yemen": ("YEM",), "israel": ("ISR", "PSE", "LBN"),
+            "scs": ("PHL",), "southasia": ("IND", "PAK"), "libya": ("LBY",), "sudan": ("SDN", "SSD"), "drc": ("COD",), "venezuela": ("VEN", "COL")}
 for th, locs in HAPI_LOC.items():
     add(f"acled_demo_{th}", f"Demonstrations per month, {TH[th]} region (ACLED via HDX HAPI)", "behavioral", th, "monthly", True,
         "Protest waves and unrest precede and accompany regime stress, mobilisation and war decisions. ACLED data through the open HDX HAPI feed, about two months behind.",
@@ -467,3 +506,5 @@ for _s in SERIES:
         _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely
     elif _id.startswith(("ioda_", "fx_")):
         _s["every"] = 3
+    elif _id.startswith("ais_presence_"):
+        _s["every"] = 12      # one call per box; the source posts daily with a ~5 day delay

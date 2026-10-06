@@ -215,6 +215,7 @@ table.sg tr:hover td{background:var(--panel2);cursor:pointer}
   .tiles{grid-template-columns:repeat(3,1fr)}
   .page{overflow:visible}
 }
+.subtabs{display:flex;gap:4px;padding:8px 10px 0;flex-wrap:wrap}.subtabs button{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:600;color:var(--mute);display:flex;align-items:center;gap:6px}.subtabs button.on{color:var(--ink);border-color:var(--accent)}.subtabs .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 </style>
 </head>
 <body>
@@ -257,6 +258,10 @@ const T_WATCH = D.thresholds[0], T_SIG = D.thresholds[1];
 const DOM = {}; D.domains.forEach(d => DOM[d.id] = d);
 const SHORT = {logistics:'Logistics', financial:'Financial', behavioral:'Human', geospatial:'Geospatial', information:'Information'};
 const THEATRES = D.order.filter(t => t !== 'global');
+const REG = D.regions, regOf = {}; REG.forEach(r => r.kids.forEach(k => regOf[k] = r));
+const RANKL = {'insufficient data':0, 'Normal':1, 'Watch':2, 'Warning':3, 'Alert':4};
+/* main tabs are regions; a single-theatre region opens that theatre, a multi-theatre one opens its most alarmed sub-theatre, with the others in a secondary row */
+function regTarget(r){ return r.kids.slice().sort((a, b) => RANKL[D.theatres[b].level] - RANKL[D.theatres[a].level])[0]; }
 const TABS = [['overview','Overview']].concat(THEATRES.map(t => [t, D.theatres[t].name])).concat([['global','Global'],['signals','All signals'],['system','System']]);
 const SERIES = {}; D.series.forEach(s => SERIES[s.id] = s);
 const CLS = {lift:['Airlift','#4cc9f0'], tanker:['Tanker','#ffd166'], isr:['Surveillance / AWACS','#c77dff'], fighter:['Fighter','#ff5d73'],
@@ -303,11 +308,15 @@ function spark(pts, col, w, h){
 
 /* ------------------------------------------------------------ navigation */
 function buildTabs(){
-  $('#tabs').innerHTML = TABS.map(([id, name]) => {
-    const th = D.theatres[id];
-    const dot = th ? `<span class="dot" style="background:${LEVEL[th.level]}"></span>` : '';
-    return (id === 'signals' ? '<span class="sep"></span>' : '') + `<button data-tab="${id}" class="${id===tab?'on':''}">${dot}${esc(name)}</button>`;
-  }).join('');
+  const cur = regOf[tab];
+  $('#tabs').innerHTML = [`<button data-tab="overview" class="${tab==='overview'?'on':''}">Overview</button>`].concat(REG.map(r => {
+    return `<button data-tab="${r.kids.length > 1 && !(cur === r) ? regTarget(r) : (cur === r ? tab : r.kids[0])}" class="${cur === r ? 'on' : ''}"><span class="dot" style="background:${LEVEL[r.level]}"></span>${esc(r.name)}</button>`;
+  })).concat([`<button data-tab="global" class="${tab==='global'?'on':''}">Global</button>`, '<span class="sep"></span>',
+    `<button data-tab="signals" class="${tab==='signals'?'on':''}">All signals</button>`, `<button data-tab="system" class="${tab==='system'?'on':''}">System</button>`]).join('');
+}
+function subBar(){
+  const r = regOf[tab]; if (!r || r.kids.length < 2) return '';
+  return `<div class="subtabs">` + r.kids.map(k => `<button data-go="${k}" class="${k === tab ? 'on' : ''}"><span class="dot" style="background:${LEVEL[D.theatres[k].level]}"></span>${esc(D.theatres[k].name)}</button>`).join('') + `</div>`;
 }
 $('#tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) go(b.dataset.tab); });
 $('#brand').onclick = () => go('overview');
@@ -352,7 +361,8 @@ function clientSize(){ const r = svg.getBoundingClientRect(); return [Math.max(r
 function layoutLabels(){
   const [cw, ch] = clientSize(); const s = view.w / cw; const taken = [];
   const hit = b => { for (const t of taken) if (b[0] < t[0] + t[2] + 3 && b[0] + b[2] + 3 > t[0] && b[1] < t[1] + t[3] + 2 && b[1] + b[3] + 2 > t[1]) return true; return false; };
-  const cur = tab;
+  const cur = tab; const wide = cur === 'overview' || cur === 'global';
+  if (wide) for (const t in M.theatres) { if (t === 'global') continue; const q = M.theatres[t].pin; taken.push([(q[0] - view.x) / s - 16, (q[1] - view.y) / s - 16, 32, 32]); }   // keep labels off the level pins
   labs.forEach(l => { l.pri = (l.kind === 'country' ? (l.th === cur ? 1e6 : l.th ? 4e5 : 0) + Math.sqrt(l.area)
       : l.kind === 'city' ? (l.th === cur ? 7e5 : cur === 'overview' || cur === 'global' ? 1e5 : 1e4) : l.kind === 'sea' ? 1e3 : 3e5); });
   const order = labs.slice().sort((a, b) => b.pri - a.pri);
@@ -361,6 +371,7 @@ function layoutLabels(){
     const on = (l.kind === 'city' ? layerState.cities : layerState.labels);
     l.el.style.display = 'none';
     if (!on) return;
+    if (wide && (l.kind === 'city' || l.kind === 'sea')) return;
     const sx = (l.x - view.x) / s, sy = (l.y - view.y) / s;
     if (sx < -10 || sy < -10 || sx > cw + 10 || sy > ch + 10) return;
     const big = l.kind === 'country' && l.th === cur && cur !== 'overview' && cur !== 'global';
@@ -684,11 +695,12 @@ function renderPanel(){
   if (tab === 'overview') {
     const movers = D.series.filter(s => s.z != null && s.t !== 'global').sort((a, b) => b.z - a.z).slice(0, 8);
     let h = `<div class="ph"><div class="row"><h2>Theatres at a glance</h2></div><p>Each theatre is judged from its own indicators. The level counts how many of five independent groups are unusual at once. Click a theatre to open it.</p></div><div class="list" style="padding-top:6px">`;
-    THEATRES.concat(['global']).forEach(t => {
+    REG.map(r => ({r, k: r.kids})).concat([{r: null, k: ['global']}]).forEach(g => { if (g.r) h += `<div class="gh">${esc(g.r.name)}${g.k.length > 1 ? ' · ' + g.k.length + ' sub-theatres' : ''}</div>`; g.k.forEach(t => {
       const th = D.theatres[t], dr = driversOf(t);
       h += `<div class="card2" data-th="${t}"><h3>${esc(th.name)}${t === 'global' ? ' (US/EU procurement and markets)' : ''}</h3>${levelBadge(th.level)}<div class="cells">` +
         D.domains.map(d => { const z = th.doms[d.id].z; return `<div class="cell" title="${esc(d.name)}: ${z == null ? 'not enough history' : fmtz(z) + ' SD'}" style="background:${zcol(z)};opacity:${z == null ? .4 : 1}">${esc(SHORT[d.id])}</div>`; }).join('') +
         `</div><div class="dr">${dr.length ? 'Top: ' + dr.map(s => `${esc(s.l.replace(/ \(.*$/, '').slice(0, 44))} <b style="color:${zcol(s.z)}">${fmtz(s.z)}</b>`).join(' · ') : 'Still collecting history.'}</div></div>`;
+});
     });
     h += `<div class="lh"><b>Live alerts</b><span>${ALERTS.length} active</span></div>` + alertRows(ALERTS.slice(0, 6));
     h += `<div class="lh"><b>Biggest movers</b><span>across theatres, in standard deviations</span></div>` + movers.map(s => sigRow(s, true)).join('');
@@ -703,7 +715,7 @@ function renderPanel(){
   const mk = marketsFor(tab);
   const al = ALERTS.filter(a => tab === 'global' ? true : a.th === tab);
   const dr = driversOf(tab);
-  let h = `<div class="ph"><div class="crumbs"><a data-go="overview" href="#overview">Overview</a> &rsaquo; ${esc(th.name)}</div><div class="row"><h2>${esc(th.name)}</h2>${levelBadge(th.level)}</div><p>${esc(MEANING[th.level])} ${th.firing.length ? 'Firing: ' + th.firing.map(d => esc(SHORT[d])).join(', ') + '.' : ''}${th.basis === 'lagging only' ? ' <b style="color:var(--warn)">Only late-published data is firing: a confirmed build-up, not an early warning.</b>' : ''}</p>` +
+  let h = subBar() + `<div class="ph"><div class="crumbs"><a data-go="overview" href="#overview">Overview</a> &rsaquo; ${regOf[tab] && regOf[tab].kids.length > 1 ? esc(regOf[tab].name) + ' &rsaquo; ' : ''}${esc(th.name)}</div><div class="row"><h2>${esc(th.name)}</h2>${levelBadge(th.level)}</div><p>${esc(MEANING[th.level])} ${th.firing.length ? 'Firing: ' + th.firing.map(d => esc(SHORT[d])).join(', ') + '.' : ''}${th.basis === 'lagging only' ? ' <b style="color:var(--warn)">Only late-published data is firing: a confirmed build-up, not an early warning.</b>' : ''}</p>` +
     (dr.length ? `<ul class="why">${dr.map(s => `<li data-id="${esc(s.id)}"><b style="color:${zcol(s.z)}">${fmtz(s.z)}</b><span>${esc(s.l)}</span></li>`).join('')}</ul>` : '') + `</div><div class="tiles">`;
   h += `<button class="g ${selDom === 'all' ? 'on' : ''}" data-dom="all"><div class="n"><span>All signals</span><span>${seriesOf(tab).length}</span></div><div class="z" style="color:var(--ink)">${seriesOf(tab).filter(s => s.z != null && s.z >= T_WATCH).length}</div><div class="n" style="margin-top:1px">elevated</div></button>`;
   D.domains.forEach(d => {

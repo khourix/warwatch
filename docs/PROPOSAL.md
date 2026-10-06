@@ -164,3 +164,9 @@ not remove this.
 - **Prediction markets** are filtered to war and military questions.
 - **New indicators**: finer US purchase codes (ammunition, missiles, armour, charter airlift, sealift, site works, CBRN gear, spares), DoD obligations and construction by place of performance per theatre, strike-package index (tankers + ISR + fighters together), pre-force index (GDELT threats + posture), embassy-drawdown headlines, maritime-attack headlines, UKMTO counts, gold / tanker / container / Israel / Poland equities.
 - **Not available**: ACLED data (account authenticates but the data API refuses access), FAA/ICAO NOTAMs (blocked), aircraft owner databases (inferred only).
+
+## v6: global theatres
+
+Seven main tabs, each a market-moving theatre: Middle East (Iran, Israel, Yemen/Red Sea), Ukraine (Ukraine front, Eastern flank), Taiwan (Taiwan Strait, South China Sea), Korea, South Asia (India-Pakistan), Africa (Libya, Sudan, DR Congo), Americas (Venezuela and Caribbean). Regions with several sub-theatres show them as a secondary row; single-theatre regions roll up. A region's level is the highest level among its sub-theatres.
+
+Adding a theatre is configuration: an entry in `THEATRES`, `REGIONS`, `BOXES`, `GNEWS`, `GDELT_CC`, `FCDO`, `STATE_ISO`, `CITIES`, optionally `HUBS`, `FIRMS_BOX`, `HAPI_LOC`, `POP`, `IODA` and `CHOKEPOINTS`; the catalogue loops create the indicators. Fires are skipped where crop burning swamps the signal (Sudan, DR Congo, India, Venezuela); military aircraft counts are skipped where there is almost no traffic (Sudan, DR Congo).

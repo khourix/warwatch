@@ -112,7 +112,7 @@ def paths(topo, proj, level_of=None):
 
 
 # ---- one region-wide basemap for the interactive page (the page zooms and pans in the browser) ----
-REGION = (-26, 76, -6, 74)   # lon_min, lon_max, lat_min, lat_max: Atlantic to Central Asia, Horn of Africa to the Arctic
+REGION = (-100, 150, -20, 64)   # lon_min, lon_max, lat_min, lat_max: the Americas to the Western Pacific, so every market-moving theatre is on the map
 MARGIN = 6
 
 
@@ -128,7 +128,7 @@ def _area_centroid(ring):
     return (cx / (3 * a), cy / (3 * a)), abs(a) / 2
 
 
-def region_map(topo, width=2400):
+def region_map(topo, width=3200):
     """-> dict(w, h, proj, countries=[{name, d, cx, cy, area}]) for the whole region.
 
     Paths use relative moves with one decimal so the page stays small. Points outside
