@@ -27,8 +27,12 @@ def get(url, data=None, retries=3, raw=False, wait=6):
                 body = r.read().decode("utf-8")
                 return body if raw else json.loads(body)
         except urllib.error.HTTPError as e:
-            err = e
-            if e.code in (400, 401, 403, 404):
+            try:
+                body = e.read().decode("utf-8", "replace").replace("\n", " ")[:160]
+            except Exception:
+                body = ""
+            err = f"{e} {body}"
+            if getattr(e, "code", 0) in (400, 401, 403, 404):
                 break
             time.sleep(wait * (i + 1))
         except Exception as e:
@@ -270,7 +274,7 @@ def parse_gdelt(p):
     return sorted(out)
 
 
-def fetch_gdelt(query, timespan="6months"):
+def fetch_gdelt(query, timespan="3months"):   # the DOC API holds a rolling 3 months
     time.sleep(12)      # GDELT: one request per 5 seconds, and shared runner IPs get 429s
     q = urllib.parse.urlencode({"query": query, "mode": "timelinevolraw", "format": "json", "timespan": timespan})
     return parse_gdelt(get("https://api.gdeltproject.org/api/v2/doc/doc?" + q, retries=4, wait=20))
