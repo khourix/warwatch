@@ -249,8 +249,14 @@ def state_levels(items, iso_list):
     return float(tot)
 
 
+_STATE = {}
+
+
 def fetch_state():
-    return get("https://cadataapi.state.gov/api/TravelAdvisories")
+    """One download per run: thirteen theatres read the same feed, and the host throttles repeat calls."""
+    if "v" not in _STATE:
+        _STATE["v"] = get("https://cadataapi.state.gov/api/TravelAdvisories")
+    return _STATE["v"]
 
 
 # ---- ADS-B: military aircraft in a box (snapshot only; history is stored) ----
