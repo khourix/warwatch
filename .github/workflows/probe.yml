@@ -10,47 +10,27 @@ jobs:
       ACLED_PASSWORD: ${{ secrets.ACLED_PASSWORD }}
       TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
     steps:
-      - name: Probe round 7
+      - name: Probe round 10
         run: |
           cat > p.py <<'PY'
-          import gzip, json, re, time, urllib.request, urllib.parse, urllib.error
+          import gzip, json, re, urllib.request, urllib.parse, urllib.error
           UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-          def rawb(u, params=None, data=None, t=40, hdr=None):
-              if params: u += "?" + urllib.parse.urlencode(params)
-              h = {"User-Agent": UA, "Accept": "*/*"}; h.update(hdr or {})
+          def txt(u, hdr=None):
+              h = {"User-Agent": UA, "Accept": "application/json, */*", "Referer": "https://www.ukmto.org/recent-incidents"}; h.update(hdr or {})
               try:
-                  r = urllib.request.urlopen(urllib.request.Request(u, headers=h, data=data), timeout=t); b = r.read()
-                  return gzip.decompress(b) if b[:2] == b"\x1f\x8b" else b
+                  b = urllib.request.urlopen(urllib.request.Request(u, headers=h), timeout=40).read()
+                  return (gzip.decompress(b) if b[:2] == b"\x1f\x8b" else b).decode("utf-8", "replace")
               except urllib.error.HTTPError as e:
-                  return ("HTTP %s %s" % (e.code, e.read()[:300])).encode()
+                  return "HTTP %s %s" % (e.code, e.read()[:200])
               except Exception as e:
-                  return ("ERR %s" % str(e)[:150]).encode()
-          def txt(*a, **k): return rawb(*a, **k).decode("utf-8", "replace")
-          def sec(n): print("=== " + n, flush=True)
-          sec("UKMTO chunks")
+                  return "ERR %s" % str(e)[:150]
           t = txt("https://www.ukmto.org/recent-incidents")
-          srcs = re.findall(r'<script[^>]+src="(https://www.ukmto.org/_next/static/chunks/[^"]+)"', t)
-          for u in srcs:
+          for u in re.findall(r'<script[^>]+src="(https://www.ukmto.org/_next/static/chunks/401[^"]+)"', t):
               c = txt(u)
-              hits = sorted(set(re.findall(r'["\'`]((?:https?:)?//[^"\'`\s]*|/[a-zA-Z0-9_./-]*(?:api|incident|Incident|search|json)[a-zA-Z0-9_./?=&-]*)["\'`]', c)))
-              hits = [h for h in hits if "w3.org" not in h and "reactjs" not in h and "github" not in h][:15]
-              print(u.rsplit("/", 1)[-1], len(c), hits, "RecentIncident" in c)
-          sec("war.gov article")
-          for u in ["https://www.war.gov/News/Contracts/Contract/Article/4619270/contracts-for-oct-5-2026/", "https://www.defense.gov/News/Contracts/Contract/Article/4619270/contracts-for-oct-5-2026/"]:
-              c = txt(u); print(u[:40], len(c), c[:150].replace("\n", " "))
-          sec("routeset")
-          d = json.loads(txt("https://api.adsb.lol/v2/sqk/7700"))
-          print(len(d["ac"]))
-          for a in d["ac"][:2]:
-              body = json.dumps({"planes": [{"callsign": a.get("flight", "").strip(), "lat": a["lat"], "lng": a["lon"]}]}).encode()
-              print(txt("https://api.adsb.lol/api/0/routeset", data=body, hdr={"Content-Type": "application/json"})[:300])
-          sec("digitraffic gzip")
-          t = txt("https://meri.digitraffic.fi/api/ais/v1/locations", hdr={"Accept-Encoding": "gzip", "Digitraffic-User": "warwatch"}); print(len(t), t[:200])
-          v = txt("https://meri.digitraffic.fi/api/ais/v1/vessels", hdr={"Accept-Encoding": "gzip", "Digitraffic-User": "warwatch"}); print(len(v), v[:300])
-          sec("gnews incident sample")
-          x = txt("https://news.google.com/rss/search", {"q": "UKMTO when:14d", "hl": "en-US", "gl": "US", "ceid": "US:en"})
-          its = re.findall(r"<item>.*?</item>", x, re.S); print(len(its)); print(its[0][:900] if its else x[:300])
-          sec("OpenSky owner sample / adsb civil")
-          t = txt("https://api.adsb.lol/v2/point/32/35/250"); print(len(t))
+              for m in re.finditer(r"api/ukmto/(?:products/|incident/filters|all|ticker)", c):
+                  print("CTX", c[max(0, m.start()-250):m.end()+350].replace("\n", " "))
+                  print("----")
+          for ep in ["/api/ukmto/incident/filters", "/api/ukmto/ticker", "/api/ukmto/all", "/api/ukmto/products/"]:
+              r = txt("https://www.ukmto.org" + ep); print("EP", ep, len(r), r[:600])
           PY
           python3 p.py
