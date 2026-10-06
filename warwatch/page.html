@@ -575,10 +575,10 @@ function openCard(type, o){
     (o.em ? `<div class="flag">Emergency squawk ${esc(o.sq)}</div>` : '') +
     kv('Operator', esc(o.o || 'not in public database')) + kv('Registered in', esc(o.ct)) + kv('Aircraft', esc(o.d || o.t)) + kv('Registration', esc(o.r)) +
     kv('Altitude', o.alt == null ? '' : (o.alt === 'ground' ? 'on ground' : o.alt + ' ft')) + kv('Ground speed', o.gs ? Math.round(o.gs) + ' kt' : '') + kv('Heading', o.trk == null ? '' : o.trk + '°') +
-    kv('Squawk', esc(o.sq)) + kv('Route', esc(o.rt || 'not filed (military flights usually are not)')) + kv('Where', esc(o.th ? thName(o.th) : 'outside the five theatres')) +
+    kv('Squawk', esc(o.sq)) + kv('Going', esc(o.rt || 'no flight plan in public data (military flights rarely file one)')) + kv('Where', esc(o.th ? thName(o.th) : 'outside the five theatres')) +
     `<p>${esc(CLSWHY[o.c])}</p><div class="btns"><a class="btn" target="_blank" rel="noopener" href="https://globe.adsb.lol/?icao=${encodeURIComponent(o.hex)}">Live track &#8599;</a>${goBtn(o.th)}</div>`;
   else if (type === 'sqk') h = `<h3>Emergency ${esc(o.sq)}: ${esc(o.mean)}</h3><div class="sub">${esc(o.call || o.hex)}</div><div class="flag">${esc(o.why)}</div>` +
-    kv('Aircraft', esc(o.d || o.t)) + kv('Operator', esc(o.o)) + kv('Registered in', esc(o.ct)) + kv('Registration', esc(o.r)) + kv('Altitude', o.alt == null ? '' : o.alt + ' ft') + kv('Heading', o.trk == null ? '' : o.trk + '°') + kv('Where', esc(o.th ? thName(o.th) : 'outside the five theatres')) +
+    kv('Aircraft', esc(o.d || o.t)) + kv('Operator', esc(o.o)) + kv('Registered in', esc(o.ct)) + kv('Registration', esc(o.r)) + kv('Altitude', o.alt == null ? '' : o.alt === 'ground' ? 'on ground' : o.alt + ' ft') + kv('Heading', o.trk == null ? '' : o.trk + '°') + kv('Going', esc(o.rt || 'no flight plan in public data')) + kv('Where', esc(o.th ? thName(o.th) : 'outside the five theatres')) +
     `<div class="btns"><a class="btn" target="_blank" rel="noopener" href="https://globe.adsb.lol/?icao=${encodeURIComponent(o.hex)}">Live track &#8599;</a>${goBtn(o.th)}</div>`;
   else if (type === 'ships') h = `<h3>${esc(o.n)}</h3><div class="sub">${esc(SHIPK[o.k] ? SHIPK[o.k][0] : 'Vessel')}${o.g ? ' · ' + esc(o.g) : ''}</div>` +
     kv('Position', esc(o.loc)) + kv('As of', esc(o.d)) + kv('Flag', esc(o.flag)) + kv('Destination', esc(o.dest)) + kv('Speed', o.spd != null ? o.spd + ' kt' : '') + kv('Where', esc(o.th ? thName(o.th) : '')) +

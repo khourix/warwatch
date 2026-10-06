@@ -10,28 +10,23 @@ jobs:
       ACLED_PASSWORD: ${{ secrets.ACLED_PASSWORD }}
       TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
     steps:
-      - name: Probe round 12
+      - name: Probe round 13
         run: |
           cat > p.py <<'PY'
-          import gzip, re, urllib.request, urllib.error
+          import gzip, json, urllib.request, urllib.error
           UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
           def txt(u):
               try:
-                  b = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA, "Accept": "application/json, */*"}), timeout=40).read()
+                  b = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA, "Accept": "application/json", "Origin": "https://www.ukmto.org", "Referer": "https://www.ukmto.org/"}), timeout=40).read()
                   return (gzip.decompress(b) if b[:2] == b"\x1f\x8b" else b).decode("utf-8", "replace")
               except urllib.error.HTTPError as e:
-                  return "HTTP %s" % e.code
+                  return "HTTP %s %s" % (e.code, e.read()[:150])
               except Exception as e:
                   return "ERR %s" % str(e)[:100]
-          t = txt("https://www.ukmto.org/recent-incidents")
-          for u in re.findall(r'<script[^>]+src="(https://www.ukmto.org/_next/static/chunks/401[^"]+)"', t):
-              c = txt(u)
-              i = c.find("7738:")
-              seg = c[i:i+6000]
-              for m in re.finditer(r"xv", seg):
-                  print("XVDEF", seg[max(0, m.start()-300):m.end()+500]); break
-              print("TAIL", re.findall(r"function \w+\(e\)\{[^}]{0,300}(?:origin|host|basePath|API|api)[^}]{0,200}\}", seg)[:3])
-          for b in ["https://www.ukmto.org/ukmto", "https://www.ukmto.org/api", "https://www.ukmto.org/api/ukmto/all?", "https://www.ukmto.org/api/ukmto/incidents"]:
-              print("TRY", b, txt(b)[:120])
+          for u in ["https://sc.royalnavy.mod.uk/api/ukmto/all", "https://sccd.royalnavy.mod.uk/api/ukmto/all", "https://sc.royalnavy.mod.uk/api/ukmto/ticker"]:
+              r = txt(u); print("U", u, len(r), r[:1500])
+              try:
+                  d = json.loads(r); print("TYPE", type(d).__name__, list(d)[:8] if isinstance(d, dict) else len(d))
+              except Exception: pass
           PY
           python3 p.py

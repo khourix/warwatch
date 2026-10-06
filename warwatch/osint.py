@@ -7,6 +7,7 @@ import base64
 import datetime as dt
 import html
 import json
+import math
 import os
 import re
 import socket
@@ -114,6 +115,43 @@ def theatre_at(lat, lon):
     return ""
 
 
+BASES = [("Ramstein AB, Germany", 49.44, 7.6), ("Spangdahlem AB, Germany", 49.97, 6.7), ("RAF Lakenheath / Mildenhall, UK", 52.4, 0.55), ("Aviano AB, Italy", 46.03, 12.6),
+         ("NAS Sigonella, Italy", 37.4, 14.9), ("Souda Bay, Greece", 35.53, 24.15), ("Incirlik AB, Turkey", 37.0, 35.43), ("RAF Akrotiri, Cyprus", 34.59, 32.99),
+         ("Rzeszow-Jasionka, Poland", 50.11, 22.02), ("Powidz AB, Poland", 52.38, 17.85), ("Lask AB, Poland", 51.55, 19.18), ("Mihail Kogalniceanu, Romania", 44.36, 28.49),
+         ("Siauliai AB, Lithuania", 55.89, 23.4), ("Amari AB, Estonia", 59.26, 24.2), ("Al Udeid AB, Qatar", 25.12, 51.32), ("Al Dhafra AB, UAE", 24.25, 54.55),
+         ("Ali Al Salem AB, Kuwait", 29.35, 47.52), ("Isa AB / NSA Bahrain", 25.92, 50.59), ("Prince Sultan AB, Saudi Arabia", 24.06, 47.58), ("Muwaffaq Salti AB, Jordan", 31.83, 36.78),
+         ("Ovda / Nevatim, Israel", 30.6, 34.9), ("Camp Lemonnier, Djibouti", 11.55, 43.15), ("Diego Garcia", -7.31, 72.41), ("Duqm / Thumrait, Oman", 19.5, 57.3),
+         ("Ben Gurion, Israel", 32.01, 34.89), ("Tehran, Iran", 35.69, 51.31), ("Moscow, Russia", 55.75, 37.6), ("Kyiv, Ukraine", 50.45, 30.52), ("Kaliningrad, Russia", 54.7, 20.5)]
+
+
+def _bearing(la1, lo1, la2, lo2):
+    p1, p2, dl = math.radians(la1), math.radians(la2), math.radians(lo2 - lo1)
+    x = math.sin(dl) * math.cos(p2)
+    y = math.cos(p1) * math.sin(p2) - math.sin(p1) * math.cos(p2) * math.cos(dl)
+    return (math.degrees(math.atan2(x, y)) + 360) % 360
+
+
+def _dist_nm(la1, lo1, la2, lo2):
+    p1, p2 = math.radians(la1), math.radians(la2)
+    a = math.sin((p2 - p1) / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(math.radians(lo2 - lo1) / 2) ** 2
+    return 3440.065 * 2 * math.asin(math.sqrt(a))
+
+
+def heading_toward(lat, lon, trk, max_nm=1400):
+    """Nearest known air base or capital lying within 20 degrees of the aircraft's track: an inference from heading, not a flight plan."""
+    if trk is None:
+        return ""
+    best = None
+    for name, la, lo in BASES:
+        d = _dist_nm(lat, lon, la, lo)
+        if d < 25 or d > max_nm:
+            continue
+        off = abs((_bearing(lat, lon, la, lo) - trk + 180) % 360 - 180)
+        if off <= 20 and (best is None or d < best[0]):
+            best = (d, name)
+    return f"heading towards {best[1]}, about {int(round(best[0], -1))} nm ahead (inferred from track, not a flight plan)" if best else ""
+
+
 def _alt(a):
     v = a.get("alt_baro")
     if v == "ground":
@@ -135,7 +173,7 @@ def aircraft(a):
     return {"lat": round(la, 3), "lon": round(lo, 3), "t": t, "cls": classify(a), "hex": hx, "call": (a.get("flight") or "").strip(),
             "r": a.get("r") or "", "d": TYPE_DESC.get(t, ""), "o": op, "ct": ct, "alt": _alt(a), "gs": a.get("gs"),
             "trk": int(trk) if isinstance(trk, (int, float)) else None, "sq": sq, "em": (a.get("emergency") or "none") != "none" or sq in SQUAWK,
-            "th": theatre_at(la, lo)}
+            "th": theatre_at(la, lo), "rt": heading_toward(la, lo, trk) if a.get("alt_baro") != "ground" else ""}
 
 
 def parse_squawks(payload, code):

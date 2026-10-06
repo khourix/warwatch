@@ -160,10 +160,10 @@ class TestExtras(unittest.TestCase):
 
     def test_polymarket_skips_closed_and_thin_markets(self):
         p = {"events": [{"title": "e", "markets": [
-            {"question": "open", "outcomePrices": '["0.145","0.855"]', "volume": "72000000", "closed": False},
+            {"question": "US strike on Iran", "outcomePrices": '["0.145","0.855"]', "volume": "72000000", "closed": False},
             {"question": "closed", "outcomePrices": '["1","0"]', "volume": "9000000", "closed": True},
             {"question": "thin", "outcomePrices": '["0.5","0.5"]', "volume": "100", "closed": False}]}]}
-        self.assertEqual([m["q"] for m in extras.parse_poly(p)], ["open"])
+        self.assertEqual([m["q"] for m in extras.parse_poly(p)], ["US strike on Iran"])
 
     def test_czib_active_zones_only(self):
         p = {"x": [{"status": "Active", "name": "Airspace of Syria", "coordinates": "33.5, 36.3",
@@ -297,6 +297,88 @@ class TestScoring(unittest.TestCase):
         got = run.collect({"us_pickups_to_ukraine"})
         self.assertEqual(got[0]["status"], "awaiting_key")
 
+
+
+class TestOsint(unittest.TestCase):
+    def test_aircraft_owner_and_class(self):
+        import osint
+        a = osint.aircraft({"hex": "ae1234", "flight": "REACH402 ", "t": "C17", "lat": 36.0, "lon": 36.0, "alt_baro": 31000, "gs": 440, "track": 120, "squawk": "1200"})
+        self.assertEqual(a["ct"], "United States")
+        self.assertIn("Air Mobility", a["o"])
+        self.assertEqual(a["cls"], "lift")
+        self.assertIn("C-17", a["d"])
+        self.assertEqual(a["th"], osint.theatre_at(36.0, 36.0))
+        self.assertFalse(a["em"])
+
+    def test_squawk_parse(self):
+        import osint
+        out = osint.parse_squawks({"ac": [{"hex": "43c123", "flight": "RRR1", "t": "E3TF", "lat": 50, "lon": 10, "alt_baro": 20000},
+                                          {"hex": "x", "lat": 1, "lon": 1, "alt_baro": "ground"}]}, "7700")
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["mean"], "General emergency")
+        self.assertEqual(out[0]["ct"], "United Kingdom")
+
+    def test_heading_toward(self):
+        import osint
+        self.assertIn("AB, Germany", osint.heading_toward(52.0, 7.6, 180))
+        self.assertEqual(osint.heading_toward(52.0, 7.6, None), "")
+
+    def test_usni_regions_and_ships(self):
+        import osint
+        xml = ("<item><content:encoded><![CDATA[<p>The fleet as of Oct. 5, 2026.</p><p>In the Arabian Sea, USS George Washington (CVN-73) is operating in support "
+               "of U.S. operations. USS Spruance (DDG-111) is also here.</p><p>In the Eastern Mediterranean, USS Carney (DDG-64) is conducting patrols.</p>]]></content:encoded></item>")
+        out = osint.parse_usni(xml, "http://u", "Mon, 05 Oct")
+        names = [s["n"] for s in out]
+        self.assertIn("USS George Washington (CVN-73)", names)
+        self.assertEqual([s for s in out if "George" in s["n"]][0]["k"], "carrier")
+        self.assertEqual([s for s in out if "Carney" in s["n"]][0]["loc"], "Eastern Mediterranean")
+
+    def test_incident_news(self):
+        import osint, datetime as dt
+        xml = ("<rss><item><title>Crude oil tanker struck by unknown projectile off Oman, UKMTO says - Reuters</title><link>http://x</link>"
+               "<pubDate>Fri, 02 Oct 2026 23:31:28 GMT</pubDate><source url=\"http://r\">Reuters</source></item>"
+               "<item><title>Stocks rally</title><link>http://y</link><pubDate>Fri, 02 Oct 2026 23:31:28 GMT</pubDate></item></rss>")
+        out = osint.parse_incident_news(xml, today=dt.date(2026, 10, 5))
+        self.assertEqual(len(out), 0)   # no place keyword in the Oman headline
+        xml2 = xml.replace("off Oman", "in the Gulf of Oman")
+        out = osint.parse_incident_news(xml2, today=dt.date(2026, 10, 5))
+        self.assertEqual(len(out), 1)
+        self.assertTrue(out[0]["uk"])
+        self.assertEqual(out[0]["loc"], "Gulf of Oman")
+
+    def test_firms_parse(self):
+        import osint
+        t = "latitude,longitude,bright_ti4,acq_date,confidence,frp\n48.1,37.2,340,2026-10-05,n,12.5\n48.2,37.3,330,2026-10-05,l,3\n"
+        out = osint.parse_firms(t)
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["frp"], 12.5)
+
+    def test_digitraffic_military(self):
+        import osint
+        loc = {"features": [{"mmsi": 230111000, "geometry": {"coordinates": [25.0, 59.9]}, "properties": {"sog": 10}},
+                            {"mmsi": 230222000, "geometry": {"coordinates": [25.1, 59.9]}, "properties": {"sog": 0}}]}
+        ves = [{"mmsi": 230111000, "name": "PATROL", "shipType": 35, "destination": ""}, {"mmsi": 230222000, "name": "CARGO", "shipType": 70}]
+        ships, total = osint.parse_digitraffic(loc, ves, (50, 70, 10, 40))
+        self.assertEqual(total, 2)
+        self.assertEqual([s["n"] for s in ships], ["PATROL"])
+
+    def test_ais_messages(self):
+        import osint
+        m = [{"MetaData": {"MMSI": 1, "ShipName": "X ", "latitude": 1.0, "longitude": 2.0}, "Message": {"PositionReport": {"Sog": 7}}},
+             {"MetaData": {"MMSI": 1}, "Message": {"ShipStaticData": {"Type": 35, "Destination": "ABC ", "Name": "NAVYSHIP"}}}]
+        s = osint.parse_ais_messages(m)["1"]
+        self.assertEqual((s["type"], s["spd"], s["dest"], s["n"]), (35, 7, "ABC", "NAVYSHIP"))
+
+    def test_ws_frame_roundtrip(self):
+        import osint
+        f = osint.ws_read(bytes([0x81, 0x03]) + b"abc")
+        self.assertEqual(f[:2], (1, b"abc"))
+        self.assertEqual(f[2], b"")
+
+    def test_war_filter(self):
+        self.assertTrue(extras.is_war("Will the US strike Iran by December?"))
+        self.assertFalse(extras.is_war("Will the Lakers win the NBA title?"))
+        self.assertFalse(extras.is_war("Bitcoin above 100k attack on resistance?"))
 
 if __name__ == "__main__":
     unittest.main()

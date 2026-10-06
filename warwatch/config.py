@@ -24,7 +24,7 @@ THEATRES = {
                 "countries": ["Ukraine", "Russia", "Belarus", "Moldova"]},
     "europe_east": {"name": "Eastern flank", "view": (8, 36, 48, 62),
                     "countries": ["Poland", "Lithuania", "Latvia", "Estonia", "Finland", "Romania"]},
-    "iran": {"name": "Iran", "view": (42, 66, 22, 40), "countries": ["Iran"]},
+    "iran": {"name": "Iran", "view": (42, 70, 11, 40), "countries": ["Iran"]},
     "yemen": {"name": "Yemen", "view": (34, 60, 8, 22),
               "countries": ["Yemen", "Saudi Arabia", "Oman", "Djibouti", "Eritrea", "Somalia"]},
     "israel": {"name": "Israel", "view": (28, 42, 26, 36),

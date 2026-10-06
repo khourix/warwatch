@@ -95,7 +95,7 @@ def map_json(topo, ex, levels_by_country):
                          ct=m.get("ct", ""), d=m.get("d", ""), r=m.get("r", ""), alt=m.get("alt"), gs=m.get("gs"), sq=m.get("sq", ""), em=bool(m.get("em")),
                          rt=m.get("rt", "")) for m in ex.get("mil", [])],
             "sqk": [dict(xy=xy(m["lat"], m["lon"]), sq=m["sq"], mean=m["mean"], why=m["why"], call=m["call"], hex=m["hex"], t=m["t"], o=m.get("o", ""),
-                         ct=m.get("ct", ""), d=m.get("d", ""), r=m.get("r", ""), alt=m.get("alt"), trk=m.get("trk"), th=m.get("th", "")) for m in ex.get("sqk", [])],
+                         ct=m.get("ct", ""), d=m.get("d", ""), r=m.get("r", ""), alt=m.get("alt"), trk=m.get("trk"), th=m.get("th", ""), rt=m.get("rt", "")) for m in ex.get("sqk", [])],
             "ships": [dict(xy=xy(m["lat"], m["lon"]), n=m["n"], k=m["k"], loc=m.get("loc", ""), g=m.get("g", ""), d=m.get("d", ""), tx=m.get("tx", ""), u=m.get("u", ""),
                            flag=m.get("flag", ""), dest=m.get("dest", ""), spd=m.get("spd"), note=m.get("note", ""), th=m.get("th", "")) for m in ex.get("ships", [])],
             "inc": [dict(xy=xy(m["lat"], m["lon"]), t=m["t"], d=m["d"], src=m["src"], u=m["u"], loc=m["loc"], th=m["th"]) for m in ex.get("inc", [])],
