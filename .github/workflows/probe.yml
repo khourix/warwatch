@@ -13,17 +13,22 @@ jobs:
               if params:
                   u += "?" + urllib.parse.urlencode(params)
               try:
-                  return urllib.request.urlopen(urllib.request.Request(u, headers=H), timeout=40).read().decode("utf-8", "replace")
+                  return urllib.request.urlopen(urllib.request.Request(u, headers=H), timeout=70).read().decode("utf-8", "replace")
               except Exception as e:
                   return "ERR %s" % e
+          def j(t):
+              try:
+                  return json.loads(t)
+              except Exception:
+                  print('  NOJSON', t[:120]); return {}
           PW = "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Ports_Data/FeatureServer/0/query"
           print("=== PORTWATCH")
-          d = json.loads(get(PW, {"where": "portname LIKE '%Novorossiysk%'", "outFields": "*", "resultRecordCount": 2, "orderByFields": "date DESC", "f": "json"}))
+          d = j(get(PW, {"where": "portname LIKE '%Novorossiysk%'", "outFields": "*", "resultRecordCount": 2, "orderByFields": "date DESC", "f": "json"}))
           print([f["name"] for f in d.get("fields", [])])
           for f in d.get("features", [])[:2]:
               print(f["attributes"])
-          for n in ["Odesa", "Haifa", "Bandar Abbas", "Sevastopol", "Eilat", "Aqaba", "Gdansk", "Klaipeda", "Tartus", "Latakia", "Ashdod", "Jebel Ali", "Constanta"]:
-              d = json.loads(get(PW, {"where": "portname LIKE '%%%s%%'" % n, "outFields": "portname,date", "resultRecordCount": 1, "orderByFields": "date DESC", "f": "json"}))
+          for n in ["Odesa", "Haifa", "Bandar Abbas"]:
+              d = j(get(PW, {"where": "portname LIKE '%%%s%%'" % n, "outFields": "portname,date", "resultRecordCount": 1, "orderByFields": "date DESC", "f": "json"}))
               print(n, [(f["attributes"]["portname"], f["attributes"]["date"]) for f in d.get("features", [])])
           print("=== NGA")
           for a in ["A", "P", "12", "4", "N", "S"]:
@@ -47,7 +52,7 @@ jobs:
           for m in re.findall(r'<a[^>]+href="([^"]*czib[^"]*)"[^>]*>(.*?)</a>', x, re.S | re.I)[:12]:
               print(m[0], re.sub(r"<.*?>|\s+", " ", m[1]).strip()[:90])
           print("=== POLY")
-          d = json.loads(get("https://gamma-api.polymarket.com/public-search", {"q": "Iran", "limit_per_type": 4}))
+          d = j(get("https://gamma-api.polymarket.com/public-search", {"q": "Iran", "limit_per_type": 4}))
           for e in d.get("events", [])[:4]:
               print(e.get("title"), e.get("closed"), e.get("endDate"))
               for m in e.get("markets", [])[:2]:
