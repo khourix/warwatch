@@ -1,5 +1,5 @@
 name: news
-# Headline counts (Google News RSS), NASA FIRMS thermal counts and GDELT daily event files, extended a few days per run.
+# Headline counts (Google News RSS), GDELT daily event files, extended a few days per run.
 # First run: dispatch with max_requests=150 to backfill about 150 days for each theatre.
 on:
   schedule:
@@ -26,14 +26,22 @@ jobs:
           WARWATCH_LIVE: "1"
           GNEWS_MAX: ${{ github.event.inputs.max_requests || '12' }}
           GDELT_MAX: ${{ github.event.inputs.max_requests || '6' }}
-          FIRMS_MAX: ${{ github.event.inputs.max_requests == '150' && '40' || '8' }}
-          FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
         run: |
-          ids=$(python3 -c "import sys; sys.path.insert(0,'warwatch'); import catalog; print(','.join(s['id'] for s in catalog.SERIES if s['id'].startswith(('news_','gdelt_','firms_'))))")
+          ids=$(python3 -c "import sys; sys.path.insert(0,'warwatch'); import catalog; print(','.join(s['id'] for s in catalog.SERIES if s['id'].startswith(('news_','gdelt_'))))")
           python3 warwatch/run.py --only "$ids" --fetch-only
       - name: Commit cache (public data only)
         run: |
           git config user.name "warwatch-bot"
           git config user.email "warwatch-bot@users.noreply.github.com"
           git add warwatch/history/cache 2>/dev/null || true
-          git diff --cached --quiet || (git commit -m "news: $(date -u +%FT%H:%MZ)" && git pull --rebase -q && git push -q) || echo "push skipped"
+          git diff --cached --quiet && exit 0
+          git commit -qm "news: $(date -u +%FT%H:%MZ)"
+          for i in 1 2 3; do
+            git pull --rebase -q -X theirs origin main && git push -q && exit 0
+            git rebase --abort 2>/dev/null || true
+            # the dashboard build pushed in between: re-apply only this job's files on top of the new head
+            mkdir -p /tmp/mine && cp warwatch/history/cache/news_* warwatch/history/cache/gdelt_* /tmp/mine/ 2>/dev/null || true
+            git fetch -q origin main && git reset -q --hard origin/main
+            cp /tmp/mine/* warwatch/history/cache/ && git add warwatch/history/cache && git commit -qm "news: $(date -u +%FT%H:%MZ)" || exit 0
+          done
+          echo "push skipped"

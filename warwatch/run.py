@@ -37,7 +37,7 @@ def _fetch(s, rec):
     pts = s["fetch"]()
     if not pts:
         raise RuntimeError("source returned no data")
-    store.cache_save(s["id"], pts)
+    store.cache_save(s["id"], pts, stamp=bool(s.get("every")))
     rec["points"] = pts[:-s["drop"]] if s["drop"] else pts
 
 

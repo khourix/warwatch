@@ -40,13 +40,23 @@ def cache_path(series_id):
     return os.path.join(ROOT, "cache", f"{series_id}.csv")
 
 
-def cache_save(series_id, pts):
-    """Last good full fetch of a series; overwritten each time. Public data only."""
-    os.makedirs(os.path.dirname(cache_path(series_id)), exist_ok=True)
-    with open(os.path.join(os.path.dirname(cache_path(series_id)), f"{series_id}.ts"), "w") as f:
-        f.write(dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M"))
-    with open(cache_path(series_id), "w", newline="") as f:
-        csv.writer(f).writerows((t, repr(float(v))) for t, v in pts)
+def cache_save(series_id, pts, stamp=True):
+    """Last good full fetch of a series. Public data only. Rewrites nothing when the content is unchanged, so jobs
+    that merely re-read a cache (news, GDELT) do not collide with the job that fills it."""
+    d = os.path.dirname(cache_path(series_id))
+    os.makedirs(d, exist_ok=True)
+    text = "".join(f"{t},{float(v)!r}\r\n" for t, v in pts)
+    try:
+        with open(cache_path(series_id), newline="") as f:
+            same = f.read() == text
+    except OSError:
+        same = False
+    if not same:
+        with open(cache_path(series_id), "w", newline="") as f:
+            f.write(text)
+    if stamp:
+        with open(os.path.join(d, f"{series_id}.ts"), "w") as f:
+            f.write(dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M"))
 
 
 def cache_load(series_id):
