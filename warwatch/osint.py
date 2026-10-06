@@ -298,21 +298,74 @@ def parse_incident_news(xml, today=None, days=14):
     return sorted(out, key=lambda x: (not x["uk"], x["d"]), reverse=False)[:60]
 
 
+UKMTO_API = "https://sccd.royalnavy.mod.uk/api/ukmto/all"   # the endpoint the ukmto.org incident map itself calls
+
+
+def parse_ukmto(rows, today=None, days=120):
+    """Official UKMTO incident list -> map markers, newest first."""
+    today = today or dt.date.today()
+    out = []
+    for r in rows:
+        try:
+            d = dt.date.fromisoformat(str(r.get("utcDateOfIncident"))[:10])
+            la, lo = float(r["locationLatitude"]), float(r["locationLongitude"])
+        except (ValueError, KeyError, TypeError):
+            continue
+        if (today - d).days > days:
+            continue
+        kind = (r.get("incidentTypeName") or "Incident").strip()
+        vt = (r.get("vesselType") or "").strip()
+        vn = (r.get("vesselName") or "").strip(". ")
+        det = re.sub(r"\s+", " ", (r.get("otherDetails") or "")).strip()
+        m = re.search(r"UKMTO has received.*", det)
+        det = (m.group(0) if m else det)[:700]
+        flags = []
+        if r.get("vesselUnderPirateControl"):
+            flags.append("vessel under pirate control")
+        if r.get("crewHeld"):
+            flags.append(f"{r['crewHeld']} crew held")
+        place = (r.get("place") or "").strip()
+        out.append({"t": f"UKMTO {r.get('incidentNumber', '')}: {kind}" + (f", {vt}" if vt else "") + (f" {vn}" if vn else "") + (f" near {place}" if place else ""),
+                    "d": d.isoformat(), "src": "UKMTO (official)", "u": "https://www.ukmto.org/recent-incidents", "loc": place, "lat": la, "lon": lo,
+                    "th": theatre_at(la, lo), "uk": True, "tx": det + (" " + "; ".join(flags) + "." if flags else ""), "pin": r.get("pinColour", ""),
+                    "lvl": r.get("incidentTypeLevel", 0)})
+    return sorted(out, key=lambda x: x["d"], reverse=True)
+
+
+_UK = {}
+
+
+def ukmto_all():
+    if "all" not in _UK:
+        _UK["all"] = S.get(UKMTO_API, headers={"Accept": "application/json", "Origin": "https://www.ukmto.org", "Referer": "https://www.ukmto.org/"}, retries=2, wait=3)
+    return _UK["all"]
+
+
+def ukmto_recent(theatre, days=30, today=None):
+    """Official UKMTO incidents in the last `days` inside a theatre box."""
+    return float(sum(1 for x in parse_ukmto(ukmto_all(), today, days) if x["th"] == theatre))
+
+
 def fetch_incidents():
-    out, seen = [], set()
-    for q in ("UKMTO when:14d", "tanker attacked OR vessel struck Hormuz OR \"Red Sea\" OR \"Gulf of Aden\" when:14d", "ship drone attack Black Sea OR Odesa OR Baltic when:14d"):
+    out = []
+    try:
+        out.extend(parse_ukmto(ukmto_all()))
+    except Exception:
+        pass
+    seen = {x["t"][:60] for x in out}
+    for q in ("UKMTO when:7d", "tanker attacked OR vessel struck Hormuz OR \"Red Sea\" OR \"Gulf of Aden\" when:7d", "ship drone attack Black Sea OR Odesa OR Baltic when:7d"):
         try:
             xml = S.get("https://news.google.com/rss/search?" + urllib.parse.urlencode({"q": q, "hl": "en-US", "gl": "US", "ceid": "US:en"}), raw=True, retries=2, wait=3)
         except Exception:
             continue
         xml = xml.decode("utf-8", "replace") if isinstance(xml, bytes) else xml
-        for x in parse_incident_news(xml):
-            k = x["t"][:60]
-            if k not in seen:
-                seen.add(k)
+        for x in parse_incident_news(xml, days=7):
+            if x["t"][:60] not in seen:
+                seen.add(x["t"][:60])
+                x["tx"] = ""
                 out.append(x)
     out.sort(key=lambda x: x["d"], reverse=True)
-    return out[:40]
+    return out[:80]
 
 
 # ---------------------------------------------------------------- NASA FIRMS thermal detections

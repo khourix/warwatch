@@ -491,8 +491,10 @@ function paintCountries(){
     c._el.setAttribute('class', 'c' + (inTab ? ' th' : '') + (layerState.adv && lv[c.name] >= 2 ? ' a' + lv[c.name] : ''));
   });
 }
+let layersInit = false;
 function renderLayers(){
   const L = $('#layers');
+  if (!layersInit) { layersInit = true; if (innerWidth < 1600) L.classList.add('min'); }
   const cnt = {mil: M && M.mil.length, sqk: M && (M.sqk || []).length, ships: M && (M.ships || []).length, inc: M && (M.inc || []).length,
     nga: M && M.nga.length, czib: M && M.czib.length, fires: M && (M.fires || []).length};
   L.innerHTML = `<h4 id="lh"><span>Layers</span><span>${L.classList.contains('min') ? '+' : '&minus;'}</span></h4>` + LAYERS.map(([k, n, c]) =>

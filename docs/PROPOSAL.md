@@ -156,3 +156,11 @@ not remove this.
 - Interactive map (zoom, pan, layers, click for details) and a detail view per signal with description, source link, raw values, score history and standard-deviation bands.
 - New feeds: GDELT daily event files (posture, threats, attacks), IODA internet outages, ADS-B aircraft classes (airlift, tanker, AWACS, fighter), EASA airspace bulletins, Frankfurter FX, Twelve Data defence stocks (key pending), Kalshi and Polymarket odds, Pentagon pizza index.
 - Not reachable: FAA/ICAO NOTAM feeds (blocked), UKMTO (script-only page), Telegram/Strava and similar (no open data).
+
+## v5 (October 2026)
+- **Map**: larger fonts and halos, label collision, sea names, label-size control, layer panel with counts. Popups show who owns an aircraft (ICAO address block and call sign), type, altitude, speed, heading and the nearest air base or capital it is pointing at (inferred, public ADS-B carries no military flight plan).
+- **Emergency squawks** 7500/7600/7700 from adsb.lol are a separate layer and alert. **UKMTO** incidents come from the same Royal Navy endpoint the ukmto.org map calls, merged with news reports. **US Navy fleet** (carriers, amphibious groups, destroyers) is read weekly from the USNI Fleet Tracker; Baltic warships from Finnish AIS; global AIS switches on with a free aisstream.io key (`AISSTREAM_API_KEY`).
+- **NASA FIRMS** thermal detections: a map layer and a per-theatre daily series.
+- **Prediction markets** are filtered to war and military questions.
+- **New indicators**: finer US purchase codes (ammunition, missiles, armour, charter airlift, sealift, site works, CBRN gear, spares), DoD obligations and construction by place of performance per theatre, strike-package index (tankers + ISR + fighters together), pre-force index (GDELT threats + posture), embassy-drawdown headlines, maritime-attack headlines, UKMTO counts, gold / tanker / container / Israel / Poland equities.
+- **Not available**: ACLED data (account authenticates but the data API refuses access), FAA/ICAO NOTAMs (blocked), aircraft owner databases (inferred only).

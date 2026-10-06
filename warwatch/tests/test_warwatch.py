@@ -346,6 +346,17 @@ class TestOsint(unittest.TestCase):
         self.assertTrue(out[0]["uk"])
         self.assertEqual(out[0]["loc"], "Gulf of Oman")
 
+    def test_ukmto_official(self):
+        import osint, datetime as dt
+        rows = [{"incidentNumber": 78, "utcDateOfIncident": "2026-10-01T11:22:00Z", "incidentTypeName": "Suspicious Activity", "locationLatitude": 12.6,
+                 "locationLongitude": 48.2, "place": "Gulf of Aden", "vesselName": "..", "vesselType": "Tanker ", "otherDetails": "UKMTO WARNING 078-26\r\nUKMTO has received a report of an incident 85NM south of Balhaf.",
+                 "crewHeld": 0, "vesselUnderPirateControl": False},
+                {"incidentNumber": 1, "utcDateOfIncident": "2024-01-01T00:00:00Z", "locationLatitude": 1, "locationLongitude": 1}]
+        out = osint.parse_ukmto(rows, today=dt.date(2026, 10, 5))
+        self.assertEqual(len(out), 1)
+        self.assertIn("Suspicious Activity", out[0]["t"])
+        self.assertTrue(out[0]["tx"].startswith("UKMTO has received"))
+
     def test_firms_parse(self):
         import osint
         t = "latitude,longitude,bright_ti4,acq_date,confidence,frp\n48.1,37.2,340,2026-10-05,n,12.5\n48.2,37.3,330,2026-10-05,l,3\n"

@@ -434,3 +434,10 @@ for th in C.GNEWS:
     add(f"gdelt_preforce_{th}", f"Pre-force index: threats plus military posture events per day, {TH[th]} (GDELT)", "information", th, "daily", False,
         "Derived: ultimatums (CAMEO 13) and shows of force (CAMEO 15) together. Escalation ladders run threat, then posture, then force, so both rising together is the pattern that precedes strikes.",
         _preforce(th), url=GD, sub="Derived")
+
+
+# ============ Official UKMTO incident counts (the Royal Navy maritime trade centre feed behind ukmto.org) ============
+for th in ("iran", "yemen"):
+    add(f"ukmto_{th}", f"UKMTO incident reports in last 30 days, {TH[th]} waters (official)", "geospatial", th, "daily", False,
+        "Suspicious approaches, hijackings and attacks reported by masters to UKMTO. Harassment and approaches usually precede strikes on shipping. Snapshots start now.",
+        _snap(f"ukmto_{th}", lambda t=th: __import__("osint").ukmto_recent(t)), url="https://www.ukmto.org/recent-incidents", sub="Sea")

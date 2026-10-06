@@ -22,7 +22,6 @@ ZH_N = 60
 CLS_NAMES = {"lift": "Airlift", "tanker": "Tanker", "isr": "Surveillance / AWACS", "fighter": "Fighter", "bomber": "Bomber", "uav": "Drone", "heli": "Helicopter", "other": "Other military"}
 UNAVAILABLE = [
     ("NOTAMs (airspace closure notices)", "The FAA and ICAO feeds refuse automated requests from cloud servers (403/404). A free FAA NOTAM API key would let it through; in its place the dashboard reads US NGA hazard warnings, EASA airspace bulletins and live airliner counts."),
-    ("UKMTO official incident feed", "Read through the site's own data route where it answers; otherwise maritime incidents are taken from news reports that cite UKMTO and are marked as such."),
     ("Ship positions outside the Baltic", "Global AIS needs a free aisstream.io key. Without one, only the Baltic (Finnish Digitraffic) is live, and US Navy units come from the weekly USNI Fleet Tracker."),
     ("Conflict event data (ACLED)", "The ACLED account authenticates but the data API refuses access. The account needs data access enabled by ACLED."),
     ("Aircraft routes and owners", "Public ADS-B carries no flight plan for military aircraft. Owner is inferred from the aircraft's address block and call sign, and shown as such."),
@@ -98,7 +97,7 @@ def map_json(topo, ex, levels_by_country):
                          ct=m.get("ct", ""), d=m.get("d", ""), r=m.get("r", ""), alt=m.get("alt"), trk=m.get("trk"), th=m.get("th", ""), rt=m.get("rt", "")) for m in ex.get("sqk", [])],
             "ships": [dict(xy=xy(m["lat"], m["lon"]), n=m["n"], k=m["k"], loc=m.get("loc", ""), g=m.get("g", ""), d=m.get("d", ""), tx=m.get("tx", ""), u=m.get("u", ""),
                            flag=m.get("flag", ""), dest=m.get("dest", ""), spd=m.get("spd"), note=m.get("note", ""), th=m.get("th", "")) for m in ex.get("ships", [])],
-            "inc": [dict(xy=xy(m["lat"], m["lon"]), t=m["t"], d=m["d"], src=m["src"], u=m["u"], loc=m["loc"], th=m["th"]) for m in ex.get("inc", [])],
+            "inc": [dict(xy=xy(m["lat"], m["lon"]), t=m["t"], d=m["d"], src=m["src"], u=m["u"], loc=m["loc"], th=m["th"], tx=m.get("tx", "")) for m in ex.get("inc", [])],
             "fires": [dict(xy=xy(m["lat"], m["lon"]), p=m["frp"], d=m["date"], th=m.get("th", "")) for m in ex.get("fires", [])],
             "seas": [{"n": n, "xy": xy(la, lo)} for n, la, lo in C.SEAS],
             "nga": [{"xy": xy(m["lat"], m["lon"]), "id": m["id"], "tx": m["text"], "iss": m["issued"], "th": osint.theatre_at(m["lat"], m["lon"])} for m in ex.get("nga", [])],

@@ -39,6 +39,8 @@ jobs:
           SAM_API_KEY: ${{ secrets.SAM_API_KEY }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+          FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
         run: python3 $WW/run.py --only "${{ github.event.inputs.only }}" --out site/index.html
       - uses: actions/upload-artifact@v4
         with:
