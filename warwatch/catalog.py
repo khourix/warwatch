@@ -131,6 +131,42 @@ for sym, name in (("ITA", "US aerospace and defence ETF (ITA)"), ("LMT", "Lockhe
         "Defence stocks rally on expected demand; a sharp surge is a strong signal in conflict models.",
         (lambda s=sym: S.fetch_twelvedata(s, _key("TWELVEDATA_API_KEY"))), needs=["TWELVEDATA_API_KEY"],
         url="https://twelvedata.com/", sub="Defence stocks")
+# Finer purchase codes the OSINT community watches: munitions, armour, missiles, charter airlift, sealift, site works
+for sid, label, why, kw, sub in (
+    ("us_ammo_awards", "US ammunition awards (PSC 1305, 1310, 1315, 1320, 1325, 1330, 1340)",
+     "Ammunition buying leads sustained fighting: stocks are replenished ahead of use. Awards publish ~90 days late, so this confirms rather than leads.",
+     dict(psc=["1305", "1310", "1315", "1320", "1325", "1330", "1340"]), "Munitions"),
+    ("us_ammo_naics", "US ammunition manufacturing awards (NAICS 332992, 332993, 332994)", "Industry-coded munition orders, which PSC filters miss.",
+     dict(naics=["332992", "332993", "332994"]), "Munitions"),
+    ("us_missile_awards", "US guided missile and rocket awards (PSC 1410, 1420, 1425, 1427)", "Missile replenishment follows heavy interceptor and strike use.",
+     dict(psc=["1410", "1420", "1425", "1427"]), "Munitions"),
+    ("us_armored_naics", "US armored vehicle manufacturing awards (NAICS 336992)", "Ground-force vehicles for deployment or transfer.",
+     dict(naics=["336992"]), "Procurement"),
+    ("us_air_charter_naics", "US non-scheduled air charter freight awards (NAICS 481212)",
+     "Commercial charter freight chartered by DoD is a surge-airlift signal.", dict(naics=["481212"]), "Airlift"),
+    ("us_sealift_naics", "US deep-sea freight awards (NAICS 483111, 483113)", "Sealift charters move heavy equipment ahead of a deployment.",
+     dict(naics=["483111", "483113"]), "Sealift"),
+    ("us_site_works_naics", "US site preparation and heavy civil works awards (NAICS 237990, 238910, 237310)",
+     "Runways, ramps and revetments at forward bases are built before forces arrive.", dict(naics=["237990", "238910", "237310"]), "Engineering"),
+    ("us_chem_protective_awards", "US chemical and biological protective gear awards (PSC 4240, 4220)",
+     "Masks, suits and decontamination kit are bought when CBRN risk is in the plan.", dict(psc=["4240", "4220"]), "Medical"),
+    ("us_aircraft_parts_awards", "US aircraft engine and spare-part awards (PSC 2840, 2915, 1560)",
+     "Spares buying ahead of high operating tempo.", dict(psc=["2840", "2915", "1560"]), "Fuel and engines"),
+):
+    add(sid, label, "logistics", "global", "monthly", True, why, (lambda kw=kw: S.fetch_usaspending(**kw)), drop=DOD, url=USA, sub=sub)
+
+# DoD spending by place of performance: where the money lands moves before the forces do
+POP = {"europe_east": ("POL", "LTU", "LVA", "EST", "ROU"), "israel": ("ISR",), "iran": ("KWT", "QAT", "BHR", "ARE", "SAU", "JOR", "OMN", "IRQ"),
+       "yemen": ("DJI", "SAU", "OMN"), "ukraine": ("UKR", "MDA", "ROU")}
+BUILD = ["236220", "237990", "237310", "238910", "236210", "238120"]
+for th, ccs in POP.items():
+    add(f"dod_pop_{th}", f"DoD obligations performed in {TH[th]} region ({', '.join(ccs)})", "logistics", th, "monthly", True,
+        "Contract money performed in the host countries rises when forces and supplies are being positioned there. DoD data is ~90 days late.",
+        (lambda c=ccs: S.fetch_usaspending(pop=list(c), dod=True)), drop=DOD, url=USA, sub="Procurement")
+    add(f"dod_build_{th}", f"DoD construction and site-works obligations in {TH[th]} region", "logistics", th, "monthly", True,
+        "Construction at host-nation bases (aprons, ammunition storage, barracks) precedes a surge; it is the slowest to hide.",
+        (lambda c=ccs: S.fetch_usaspending(naics=BUILD, pop=list(c), dod=True)), drop=DOD, url=USA, sub="Engineering")
+
 add("pizza_index", "Pentagon pizza index (PizzINT, 0-100)", "behavioral", "global", "daily", False,
     "Crisis staffing shows up as late-night food-delivery demand around the Pentagon. Weak signal from a third-party scrape of Google popular times; snapshots start now.",
     _snap("pizza_index", lambda: extras.pizza_now()[0]), url="https://www.pizzint.watch/", sub="Behaviour")
@@ -302,3 +338,99 @@ add("wheat", "Wheat price, USD per tonne (FRED, monthly)", "financial", "ukraine
     "Black Sea grain exports are the first thing a Ukraine escalation hits.",
     lambda: S.fetch_fred("PWHEAMTUSDM", _key("FRED_API_KEY"), days=2400), drop=0, needs=["FRED_API_KEY"],
     url=FRED + "PWHEAMTUSDM", sub="Commodities")
+
+
+# ============ Market stress proxies via Twelve Data (free plan, 8 requests a minute) ============
+TD = "https://twelvedata.com/"
+for sid, sym, label, th, why, direction in (
+    ("gold", "GLD", "Gold ETF (GLD) price", "global", "Money runs to gold ahead of wars, and central banks buy it before sanctions.", "up"),
+    ("tanker_equity", "STNG", "Tanker shipping stock (Scorpio Tankers)", "iran", "War-risk freight premia lift tanker equities when Hormuz and Gulf routes look unsafe.", "up"),
+    ("container_equity", "ZIM", "Container shipping stock (ZIM)", "yemen", "Red Sea rerouting lifts container rates and the shipping stocks that gain from them.", "up"),
+    ("israel_equity", "EIS", "Israel equity ETF (EIS)", "israel", "A falling Israeli equity index prices in escalation before it happens.", "down"),
+    ("poland_equity", "EPOL", "Poland equity ETF (EPOL)", "europe_east", "Frontline equity markets fall when investors price a spillover.", "down"),
+):
+    add(sid, f"{label} (Twelve Data)", "financial", th, "daily", False, why, (lambda s=sym: S.fetch_twelvedata(s, _key("TWELVEDATA_API_KEY"))),
+        direction=direction, needs=["TWELVEDATA_API_KEY"], url=TD, sub="Markets")
+
+# ============ Satellite thermal detections (NASA FIRMS, free key) ============
+def _fires(th):
+    def go():
+        key = _key("FIRMS_MAP_KEY")
+        if not key:
+            raise RuntimeError("needs FIRMS_MAP_KEY")
+        import osint
+        osint.firms_counts(key, th, days=150)
+        pts = osint.firms_series(th)
+        if not pts:
+            raise RuntimeError("first refresh pending (fire history fills over a few runs)")
+        return pts
+    return go
+
+
+for th in ("ukraine", "europe_east", "iran", "yemen", "israel"):
+    add(f"firms_{th}", f"Satellite thermal detections per day, {TH[th]} (NASA FIRMS)", "geospatial", th, "daily", False,
+        "Infrared satellites see shelling, strikes, burning depots and refinery fires within hours. A sustained rise inside a war-risk box is an early read on kinetic activity.",
+        _fires(th), needs=["FIRMS_MAP_KEY"], url="https://firms.modaps.eosdis.nasa.gov/map/", sub="Satellite")
+
+# ============ Evacuation and maritime-incident headlines (Google News, backfilled by the news job) ============
+SEA = {"iran": 'tanker OR vessel (attacked OR struck OR seized OR "boarded") (Hormuz OR "Gulf of Oman" OR "Persian Gulf" OR UKMTO)',
+       "yemen": 'ship OR vessel OR tanker (attacked OR struck OR missile OR drone) ("Red Sea" OR "Gulf of Aden" OR Houthi OR UKMTO)',
+       "ukraine": 'vessel OR ship OR tanker OR port (attacked OR struck OR drone OR mine) ("Black Sea" OR Odesa OR Novorossiysk)'}
+
+
+def _newsq(sid, query):
+    def go():
+        if os.environ.get("WARWATCH_LIVE"):
+            return S.fetch_gnews(sid, query, days=150)
+        pts = store.cache_load(sid)
+        if not pts:
+            raise RuntimeError("first refresh pending (news history fills from the news job)")
+        return pts
+    return go
+
+
+for th, q in SEA.items():
+    add(f"news_sea_{th}", f"Maritime attack headlines per day, {TH[th]} (Google News)", "geospatial", th, "daily", False,
+        "Counts headlines on ships attacked, seized or boarded in the theatre's waters (the story UKMTO warnings feed). Seizures and harassment usually precede open strikes.",
+        _newsq(f"news_sea_{th}", q), url="https://news.google.com/", sub="Sea")
+add("news_evac_global", "Embassy drawdown and ordered-departure headlines per day, worldwide (Google News)", "behavioral", "global", "daily", False,
+    "Governments ask staff and families to leave before strikes: 'ordered departure', 'authorized departure', 'embassy drawdown' and citizen evacuation notices.",
+    _newsq("news_evac_global", '"ordered departure" OR "authorized departure" OR "embassy drawdown" OR "evacuate its citizens" OR "non-emergency personnel"'),
+    url="https://news.google.com/", sub="Evacuation")
+
+
+# ============ Derived indicators, built from series already collected ============
+def _package(th):
+    """Tanker, surveillance and fighter aircraft present together: counts each class, multiplied by the number of classes present (strike packaging)."""
+    def go():
+        cls = {c: dict(store.daily(f"adsb_{th}_{c}")) for c in ("tanker", "isr", "fighter")}
+        days = sorted(set().union(*[set(v) for v in cls.values()]))
+        out = []
+        for d in days:
+            vals = [cls[c].get(d, 0.0) for c in cls]
+            out.append((d, sum(vals) * sum(1 for v in vals if v > 0)))
+        return out
+    return go
+
+
+for th in C.BOXES:
+    add(f"package_{th}", f"Strike-package index over {TH[th]} (tankers + AWACS/ISR + fighters together)", "geospatial", th, "daily", False,
+        "Derived: tankers, surveillance aircraft and fighters present at the same time. Packaged air power is how operations are staged; any one alone is routine. History builds from first run.",
+        _package(th), url=ADS, sub="Derived")
+
+
+def _preforce(th):
+    def go():
+        if os.environ.get("WARWATCH_LIVE"):
+            S.gdelt_update(days=150)
+        pts = _sum([S.gdelt_series(th, ("13",)), S.gdelt_series(th, ("15",))])
+        if not pts:
+            raise RuntimeError("first refresh pending (GDELT history fills from the news job)")
+        return pts
+    return go
+
+
+for th in C.GNEWS:
+    add(f"gdelt_preforce_{th}", f"Pre-force index: threats plus military posture events per day, {TH[th]} (GDELT)", "information", th, "daily", False,
+        "Derived: ultimatums (CAMEO 13) and shows of force (CAMEO 15) together. Escalation ladders run threat, then posture, then force, so both rising together is the pattern that precedes strikes.",
+        _preforce(th), url=GD, sub="Derived")

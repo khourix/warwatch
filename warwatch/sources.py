@@ -70,7 +70,8 @@ def parse_usaspending(payload):
     return sorted(out)
 
 
-def fetch_usaspending(psc=None, naics=None, years=6):
+def fetch_usaspending(psc=None, naics=None, years=6, pop=None, dod=False):
+    """pop: ISO-3 country codes of the place of performance; dod: Department of Defense awards only."""
     end = dt.date.today()
     f = {"time_period": [{"start_date": f"{end.year - years}-01-01", "end_date": end.isoformat()}],
          "award_type_codes": ["A", "B", "C", "D"]}
@@ -78,6 +79,10 @@ def fetch_usaspending(psc=None, naics=None, years=6):
         f["psc_codes"] = psc
     if naics:
         f["naics_codes"] = naics
+    if pop:
+        f["place_of_performance_locations"] = [{"country": c} for c in pop]
+    if dod:
+        f["agencies"] = [{"type": "awarding", "tier": "toptier", "name": "Department of Defense"}]
     return parse_usaspending(get("https://api.usaspending.gov/api/v2/search/spending_over_time/",
                                  {"group": "month", "filters": f}))
 
@@ -448,7 +453,14 @@ def parse_twelvedata(p):
     return sorted((v["datetime"][:10], float(v["close"])) for v in p["values"])
 
 
+_TD = {"last": 0.0}
+
+
 def fetch_twelvedata(symbol, key):
+    wait = 8.0 - (time.time() - _TD["last"])   # free plan: 8 requests a minute
+    if wait > 0 and _TD["last"]:
+        time.sleep(wait)
+    _TD["last"] = time.time()
     q = urllib.parse.urlencode({"symbol": symbol, "interval": "1day", "outputsize": 420, "apikey": key})
     return parse_twelvedata(get("https://api.twelvedata.com/time_series?" + q))
 
