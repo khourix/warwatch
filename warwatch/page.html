@@ -640,10 +640,37 @@ function matchChip(s){
   return c === 'all' || (c === 'rising' && s.z != null && s.z >= 1) || (c === 'leading' && !s.lag) || (c === 'confirming' && s.lag) || (c === 'collecting' && s.z == null);
 }
 function matchQ(s){ const q = F.q.trim().toLowerCase(); return !q || (s.l + ' ' + s.s + ' ' + s.id).toLowerCase().includes(q); }
+function mspark(hh){
+  if (!hh || hh.length < 3) return '';
+  const v = hh.map(p => p[1]), lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1;
+  const pts = v.map((x, i) => (i / (v.length - 1) * 60).toFixed(1) + ',' + (16 - (x - lo) / r * 14).toFixed(1)).join(' ');
+  return `<svg width="60" height="18" viewBox="0 0 60 18" style="display:block;margin:2px 0 0 auto"><polyline fill="none" stroke="#58a6ff" stroke-width="1.5" points="${pts}"/></svg>`;
+}
+function mchg(m){
+  const hh = m.h; if (!hh || hh.length < 2) return '';
+  const last = hh[hh.length - 1][1], t = Date.parse(hh[hh.length - 1][0]);
+  let ref = hh[0]; for (const p of hh) { if (Date.parse(p[0]) <= t - 7 * 864e5) ref = p; }
+  const d = Math.round((last - ref[1]) * 100); if (!d) return '<small>flat over 7 days</small>';
+  return `<small style="color:${d > 0 ? 'var(--warn)' : 'var(--ok)'}">${d > 0 ? '+' : ''}${d} pts over ${Math.max(1, Math.round((t - Date.parse(ref[0])) / 864e5))} days</small>`;
+}
 function marketRows(list){
   if (!list.length) return `<div class="empty">No open war or military prediction markets matched this theatre.</div>`;
-  return list.map(m => `<a class="mk2" target="_blank" rel="noopener" href="${esc(m.url)}"><span>${esc(m.q)}<br><small>${esc(m.src)} · volume $${fmtv(m.vol)}${m.end ? ' · ends ' + esc(m.end) : ''}</small></span><b style="color:${m.p >= .5 ? 'var(--warn)' : 'var(--ink)'}">${Math.round(m.p * 100)}%</b></a>`).join('');
+  return list.map(m => `<div class="mk2" data-mi="${D.markets.indexOf(m)}" style="cursor:pointer" title="Click for odds history"><span>${esc(m.q)}<br><small>${esc(m.src)} · volume $${fmtv(m.vol)}${m.end ? ' · ends ' + esc(m.end) : ''}</small></span><span style="text-align:right"><b style="color:${m.p >= .5 ? 'var(--warn)' : 'var(--ink)'}">${Math.round(m.p * 100)}%</b>${mspark(m.h)}</span></div>`).join('');
 }
+function openMarket(i){
+  const m = D.markets[i]; if (!m) return;
+  const hh = m.h || [];
+  let h = `<button class="x" aria-label="Close">&times;</button><h2>${esc(m.q)}</h2><div class="chips"><span class="chip">${esc(m.src)}</span>${m.theatre ? `<span class="chip">${esc(thName(m.theatre))}</span>` : ''}<span class="chip">volume $${fmtv(m.vol)}</span>${m.end ? `<span class="chip">ends ${esc(m.end)}</span>` : ''}</div>`;
+  h += `<div class="kpis"><div class="kpi"><small>Odds now</small><b>${Math.round(m.p * 100)}%</b><span>chance the market gives</span></div>` +
+    (hh.length > 2 ? [['1 day', 1], ['7 days', 7], ['30 days', 30]].map(([n, d]) => { const t = Date.parse(hh[hh.length - 1][0]); let ref = null; for (const p of hh) { if (Date.parse(p[0]) <= t - d * 864e5) ref = p; }
+      const c = ref ? Math.round((hh[hh.length - 1][1] - ref[1]) * 100) : null; return `<div class="kpi"><small>Change, ${n}</small><b style="color:${c > 0 ? 'var(--warn)' : c < 0 ? 'var(--ok)' : 'var(--ink)'}">${c == null ? 'n/a' : (c > 0 ? '+' : '') + c + ' pts'}</b><span>${ref ? 'was ' + Math.round(ref[1] * 100) + '%' : 'not enough history'}</span></div>`; }).join('') : '') +
+    (hh.length > 2 ? `<div class="kpi"><small>Peak / low</small><b>${Math.round(Math.max(...hh.map(p => p[1])) * 100)}% / ${Math.round(Math.min(...hh.map(p => p[1])) * 100)}%</b><span>over the period shown</span></div>` : '') + `</div>`;
+  if (hh.length > 2) h += chartBlock('Odds over time (chance the market gives, %)', hh, {h: 240, c: '#58a6ff', fy: v => Math.round(v * 100) + '%', min: 0, max: 1, extrema: false}, hh.length > 40 ? [['30', '30'], ['90', '90'], ['all', 'All']] : null);
+  else h += `<div class="warnbox">No price history was returned for this market.</div>`;
+  h += `<p class="say" style="color:var(--mute)">Prediction markets are context, not scored: they show what traders with money at stake think, and they react to news as much as they anticipate it.</p><div class="btns" style="margin-top:10px"><a class="btn" target="_blank" rel="noopener" href="${esc(m.url)}">Open on ${esc(m.src)} &#8599;</a></div>`;
+  modalList = []; $('#mbox').innerHTML = h; $('#modal').style.display = 'flex'; $('#mbox').scrollTop = 0;
+}
+document.addEventListener('click', e => { const r = e.target.closest('.mk2[data-mi]'); if (r) { e.preventDefault(); openMarket(+r.dataset.mi); } });
 function marketsFor(t){ return D.markets.filter(m => t === 'global' ? !m.theatre : m.theatre === t); }
 function driversOf(t){
   return seriesOf(t).filter(s => s.z != null).sort((a, b) => b.z - a.z).slice(0, 3);
@@ -728,7 +755,7 @@ function searchAll(q){
     (M.ships || []).forEach((a, i) => { if ((a.n + ' ' + (a.g || '') + ' ' + (a.loc || '')).toLowerCase().includes(q)) out.push({g: 'Ships', t: a.n, s: (a.loc || '') + (a.th ? ' · ' + thName(a.th) : ''), run: () => { go(a.th || 'overview'); setTimeout(() => { focusXY(a.xy, 700); openCard('ships', a); }, 80); }}); });
     M.countries.forEach(c => { if (c.name.toLowerCase().includes(q)) out.push({g: 'Countries', t: c.name, s: thOfCountry[c.name] ? thName(thOfCountry[c.name]) : '', run: () => { const th = thOfCountry[c.name]; if (th) go(th); else { go('overview'); setTimeout(() => focusXY([c.cx, c.cy], 500), 80); } }}); });
   }
-  D.markets.filter(m => m.q.toLowerCase().includes(q)).slice(0, 4).forEach(m => out.push({g: 'Markets', t: m.q, s: Math.round(m.p * 100) + '%', run: () => window.open(m.url, '_blank', 'noopener')}));
+  D.markets.filter(m => m.q.toLowerCase().includes(q)).slice(0, 4).forEach(m => out.push({g: 'Markets', t: m.q, s: Math.round(m.p * 100) + '%', run: () => openMarket(D.markets.indexOf(m))}));
   return out.slice(0, 40);
 }
 let resList = [], resSel = 0;

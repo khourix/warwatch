@@ -14,57 +14,32 @@ jobs:
       - name: Probe round 14
         run: |
           cat > p.py <<'PY'
-          import gzip, json, os, re, sys, urllib.request, urllib.parse, urllib.error
+          import gzip, json, os, sys, time, urllib.request, urllib.parse, urllib.error
           sys.path.insert(0, "warwatch")
+          import osint
           UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-          def txt(u, params=None, data=None, hdr=None, t=40):
+          def txt(u, params=None):
               if params: u += ("&" if "?" in u else "?") + urllib.parse.urlencode(params)
-              h = {"User-Agent": UA, "Accept": "application/json, text/html, */*"}; h.update(hdr or {})
+              try: return urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA}), timeout=60).read().decode()
+              except Exception as e: return "ERR %s" % e
+          ident = json.loads(txt("https://hapi.humdata.org/api/v2/encode_app_identifier", {"application": "warwatch", "email": "warwatch@users.noreply.github.com"}))["encoded_app_identifier"]
+          for loc in ["UKR", "IRN", "YEM", "ISR", "PSE", "LBN", "POL", "LTU"]:
+              tot = {}; off = 0; n = 0
+              while True:
+                  r = json.loads(txt("https://hapi.humdata.org/api/v2/coordination-context/conflict-events", {"app_identifier": ident, "location_code": loc, "output_format": "json", "limit": 10000, "offset": off}))
+                  d = r.get("data", [])
+                  for x in d:
+                      k = (x["reference_period_start"][:7], x["event_type"]); tot[k] = tot.get(k, 0) + x["events"]
+                  n += len(d)
+                  if len(d) < 10000 or off > 100000: break
+                  off += 10000
+              months = sorted({k[0] for k in tot}); types = sorted({k[1] for k in tot})
+              print("HAPI", loc, "rows", n, "months", months[0] if months else None, months[-1] if months else None, types, [ (m, tot.get((m, "political_violence"), 0), tot.get((m, "demonstration"), 0)) for m in months[-4:]])
+          class FakeS: pass
+          for name, boxes in {"hormuz": [(24, 28, 54, 60)], "gulf": [(24, 30, 48, 58)], "redsea": [(12, 20, 38, 45)], "medeast": [(31, 36, 28, 36)], "world": [(-85, 85, -179, 179)]}.items():
               try:
-                  b = urllib.request.urlopen(urllib.request.Request(u, headers=h, data=data), timeout=t).read()
-                  return (gzip.decompress(b) if b[:2] == b"\x1f\x8b" else b).decode("utf-8", "replace")
-              except urllib.error.HTTPError as e:
-                  return "HTTP %s %s" % (e.code, e.read()[:200].decode("utf-8", "replace"))
-              except Exception as e:
-                  return "ERR %s" % str(e)[:150]
-          def sec(n): print("=== " + n, flush=True)
-          sec("ACLED")
-          em, pw = os.environ["ACLED_EMAIL"], os.environ["ACLED_PASSWORD"]
-          r = txt("https://acleddata.com/oauth/token", data=urllib.parse.urlencode({"username": em, "password": pw, "grant_type": "password", "client_id": "acled"}).encode(), hdr={"Content-Type": "application/x-www-form-urlencoded"})
-          try: at = json.loads(r)["access_token"]; print("token ok")
-          except Exception: at = ""; print("token fail", r[:150])
-          H = {"Authorization": "Bearer " + at}
-          for ep in ["acled/read?_format=json&limit=2&country=Ukraine", "cast/read?_format=json&limit=2", "conflict-index/read?_format=json&limit=2", "deleted/read?_format=json&limit=1", "user/me?_format=json"]:
-              print("EP", ep, txt("https://acleddata.com/api/" + ep, hdr=H)[:300])
-          for pg in ["https://acleddata.com/conflict-data/download-data-files", "https://acleddata.com/conflict-index", "https://acleddata.com/platform/explorer", "https://acleddata.com/platform/cast"]:
-              t = txt(pg, hdr=H); links = sorted(set(re.findall(r'href="([^"]*(?:download|\.csv|\.xlsx|\.zip|sites/default/files|/api/)[^"]*)"', t)))[:25]
-              print("PG", pg, len(t), t[:80].replace("\n", " "), links)
-          sec("HDX HAPI (ACLED-derived conflict events)")
-          enc = txt("https://hapi.humdata.org/api/v2/encode_app_identifier", {"application": "warwatch", "email": "warwatch@users.noreply.github.com"}); print("ENC", enc[:200])
-          try: ident = json.loads(enc)["encoded_app_identifier"]
-          except Exception: ident = ""
-          for ep in ["coordination-context/conflict-events", "coordination-context/national-risk"]:
-              print("HAPI", ep, txt("https://hapi.humdata.org/api/v2/" + ep, {"app_identifier": ident, "location_code": "UKR", "output_format": "json", "limit": 3})[:500])
-          sec("UCDP")
-          print(txt("https://ucdpapi.pcr.uu.se/api/gedevents/25.1?pagesize=1")[:200])
-          print(txt("https://ucdpapi.pcr.uu.se/api/gedevents/25.0.1?pagesize=1&page=0")[:200])
-          sec("Polymarket history")
-          g = json.loads(txt("https://gamma-api.polymarket.com/public-search", {"q": "Iran", "limit_per_type": 3}))
-          m = g["events"][0]["markets"][0]; print(m.get("question"), m.get("clobTokenIds"), m.get("id"))
-          tok = json.loads(m["clobTokenIds"])[0]
-          for q in [{"market": tok, "interval": "max", "fidelity": 720}, {"market": tok, "interval": "1m", "fidelity": 60}]:
-              r = txt("https://clob.polymarket.com/prices-history", q); print("PH", q["interval"], len(r), r[:300])
-          sec("Kalshi history")
-          k = json.loads(txt("https://api.elections.kalshi.com/trade-api/v2/events", {"limit": 3, "status": "open", "with_nested_markets": "true"}))
-          e = k["events"][0]; mk = e["markets"][0]; print(e.get("series_ticker"), mk.get("ticker"))
-          print(txt("https://api.elections.kalshi.com/trade-api/v2/series/%s/markets/%s/candlesticks" % (e["series_ticker"], mk["ticker"]), {"start_ts": 1759000000, "end_ts": 1759900000, "period_interval": 1440})[:300])
-          sec("AIS stream")
-          sys.path.insert(0, "warwatch")
-          import osint, config as C
-          try:
-              ships = osint.fetch_aisstream(os.environ["AISSTREAM_API_KEY"], [C.BOXES["iran"], C.BOXES["yemen"]], seconds=40)
-              print(len(ships), [ (s["n"], s["type"]) for s in list(ships.values())[:6]])
-              print("military", [(s["n"], s["mmsi"]) for s in ships.values() if int(s["type"] or 0) in (35, 55)][:10])
-          except Exception as ex: print("AIS fail", ex)
+                  sh = osint.fetch_aisstream(os.environ["AISSTREAM_API_KEY"], boxes, seconds=15)
+                  print("AIS", name, len(sh), [(s["n"], s["type"]) for s in list(sh.values())[:4]], "mil", [(s["n"], s["mmsi"]) for s in sh.values() if int(s["type"] or 0) in (35, 55)][:5])
+              except Exception as e: print("AIS", name, "fail", e)
           PY
           python3 p.py

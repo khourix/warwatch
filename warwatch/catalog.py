@@ -26,7 +26,7 @@ def add(id, label, domain, theatre, kind, lag, why, fetch, direction="up", needs
     if drop is None:
         drop = 1 if kind == "monthly" else 0
     SERIES.append(dict(id=id, label=label, domain=domain, theatre=theatre, kind=kind, lag=lag, why=why,
-                       fetch=fetch, direction=direction, needs=list(needs), drop=drop, url=url, sub=sub))
+                       fetch=fetch, direction=direction, needs=list(needs), drop=drop, url=url, sub=sub, every=None))
 
 
 def _slow(sid, fn):
@@ -441,3 +441,18 @@ for th in ("iran", "yemen"):
     add(f"ukmto_{th}", f"UKMTO incident reports in last 30 days, {TH[th]} waters (official)", "geospatial", th, "daily", False,
         "Suspicious approaches, hijackings and attacks reported by masters to UKMTO. Harassment and approaches usually precede strikes on shipping. Snapshots start now.",
         _snap(f"ukmto_{th}", lambda t=th: __import__("osint").ukmto_recent(t)), url="https://www.ukmto.org/recent-incidents", sub="Sea")
+
+
+# ============ How often each source is worth fetching (hours between full fetches) ============
+# Slow-moving sources are re-read from their cache in between, so the page can rebuild every 30 minutes
+# for the live layers without hammering rate-limited APIs.
+for _s in SERIES:
+    _id = _s["id"]
+    if _id.startswith(("us_", "eu_", "dod_")) and _s["kind"] == "monthly":
+        _s["every"] = 20      # trade and contract data change monthly, after a lag
+    elif "FRED_API_KEY" in _s["needs"] or "TWELVEDATA_API_KEY" in _s["needs"]:
+        _s["every"] = 6       # daily closes; Twelve Data free plan allows 800 requests a day
+    elif _id.startswith(("portwatch_", "fcdo_")):
+        _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely
+    elif _id.startswith(("ioda_", "fx_")):
+        _s["every"] = 3
