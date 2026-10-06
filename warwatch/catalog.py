@@ -1,31 +1,36 @@
 """The series catalogue: one entry per watched indicator.
 
-Fields: id, label, domain, theatre, kind (monthly|daily), lag (published
-late), direction (up|down|both: which way is a warning), why, needs (env var
-names), fetch (callable returning [(label, value)]).
+Fields: id, label, domain (one of five groups), sub (short sub-category chip),
+theatre (ukraine, europe_east, iran, yemen, israel or global), kind
+(monthly|daily), lag (published late), direction (up|down|both: which way is a
+warning), why, needs (env var names), fetch (callable returning [(label, value)]).
+
+A theatre is scored from its own series only; global series are scored under
+'global' so every theatre shows indicators that belong to it.
 """
 import os
 
 import config as C
+import extras
 import sources as S
 import store
 
 SERIES = []
 DOD = 4   # USAspending: current month plus the 3-month DoD publication delay
+TH = {t: v["name"] for t, v in C.THEATRES.items()}
 
 
-def add(id, label, domain, theatre, kind, lag, why, fetch, direction="up", needs=(), drop=None, url=""):
-    """drop: newest months to discard before scoring because they are still
-    incomplete. Default: 1 (the current partial month) for monthly series."""
+def add(id, label, domain, theatre, kind, lag, why, fetch, direction="up", needs=(), drop=None, url="", sub=""):
+    """drop: newest months discarded before scoring because still incomplete
+    (default 1 for monthly series)."""
     if drop is None:
         drop = 1 if kind == "monthly" else 0
     SERIES.append(dict(id=id, label=label, domain=domain, theatre=theatre, kind=kind, lag=lag, why=why,
-                       fetch=fetch, direction=direction, needs=list(needs), drop=drop, url=url))
+                       fetch=fetch, direction=direction, needs=list(needs), drop=drop, url=url, sub=sub))
 
 
 def _slow(sid, fn):
-    """Rate-limited sources run in their own workflow (slow.yml) and cache the
-    result; the dashboard run reads the cache so it never waits on them."""
+    """Rate-limited sources run in slow.yml and cache; the build reads the cache."""
     def go():
         if os.environ.get("WARWATCH_LIVE"):
             return fn()
@@ -36,63 +41,21 @@ def _slow(sid, fn):
     return go
 
 
+def _snap(sid, fn):
+    """Sources that only expose 'now': append each run to history, score once enough days exist."""
+    def go():
+        v = fn()
+        if v is not None:
+            store.append(sid, v)
+        return store.daily(sid)
+    return go
+
+
 def _key(name):
     return os.environ.get(name, "")
 
 
-# ---- troop kit: boots and armor ---------------------------------------------
-add("us_boots_awards", "US boot and footwear contract awards (PSC 8430)", "kit", "global", "monthly", True,
-    "DoD data is published ~90 days late: confirms, never leads.", lambda: S.fetch_usaspending(psc=["8430"]), drop=DOD)
-add("us_footwear_naics", "US footwear manufacturing awards (NAICS 316210)", "kit", "global", "monthly", True,
-    "Catches boot orders coded by industry rather than product.", lambda: S.fetch_usaspending(naics=["316210"]), drop=DOD)
-add("us_armor_awards", "US body armor and protective gear awards (PSC 8470)", "kit", "global", "monthly", True,
-    "Companion to boots in troop readiness.", lambda: S.fetch_usaspending(psc=["8470"]), drop=DOD)
-add("us_kit_tenders", "US boot and armor tenders (SAM.gov, PSC 8430, 8470)", "kit", "global", "monthly", False,
-    "Tenders are posted before awards, so this leads the award series.",
-    _slow("us_kit_tenders", lambda: S.fetch_sam(["8430", "8470"], _key("SAM_API_KEY"))), needs=["SAM_API_KEY"])
-add("eu_kit_tenders", "EU protective footwear tenders (TED, CPV 18830000, 18800000)", "kit", "global", "monthly", False,
-    "EU tenders appear within days of publication.", lambda: S.fetch_ted(["18830000", "18800000"]))
-for th, lbl in (("ukraine", "Ukraine"), ("mideast", "Middle East")):
-    add(f"eu_boots_to_{th}", f"EU footwear exports to {lbl} (HS 6403)", "kit", th, "monthly", True,
-        "Eurostat trade is ~2 months late.", (lambda t=th: S.fetch_comext("6403", C.PARTNERS[t]["iso"])))
-    add(f"us_boots_to_{th}", f"US footwear exports to {lbl} (HS 640391, 640399)", "kit", th, "monthly", True,
-        "Census trade is ~2 months late.",
-        (lambda t=th: S.fetch_census(["640391", "640399"], C.PARTNERS[t]["names"], _key("CENSUS_API_KEY"))),
-        needs=["CENSUS_API_KEY"])
-
-# ---- vehicles: Toyota-class pickups ----------------------------------------------
-for th, lbl in (("ukraine", "Ukraine"), ("mideast", "Middle East"), ("europe_east", "eastern flank")):
-    add(f"eu_trucks_to_{th}", f"EU goods-vehicle exports to {lbl} (HS 8704)", "vehicles", th, "monthly", True,
-        "HS 8704 holds pickups such as the Hilux; Comext is ~2 months late.",
-        (lambda t=th: S.fetch_comext("8704", C.PARTNERS[t]["iso"])))
-for th, lbl in (("ukraine", "Ukraine"), ("mideast", "Middle East")):
-    add(f"us_pickups_to_{th}", f"US pickup exports to {lbl} (HS 870421, 870431, 870422, 870432)", "vehicles", th,
-        "monthly", True, "Census trade is ~2 months late.",
-        (lambda t=th: S.fetch_census(["870421", "870431", "870422", "870432"], C.PARTNERS[t]["names"], _key("CENSUS_API_KEY"))),
-        needs=["CENSUS_API_KEY"])
-add("us_tactical_vehicle_awards", "US truck and tactical vehicle awards (PSC 2310, 2320, 2330)", "vehicles", "global",
-    "monthly", True, "DoD lag ~90 days.", lambda: S.fetch_usaspending(psc=["2310", "2320", "2330"]), drop=DOD)
-add("eu_vehicle_tenders", "EU 4x4 and special vehicle tenders (TED, CPV 34113000, 34114000)", "vehicles", "global",
-    "monthly", False, "Tenders lead awards.", lambda: S.fetch_ted(["34113000", "34114000"]))
-
-# ---- medical: blood and trauma -------------------------------------------------------
-add("us_medical_awards", "US medical supply awards (PSC 6510, 6515, 6545)", "medical", "global", "monthly", True,
-    "Dressings, equipment, kits. DoD lag ~90 days.", lambda: S.fetch_usaspending(psc=["6510", "6515", "6545"]), drop=DOD)
-add("us_biologics_naics", "US biological product awards (NAICS 325414: blood derivatives, plasma)", "medical",
-    "global", "monthly", True, "Nearest free proxy for blood-product buying.",
-    lambda: S.fetch_usaspending(naics=["325414"]), drop=DOD)
-add("us_medical_tenders", "US medical tenders (SAM.gov, PSC 6510, 6515, 6505)", "medical", "global", "monthly", False,
-    "Tenders lead awards.", _slow("us_medical_tenders", lambda: S.fetch_sam(["6510", "6515", "6505"], _key("SAM_API_KEY"))), needs=["SAM_API_KEY"])
-add("eu_medical_tenders", "EU medical consumable tenders (TED, CPV 33140000, 33141000)", "medical", "global", "monthly",
-    False, "Covers blood bags, dressings, hemostatics and tourniquets.",
-    lambda: S.fetch_ted(["33140000", "33141000"]))
-for th, lbl in (("ukraine", "Ukraine"), ("mideast", "Middle East")):
-    add(f"eu_bandages_to_{th}", f"EU dressing and blood-fraction exports to {lbl} (HS 3005, 3002)", "medical", th,
-        "monthly", True, "Gauze and bandages (3005) and blood fractions (3002).",
-        (lambda t=th: _sum_series([S.fetch_comext("3005", C.PARTNERS[t]["iso"]), S.fetch_comext("3002", C.PARTNERS[t]["iso"])])))
-
-
-def _sum_series(lst):
+def _sum(lst):
     tot = {}
     for s in lst:
         for k, v in s:
@@ -100,46 +63,129 @@ def _sum_series(lst):
     return sorted(tot.items())
 
 
-# ---- infrastructure -------------------------------------------------------------------
-add("us_fencing_bridging_awards", "US fencing and bridging awards (PSC 5660, 5420)", "infrastructure", "global",
-    "monthly", True, "Border works also hit this: expect noise.", lambda: S.fetch_usaspending(psc=["5660", "5420"]), drop=DOD)
-add("eu_fencing_tenders", "EU fencing and bridge tenders (TED, CPV 44312000, 45221110)", "infrastructure", "global",
-    "monthly", False, "Civil works dominate: low weight.", lambda: S.fetch_ted(["44312000", "45221110"]))
+# ============ GLOBAL: what the US and EU buy and stock ahead of a war (published late: confirms) ============
+USA = "https://www.usaspending.gov/"
+for sid, label, why, kw, sub in (
+    ("us_boots_awards", "US boot and footwear contract awards (PSC 8430)",
+     "Combat boots are bought before troops deploy. DoD data is ~90 days late, so this confirms rather than leads.",
+     dict(psc=["8430"]), "Procurement"),
+    ("us_footwear_naics", "US footwear manufacturing awards (NAICS 316210)", "Catches boot orders coded by industry.",
+     dict(naics=["316210"]), "Procurement"),
+    ("us_armor_awards", "US body armor and protective gear awards (PSC 8470)", "Armor plates: companion to boots in readiness.",
+     dict(psc=["8470"]), "Procurement"),
+    ("us_rations_awards", "US composite food package (MRE ration) awards (PSC 8970)", "Field rations are bought ahead of ground operations.",
+     dict(psc=["8970"]), "Procurement"),
+    ("us_shelter_awards", "US tents, tarpaulins and shelter awards (PSC 8340)", "Forward-deployed forces need shelter.",
+     dict(psc=["8340"]), "Procurement"),
+    ("us_individual_equipment_awards", "US individual equipment awards (PSC 8465)", "Packs, field gear and soldier kit.",
+     dict(psc=["8465"]), "Procurement"),
+    ("us_tactical_vehicle_awards", "US truck and tactical vehicle awards (PSC 2310, 2320, 2330)", "Light and heavy military trucks.",
+     dict(psc=["2310", "2320", "2330"]), "Procurement"),
+    ("us_lubricant_awards", "US lubricants, oils and fluids awards (PSC 9150)",
+     "Bulk lubricants and fluids mean preparation for sustained vehicle uptime.", dict(psc=["9150"]), "Fuel and engines"),
+    ("us_fuel_awards", "US fuel and propellant awards (PSC 9130, 9140)", "Fuel stocking ahead of sustained operations.",
+     dict(psc=["9130", "9140"]), "Fuel and engines"),
+    ("us_medical_awards", "US medical supply awards (PSC 6510, 6515, 6545)", "Dressings, trauma equipment and kits.",
+     dict(psc=["6510", "6515", "6545"]), "Medical"),
+    ("us_biologics_naics", "US biological product awards (NAICS 325414: blood derivatives, plasma)",
+     "Nearest free proxy for blood-product buying.", dict(naics=["325414"]), "Medical"),
+    ("us_blood_bank_naics", "US blood and organ bank contract awards (NAICS 621991)",
+     "Blood-bank contracting is a headline indicator in the AJ Signal framework.", dict(naics=["621991"]), "Medical"),
+    ("us_fencing_bridging_awards", "US fencing and bridging awards (PSC 5660, 5420)",
+     "Tactical bridging and barrier material. Border works add noise.", dict(psc=["5660", "5420"]), "Engineering"),
+):
+    add(sid, label, "logistics", "global", "monthly", True, why, (lambda kw=kw: S.fetch_usaspending(**kw)),
+        drop=DOD, url=USA, sub=sub)
+add("us_kit_tenders", "US boot and armor tenders (SAM.gov, PSC 8430, 8470)", "logistics", "global", "monthly", False,
+    "Tenders are posted before awards, so this leads the award series.",
+    _slow("us_kit_tenders", lambda: S.fetch_sam(["8430", "8470"], _key("SAM_API_KEY"))), needs=["SAM_API_KEY"],
+    url="https://sam.gov/", sub="Procurement")
+add("us_medical_tenders", "US medical tenders (SAM.gov, PSC 6510, 6515, 6505)", "logistics", "global", "monthly", False,
+    "Tenders lead awards.", _slow("us_medical_tenders", lambda: S.fetch_sam(["6510", "6515", "6505"], _key("SAM_API_KEY"))),
+    needs=["SAM_API_KEY"], url="https://sam.gov/", sub="Medical")
+TED = "https://ted.europa.eu/"
+for sid, label, why, cpv, sub in (
+    ("eu_kit_tenders", "EU protective footwear tenders (TED, CPV 18830000, 18800000)", "EU tenders appear within days of publication.",
+     ["18830000", "18800000"], "Procurement"),
+    ("eu_vehicle_tenders", "EU 4x4 and special vehicle tenders (TED, CPV 34113000, 34114000)", "Tenders lead awards.",
+     ["34113000", "34114000"], "Procurement"),
+    ("eu_medical_tenders", "EU medical consumable tenders (TED, CPV 33140000, 33141000)",
+     "Blood bags, dressings, hemostatics and tourniquets.", ["33140000", "33141000"], "Medical"),
+    ("eu_fencing_tenders", "EU fencing and bridge tenders (TED, CPV 44312000, 45221110)", "Civil works dominate: low weight.",
+     ["44312000", "45221110"], "Engineering"),
+):
+    add(sid, label, "logistics", "global", "monthly", False, why, (lambda c=cpv: S.fetch_ted(c)), url=TED, sub=sub)
 
-# ---- flows: sea (PortWatch) and air (ADS-B) -------------------------------------------
-for frag, th in C.CHOKEPOINTS.items():
-    add(f"portwatch_{frag.lower()}", f"Daily ship transits: {frag} (IMF PortWatch)", "flows", th, "daily", False,
-        "A fall in transits signals disruption; data posts weekly.",
-        (lambda f=frag: S.fetch_portwatch(f)), direction="down")
+FRED = "https://fred.stlouisfed.org/series/"
+add("vix", "VIX equity fear gauge (FRED)", "financial", "global", "daily", False, "Equity markets price in escalation risk.",
+    lambda: S.fetch_fred("VIXCLS", _key("FRED_API_KEY")), needs=["FRED_API_KEY"], url=FRED + "VIXCLS", sub="Markets")
+add("diesel_nyh", "Diesel, New York Harbor, USD per gallon (FRED)", "financial", "global", "daily", False,
+    "Diesel stress shows up before crude when refineries and shipping lanes are hit.",
+    lambda: S.fetch_fred("DDFUELNYH", _key("FRED_API_KEY")), needs=["FRED_API_KEY"], url=FRED + "DDFUELNYH", sub="Fuel")
+add("jet_fuel_gulf", "Jet fuel, US Gulf Coast, USD per gallon (FRED)", "financial", "global", "daily", False,
+    "Military and airlift demand moves jet fuel before civil demand does.",
+    lambda: S.fetch_fred("DJFUELUSGULF", _key("FRED_API_KEY")), needs=["FRED_API_KEY"], url=FRED + "DJFUELUSGULF", sub="Fuel")
+for sym, name in (("ITA", "US aerospace and defence ETF (ITA)"), ("LMT", "Lockheed Martin"), ("RTX", "RTX (Raytheon)"),
+                  ("NOC", "Northrop Grumman")):
+    add(f"def_{sym.lower()}", f"{name} share price (Twelve Data)", "financial", "global", "daily", False,
+        "Defence stocks rally on expected demand; a sharp surge is a strong signal in conflict models.",
+        (lambda s=sym: S.fetch_twelvedata(s, _key("TWELVEDATA_API_KEY"))), needs=["TWELVEDATA_API_KEY"],
+        url="https://twelvedata.com/", sub="Defence stocks")
+add("pizza_index", "Pentagon pizza index (PizzINT, 0-100)", "behavioral", "global", "daily", False,
+    "Crisis staffing shows up as late-night food-delivery demand around the Pentagon. Weak signal from a third-party scrape of Google popular times; snapshots start now.",
+    _snap("pizza_index", lambda: extras.pizza_now()[0]), url="https://www.pizzint.watch/", sub="Behaviour")
+add("czib_global", "Airspace risk bulletins revised in last 30 days, worldwide (EASA)", "geospatial", "global", "daily", False,
+    "EASA revises its conflict-zone bulletins when it sees rising danger to airliners. Snapshots start now.",
+    _snap("czib_global", lambda: extras.czib_recent()),
+    url="https://www.easa.europa.eu/en/domains/air-operations/czibs", sub="Airspace")
+
+# ============ PER THEATRE ============
+EUR = "https://ec.europa.eu/eurostat/comext/newxtweb/"
+CEN = "https://www.census.gov/foreign-trade/index.html"
+for th in ("ukraine", "europe_east", "israel", "iran"):
+    nm = TH[th]
+    add(f"eu_trucks_to_{th}", f"EU goods-vehicle exports to {nm} (HS 8704)", "logistics", th, "monthly", True,
+        "HS 8704 holds pickups such as the Hilux; Comext is ~2 months late.",
+        (lambda t=th: S.fetch_comext("8704", C.PARTNERS[t]["iso"])), url=EUR, sub="Trade")
+    add(f"eu_medical_to_{th}", f"EU dressing and blood-fraction exports to {nm} (HS 3005, 3002)", "logistics", th,
+        "monthly", True, "Gauze and bandages (3005) and blood fractions (3002).",
+        (lambda t=th: _sum([S.fetch_comext("3005", C.PARTNERS[t]["iso"]), S.fetch_comext("3002", C.PARTNERS[t]["iso"])])),
+        url=EUR, sub="Trade")
+for th in ("ukraine", "europe_east", "israel"):
+    nm = TH[th]
+    add(f"eu_boots_to_{th}", f"EU footwear exports to {nm} (HS 6403)", "logistics", th, "monthly", True,
+        "Eurostat trade is ~2 months late.", (lambda t=th: S.fetch_comext("6403", C.PARTNERS[t]["iso"])), url=EUR, sub="Trade")
+    add(f"us_boots_to_{th}", f"US footwear exports to {nm} (HS 640391, 640399)", "logistics", th, "monthly", True,
+        "Census trade is ~2 months late.",
+        (lambda t=th: S.fetch_census(["640391", "640399"], C.PARTNERS[t]["names"], _key("CENSUS_API_KEY"))),
+        needs=["CENSUS_API_KEY"], url=CEN, sub="Trade")
+    add(f"us_pickups_to_{th}", f"US pickup exports to {nm} (HS 870421, 870431, 870422, 870432)", "logistics", th,
+        "monthly", True, "Census trade is ~2 months late.",
+        (lambda t=th: S.fetch_census(["870421", "870431", "870422", "870432"], C.PARTNERS[t]["names"], _key("CENSUS_API_KEY"))),
+        needs=["CENSUS_API_KEY"], url=CEN, sub="Trade")
+
+ADS = "https://adsb.lol/"
 
 
-def _adsb(theatre, which):
+def _adsb(th, cls):
     def go():
-        tot, lift = S.adsb_counts(S.fetch_adsb(), C.BOXES[theatre])
-        sid = f"adsb_{theatre}_{which}"
-        store.append(sid, tot if which == "mil" else lift)
+        v = S.adsb_classes(S.fetch_adsb(), C.BOXES[th])[cls]
+        sid = f"adsb_{th}_{cls}"
+        store.append(sid, v)
         return store.daily(sid)
     return go
 
 
 for th in C.BOXES:
-    add(f"adsb_{th}_mil", f"Military aircraft visible, {C.THEATRES[th]} (adsb.lol)", "flows", th, "daily", False,
-        "ADS-B only: military flights with transponders off are invisible. History builds from first run.",
-        _adsb(th, "mil"), direction="both")
-    add(f"adsb_{th}_lift", f"Airlift and tanker aircraft visible, {C.THEATRES[th]}", "flows", th, "daily", False,
-        "Transports and tankers surge before operations.", _adsb(th, "lift"))
-
-# ---- airspace and navigation: snapshot signals, history builds from the first run -------
-import extras  # noqa: E402
-
-
-def _snap(sid, fn):
-    def go():
-        v = fn()
-        if v is not None:
-            store.append(sid, v)
-        return store.daily(sid)
-    return go
+    nm = TH[th]
+    for cls, label, why in (
+        ("mil", "Military aircraft visible over", "Transponding military flights only: aircraft with transponders off are invisible. History builds from first run."),
+        ("lift", "Airlift aircraft over", "Transports surge before operations; an 'empty' return leg means cargo was delivered."),
+        ("tanker", "Aerial tankers over", "Tankers appearing with fighters and AWACS mean strike packaging, not routine training."),
+        ("isr", "Surveillance and AWACS aircraft over", "Reconnaissance and early-warning aircraft orbit before and during operations."),
+        ("fighter", "Fighter aircraft over", "Combat aircraft on transponders are usually deployments or air policing; a rise is worth reading."),
+    ):
+        add(f"adsb_{th}_{cls}", f"{label} {nm} (adsb.lol)", "geospatial", th, "daily", False, why, _adsb(th, cls), url=ADS, sub="Air")
 
 
 def _gnss(theatre):
@@ -149,18 +195,57 @@ def _gnss(theatre):
     return f
 
 
+NGA = "https://msi.nga.mil/"
 for th in C.HUBS:
-    add(f"gnss_{th}", f"Aircraft reporting degraded GPS, {C.THEATRES[th]} (% of traffic)", "airspace", th, "daily", False,
-        "Jamming shows up as poor navigation accuracy (NACp below 8) in airliners' own broadcasts, "
-        "often before a strike or deployment. Snapshots start now.",
-        _snap(f"gnss_{th}", _gnss(th)), url="https://api.adsb.lol/")
-    add(f"civil_{th}", f"Airliners in the air near the theatre, {C.THEATRES[th]}", "airspace", th, "daily", False,
+    nm = TH[th]
+    add(f"gnss_{th}", f"Aircraft reporting degraded GPS near {nm} (% of traffic)", "geospatial", th, "daily", False,
+        "Jamming shows up as poor navigation accuracy (NACp below 8) in airliners' own broadcasts, often before a strike or deployment. Snapshots start now.",
+        _snap(f"gnss_{th}", _gnss(th)), url=ADS, sub="Navigation")
+    add(f"civil_{th}", f"Airliners in the air near {nm}", "geospatial", th, "daily", False,
         "A fall means airspace is being closed or avoided. Snapshots start now.",
-        _snap(f"civil_{th}", lambda t=th: float(extras.hub_stats(t)[0]) or None), direction="down", url="https://api.adsb.lol/")
-    add(f"nga_{th}", f"New naval and air hazard warnings, last 30 days, {C.THEATRES[th]} (NGA)", "airspace", th, "daily",
-        False, "Missile firing, exercises, mines and GPS interference notices to mariners and pilots; "
-        "exercises are announced before they happen.",
-        _snap(f"nga_{th}", lambda t=th: extras.nga_recent(t)), url="https://msi.nga.mil/")
+        _snap(f"civil_{th}", lambda t=th: float(extras.hub_stats(t)[0]) or None), direction="down", url=ADS, sub="Airspace")
+    add(f"nga_{th}", f"New naval and air hazard warnings, last 30 days, {nm} (US NGA)", "geospatial", th, "daily", False,
+        "Missile firing, exercises, mines, drones and GPS-interference notices to mariners and pilots; exercises are announced before they happen.",
+        _snap(f"nga_{th}", lambda t=th: extras.nga_recent(t)), url=NGA, sub="Warnings")
+    add(f"czib_{th}", f"EASA airspace bulletins revised in last 30 days, {nm}", "geospatial", th, "daily", False,
+        "EASA revises conflict-zone bulletins when it sees rising danger to airliners. Snapshots start now.",
+        _snap(f"czib_{th}", lambda t=th: extras.czib_recent(box=C.BOXES[t])),
+        url="https://www.easa.europa.eu/en/domains/air-operations/czibs", sub="Airspace")
+for frag, th in C.CHOKEPOINTS.items():
+    add(f"portwatch_{frag.lower()}", f"Daily ship transits: {C.CHOKE_XY[frag][2]} (IMF PortWatch)", "geospatial", th, "daily", False,
+        "A fall in transits signals disruption or avoidance; data posts weekly.",
+        (lambda f=frag: S.fetch_portwatch(f)), direction="down", url="https://portwatch.imf.org/", sub="Sea")
+
+IODA = {"iran": "IR", "ukraine": "UA", "israel": "IL", "yemen": "YE", "europe_east": "PL"}
+for th, cc in IODA.items():
+    u = f"https://ioda.inetintel.cc.gatech.edu/country/{cc}"
+    add(f"ioda_bgp_{th}", f"Internet reachability (routed networks), {cc} (IODA)", "geospatial", th, "daily", False,
+        "National blackouts show as a sharp fall in routed networks within minutes; Iran has cut the internet before operations.",
+        (lambda c=cc: S.fetch_ioda(c, "bgp")), direction="down", url=u, sub="Network")
+    add(f"ioda_ping_{th}", f"Internet reachability (probed networks), {cc} (IODA)", "geospatial", th, "daily", False,
+        "Active probing sees disconnections routing data misses, such as power-grid or access-network failure.",
+        (lambda c=cc: S.fetch_ioda(c, "ping-slash24")), direction="down", url=u, sub="Network")
+
+for th, slugs in C.FCDO.items():
+    add(f"fcdo_{th}", f"UK travel-advice updates: {TH[th]}", "behavioral", th, "daily", False,
+        "A cluster of advisory rewrites precedes evacuations and airline suspensions.",
+        (lambda s=slugs: S.fetch_fcdo(s)), url="https://www.gov.uk/foreign-travel-advice", sub="Advisories")
+
+
+def _state(theatre):
+    def go():
+        v = S.state_levels(S.fetch_state(), C.STATE_ISO[theatre])
+        sid = f"state_{theatre}"
+        store.append(sid, v)
+        return store.daily(sid)
+    return go
+
+
+for th in C.STATE_ISO:
+    add(f"state_{th}", f"US travel-advisory level sum: {TH[th]}", "behavioral", th, "daily", False,
+        "Any step change in a flat series is flagged. History builds from first run.", _state(th),
+        url="https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html", sub="Advisories")
+
 
 def _news(th):
     sid = f"news_{th}"
@@ -175,60 +260,45 @@ def _news(th):
     return go
 
 
-for th in C.GNEWS:
-    add(f"news_{th}", f"Headlines with warning language per day, {C.THEATRES[th]} (Google News)", "attention", th,
-        "daily", False, "Counts headlines pairing the theatre with mobilization, evacuation, airspace-closure or "
-        "troop-build-up wording. Fast, free and backfilled from the news archive; it also reacts to events, so it is "
-        "read together with the other groups.", _news(th), url="https://news.google.com/")
-add("easa_czib_updates", "Airspace risk bulletins revised in last 30 days (EASA)", "airspace", "global", "daily", False,
-    "EASA revises its conflict-zone bulletins when it sees rising danger to airliners. Snapshots start now.",
-    _snap("easa_czib_updates", lambda: extras.czib_recent()), url="https://www.easa.europa.eu/en/domains/air-operations/czibs")
-for th, slugs in C.FCDO.items():
-    add(f"fcdo_{th}", f"UK travel-advice updates: {C.THEATRES[th]}", "attention", th, "daily", False,
-        "A cluster of advisory rewrites precedes evacuations.", (lambda s=slugs: S.fetch_fcdo(s)))
-
-
-def _state(theatre):
+def _gdelt(th, roots):
     def go():
-        v = S.state_levels(S.fetch_state(), C.STATE_ISO[theatre])
-        sid = f"state_{theatre}"
-        store.append(sid, v)
-        return store.daily(sid)
+        if os.environ.get("WARWATCH_LIVE"):
+            S.gdelt_update(days=150)
+        pts = S.gdelt_series(th, roots)
+        if not pts:
+            raise RuntimeError("first refresh pending (GDELT history fills from the news job)")
+        return pts
     return go
 
 
-for th in C.STATE_ISO:
-    add(f"state_{th}", f"US advisory level sum: {C.THEATRES[th]}", "attention", th, "daily", False,
-        "Any step change in a flat series is flagged. History builds from first run.", _state(th))
+GD = "https://www.gdeltproject.org/"
+for th in C.GNEWS:
+    nm = TH[th]
+    add(f"news_{th}", f"Headlines with warning language per day, {nm} (Google News)", "information", th, "daily", False,
+        "Counts headlines pairing the theatre with mobilization, evacuation, airspace-closure or attack wording. Fast and backfilled, but it also reacts to events, so read it with the other groups.",
+        _news(th), url="https://news.google.com/", sub="News")
+    add(f"gdelt_posture_{th}", f"Military-posture events per day, {nm} (GDELT)", "information", th, "daily", False,
+        "GDELT codes news into events; CAMEO class 15 (show of force, alert, mobilisation) precedes action. Reached through GDELT's daily files, which the API block does not cover.",
+        _gdelt(th, ("15",)), url=GD, sub="Events")
+    add(f"gdelt_threat_{th}", f"Threats and ultimatums per day, {nm} (GDELT)", "information", th, "daily", False,
+        "CAMEO class 13: threats, demands and ultimatums, the diplomatic stage before force.",
+        _gdelt(th, ("13",)), url=GD, sub="Events")
+    add(f"gdelt_fight_{th}", f"Armed-attack events per day, {nm} (GDELT)", "information", th, "daily", False,
+        "CAMEO classes 18 and 19 (assault, fight). Reactive, so it confirms escalation.",
+        _gdelt(th, ("18", "19")), url=GD, sub="Events")
 
-# ---- markets ---------------------------------------------------------------------------
-add("brent", "Brent crude, USD (FRED)", "markets", "mideast", "daily", False, "Oil prices react to Gulf risk.",
-    lambda: S.fetch_fred("DCOILBRENTEU", _key("FRED_API_KEY")), needs=["FRED_API_KEY"])
-add("vix", "VIX (FRED)", "markets", "global", "daily", False, "Equity fear gauge.",
-    lambda: S.fetch_fred("VIXCLS", _key("FRED_API_KEY")), needs=["FRED_API_KEY"])
-
-
-# ---- added after reading AJ Signal (ajsignalnotnoise.substack.com) ----------------
-# The author's public posts name: pork-free MRE rations and ration ceilings, hot-weather
-# boots, blood-bank drawdowns, Toyota-class pickup shipments, diesel and jet-fuel stress,
-# and Gulf shipping chokepoints. Boots, pickups and chokepoints were already covered.
-add("us_rations_awards", "US composite food package (MRE ration) awards (PSC 8970)", "kit", "global", "monthly", True,
-    "Field rations are bought ahead of ground operations; DoD data is ~90 days late, so it confirms.",
-    lambda: S.fetch_usaspending(psc=["8970"]), drop=DOD, url="https://www.usaspending.gov/")
-add("us_shelter_awards", "US tents, tarpaulins and shelter awards (PSC 8340)", "kit", "global", "monthly", True,
-    "Forward-deployed forces need shelter; confirms rather than leads.",
-    lambda: S.fetch_usaspending(psc=["8340"]), drop=DOD, url="https://www.usaspending.gov/")
-add("us_individual_equipment_awards", "US individual equipment awards (PSC 8465)", "kit", "global", "monthly", True,
-    "Packs, helmets-adjacent kit and field gear; confirms rather than leads.",
-    lambda: S.fetch_usaspending(psc=["8465"]), drop=DOD, url="https://www.usaspending.gov/")
-add("us_blood_bank_naics", "US blood and organ bank contract awards (NAICS 621991)", "medical", "global", "monthly", True,
-    "Blood-bank contracting is one of the author's three headline indicators; confirms rather than leads.",
-    lambda: S.fetch_usaspending(naics=["621991"]), drop=DOD, url="https://www.usaspending.gov/")
-add("diesel_nyh", "Diesel, New York Harbor, USD per gallon (FRED)", "markets", "global", "daily", False,
-    "Diesel stress shows up before crude when refineries and shipping lanes are hit.",
-    lambda: S.fetch_fred("DDFUELNYH", _key("FRED_API_KEY")), needs=["FRED_API_KEY"],
-    url="https://fred.stlouisfed.org/series/DDFUELNYH")
-add("jet_fuel_gulf", "Jet fuel, US Gulf Coast, USD per gallon (FRED)", "markets", "global", "daily", False,
-    "Military and airlift demand moves jet fuel before civil demand does.",
-    lambda: S.fetch_fred("DJFUELUSGULF", _key("FRED_API_KEY")), needs=["FRED_API_KEY"],
-    url="https://fred.stlouisfed.org/series/DJFUELUSGULF")
+add("brent", "Brent crude, USD (FRED)", "financial", "iran", "daily", False, "Oil prices react to Gulf and Hormuz risk.",
+    lambda: S.fetch_fred("DCOILBRENTEU", _key("FRED_API_KEY")), needs=["FRED_API_KEY"], url=FRED + "DCOILBRENTEU", sub="Fuel")
+add("fx_ils", "Euro in shekels (ECB rate via Frankfurter); a rise means a weaker shekel", "financial", "israel", "daily", False,
+    "Currency stress shows up before escalation.", lambda: S.fetch_frankfurter("ILS"), url="https://frankfurter.dev/", sub="Currency")
+add("fx_pln", "Euro in zloty (ECB rate via Frankfurter); a rise means a weaker zloty", "financial", "europe_east", "daily", False,
+    "Frontline currencies weaken when investors price in conflict risk.", lambda: S.fetch_frankfurter("PLN"),
+    url="https://frankfurter.dev/", sub="Currency")
+add("eu_gas", "EU natural gas price, USD per MMBtu (FRED, monthly)", "financial", "europe_east", "monthly", True,
+    "Gas supply is the lever Russia pulls in a standoff with Europe.",
+    lambda: S.fetch_fred("PNGASEUUSDM", _key("FRED_API_KEY"), days=2400), drop=0, needs=["FRED_API_KEY"],
+    url=FRED + "PNGASEUUSDM", sub="Fuel")
+add("wheat", "Wheat price, USD per tonne (FRED, monthly)", "financial", "ukraine", "monthly", True,
+    "Black Sea grain exports are the first thing a Ukraine escalation hits.",
+    lambda: S.fetch_fred("PWHEAMTUSDM", _key("FRED_API_KEY"), days=2400), drop=0, needs=["FRED_API_KEY"],
+    url=FRED + "PWHEAMTUSDM", sub="Commodities")

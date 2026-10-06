@@ -262,6 +262,29 @@ def adsb_counts(p, box):
 _ADSB = {}
 
 
+TANKER = {"K35R", "KC10", "K35T", "KC46", "K46", "A332", "A310", "MRTT"}
+ISR = {"P8", "E3TF", "E3CF", "E3", "E6", "E737", "R135", "RC35", "E8", "Q4", "MQ9", "U2", "E2", "E2C", "P3", "RC12", "RQ4", "GLEX", "C560"}
+ISR = ISR - {"C560"}
+FIGHTER = {"F16", "F15", "F35", "F18", "F18H", "F18S", "FA18", "F22", "EUFI", "RFAL", "GRIF", "A10", "TORN", "F14", "SU27", "SU30", "SU35", "MG29", "SU34"}
+
+
+def adsb_classes(p, box):
+    """Military aircraft in a lat/lon box by role -> dict(mil, lift, tanker, isr, fighter)."""
+    la0, la1, lo0, lo1 = box
+    out = {"mil": 0.0, "lift": 0.0, "tanker": 0.0, "isr": 0.0, "fighter": 0.0}
+    for a in p.get("ac", []):
+        la, lo = a.get("lat"), a.get("lon")
+        if la is None or lo is None or not (la0 <= la <= la1 and lo0 <= lo <= lo1):
+            continue
+        t = a.get("t")
+        out["mil"] += 1
+        out["lift"] += t in AIRLIFT
+        out["tanker"] += t in TANKER
+        out["isr"] += t in ISR
+        out["fighter"] += t in FIGHTER
+    return out
+
+
 def fetch_adsb():
     """One call per run: every ADS-B series reads the same snapshot."""
     if "mil" not in _ADSB:
@@ -299,6 +322,132 @@ def fetch_gnews(sid, query, days=120, max_requests=None, today=None):
     return sorted(have.items())[-days:]
 
 
+# ---- GDELT 1.0 daily event files (data.gdeltproject.org is not blocked, unlike the DOC API) ----
+GDELT_ROOTS = ("13", "15", "18", "19")   # 13 threaten, 15 exhibit military posture, 18 assault, 19 fight
+_GDELT_DONE = {}
+
+
+def gdelt_url(day):
+    return f"http://data.gdeltproject.org/events/{day:%Y%m%d}.export.CSV.zip"
+
+
+def parse_gdelt_events(rows, ccs):
+    """rows: tab-split GDELT 1.0 event lines -> {(cc, root): events}. ActionGeo country is column 51, root code 28."""
+    out = {}
+    for r in rows:
+        if len(r) > 51 and r[51] in ccs and r[28] in GDELT_ROOTS:
+            k = (r[51], r[28])
+            out[k] = out.get(k, 0) + 1
+    return out
+
+
+def gdelt_day(day, ccs):
+    import csv
+    import io
+    import zipfile
+    err = None
+    for i in range(3):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(gdelt_url(day), headers={"User-Agent": C.USER_AGENT}), timeout=120) as r:
+                z = zipfile.ZipFile(io.BytesIO(r.read()))
+            rd = csv.reader(io.TextIOWrapper(z.open(z.namelist()[0]), encoding="utf-8", errors="replace"), delimiter="\t")
+            return parse_gdelt_events(rd, ccs)
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                raise RuntimeError(f"GDELT file for {day} not published yet")
+            err = e
+        except Exception as e:
+            err = e
+        time.sleep(5 * (i + 1))
+    raise RuntimeError(f"GDELT {day}: {str(err)[:120]}")
+
+
+def gdelt_update(days=150, max_days=None, today=None):
+    """Extend history/cache/gdelt_events.csv by the missing days (newest first, at most max_days per run)."""
+    import store
+    if _GDELT_DONE.get("v"):
+        return
+    _GDELT_DONE["v"] = True
+    today = today or dt.date.today()
+    cap = max_days if max_days is not None else int(os.environ.get("GDELT_MAX", "6"))
+    ccs = {c for v in C.GDELT_CC.values() for c in v}
+    rows = store.cache_rows("gdelt_events")
+    have = {r[0] for r in rows}
+    want = [today - dt.timedelta(days=i) for i in range(1, days + 1)]
+    new = []
+    for d in [d for d in want if d.isoformat() not in have][:cap]:
+        try:
+            counts = gdelt_day(d, ccs)
+        except RuntimeError:
+            continue
+        for cc in sorted(ccs):
+            for root in GDELT_ROOTS:
+                new.append([d.isoformat(), cc, root, str(counts.get((cc, root), 0))])
+    if new:
+        store.cache_rows_save("gdelt_events", rows + new)
+
+
+def gdelt_series(theatre, roots):
+    """Daily event count for a theatre's countries and CAMEO root codes, from the cache."""
+    import store
+    ccs = set(C.GDELT_CC[theatre])
+    tot = {}
+    for d, cc, root, n in store.cache_rows("gdelt_events"):
+        if cc in ccs and root in roots:
+            tot[d] = tot.get(d, 0.0) + float(n)
+    return sorted(tot.items())
+
+
+# ---- IODA (Georgia Tech internet outage detection, no key) --------------------------------------
+def parse_ioda(payload):
+    """-> {day: mean value} for the first returned signal (visible prefixes or responsive /24 blocks)."""
+    s = payload["data"][0][0]
+    step, t0 = s["step"], s["from"]
+    by = {}
+    for i, v in enumerate(s["values"]):
+        if v is None:
+            continue
+        d = dt.datetime.fromtimestamp(t0 + i * step, dt.timezone.utc).date().isoformat()
+        by.setdefault(d, []).append(float(v))
+    return {d: sum(v) / len(v) for d, v in by.items()}
+
+
+def fetch_ioda(cc, source="bgp", days=150):
+    """Daily mean of an IODA signal for a country. The API refuses very long ranges, so ask in 60-day chunks."""
+    now = int(time.time())
+    today = dt.datetime.fromtimestamp(now, dt.timezone.utc).date().isoformat()
+    tot = {}
+    end = now
+    for _ in range(-(-days // 60)):
+        start = end - 60 * 86400
+        q = urllib.parse.urlencode({"from": start, "until": end, "datasource": source})
+        tot.update(parse_ioda(get(f"https://api.ioda.inetintel.cc.gatech.edu/v2/signals/raw/country/{cc}?" + q)))
+        end = start
+    tot.pop(today, None)    # today is partial
+    return sorted(tot.items())[-days:]
+
+
+# ---- Frankfurter (ECB reference rates, no key) and Twelve Data (free key) ------------------------
+def parse_frankfurter(p, ccy):
+    return sorted((d, float(v[ccy])) for d, v in p.get("rates", {}).items() if ccy in v)
+
+
+def fetch_frankfurter(ccy, days=420):
+    start = (dt.date.today() - dt.timedelta(days=days)).isoformat()
+    return parse_frankfurter(get(f"https://api.frankfurter.dev/v1/{start}..?from=EUR&to={ccy}"), ccy)
+
+
+def parse_twelvedata(p):
+    if p.get("status") == "error" or "values" not in p:
+        raise ValueError("Twelve Data: " + str(p.get("message", p))[:120])
+    return sorted((v["datetime"][:10], float(v["close"])) for v in p["values"])
+
+
+def fetch_twelvedata(symbol, key):
+    q = urllib.parse.urlencode({"symbol": symbol, "interval": "1day", "outputsize": 420, "apikey": key})
+    return parse_twelvedata(get("https://api.twelvedata.com/time_series?" + q))
+
+
 # ---- FRED (needs FRED_API_KEY) -------------------------------------------------
 def parse_fred(p):
     out = []
@@ -310,7 +459,7 @@ def parse_fred(p):
     return out
 
 
-def fetch_fred(series, key):
-    start = (dt.date.today() - dt.timedelta(days=900)).isoformat()
+def fetch_fred(series, key, days=900):
+    start = (dt.date.today() - dt.timedelta(days=days)).isoformat()
     q = urllib.parse.urlencode({"series_id": series, "api_key": key, "file_type": "json", "observation_start": start})
     return parse_fred(get("https://api.stlouisfed.org/fred/series/observations?" + q))

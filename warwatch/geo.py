@@ -109,3 +109,59 @@ def paths(topo, proj, level_of=None):
         if d:
             out.append((name, "".join(d), (level_of or {}).get(name, "")))
     return out
+
+
+# ---- one region-wide basemap for the interactive page (the page zooms and pans in the browser) ----
+REGION = (-26, 76, -6, 74)   # lon_min, lon_max, lat_min, lat_max: Atlantic to Central Asia, Horn of Africa to the Arctic
+MARGIN = 6
+
+
+def _area_centroid(ring):
+    a = cx = cy = 0.0
+    for (x0, y0), (x1, y1) in zip(ring, ring[1:] + ring[:1]):
+        f = x0 * y1 - x1 * y0
+        a += f
+        cx += (x0 + x1) * f
+        cy += (y0 + y1) * f
+    if abs(a) < 1e-9:
+        return None, 0.0
+    return (cx / (3 * a), cy / (3 * a)), abs(a) / 2
+
+
+def region_map(topo, width=2400):
+    """-> dict(w, h, proj, countries=[{name, d, cx, cy, area}]) for the whole region.
+
+    Paths use relative moves with one decimal so the page stays small. Points outside
+    the region are clamped to a margin; they are off screen so the clamp is invisible."""
+    w, h = view_size(REGION, width)
+    pr = Proj(REGION, w, h)
+    lo, hi, la0, la1 = REGION
+    out = []
+    for _cid, name, rings in countries(topo):
+        parts, best = [], (None, 0.0)
+        for ring in rings:
+            lons = [p[0] for p in ring]
+            lats = [p[1] for p in ring]
+            if max(lons) < lo - MARGIN or min(lons) > hi + MARGIN or max(lats) < la0 - MARGIN or min(lats) > la1 + MARGIN:
+                continue
+            pts, last = [], None
+            for lon, lat in ring:
+                x, y = pr.xy(min(max(lon, lo - MARGIN), hi + MARGIN), min(max(lat, la0 - MARGIN), la1 + MARGIN))
+                q = (round(x, 1), round(y, 1))
+                if q != last:
+                    pts.append(q)
+                    last = q
+            if len(pts) < 4:
+                continue
+            c, area = _area_centroid(pts)
+            if c and area > best[1] and lo <= (c[0] / w * (hi - lo) + lo) <= hi:
+                best = (c, area)
+            d, (px, py) = [f"M{pts[0][0]},{pts[0][1]}"], pts[0]
+            for x, y in pts[1:]:
+                d.append(f"l{round(x - px, 1)},{round(y - py, 1)}")
+                px, py = x, y
+            parts.append("".join(d) + "z")
+        if parts:
+            c = best[0] or (0, 0)
+            out.append({"name": name, "d": "".join(parts), "cx": round(c[0], 1), "cy": round(c[1], 1), "area": round(best[1])})
+    return {"w": w, "h": h, "proj": pr, "countries": out}

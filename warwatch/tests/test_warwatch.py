@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run: python3 tools/warwatch/tests/test_warwatch.py"""
 import datetime as dt
+import json
 import os
 import statistics
 import sys
@@ -187,14 +188,59 @@ class TestGeoAndPage(unittest.TestCase):
     def test_page_renders_without_map_or_live_layers(self):
         res = run.evaluate(demo.scenario("buildup"))
         page = dashboard.render(res, "now", demo=True)
-        for tab in ("overview", "ukraine", "east", "mideast", "supply", "system"):
-            self.assertIn(f'id="t-{tab}"', page)
-        self.assertIn("Layer unavailable", page)
+        self.assertIn('id="data"', page)
+        self.assertNotIn("__DATA__", page)
+        blob = page.split('type="application/json">')[1].split("</script>")[0]
+        d = json.loads(blob.replace("\\u003c", "<"))
+        self.assertEqual(set(d["theatres"]), set(C.THEATRES))
+        self.assertEqual(len(d["series"]), len(catalog.SERIES))
+        self.assertIsNone(d["map"])
 
-    def test_collecting_series_shows_latest_value(self):
-        s = {"id": "x", "label": "Demo (a)", "why": "w", "lag": False, "direction": "up", "status": "collecting",
-             "points": [("2026-10-01", 12.0)], "score": None}
-        self.assertIn("now 12", dashboard.srow(s))
+    def test_series_detail_has_history_and_sd_bands(self):
+        res = run.evaluate(demo.scenario("buildup"))
+        d = dashboard.build_data(res, "now", True, None, None)
+        daily = next(s for s in d["series"] if s["kind"] == "daily" and s["st"] == "ok")
+        self.assertIn("base", daily)
+        self.assertTrue(daily["zh"])
+        self.assertIsNotNone(daily["z"])
+
+    def test_region_map_has_countries(self):
+        topo = geo.load()
+        if topo is None:
+            self.skipTest("basemap not downloaded")
+        rm = geo.region_map(topo)
+        names = {c["name"] for c in rm["countries"]}
+        self.assertTrue({"Ukraine", "Iran", "Yemen", "Israel"} <= names)
+
+    def test_history_z_scores_each_day(self):
+        pts = demo.daily(3, 1.0)
+        h = stats.history_z(pts, "daily", 10)
+        self.assertEqual(len(h), 10)
+        self.assertEqual(h[-1][0], pts[-1][0])
+
+
+class TestSources(unittest.TestCase):
+    def test_gdelt_events_filtered_by_country_and_root(self):
+        row = [""] * 58
+        row[28], row[51] = "15", "IR"
+        other = list(row); other[51] = "US"
+        got = S.parse_gdelt_events([row, other, row], ["IR"])
+        self.assertEqual(sum(got.values()), 2)
+
+    def test_ioda_parse_daily_means(self):
+        p = {"data": [[{"from": 1759708800, "step": 3600, "values": [10, 20]}]]}
+        got = S.parse_ioda(p)
+        self.assertEqual(list(got.values())[0], 15.0)
+
+    def test_adsb_classes(self):
+        p = {"ac": [{"t": "K35R", "lat": 30, "lon": 50}, {"t": "F16", "lat": 30, "lon": 50}, {"t": "C17", "lat": 30, "lon": 50},
+                    {"t": "E3TF", "lat": 30, "lon": 50}, {"t": "F16", "lat": 80, "lon": 0}]}
+        c = S.adsb_classes(p, (24, 40, 44, 64))
+        self.assertEqual((c["mil"], c["tanker"], c["fighter"], c["lift"], c["isr"]), (4, 1, 1, 2, 1))
+
+    def test_pizza_parse(self):
+        self.assertEqual(extras.parse_pizza({"overall_index": 31, "active_spikes": 1, "data": [{"current_popularity": 5}, {}]}),
+                         (31.0, 1, 1))
 
 
 class TestStore(unittest.TestCase):
@@ -224,9 +270,9 @@ class TestScoring(unittest.TestCase):
         self.assertEqual(v["basis"], "leading and lagging")
 
     def test_lone_series_cannot_fire_a_domain(self):
-        s = {"id": "a", "domain": "kit", "theatre": "global", "lag": True, "direction": "up",
+        s = {"id": "a", "domain": "logistics", "theatre": "ukraine", "lag": True, "direction": "up",
              "score": {"z": 9.0}}
-        d = scoring.theatre_view([s], "ukraine")["kit"]
+        d = scoring.theatre_view([s], "ukraine")["logistics"]
         self.assertLess(d["z"], C.THRESH_SIGNAL * 3)       # 9 * 0.7 = 6.3 is the cap for one series
         self.assertAlmostEqual(d["z"], 6.3)
 
@@ -242,7 +288,7 @@ class TestScoring(unittest.TestCase):
     def test_fails_closed(self):
         self.assertEqual(scoring.level({"a": {"z": 9.0, "fast": True}, "b": {"z": None, "fast": False}})["level"],
                          "insufficient data")
-        res = run.evaluate([{"id": "x", "domain": "kit", "theatre": "global", "lag": True, "direction": "up",
+        res = run.evaluate([{"id": "x", "domain": "logistics", "theatre": "ukraine", "lag": True, "direction": "up",
                              "kind": "daily", "points": [], "score": None, "status": "error", "error": "boom"}])
         self.assertEqual(res["theatres"]["ukraine"]["level"], "insufficient data")
 

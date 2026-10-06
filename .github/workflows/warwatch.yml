@@ -10,7 +10,7 @@ on:
         default: ""
   push:
     branches: [main]
-    paths: ["warwatch/**/*.py", ".github/workflows/warwatch.yml"]
+    paths: ["warwatch/**/*.py", "warwatch/page.html", ".github/workflows/warwatch.yml"]
 permissions:
   contents: write
   pages: write
@@ -38,6 +38,7 @@ jobs:
           CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
           SAM_API_KEY: ${{ secrets.SAM_API_KEY }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
         run: python3 $WW/run.py --only "${{ github.event.inputs.only }}" --out site/index.html
       - uses: actions/upload-artifact@v4
         with:

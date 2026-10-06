@@ -15,10 +15,10 @@ def directed(z, direction):
 
 
 def theatre_view(series, theatre):
-    """series: list of dicts with domain, theatre, lag, direction, score."""
+    """series: list of dicts with domain, theatre, lag, direction, score. Only the theatre's own series count: global series are scored under the 'global' theatre."""
     doms = {}
     for s in series:
-        if s["theatre"] not in (theatre, "global") or not s.get("score"):
+        if s["theatre"] != theatre or not s.get("score"):
             continue
         z = directed(s["score"]["z"], s["direction"])
         d = doms.setdefault(s["domain"], {"items": []})

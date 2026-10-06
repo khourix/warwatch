@@ -66,7 +66,12 @@ def score_series(points, kind):
     base_pts = [v for _, v in points[-189:-7]]
     weekly = [statistics.fmean(base_pts[i:i + 7]) for i in range(0, len(base_pts) - 6, 7)]
     z = robust_z(recent, weekly)
-    return None if z is None else {"z": z, "method": "vs prior 26 weeks", "value": recent, "label": points[-1][0]}
+    if z is None:
+        return None
+    med = statistics.median(weekly)
+    scale = MAD_SCALE * statistics.median(abs(x - med) for x in weekly) or statistics.fmean(abs(x - med) for x in weekly)
+    return {"z": z, "method": "vs prior 26 weeks", "value": recent, "label": points[-1][0],
+            "base_med": med, "base_sd": scale, "base_n": len(weekly)}
 
 
 def ewma(values, alpha=0.3):
@@ -74,4 +79,15 @@ def ewma(values, alpha=0.3):
     for v in values:
         s = v if s is None else alpha * v + (1 - alpha) * s
         out.append(s)
+    return out
+
+
+def history_z(points, kind, n):
+    """[(label, z)] for the last n points, each scored as if it were the newest (what the dashboard
+    would have shown that day). Points that cannot be scored yet are skipped."""
+    out = []
+    for i in range(max(0, len(points) - n), len(points)):
+        r = score_series(points[:i + 1], kind)
+        if r is not None:
+            out.append((points[i][0], round(r["z"], 2)))
     return out

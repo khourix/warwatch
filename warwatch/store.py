@@ -53,3 +53,18 @@ def cache_load(series_id):
             return [(r[0], float(r[1])) for r in csv.reader(f) if len(r) == 2]
     except OSError:
         return []
+
+
+def cache_rows(name):
+    """A multi-column cache table (rows of strings)."""
+    try:
+        with open(os.path.join(ROOT, "cache", f"{name}.csv"), newline="") as f:
+            return [r for r in csv.reader(f) if r]
+    except OSError:
+        return []
+
+
+def cache_rows_save(name, rows):
+    os.makedirs(os.path.join(ROOT, "cache"), exist_ok=True)
+    with open(os.path.join(ROOT, "cache", f"{name}.csv"), "w", newline="") as f:
+        csv.writer(f).writerows(rows)

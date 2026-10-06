@@ -32,7 +32,7 @@ def daily(seed, spike, days=300):
     return out
 
 
-HOT = {"kit", "medical", "attention"}
+HOT = {"logistics", "behavioral", "information"}
 
 
 def scenario(name):

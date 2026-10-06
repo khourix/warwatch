@@ -148,3 +148,11 @@ not remove this.
   per month; scores are rough, which is why the level is a count.
 - Terms: all sources used here permit this use; read ACLED's terms before
   adding it. No personal data is collected.
+
+## v4 (October 2026)
+
+- Five signal groups: logistics and procurement, financial and markets, human and behavioral, geospatial and physical, information space.
+- Theatres: Ukraine, Eastern flank, Iran, Yemen, Israel, plus a Global tab for US/EU procurement and markets. Each theatre is scored from its own indicators only.
+- Interactive map (zoom, pan, layers, click for details) and a detail view per signal with description, source link, raw values, score history and standard-deviation bands.
+- New feeds: GDELT daily event files (posture, threats, attacks), IODA internet outages, ADS-B aircraft classes (airlift, tanker, AWACS, fighter), EASA airspace bulletins, Frankfurter FX, Twelve Data defence stocks (key pending), Kalshi and Polymarket odds, Pentagon pizza index.
+- Not reachable: FAA/ICAO NOTAM feeds (blocked), UKMTO (script-only page), Telegram/Strava and similar (no open data).

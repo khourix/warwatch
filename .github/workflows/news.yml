@@ -1,6 +1,6 @@
 name: news
-# Headline counts for warning-class language (Google News RSS), extended a few days per run.
-# First run: dispatch with max_requests=500 to backfill about 150 days for each theatre.
+# Headline counts (Google News RSS) and GDELT daily event files, extended a few days per run.
+# First run: dispatch with max_requests=150 to backfill about 150 days for each theatre.
 on:
   schedule:
     - cron: "40 */6 * * *"
@@ -25,7 +25,10 @@ jobs:
         env:
           WARWATCH_LIVE: "1"
           GNEWS_MAX: ${{ github.event.inputs.max_requests || '12' }}
-        run: python3 warwatch/run.py --only news_ukraine,news_mideast,news_europe_east --fetch-only
+          GDELT_MAX: ${{ github.event.inputs.max_requests || '6' }}
+        run: |
+          ids=$(python3 -c "import sys; sys.path.insert(0,'warwatch'); import catalog; print(','.join(s['id'] for s in catalog.SERIES if s['id'].startswith(('news_','gdelt_'))))")
+          python3 warwatch/run.py --only "$ids" --fetch-only
       - name: Commit cache (public data only)
         run: |
           git config user.name "warwatch-bot"

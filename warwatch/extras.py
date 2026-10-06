@@ -101,13 +101,19 @@ def in_box(lat, lon, box):
 
 # ---- ADS-B: military and airlift positions for the map ----------------------------
 def mil_positions(payload):
+    """Military aircraft with a position -> [{lat, lon, t, cls, trk, hex, call}]; cls is lift/tanker/isr/fighter/other."""
     out = []
     for a in payload.get("ac", []):
         la, lo = a.get("lat"), a.get("lon")
         if la is None or lo is None:
             continue
-        out.append({"lat": round(la, 2), "lon": round(lo, 2), "t": a.get("t", ""),
-                    "lift": a.get("t") in S.AIRLIFT, "hex": a.get("hex", "")})
+        t = a.get("t") or ""
+        cls = ("tanker" if t in S.TANKER else "isr" if t in S.ISR else "fighter" if t in S.FIGHTER
+               else "lift" if t in S.AIRLIFT else "other")
+        trk = a.get("track")
+        out.append({"lat": round(la, 2), "lon": round(lo, 2), "t": t, "cls": cls,
+                    "trk": int(trk) if isinstance(trk, (int, float)) else None, "hex": a.get("hex", ""),
+                    "call": (a.get("flight") or "").strip()})
     return out
 
 
@@ -151,15 +157,31 @@ def fetch_czib():
     return parse_czib(S.get("https://www.easa.europa.eu/en/domains/air-operations/czibs/export-json?page&_format=json"))
 
 
-def czib_recent(days=30, today=None):
-    """Active zones whose bulletin was revised in the last `days`: airlines are being told something changed."""
+def czib_recent(days=30, today=None, box=None):
+    """Active zones (inside `box`, if given) whose bulletin was revised in the last `days`: airlines are being told something changed."""
     if "czib" not in _CACHE:
         _CACHE["czib"] = fetch_czib()
     cut = str((today or dt.date.today()) - dt.timedelta(days=days))
-    return float(sum(1 for z in _CACHE["czib"] if z["updated"] >= cut))
+    return float(sum(1 for z in _CACHE["czib"] if z["updated"] >= cut and (box is None or in_box(z["lat"], z["lon"], box))))
 
 
-# ---- Polymarket: what traders price (display only, never scored) ---------------------
+# ---- Prediction markets (display only, never scored) and the Pentagon pizza index -----------
+KEYS = {   # theatre -> words that tie a market to it
+    "ukraine": r"Ukrain|Russia|Putin|Zelensk|Crimea|Donbas",
+    "europe_east": r"NATO|Baltic|Poland|Lithuania|Latvia|Estonia|Kaliningrad|Finland|Suwalki",
+    "iran": r"\bIran|Hormuz|Tehran|Khamenei",
+    "yemen": r"Houthi|Yemen|Red Sea|Bab el|Sanaa",
+    "israel": r"Israel|Hezbollah|Lebanon|Gaza|Netanyahu|Hamas",
+}
+
+
+def theatre_of_text(text):
+    for t, pat in KEYS.items():
+        if re.search(pat, text or "", re.I):
+            return t
+    return ""
+
+
 def parse_poly(payload, min_volume=50000):
     out = []
     for e in payload.get("events", []):
@@ -174,8 +196,10 @@ def parse_poly(payload, min_volume=50000):
                 continue
             if vol < min_volume or not (0.005 < p < 0.995):
                 continue
-            out.append({"q": m.get("question") or e.get("title", ""), "p": p, "vol": vol,
-                        "end": (m.get("endDate") or e.get("endDate") or "")[:10]})
+            q = m.get("question") or e.get("title", "")
+            out.append({"q": q, "p": p, "vol": vol, "end": (m.get("endDate") or e.get("endDate") or "")[:10],
+                        "src": "Polymarket", "theatre": theatre_of_text(q),
+                        "url": "https://polymarket.com/event/" + (e.get("slug") or "")})
     return out
 
 
@@ -192,7 +216,72 @@ def fetch_poly(queries=("Iran", "Ukraine", "Russia NATO", "Israel", "Hezbollah",
                 seen.add(m["q"])
                 out.append(m)
         time.sleep(0.5)
-    return sorted(out, key=lambda m: -m["vol"])[:10]
+    return out
+
+
+def parse_kalshi(payload, min_volume=5000):
+    out = []
+    for e in payload.get("events", []):
+        title = e.get("title", "")
+        th = theatre_of_text(title)
+        if not th:
+            continue
+        best = None
+        for m in e.get("markets", []):
+            try:
+                p = float(m.get("last_price_dollars") or 0)
+                vol = float(m.get("volume_fp") or 0)
+            except (TypeError, ValueError):
+                continue
+            if vol >= min_volume and 0.005 < p < 0.995 and (best is None or vol > best[1]):
+                best = (m, vol, p)
+        if best:
+            m, vol, p = best
+            sub = m.get("yes_sub_title") or ""
+            out.append({"q": title + (f": {sub}" if sub and sub.lower() not in title.lower() else ""), "p": p, "vol": vol,
+                        "end": (m.get("close_time") or "")[:10], "src": "Kalshi", "theatre": th,
+                        "url": "https://kalshi.com/markets/" + (e.get("event_ticker") or "").lower()})
+    return out
+
+
+def fetch_kalshi(pages=4):
+    out, cursor = [], ""
+    for _ in range(pages):
+        q = {"limit": 200, "status": "open", "with_nested_markets": "true"}
+        if cursor:
+            q["cursor"] = cursor
+        try:
+            p = S.get("https://api.elections.kalshi.com/trade-api/v2/events?" + urllib.parse.urlencode(q), retries=2, wait=3)
+        except Exception:
+            break
+        out.extend(parse_kalshi(p))
+        cursor = p.get("cursor") or ""
+        if not cursor:
+            break
+    return out
+
+
+def fetch_markets():
+    return sorted(fetch_poly() + fetch_kalshi(), key=lambda m: -m["vol"])[:40]
+
+
+def parse_pizza(payload):
+    """PizzINT (a third-party scrape of Google 'popular times' for pizza places near the Pentagon).
+    -> (index 0-100, active spikes, places with a reading now)."""
+    spikes = payload.get("active_spikes")
+    idx = payload.get("overall_index")
+    live = sum(1 for d in payload.get("data", []) if d.get("current_popularity") is not None)
+    return (float(idx) if idx is not None else None, int(spikes or 0), live)
+
+
+def fetch_pizza():
+    return parse_pizza(S.get("https://www.pizzint.watch/api/dashboard-data", retries=2, wait=3))
+
+
+def pizza_now():
+    if "pizza" not in _CACHE:
+        _CACHE["pizza"] = fetch_pizza()
+    return _CACHE["pizza"]
 
 
 # ---- US advisory level by country (map shading) --------------------------------------
@@ -216,7 +305,7 @@ def country_levels(items):
 
 def collect():
     """All map and panel layers; any failure leaves that layer empty."""
-    ex = {"mil": [], "nga": [], "poly": [], "levels": {}, "czib": [], "errors": []}
+    ex = {"mil": [], "nga": [], "markets": [], "levels": {}, "czib": [], "pizza": None, "errors": []}
     def nga():
         if "nga" not in _CACHE:
             _CACHE["nga"] = fetch_nga()
@@ -228,7 +317,8 @@ def collect():
     for key, fn in (("mil", lambda: mil_positions(S.fetch_adsb())),
                     ("nga", nga),
                     ("czib", czib),
-                    ("poly", fetch_poly),
+                    ("markets", fetch_markets),
+                    ("pizza", pizza_now),
                     ("levels", lambda: country_levels(S.fetch_state()))):
         try:
             ex[key] = fn()
