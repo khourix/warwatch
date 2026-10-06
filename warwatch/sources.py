@@ -156,7 +156,7 @@ def _ted_month(cpvs, mo):
 
 def fetch_ted(cpvs, months=48):
     from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=3) as ex:
+    with ThreadPoolExecutor(max_workers=2) as ex:
         return sorted(ex.map(lambda mo: _ted_month(cpvs, mo), month_range(months)))
 
 

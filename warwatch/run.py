@@ -8,10 +8,12 @@
 A failed or key-less series is shown as such; it never turns into a calm score.
 """
 import argparse
+import csv
 import datetime as dt
 import json
 import os
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import catalog  # noqa: E402
@@ -19,26 +21,73 @@ import config as C  # noqa: E402
 import dashboard  # noqa: E402
 import scoring  # noqa: E402
 import stats  # noqa: E402
+import store  # noqa: E402
+
+
+def _cache_path(sid):
+    return os.path.join(store.ROOT, "cache", f"{sid}.csv")
+
+
+def _cache_save(sid, pts):
+    os.makedirs(os.path.dirname(_cache_path(sid)), exist_ok=True)
+    with open(_cache_path(sid), "w", newline="") as f:
+        csv.writer(f).writerows((t, repr(float(v))) for t, v in pts)
+
+
+def _cache_load(sid):
+    try:
+        with open(_cache_path(sid), newline="") as f:
+            return [(r[0], float(r[1])) for r in csv.reader(f) if len(r) == 2]
+    except OSError:
+        return []
+
+
+def _fetch(s, rec):
+    pts = s["fetch"]()
+    if not pts:
+        raise RuntimeError("source returned no data")
+    _cache_save(s["id"], pts)
+    rec["points"] = pts[:-s["drop"]] if s["drop"] else pts
 
 
 def collect(only=None):
-    out = []
+    """Fetch every series. A failed fetch is retried once at the end of the
+    run (rate limits clear), then falls back to the last good copy, shown as
+    stale. No copy and no data means the series is an error, never a guess."""
+    out, failed = [], []
     for s in catalog.SERIES:
         if only and s["id"] not in only:
             continue
         rec = {k: v for k, v in s.items() if k != "fetch"}
-        rec.update(points=[], score=None, status="ok", error="")
+        rec.update(points=[], score=None, status="ok", error="", stale="")
         missing = [k for k in s["needs"] if not os.environ.get(k)]
         if missing:
             rec.update(status="awaiting_key", error="needs " + ", ".join(missing))
         else:
             try:
-                pts = s["fetch"]()
-                rec["points"] = pts[:-s["drop"]] if s["drop"] else pts
+                _fetch(s, rec)
             except Exception as e:
                 rec.update(status="error", error=str(e)[:200])
+                failed.append((s, rec))
         out.append(rec)
         print(f"{rec['status']:13} {s['id']:28} n={len(rec['points'])} {rec['error'][:80]}", flush=True)
+    if failed and not os.environ.get("WARWATCH_NO_RETRY"):
+        time.sleep(60)
+        for s, rec in failed:
+            try:
+                _fetch(s, rec)
+                rec.update(status="ok", error="")
+                print(f"retry ok      {s['id']:28} n={len(rec['points'])}", flush=True)
+            except Exception as e:
+                rec["error"] = str(e)[:200]
+                time.sleep(20)
+    for s, rec in failed:
+        if rec["status"] == "error":
+            old = _cache_load(s["id"])
+            if old:
+                rec.update(status="ok", stale=old[-1][0],
+                           points=old[:-s["drop"]] if s["drop"] else old)
+                print(f"stale         {s['id']:28} n={len(rec['points'])} last good {old[-1][0]}", flush=True)
     return out
 
 
