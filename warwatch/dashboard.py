@@ -12,19 +12,20 @@ import os
 import config as C
 import extras
 import geo
+import osint
 import scoring
 import stats
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MAXPTS = {"daily": 180, "monthly": 60}
 ZH_N = 60
-CLS_NAMES = {"lift": "Airlift", "tanker": "Tanker", "isr": "Surveillance / AWACS", "fighter": "Fighter", "other": "Other military"}
+CLS_NAMES = {"lift": "Airlift", "tanker": "Tanker", "isr": "Surveillance / AWACS", "fighter": "Fighter", "bomber": "Bomber", "uav": "Drone", "heli": "Helicopter", "other": "Other military"}
 UNAVAILABLE = [
     ("NOTAMs (airspace closure notices)", "The FAA and ICAO feeds refuse automated requests from cloud servers (403/404). A free FAA NOTAM API key would let it through; in its place the dashboard reads US NGA hazard warnings, EASA airspace bulletins and live airliner counts."),
-    ("UKMTO maritime incident reports", "The site is a script-driven page with no open feed. Covered instead by IMF PortWatch ship transits at Hormuz, Bab el-Mandeb and Suez, and NGA navigational warnings."),
-    ("GDELT live news API", "Blocked from GitHub servers. The dashboard now reads GDELT's published daily event files instead, which are not blocked."),
-    ("Satellite imagery, fires and thermal anomalies", "NASA FIRMS needs a free map key; it is next on the list."),
-    ("Conflict event data (ACLED)", "Needs a free account; it is next on the list."),
+    ("UKMTO official incident feed", "Read through the site's own data route where it answers; otherwise maritime incidents are taken from news reports that cite UKMTO and are marked as such."),
+    ("Ship positions outside the Baltic", "Global AIS needs a free aisstream.io key. Without one, only the Baltic (Finnish Digitraffic) is live, and US Navy units come from the weekly USNI Fleet Tracker."),
+    ("Conflict event data (ACLED)", "The ACLED account authenticates but the data API refuses access. The account needs data access enabled by ACLED."),
+    ("Aircraft routes and owners", "Public ADS-B carries no flight plan for military aircraft. Owner is inferred from the aircraft's address block and call sign, and shown as such."),
     ("Strava heat maps, lobster and steak orders, strip-club traffic, freight-forwarder leaks, Telegram channels", "No open data, or only through private apps and terms of service that forbid scraping. Not used."),
 ]
 
@@ -90,10 +91,18 @@ def map_json(topo, ex, levels_by_country):
             _, y2 = pr.xy(lo, la + r / 60.0)
             hubs.append({"t": t, "xy": [round(x, 1), round(y, 1)], "r": round(abs(y - y2), 1), "nm": r})
     return {"w": w, "h": h, "countries": rm["countries"], "theatres": theatres, "cities": cities, "choke": choke, "hubs": hubs,
-            "mil": [{"xy": xy(m["lat"], m["lon"]), "c": m["cls"], "call": m["call"], "t": m["t"], "trk": m["trk"], "hex": m["hex"]}
-                    for m in ex.get("mil", [])],
-            "nga": [{"xy": xy(m["lat"], m["lon"]), "id": m["id"], "tx": m["text"], "iss": m["issued"]} for m in ex.get("nga", [])],
-            "czib": [{"xy": xy(z["lat"], z["lon"]), "n": z["name"], "u": z["updated"]} for z in ex.get("czib", [])],
+            "mil": [dict(xy=xy(m["lat"], m["lon"]), c=m["cls"], call=m["call"], t=m["t"], trk=m["trk"], hex=m["hex"], th=m.get("th", ""), o=m.get("o", ""),
+                         ct=m.get("ct", ""), d=m.get("d", ""), r=m.get("r", ""), alt=m.get("alt"), gs=m.get("gs"), sq=m.get("sq", ""), em=bool(m.get("em")),
+                         rt=m.get("rt", "")) for m in ex.get("mil", [])],
+            "sqk": [dict(xy=xy(m["lat"], m["lon"]), sq=m["sq"], mean=m["mean"], why=m["why"], call=m["call"], hex=m["hex"], t=m["t"], o=m.get("o", ""),
+                         ct=m.get("ct", ""), d=m.get("d", ""), r=m.get("r", ""), alt=m.get("alt"), trk=m.get("trk"), th=m.get("th", "")) for m in ex.get("sqk", [])],
+            "ships": [dict(xy=xy(m["lat"], m["lon"]), n=m["n"], k=m["k"], loc=m.get("loc", ""), g=m.get("g", ""), d=m.get("d", ""), tx=m.get("tx", ""), u=m.get("u", ""),
+                           flag=m.get("flag", ""), dest=m.get("dest", ""), spd=m.get("spd"), note=m.get("note", ""), th=m.get("th", "")) for m in ex.get("ships", [])],
+            "inc": [dict(xy=xy(m["lat"], m["lon"]), t=m["t"], d=m["d"], src=m["src"], u=m["u"], loc=m["loc"], th=m["th"]) for m in ex.get("inc", [])],
+            "fires": [dict(xy=xy(m["lat"], m["lon"]), p=m["frp"], d=m["date"], th=m.get("th", "")) for m in ex.get("fires", [])],
+            "seas": [{"n": n, "xy": xy(la, lo)} for n, la, lo in C.SEAS],
+            "nga": [{"xy": xy(m["lat"], m["lon"]), "id": m["id"], "tx": m["text"], "iss": m["issued"], "th": osint.theatre_at(m["lat"], m["lon"])} for m in ex.get("nga", [])],
+            "czib": [{"xy": xy(z["lat"], z["lon"]), "n": z["name"], "u": z["updated"], "th": osint.theatre_at(z["lat"], z["lon"])} for z in ex.get("czib", [])],
             "levels": levels_by_country}
 
 

@@ -101,20 +101,9 @@ def in_box(lat, lon, box):
 
 # ---- ADS-B: military and airlift positions for the map ----------------------------
 def mil_positions(payload):
-    """Military aircraft with a position -> [{lat, lon, t, cls, trk, hex, call}]; cls is lift/tanker/isr/fighter/other."""
-    out = []
-    for a in payload.get("ac", []):
-        la, lo = a.get("lat"), a.get("lon")
-        if la is None or lo is None:
-            continue
-        t = a.get("t") or ""
-        cls = ("tanker" if t in S.TANKER else "isr" if t in S.ISR else "fighter" if t in S.FIGHTER
-               else "lift" if t in S.AIRLIFT else "other")
-        trk = a.get("track")
-        out.append({"lat": round(la, 2), "lon": round(lo, 2), "t": t, "cls": cls,
-                    "trk": int(trk) if isinstance(trk, (int, float)) else None, "hex": a.get("hex", ""),
-                    "call": (a.get("flight") or "").strip()})
-    return out
+    """Military aircraft with a position -> osint.aircraft() records (owner, type, altitude, squawk, theatre)."""
+    import osint
+    return [osint.aircraft(a) for a in payload.get("ac", []) if a.get("lat") is not None and a.get("lon") is not None]
 
 
 # ---- ADS-B: civil traffic and navigation degradation near a hub -------------------
@@ -182,6 +171,17 @@ def theatre_of_text(text):
     return ""
 
 
+WAR = re.compile(r"\bwar\b|military|strike|invade|invasion|attack|missile|nuclear|ceasefire|cease-fire|troops|nato|bomb|conflict|houthi|hezbollah|hamas|"
+                 r"drone|airstrike|blockade|hormuz|regime|offensive|escalat|annex|capture|peace deal|peace agreement|sanction|iran|russia|ukrain|taiwan|gaza|israel|"
+                 r"article 5|martial law|draft|mobiliz|coup|assassinat|kharg|invade|enter .* city|control of", re.I)
+EXCLUDE = re.compile(r"\b(nba|nfl|nhl|mlb|ufc|fifa|world cup|super bowl|oscar|grammy|bitcoin|ethereum|\bbtc\b|album|movie|box office|tweet|elon|temperature|weather|mvp|ballon|"
+                     r"stanley cup|premier league|champions league|f1|formula 1)\b", re.I)
+
+
+def is_war(q):
+    return bool(WAR.search(q or "")) and not EXCLUDE.search(q or "")
+
+
 def parse_poly(payload, min_volume=50000):
     out = []
     for e in payload.get("events", []):
@@ -197,13 +197,15 @@ def parse_poly(payload, min_volume=50000):
             if vol < min_volume or not (0.005 < p < 0.995):
                 continue
             q = m.get("question") or e.get("title", "")
+            if not is_war(q + " " + e.get("title", "")):
+                continue
             out.append({"q": q, "p": p, "vol": vol, "end": (m.get("endDate") or e.get("endDate") or "")[:10],
                         "src": "Polymarket", "theatre": theatre_of_text(q),
                         "url": "https://polymarket.com/event/" + (e.get("slug") or "")})
     return out
 
 
-def fetch_poly(queries=("Iran", "Ukraine", "Russia NATO", "Israel", "Hezbollah", "Houthi")):
+def fetch_poly(queries=("Iran war", "Iran strike", "Hormuz", "Ukraine ceasefire", "Russia NATO", "Israel Hezbollah", "Houthi", "Taiwan invasion", "nuclear", "military action")):
     seen, out = set(), []
     for q in queries:
         try:
@@ -224,7 +226,7 @@ def parse_kalshi(payload, min_volume=5000):
     for e in payload.get("events", []):
         title = e.get("title", "")
         th = theatre_of_text(title)
-        if not th:
+        if not th or not is_war(title):
             continue
         best = None
         for m in e.get("markets", []):
@@ -305,7 +307,9 @@ def country_levels(items):
 
 def collect():
     """All map and panel layers; any failure leaves that layer empty."""
-    ex = {"mil": [], "nga": [], "markets": [], "levels": {}, "czib": [], "pizza": None, "errors": []}
+    import os
+    import osint
+    ex = {"mil": [], "sqk": [], "ships": [], "inc": [], "fires": [], "nga": [], "markets": [], "levels": {}, "czib": [], "pizza": None, "errors": []}
     def nga():
         if "nga" not in _CACHE:
             _CACHE["nga"] = fetch_nga()
@@ -314,7 +318,39 @@ def collect():
         if "czib" not in _CACHE:
             _CACHE["czib"] = fetch_czib()
         return _CACHE["czib"]
+    def ships():
+        out = []
+        try:
+            out.extend(osint.fetch_usni())
+        except Exception as e:
+            ex["errors"].append(f"usni: {str(e)[:80]}")
+        try:
+            out.extend(osint.fetch_digitraffic()[0])
+        except Exception as e:
+            ex["errors"].append(f"digitraffic: {str(e)[:80]}")
+        key = os.environ.get("AISSTREAM_API_KEY")
+        if key:
+            try:
+                boxes = [C.BOXES[t] for t in ("iran", "yemen", "israel", "ukraine")]
+                for m in osint.fetch_aisstream(key, boxes).values():
+                    if m["lat"] is None or int(m["type"] or 0) not in (35, 55):
+                        continue
+                    out.append({"n": m["n"] or m["mmsi"], "k": "navy", "loc": f'{m["lat"]:.2f}, {m["lon"]:.2f}', "g": "Military ship (AIS)", "lat": m["lat"], "lon": m["lon"],
+                                "flag": osint.MID.get(m["mmsi"][:3], ""), "dest": m["dest"], "spd": m["spd"], "d": "live", "th": osint.theatre_at(m["lat"], m["lon"]),
+                                "note": "AIS position from aisstream.io."})
+            except Exception as e:
+                ex["errors"].append(f"aisstream: {str(e)[:80]}")
+        return out
+    def fires():
+        key = os.environ.get("FIRMS_MAP_KEY")
+        if not key:
+            return []
+        return osint.fetch_fires(key, {t: C.BOXES[t] for t in ("ukraine", "europe_east", "iran", "yemen", "israel")})
     for key, fn in (("mil", lambda: mil_positions(S.fetch_adsb())),
+                    ("sqk", osint.fetch_squawks),
+                    ("ships", ships),
+                    ("inc", osint.fetch_incidents),
+                    ("fires", fires),
                     ("nga", nga),
                     ("czib", czib),
                     ("markets", fetch_markets),
@@ -324,4 +360,10 @@ def collect():
             ex[key] = fn()
         except Exception as e:
             ex["errors"].append(f"{key}: {str(e)[:80]}")
+    # squawks seen anywhere: also surface any military aircraft in the main list that squawk an emergency
+    seen = {m["hex"] for m in ex["sqk"]}
+    for m in ex["mil"]:
+        if m.get("sq") in osint.SQUAWK and m["hex"] not in seen:
+            mean, why = osint.SQUAWK[m["sq"]]
+            ex["sqk"].append(dict(m, mean=mean, why=why))
     return ex

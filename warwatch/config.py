@@ -103,3 +103,7 @@ CITIES = {   # theatre -> [(name, lat, lon)] reference points drawn on the map
     "israel": [("Tel Aviv", 32.09, 34.78), ("Jerusalem", 31.77, 35.21), ("Haifa", 32.79, 34.99), ("Beirut", 33.89, 35.5),
                ("Gaza", 31.5, 34.47), ("Damascus", 33.51, 36.29), ("Cairo", 30.04, 31.24)],
 }
+
+SEAS = [("Black Sea", 43.5, 34.5), ("Baltic Sea", 57.5, 19.5), ("Mediterranean Sea", 35.0, 18.0), ("Red Sea", 20.5, 38.5), ("Arabian Sea", 16.0, 64.0),
+        ("Persian Gulf", 27.0, 51.5), ("Gulf of Aden", 12.2, 48.0), ("North Sea", 56.0, 3.0), ("Caspian Sea", 41.5, 50.5), ("Norwegian Sea", 66.5, 3.0),
+        ("Gulf of Oman", 24.5, 58.8), ("Adriatic Sea", 42.8, 15.8)]

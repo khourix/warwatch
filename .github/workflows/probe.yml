@@ -10,10 +10,10 @@ jobs:
       ACLED_PASSWORD: ${{ secrets.ACLED_PASSWORD }}
       TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
     steps:
-      - name: Probe round 10
+      - name: Probe round 11
         run: |
           cat > p.py <<'PY'
-          import gzip, json, re, urllib.request, urllib.parse, urllib.error
+          import gzip, re, urllib.request, urllib.error
           UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
           def txt(u, hdr=None):
               h = {"User-Agent": UA, "Accept": "application/json, */*", "Referer": "https://www.ukmto.org/recent-incidents"}; h.update(hdr or {})
@@ -21,16 +21,17 @@ jobs:
                   b = urllib.request.urlopen(urllib.request.Request(u, headers=h), timeout=40).read()
                   return (gzip.decompress(b) if b[:2] == b"\x1f\x8b" else b).decode("utf-8", "replace")
               except urllib.error.HTTPError as e:
-                  return "HTTP %s %s" % (e.code, e.read()[:200])
+                  return "HTTP %s %s" % (e.code, e.read()[:150])
               except Exception as e:
                   return "ERR %s" % str(e)[:150]
           t = txt("https://www.ukmto.org/recent-incidents")
-          for u in re.findall(r'<script[^>]+src="(https://www.ukmto.org/_next/static/chunks/401[^"]+)"', t):
+          for u in re.findall(r'<script[^>]+src="(https://www.ukmto.org/_next/static/chunks/[^"]+)"', t):
               c = txt(u)
-              for m in re.finditer(r"api/ukmto/(?:products/|incident/filters|all|ticker)", c):
-                  print("CTX", c[max(0, m.start()-250):m.end()+350].replace("\n", " "))
-                  print("----")
-          for ep in ["/api/ukmto/incident/filters", "/api/ukmto/ticker", "/api/ukmto/all", "/api/ukmto/products/"]:
-              r = txt("https://www.ukmto.org" + ep); print("EP", ep, len(r), r[:600])
+              for m in re.finditer(r"7738:|xv:\(\)|xv=|\bxv\b[:=]", c):
+                  print("XV", u.rsplit("/",1)[-1], c[max(0, m.start()-100):m.end()+400].replace("\n", " ")); print("----"); break
+          m = re.search(r'"(?:apiUrl|API_URL|siteUrl|baseUrl|ukmtoApi)[^"]*":"[^"]*"', t); print("BASE", m.group(0) if m else None)
+          i = t.find("__NEXT_DATA__"); print(re.findall(r'"(?:runtimeConfig|assetPrefix|publicRuntimeConfig)":[^,]{0,160}', t)[:5])
+          for ep in ["https://www.ukmto.org/api/ukmto/all", "https://www.ukmto.org/ukmto/api/ukmto/all", "https://ukmto.org/api/ukmto/all", "https://www.ukmto.org/api/ukmto/incident/filters"]:
+              r = txt(ep); print("EP", ep, len(r), r[:300])
           PY
           python3 p.py

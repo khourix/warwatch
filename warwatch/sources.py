@@ -3,6 +3,7 @@ shapes were verified from a GitHub runner on 2026-10-06 except where a
 function's docstring says UNVERIFIED (needs a key nobody has supplied yet).
 """
 import datetime as dt
+import gzip
 import json
 import os
 import time
@@ -16,8 +17,9 @@ TIMEOUT = 60
 PW = "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/"
 
 
-def get(url, data=None, retries=3, raw=False, wait=6):
+def get(url, data=None, retries=3, raw=False, wait=6, headers=None):
     hdr = {"User-Agent": C.USER_AGENT}
+    hdr.update(headers or {})
     if data is not None:
         data = json.dumps(data).encode()
         hdr["Content-Type"] = "application/json"
@@ -25,7 +27,10 @@ def get(url, data=None, retries=3, raw=False, wait=6):
     for i in range(retries):
         try:
             with urllib.request.urlopen(urllib.request.Request(url, data=data, headers=hdr), timeout=TIMEOUT) as r:
-                body = r.read().decode("utf-8")
+                b = r.read()
+                if b[:2] == b"\x1f\x8b":
+                    b = gzip.decompress(b)
+                body = b.decode("utf-8")
                 return body if raw else json.loads(body)
         except urllib.error.HTTPError as e:
             try:
