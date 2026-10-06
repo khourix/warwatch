@@ -1,0 +1,15 @@
+name: probe
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch design and tweet
+        run: |
+          set +e
+          H='User-Agent: Mozilla/5.0 (compatible; warwatch)'
+          echo "##### TWEET"; curl -sL -m 30 -H "$H" https://api.fxtwitter.com/aj_geo_analysis/status/2107131375094477074 | head -c 3500; echo
+          echo "##### DESIGN raw github"
+          for p in design-md/nvidia/DESIGN.md design-md/nvidia/README.md; do echo "== $p"; curl -sL -m 30 -H "$H" -w "\nHTTP %{http_code}\n" https://raw.githubusercontent.com/VoltAgent/awesome-design-md/main/$p | head -c 14000; done
+          echo "##### DESIGN site"
+          curl -sL -m 30 -H "$H" -w "\nHTTP %{http_code}\n" https://getdesign.md/design-md/nvidia/preview.html | head -c 6000
