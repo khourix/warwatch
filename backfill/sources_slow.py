@@ -3,6 +3,7 @@ import csv
 import datetime as dt
 import io
 import re
+from concurrent.futures import ThreadPoolExecutor
 from html import unescape
 import time
 import urllib.parse
@@ -72,25 +73,31 @@ def cmd_state(theatres, start, end):
         url = f"{BASE}{slug}-travel-advisory.html"
         if K.load(f"state_level_{slug}") and K.load(f"state_level_{slug}").get(end.isoformat()):
             continue
-        snaps = [s for s in cdx(url) if s[0][:8] >= start.isoformat().replace("-", "")]
+        try:
+            snaps = [s for s in cdx(url) if s[0][:8] >= start.isoformat().replace("-", "")]
+        except RuntimeError as e:
+            K.log("cdx failed", slug, str(e)[:100])       # leave this country for the rerun, keep going with the others
+            continue
         pick = weekly(snaps)
         K.log(slug, len(snaps), "daily captures,", len(pick), "to read")
         lv, od, miss = [], [], 0
-        for ts in pick:
+
+        def read(ts):
             try:
                 html = K.get(f"https://web.archive.org/web/{ts}id_/{url}", raw=True, timeout=120, retries=3, wait=10).decode("utf-8", "replace")
             except RuntimeError as e:
-                miss += 1
                 K.log("miss", slug, ts, str(e)[:80])
-                continue
-            got = parse_advisory(html)
-            if got is None:
-                miss += 1
-                continue
-            day = f"{ts[:4]}-{ts[4:6]}-{ts[6:8]}"
-            lv.append((day, got[0]))
-            od.append((day, got[1]))
-            time.sleep(0.5)
+                return ts, None
+            return ts, parse_advisory(html)
+
+        with ThreadPoolExecutor(4) as pool:
+            for ts, got in pool.map(read, pick):
+                if got is None:
+                    miss += 1
+                    continue
+                day = f"{ts[:4]}-{ts[4:6]}-{ts[6:8]}"
+                lv.append((day, got[0]))
+                od.append((day, got[1]))
         K.log(slug, "read", len(lv), "missed", miss)
         if lv:
             K.save(f"state_level_{slug}", fill_forward(lv, start, end))
