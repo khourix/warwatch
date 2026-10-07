@@ -289,6 +289,25 @@ table.sg tr:hover td{background:var(--panel2);cursor:pointer}
 .setrow button{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:3px 12px;color:var(--mute)}
 .setrow button.on{border-color:var(--accent);color:var(--accent)}
 .rm *{animation:none!important;transition:none!important}
+
+/* laptop fit */
+aside#panel{overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#35363b transparent}
+aside#panel .list{flex:none;overflow:visible;min-height:0}
+.subtabs{flex:none}
+.ini{display:none;width:30px;height:22px;border-radius:6px;border:1.5px solid var(--c);align-items:center;justify-content:center;font:600 10.5px var(--mono);color:var(--ink);margin:0 auto}
+#sb.min .ini{display:flex}
+#sb.min .si .dot{display:none}
+#sb.min .si{padding:7px 4px;justify-content:center}
+.gti{flex:none;white-space:nowrap}
+.gti small{white-space:nowrap}
+#tt{flex:none;max-width:220px}
+#tt h1,#tt small{overflow:hidden;text-overflow:ellipsis}
+#legend .lgt{font-weight:600;color:var(--ink);letter-spacing:.08em;text-transform:uppercase;font-size:10.5px}
+#legend.min{padding:5px 10px;gap:0}
+#legend.min span:not(.lgt){display:none}
+@media(max-width:1500px){#search{width:190px}.meta{display:none}.gti .bar{width:60px}#cnts .cn{padding:3px 7px}}
+@media(max-width:1380px){#cnts{display:none}#tt{max-width:170px}}
+@media(max-height:820px){.ph{padding:9px 14px 8px}.ph p{margin-top:4px}.kpis5{margin-top:7px}.g .w{display:none}.tiles{padding:8px 10px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media(max-width:1280px){#cnts,.gti .bar{display:none}.meta{display:none}}
 @media(max-width:900px){
@@ -325,7 +344,7 @@ table.sg tr:hover td{background:var(--panel2);cursor:pointer}
   <div class="gti" id="gti"></div>
   <div id="cnts"></div>
   <div id="alr"></div>
-  <div id="search"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="q" type="search" placeholder="Search signals, aircraft, ships ( / )" autocomplete="off" aria-label="Search"><div id="results"></div></div>
+  <div id="search"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="q" type="search" placeholder="Search ( / )" autocomplete="off" aria-label="Search"><div id="results"></div></div>
   <div class="meta" id="meta"></div><span id="gen" hidden>__GENERATED__</span><span class="demo" id="demo" hidden>DEMO</span>
 </header>
 <main id="main">
@@ -427,16 +446,17 @@ const ICON = {
 };
 const ic = (n, c) => `<svg class="ic ${c || ''}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
 const fs = s => s == null ? '–' : Math.round(s);
+const ini = n => { const w = n.replace(/\(.*$/, '').trim().split(/\s+/); return (w.length > 1 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase(); };
 function buildTabs(){
   const cur = regOf[tab];
   const item = (id, icon, label) => `<button class="si ${tab === id ? 'on' : ''}" data-tab="${id}" title="${label}">${ic(icon)}<span class="tx">${label}</span></button>`;
   let h = item('overview', 'grid', 'Overview') + `<div class="sgl">Theatres</div>`;
   REG.forEach(r => {
     const open = cur === r, target = r.kids.length > 1 && !open ? regTarget(r) : (open ? tab : r.kids[0]);
-    h += `<button class="si ${open ? 'on' : ''}" data-tab="${target}" title="${esc(r.name)}"><span class="dot" style="background:${LEVEL[r.level]}"></span><span class="tx">${esc(r.name)}</span>${r.kids.length > 1 ? `<span class="chev">${ic('chev')}</span>` : ''}</button>`;
+    h += `<button class="si ${open ? 'on' : ''}" data-tab="${target}" title="${esc(r.name)}"><span class="dot" style="background:${LEVEL[r.level]}"></span><span class="ini" style="--c:${LEVEL[r.level]}">${esc(ini(r.name))}</span><span class="tx">${esc(r.name)}</span>${r.kids.length > 1 ? `<span class="chev">${ic('chev')}</span>` : ''}</button>`;
     if (open && r.kids.length > 1) h += `<div class="sub">` + r.kids.map(k => `<button class="si ${k === tab ? 'on' : ''}" data-tab="${k}"><span class="dot" style="background:${LEVEL[D.theatres[k].level]}"></span><span class="tx">${esc(D.theatres[k].name)}</span><span class="sc">${fs(D.theatres[k].score)}</span></button>`).join('') + `</div>`;
   });
-  h += `<button class="si ${tab === 'global' ? 'on' : ''}" data-tab="global" title="Global markets and procurement"><span class="dot" style="background:${LEVEL[D.theatres.global.level]}"></span><span class="tx">Global markets</span></button>`;
+  h += `<button class="si ${tab === 'global' ? 'on' : ''}" data-tab="global" title="Global markets and procurement"><span class="dot" style="background:${LEVEL[D.theatres.global.level]}"></span><span class="ini" style="--c:${LEVEL[D.theatres.global.level]}">GL</span><span class="tx">Global markets</span></button>`;
   h += `<div class="sgl">Workspace</div>` + item('signals', 'radar', 'Intelligence') + item('assets', 'plane', 'Assets') + item('system', 'cog', 'Settings');
   $('#sbnav').innerHTML = h;
 }
@@ -446,12 +466,12 @@ function subBar(){
 }
 $('#sbnav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) go(b.dataset.tab); });
 $('#brand').onclick = () => go('overview');
-try { if (localStorage.getItem('ww_sb') === 'min') $('#sb').classList.add('min'); if (localStorage.getItem('ww_rm') === '1') document.body.classList.add('rm'); } catch (e) {}
-$('#sbt').onclick = () => { const m = $('#sb').classList.toggle('min'); try { localStorage.setItem('ww_sb', m ? 'min' : ''); } catch (e) {} setTimeout(() => { if (M && tab !== 'signals' && tab !== 'system' && tab !== 'assets') { clampView(); applyView(); } }, 260); };
+try { const pref = localStorage.getItem('ww_sb'); if (pref === 'min' || (pref == null && innerWidth < 1500)) $('#sb').classList.add('min'); if (localStorage.getItem('ww_rm') === '1') document.body.classList.add('rm'); } catch (e) {}
+$('#sbt').onclick = () => { const m = $('#sb').classList.toggle('min'); try { localStorage.setItem('ww_sb', m ? 'min' : 'open'); } catch (e) {} setTimeout(() => { if (M && tab !== 'signals' && tab !== 'system' && tab !== 'assets') { clampView(); applyView(); } }, 260); };
 function renderTop(){
   const g = D.global || {}, gl = g.level || 'insufficient data', col = LEVEL[gl];
   const titles = {overview:'Global overview', signals:'Intelligence', assets:'Assets', system:'Settings'};
-  const sub = {overview:`${THEATRES.length} theatres in ${REG.length} regions`, signals:`${D.series.length} signals, ${D.series.filter(s => s.z != null).length} scored`, assets:'Live objects on the map', system:'Display, data health and method'}[tab] || (regOf[tab] ? regOf[tab].name : 'Global markets and procurement');
+  const sub = {overview:`${THEATRES.length} theatres · ${$('#gen').textContent.slice(11)}`, signals:`${D.series.length} signals, ${D.series.filter(s => s.z != null).length} scored`, assets:'Live objects on the map', system:'Display, data health and method'}[tab] || (regOf[tab] ? regOf[tab].name : 'Global markets and procurement');
   $('#tt').innerHTML = `<h1>${esc(titles[tab] || thName(tab))}</h1><small>${esc(sub)}</small>`;
   $('#gti').innerHTML = `<div><small>Global Threat Index</small><b style="color:${col}">${fs(g.score)}</b></div><div style="display:grid;gap:5px;justify-items:start"><div class="bar"><i style="width:${g.score || 0}%;background:${col}"></i></div>${levelBadge(gl)}</div>`;
   const cnt = {}; D.order.forEach(t => cnt[D.theatres[t].level] = (cnt[D.theatres[t].level] || 0) + 1);
@@ -672,6 +692,7 @@ function syncLayers(){
   OBJ.mil.forEach(a => { if (a._el) a._el.style.display = classOff[a.c] ? 'none' : ''; });
   paintCountries(); applyView(); renderLegend();
 }
+if (innerWidth < 1700) $('#legend').classList.add('min');
 function renderLegend(){
   let h = '';
   if (layerState.mil) h += Object.keys(CLS).map(k => `<span data-cls="${k}" class="${classOff[k] ? 'off' : ''}" title="Click to hide or show"><svg width="11" height="12"><path d="M5.5,0L10,11L5.5,8.5L1,11Z" fill="${CLS[k][1]}"/></svg>${esc(CLS[k][0])}</span>`).join('');
@@ -680,9 +701,9 @@ function renderLegend(){
   if (layerState.czib) h += `<span style="cursor:default"><span style="color:#ff4d9d">&#9670;</span>Airspace bulletin</span>`;
   if (layerState.inc) h += `<span style="cursor:default"><span style="color:#f5c518">&#9679;</span>Maritime incident</span>`;
   if (layerState.adv) h += `<span style="cursor:default"><i style="width:10px;height:10px;background:#744d20;border:1px solid #c4dcf2;display:inline-block"></i>Advisory level 3</span><span style="cursor:default"><i style="width:10px;height:10px;background:#84292f;border:1px solid #c4dcf2;display:inline-block"></i>Level 4</span>`;
-  $('#legend').innerHTML = h;
+  $('#legend').innerHTML = `<span class="lgt" data-lg="1" title="Show or hide the legend">Legend ${$('#legend').classList.contains('min') ? '+' : '&minus;'}</span>` + h;
 }
-$('#legend').addEventListener('click', e => { const s = e.target.closest('[data-cls]'); if (!s) return; classOff[s.dataset.cls] = !classOff[s.dataset.cls]; syncLayers(); });
+$('#legend').addEventListener('click', e => { if (e.target.closest('[data-lg]')) { $('#legend').classList.toggle('min'); renderLegend(); return; } const s = e.target.closest('[data-cls]'); if (!s) return; classOff[s.dataset.cls] = !classOff[s.dataset.cls]; syncLayers(); });
 /* map interaction */
 let drag = null, moved = false;
 svg.addEventListener('pointerdown', e => { if (e.button !== 0) return; drag = {x: e.clientX, y: e.clientY, vx: view.x, vy: view.y}; moved = false; });
@@ -899,9 +920,9 @@ function renderPanel(){
   if (!selDom) selDom = 'all';
   const mk = marketsFor(tab), al = ALERTS.filter(a => tab === 'global' ? true : a.th === tab), dr = driversOf(tab);
   const ticks = th.th ? [50, scPos(th.th[1], th.th), 90] : [];
-  let h = subBar() + `<div class="ph"><div class="crumbs"><a data-go="overview" href="#overview">Overview</a>${ic('chev')}${regOf[tab] && regOf[tab].kids.length > 1 ? esc(regOf[tab].name) + ic('chev') : ''}${esc(th.name)}</div><div class="row"><h2>${esc(th.name)}</h2>${levelBadge(th.level)}</div><p>${esc(MEANING[th.level])}${th.firing.length ? ' Firing: ' + th.firing.map(d => esc(SHORT[d])).join(', ') + '.' : ''}${th.basis === 'lagging only' ? ' <b style="color:var(--warn)">Only late-published data is firing: a confirmed build-up, not an early warning.</b>' : ''}</p>` +
+  let h = subBar() + `<div class="ph"><div class="crumbs"><a data-go="overview" href="#overview">Overview</a>${ic('chev')}${regOf[tab] && regOf[tab].kids.length > 1 && regOf[tab].name !== th.name ? esc(regOf[tab].name) + ic('chev') : ''}${esc(th.name)}</div><div class="row"><h2>${esc(th.name)}</h2>${levelBadge(th.level)}</div><p>${esc(MEANING[th.level])}${th.firing.length ? ' Firing: ' + th.firing.map(d => esc(SHORT[d])).join(', ') + '.' : ''}${th.basis === 'lagging only' ? ' <b style="color:var(--warn)">Only late-published data is firing: a confirmed build-up, not an early warning.</b>' : ''}</p>` +
     `<div class="kpis5"><div class="kp"><small>Threat score</small><b style="color:${col}">${fs(th.score)}<span style="font-size:10px;color:var(--dim)">/100</span></b></div>` +
-    `<div class="kp" title="Weighted Mazziotta-Pareto index of the domain scores; 100 is normal"><small>Composite index</small><b>${th.index == null ? '–' : th.index.toFixed(1)}</b></div>` +
+    `<div class="kp" title="Weighted Mazziotta-Pareto index of the domain scores; 100 is normal"><small>Index</small><b>${th.index == null ? '–' : th.index.toFixed(1)}</b></div>` +
     `<div class="kp" title="Spread of the domain scores. High means one domain is doing the work"><small>Imbalance</small><b>${th.imb == null ? '–' : th.imb.toFixed(1)}</b></div>` +
     `<div class="kp" title="Share of this theatre's signals that currently have a score"><small>Confidence</small><b class="sm" style="color:${th.confl === 'Low' ? 'var(--warn)' : 'var(--ink)'}">${esc(th.confl || '')} &middot; ${Math.round((1 - (th.miss || 0)) * 100)}%</b></div></div>` +
     `<div class="trk" style="margin-top:10px;--lc:${col}" title="Threat score"><i style="width:${th.score || 0}%"></i>${ticks.map(x => `<u style="left:${x.toFixed(1)}%"></u>`).join('')}</div>` +
@@ -917,7 +938,7 @@ function renderPanel(){
   if (selDom === 'markets') h += `<div class="lh"><b>War and military prediction markets</b><span>context only, not scored</span></div><div class="list">${marketRows(mk)}</div>`;
   else if (selDom === 'alerts') h += `<div class="lh"><b>Live alerts</b><span>click one to find it on the map</span></div><div class="list">${alertRows(al)}</div>`;
   else {
-    h += `<div class="tool"><input type="search" id="fq" placeholder="Filter signals in ${esc(th.name)}" value="${esc(F.q)}">` +
+    h += `<div class="tool"><input type="search" id="fq" placeholder="Filter signals" value="${esc(F.q)}">` +
       [['all', 'All'], ['rising', 'Rising'], ['leading', 'Leading'], ['confirming', 'Confirming'], ['collecting', 'No score yet']].map(([k, n]) => `<button class="chip2 ${F.chip === k ? 'on' : ''}" data-chip="${k}">${n}</button>`).join('') + `</div>`;
     const list = seriesOf(tab, selDom).filter(s => matchChip(s) && matchQ(s));
     h += `<div class="lh"><b>${selDom === 'all' ? 'All signals' : esc(DOM[selDom].name)}</b><span>${list.length} shown &middot; anomalies pinned on top</span></div><div class="list" id="slist">` + sigListHtml(list, selDom === 'all') + `</div>`;
