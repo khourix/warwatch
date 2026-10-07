@@ -39,7 +39,7 @@ UPDATES = [   # (source, how often it is read, why that is enough / the free lim
     ("NASA FIRMS fires and thermal detections", "every 30 minutes", "Satellite passes update every ~3 hours; free limit is 5,000 requests per 10 minutes, we use about 15."),
     ("Prediction-market odds and history", "every 30 minutes", "Polymarket and Kalshi public APIs; about 60 calls per run."),
     ("Hazard warnings (NGA), airspace bulletins (EASA), GPS-jamming and airliner counts", "every 30 minutes, averaged per day", "Snapshots are appended and averaged into a daily value."),
-    ("Share prices (Twelve Data), FRED, ECB rates", "every 6 hours", "These publish one close per day; Twelve Data free plan allows 800 requests a day, we use about 40."),
+    ("Share prices (Yahoo Finance), FRED, ECB rates", "every 6 hours", "These publish one close per day; Yahoo needs no key and we use about 25 requests. Twelve Data is the fallback if Yahoo blocks the runner."),
     ("Internet outage data (IODA), UK travel advice", "every 3 to 12 hours", "Changes slowly; the source keeps history."),
     ("Headline counts (Google News) and GDELT events", "every 6 hours", "GDELT publishes daily files; news counts are backfilled a few days per run to stay polite."),
     ("US contract awards, trade, EU tenders, ACLED-derived conflict counts", "once a day", "Monthly data with a 1 to 3 month publishing delay; more frequent reads add nothing."),

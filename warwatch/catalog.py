@@ -127,10 +127,10 @@ add("jet_fuel_gulf", "Jet fuel, US Gulf Coast, USD per gallon (FRED)", "financia
     lambda: S.fetch_fred("DJFUELUSGULF", _key("FRED_API_KEY")), needs=["FRED_API_KEY"], url=FRED + "DJFUELUSGULF", sub="Fuel")
 for sym, name in (("ITA", "US aerospace and defence ETF (ITA)"), ("LMT", "Lockheed Martin"), ("RTX", "RTX (Raytheon)"),
                   ("NOC", "Northrop Grumman")):
-    add(f"def_{sym.lower()}", f"{name} share price (Twelve Data)", "financial", "global", "daily", False,
+    add(f"def_{sym.lower()}", f"{name} share price (Yahoo Finance)", "financial", "global", "daily", False,
         "Defence stocks rally on expected demand; a sharp surge is a strong signal in conflict models.",
-        (lambda s=sym: S.fetch_twelvedata(s, _key("TWELVEDATA_API_KEY"))), needs=["TWELVEDATA_API_KEY"],
-        url="https://twelvedata.com/", sub="Defence stocks")
+        (lambda s=sym: S.fetch_market(s)),
+        url="https://finance.yahoo.com/", sub="Defence stocks")
 # Finer purchase codes the OSINT community watches: munitions, armour, missiles, charter airlift, sealift, site works
 for sid, label, why, kw, sub in (
     ("us_ammo_awards", "US ammunition awards (PSC 1305, 1310, 1315, 1320, 1325, 1330, 1340)",
@@ -343,8 +343,8 @@ add("wheat", "Wheat price, USD per tonne (FRED, monthly)", "financial", "ukraine
     url=FRED + "PWHEAMTUSDM", sub="Commodities")
 
 
-# ============ Market stress proxies via Twelve Data (free plan, 8 requests a minute) ============
-TD = "https://twelvedata.com/"
+# ============ Market stress proxies via Yahoo Finance (no key) ============
+TD = "https://finance.yahoo.com/"
 for sid, sym, label, th, why, direction in (
     ("gold", "GLD", "Gold ETF (GLD) price", "global", "Money runs to gold ahead of wars, and central banks buy it before sanctions.", "up"),
     ("tanker_equity", "STNG", "Tanker shipping stock (Scorpio Tankers)", "iran", "War-risk freight premia lift tanker equities when Hormuz and Gulf routes look unsafe.", "up"),
@@ -352,8 +352,8 @@ for sid, sym, label, th, why, direction in (
     ("israel_equity", "EIS", "Israel equity ETF (EIS)", "israel", "A falling Israeli equity index prices in escalation before it happens.", "down"),
     ("poland_equity", "EPOL", "Poland equity ETF (EPOL)", "europe_east", "Frontline equity markets fall when investors price a spillover.", "down"),
 ):
-    add(sid, f"{label} (Twelve Data)", "financial", th, "daily", False, why, (lambda s=sym: S.fetch_twelvedata(s, _key("TWELVEDATA_API_KEY"))),
-        direction=direction, needs=["TWELVEDATA_API_KEY"], url=TD, sub="Markets")
+    add(sid, f"{label} (Yahoo Finance)", "financial", th, "daily", False, why, (lambda s=sym: S.fetch_market(s)),
+        direction=direction, url=TD, sub="Markets")
 
 # ============ Satellite thermal detections (NASA FIRMS, free key) ============
 def _fires(th):
@@ -423,8 +423,8 @@ for sid, sym, label, th, why, direction in (
     ("copper_miners", "COPX", "Copper miners ETF (COPX)", "drc", "Copper miners fall or spike on supply risk in Congo and Zambia.", "both"),
     ("latam_equity", "ILF", "Latin America 40 ETF (ILF)", "venezuela", "Regional equities discount Caribbean and Venezuelan escalation.", "down"),
 ):
-    add(sid, f"{label} (Twelve Data)", "financial", th, "daily", False, why, (lambda s=sym: S.fetch_twelvedata(s, _key("TWELVEDATA_API_KEY"))),
-        direction=direction, needs=["TWELVEDATA_API_KEY"], url=TD, sub="Markets")
+    add(sid, f"{label} (Yahoo Finance)", "financial", th, "daily", False, why, (lambda s=sym: S.fetch_market(s)),
+        direction=direction, url=TD, sub="Markets")
 
 
 # ============ Vessel presence from Global Fishing Watch (fills the gaps where live AIS has no receivers) ============
@@ -500,8 +500,8 @@ for _s in SERIES:
     _id = _s["id"]
     if _id.startswith(("us_", "eu_", "dod_", "acled_")) and _s["kind"] == "monthly":
         _s["every"] = 20      # trade and contract data change monthly, after a lag
-    elif "FRED_API_KEY" in _s["needs"] or "TWELVEDATA_API_KEY" in _s["needs"]:
-        _s["every"] = 6       # daily closes; Twelve Data free plan allows 800 requests a day
+    elif "FRED_API_KEY" in _s["needs"] or "fetch_market" in _s["fetch"].__code__.co_names:
+        _s["every"] = 6       # daily closes
     elif _id.startswith(("portwatch_", "fcdo_")):
         _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely
     elif _id.startswith(("ioda_", "fx_")):

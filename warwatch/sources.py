@@ -499,6 +499,40 @@ def fetch_twelvedata(symbol, key):
     return parse_twelvedata(get("https://api.twelvedata.com/time_series?" + q))
 
 
+def parse_yahoo(p):
+    r = (p.get("chart", {}).get("result") or [None])[0]
+    if not r:
+        raise ValueError("Yahoo: " + str((p.get("chart", {}).get("error") or {}).get("description", "no result"))[:100])
+    ts, cl = r.get("timestamp") or [], (r["indicators"]["quote"][0].get("close") or [])
+    out = {}
+    for t, c in zip(ts, cl):
+        if c is not None:
+            out[dt.datetime.fromtimestamp(t, dt.timezone.utc).date().isoformat()] = float(c)
+    return sorted(out.items())
+
+
+def fetch_yahoo(symbol, rng="2y"):
+    """Daily closes from Yahoo Finance's chart endpoint (the one the yfinance package uses): no key, no extra package."""
+    q = urllib.parse.urlencode({"range": rng, "interval": "1d"})
+    req = urllib.request.Request(f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}?{q}",
+                                 headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36", "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=40) as r:
+        return parse_yahoo(json.loads(r.read().decode("utf-8")))
+
+
+def fetch_market(symbol):
+    """Yahoo first; Twelve Data (free key) only if Yahoo refuses the runner."""
+    try:
+        pts = fetch_yahoo(symbol)
+        if len(pts) > 30:
+            return pts
+    except Exception as e:
+        key = os.environ.get("TWELVEDATA_API_KEY")
+        if not key:
+            raise
+    return fetch_twelvedata(symbol, os.environ["TWELVEDATA_API_KEY"])
+
+
 # ---- FRED (needs FRED_API_KEY) -------------------------------------------------
 def parse_fred(p):
     out = []
