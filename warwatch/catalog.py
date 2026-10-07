@@ -290,6 +290,22 @@ for bzn, th, nm in (("PL", "europe_east", "Poland"), ("LT", "europe_east", "Lith
         "Power prices jump on grid sabotage, interconnector cuts or supply fears before they appear elsewhere; published daily.",
         (lambda b=bzn: S.fetch_energycharts_price(b)), url="https://www.energy-charts.info/", sub="Energy")
 
+def _gpsjam(th):
+    def go():
+        if os.environ.get("WARWATCH_LIVE") or not store.cache_load(f"gpsjam_{th}"):
+            S.gpsjam_update(C.BOXES, store)
+        pts = store.cache_load(f"gpsjam_{th}")
+        if not pts:
+            raise RuntimeError("first refresh pending (GPSJam history fills a few weeks per run)")
+        return pts
+    return go
+
+
+for th in C.BOXES:
+    add(f"gpsjam_{th}", f"Aircraft with degraded GPS, share per day, {TH[th]} (GPSJam)", "geospatial", th, "daily", False,
+        "Jamming and spoofing of navigation signals rise before and during operations; GPSJam publishes a daily map from ADS-B reports, two days late, with history from 2022.",
+        _gpsjam(th), url="https://gpsjam.org/", sub="Airspace")
+
 for th, slugs in C.FCDO.items():
     add(f"fcdo_{th}", f"UK travel-advice updates: {TH[th]}", "behavioral", th, "daily", False,
         "A cluster of advisory rewrites precedes evacuations and airline suspensions.",
@@ -529,7 +545,7 @@ for _s in SERIES:
         _s["every"] = 6       # daily closes
     elif _id.startswith(("portwatch_", "fcdo_")):
         _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely
-    elif _id.startswith(("ioda_", "ooni_", "cfr_", "gas_", "power_", "fx_")):
+    elif _id.startswith(("ioda_", "ooni_", "gpsjam_", "cfr_", "gas_", "power_", "fx_")):
         _s["every"] = 3
     elif _id.startswith("ais_presence_"):
         _s["every"] = 12      # one call per box; the source posts daily with a ~5 day delay

@@ -541,6 +541,63 @@ def fetch_agsi(area, key_value, field="gasInStorage", days=300):
     return sorted(out.items())
 
 
+# ---- GPSJam: daily share of aircraft reporting degraded GPS, per theatre box (keyless; needs the h3 package) ----
+_GPSJAM_DONE = False
+
+
+def parse_gpsjam(text, boxes, centre, min_aircraft=20):
+    """-> {theatre: percent of aircraft with bad GPS} for one day's CSV (hex,count_good_aircraft,count_bad_aircraft)."""
+    tot = {t: [0, 0] for t in boxes}
+    lines = text.splitlines()[1:]
+    for ln in lines:
+        p = ln.split(",")
+        if len(p) < 3:
+            continue
+        try:
+            good, bad = int(p[1]), int(p[2])
+        except ValueError:
+            continue
+        la, lo = centre(p[0])
+        for t, (la0, la1, lo0, lo1) in boxes.items():
+            if la0 <= la <= la1 and lo0 <= lo <= lo1:
+                tot[t][0] += good
+                tot[t][1] += bad
+    return {t: 100.0 * b / (g + b) for t, (g, b) in tot.items() if g + b >= min_aircraft}
+
+
+def gpsjam_update(boxes, store, per_run=25, keep=150):
+    """Fills one cache per theatre from gpsjam.org's daily files, a few missing days per run, newest first."""
+    global _GPSJAM_DONE
+    if _GPSJAM_DONE:
+        return
+    _GPSJAM_DONE = True
+    try:
+        import h3
+    except ImportError:
+        return      # the build installs h3; without it only the cache is read
+    cell = getattr(h3, "cell_to_latlng", None) or h3.h3_to_geo
+    memo = {}
+
+    def centre(hx):
+        if hx not in memo:
+            memo[hx] = cell(hx)
+        return memo[hx]
+    have = {t: dict(store.cache_load(f"gpsjam_{t}")) for t in boxes}
+    today = dt.date.today()
+    todo = [d.isoformat() for d in (today - dt.timedelta(days=i) for i in range(2, keep + 2)) if d.isoformat() not in have[next(iter(boxes))]]
+    for day in todo[:per_run]:
+        try:
+            raw = get(f"https://gpsjam.org/data/{day}-h3_4.csv", raw=True, timeout=120, retries=2)
+        except Exception:
+            continue
+        for t, v in parse_gpsjam(raw, boxes, centre).items():
+            have[t][day] = v
+        for t in boxes:       # a day with too few aircraft is stored as missing, not zero
+            have[t].setdefault(day, None)
+    for t in boxes:
+        store.cache_save(f"gpsjam_{t}", sorted((d, v) for d, v in have[t].items() if v is not None))
+
+
 # ---- Frankfurter (ECB reference rates, no key) and Twelve Data (free key) ------------------------
 def parse_frankfurter(p, ccy):
     return sorted((d, float(v[ccy])) for d, v in p.get("rates", {}).items() if ccy in v)
