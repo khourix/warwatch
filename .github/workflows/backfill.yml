@@ -21,9 +21,6 @@ on:
         default: ""
 permissions:
   contents: write
-concurrency:
-  group: warwatch-backfill-${{ github.ref_name }}
-  cancel-in-progress: false
 jobs:
   plan:
     runs-on: ubuntu-latest
