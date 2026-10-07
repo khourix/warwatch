@@ -199,8 +199,10 @@ def cmd_pla(start, end, max_pages=400):
                     parsed[sid].setdefault(day.isoformat(), float(row[key]))
             if found <= 5 or found % 100 == 0:
                 K.log("sample", day, row)
-            time.sleep(0.4)
+            time.sleep(0.2)
         K.log("page", page, "entries", len(new), "oldest", oldest, "days parsed", len(parsed["pla_aircraft"]))
+        for sid, rows in parsed.items():      # saved page by page: a long crawl that is cut off keeps what it read
+            K.save(sid, rows)
         if oldest and oldest < start:
             break
     for sid, rows in parsed.items():
