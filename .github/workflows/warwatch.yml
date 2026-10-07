@@ -61,7 +61,15 @@ jobs:
           git add $WW/history $WW/assets 2>/dev/null || true
           # history files are append-only; .gitattributes merges concurrent appends (union).
           # Best effort: a failed history push must not fail the dashboard build.
-          git diff --cached --quiet || (git commit -m "history: $(date -u +%FT%H:%MZ)" && git pull --rebase -q && git push -q) || (git rebase --abort; echo "history push skipped")
+          git diff --cached --quiet && exit 0
+          git commit -qm "history: $(date -u +%FT%H:%MZ)"
+          # cache files are rewritten whole from the full history in this checkout, so on a clash this run's copy wins (-X theirs = the commit being replayed)
+          for i in 1 2 3 4; do
+            git pull --rebase -X theirs -q && git push -q && exit 0
+            git rebase --abort 2>/dev/null || true
+            sleep $((i * 5))
+          done
+          echo "history push skipped"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/

@@ -306,6 +306,9 @@ for th in C.BOXES:
         "Jamming and spoofing of navigation signals rise before and during operations; GPSJam publishes a daily map from ADS-B reports, two days late, with history from 2022.",
         _gpsjam(th), url="https://gpsjam.org/", sub="Airspace")
 
+add("brent_libya", "Brent crude, USD (FRED)", "financial", "libya", "daily", False,
+    "Libya's output and exports move the oil price; closures of its terminals show up there first.",
+    lambda: S.fetch_fred("DCOILBRENTEU", _key("FRED_API_KEY")), needs=["FRED_API_KEY"], url=FRED + "DCOILBRENTEU", sub="Fuel")
 PORTS = {   # theatre: (ISO3, port-name fragments, label)
     "iran": ("IRN", ("Bandar Abbas",), "Bandar Abbas"),
     "israel": ("ISR", ("Haifa", "Ashdod"), "Haifa and Ashdod"),
@@ -317,6 +320,9 @@ PORTS = {   # theatre: (ISO3, port-name fragments, label)
     "southasia": ("PAK", ("Karachi",), "Karachi"),
     "libya": ("LBY", ("Tripoli",), "Tripoli"),
     "venezuela": ("VEN", (), "all Venezuelan ports"),
+    "drc": ("COD", (), "all Congolese ports"),
+    "sudan": ("SDN", (), "all Sudanese ports"),
+    "scs": ("PHL", ("Manila",), "Manila"),
 }
 for th, (iso, names, nm) in PORTS.items():
     add(f"ports_{th}", f"Daily vessel calls, {nm} (IMF PortWatch)", "logistics", th, "daily", False,
