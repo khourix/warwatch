@@ -565,9 +565,10 @@ def parse_gpsjam(text, boxes, centre, min_aircraft=20):
     return {t: 100.0 * b / (g + b) for t, (g, b) in tot.items() if g + b >= min_aircraft}
 
 
-def gpsjam_update(boxes, store, per_run=25, keep=150):
+def gpsjam_update(boxes, store, per_run=None, keep=150):
     """Fills one cache per theatre from gpsjam.org's daily files, a few missing days per run, newest first."""
     global _GPSJAM_DONE
+    per_run = per_run or int(os.environ.get("GPSJAM_MAX", "25"))
     if _GPSJAM_DONE:
         return
     _GPSJAM_DONE = True

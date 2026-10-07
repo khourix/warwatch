@@ -27,6 +27,7 @@ jobs:
         env:
           WARWATCH_LIVE: "1"
           GNEWS_MAX: ${{ github.event.inputs.max_requests || '12' }}
+          GPSJAM_MAX: ${{ github.event.inputs.max_requests || '25' }}
           GDELT_MAX: ${{ github.event.inputs.max_requests || '6' }}
         run: |
           ids=$(python3 -c "import sys; sys.path.insert(0,'warwatch'); import catalog; print(','.join(s['id'] for s in catalog.SERIES if s['id'].startswith(('news_','gdelt_','gpsjam_'))))")
