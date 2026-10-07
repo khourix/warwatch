@@ -562,7 +562,7 @@ for _s in SERIES:
         _s["every"] = 6       # daily closes
     elif _id.startswith(("portwatch_", "fcdo_")):
         _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely
-    elif _id.startswith(("ioda_", "ooni_", "ports_", "gpsjam_", "cfr_", "gas_", "power_", "fx_")):
+    elif _id.startswith(("ioda_", "ooni_", "ports_", "cfr_", "gas_", "power_", "fx_")):
         _s["every"] = 3
     elif _id.startswith("ais_presence_"):
         _s["every"] = 12      # one call per box; the source posts daily with a ~5 day delay
