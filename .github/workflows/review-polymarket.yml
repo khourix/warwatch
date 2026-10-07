@@ -1,0 +1,29 @@
+name: review-polymarket
+# Methodology review only (branch claude/project-thread-k7j869): geopolitical Polymarket markets and their daily prices,
+# to test whether market odds rose before past strikes. Public data only; touches nothing the dashboard uses.
+on:
+  push:
+    branches: [claude/project-thread-k7j869]
+    paths: [review/polymarket.py, .github/workflows/review-polymarket.yml]
+permissions:
+  contents: write
+concurrency:
+  group: review-polymarket
+  cancel-in-progress: true
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 review/polymarket.py | tail -20
+      - name: Commit to the review branch
+        run: |
+          gzip -9f review/data/polymarket_war.jsonl
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add review/data/polymarket_war.jsonl.gz
+          git diff --cached --quiet && exit 0
+          git commit -qm "review: geopolitical Polymarket histories $(date -u +%FT%H:%MZ)"
+          for i in 1 2 3; do git pull --rebase -q origin claude/project-thread-k7j869 && git push -q origin HEAD:claude/project-thread-k7j869 && exit 0; sleep 5; done
+          exit 1
