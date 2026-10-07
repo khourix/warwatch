@@ -142,39 +142,61 @@ def theatre_items(series, theatre):
     return out
 
 
-def _null(shape, weights, key):
-    """Composite z under 'nothing is happening': every group's z drawn from a mildly heavy-tailed
-    standard normal (10% of draws are twice as wide), winsorized, run through the same pipeline.
-    Seeded from the shape, so the same theatre always gets the same thresholds. -> sorted list."""
-    rnd = random.Random(zlib.crc32(repr((SEED, key, shape)).encode()))
-    norm = 1 / math.sqrt(1.3)
-    out = []
-    for _ in range(NULL_N):
-        dz, ws = [], []
-        for dom, flags in shape:
-            if not flags:
-                continue
+_DOMS = {}
+
+
+def _dom_null(flags):
+    """Calm-world distribution of one domain's score: its groups' z drawn from a mildly heavy-tailed standard normal
+    (10% of draws are twice as wide), winsorized, then the same OWA as production. Seeded from the shape.
+    -> (sorted-by-draw list of scores, mean, sd)."""
+    if flags not in _DOMS:
+        rnd = random.Random(zlib.crc32(repr((SEED, flags)).encode()))
+        norm = 1 / math.sqrt(1.3)
+        arr = []
+        for _ in range(NULL_N):
             zs = []
             for both in flags:
-                z = rnd.gauss(0, 1) * (2.0 if rnd.random() < 0.1 else 1.0) * norm
-                z = max(-stats.WINSOR, min(stats.WINSOR, z))
+                z = max(-stats.WINSOR, min(stats.WINSOR, rnd.gauss(0, 1) * (2.0 if rnd.random() < 0.1 else 1.0) * norm))
                 zs.append(abs(z) if both else z)
-            dz.append(domain_score(zs)[0])
-            ws.append(weights[dom])
-        if len(dz) < 2:
-            continue
-        out.append((mpi(dz, ws)[2] - 100) / 10)
-    out.sort()
-    return out
+            arr.append(domain_score(zs)[0])
+        m = statistics.fmean(arr)
+        _DOMS[flags] = (arr, m, statistics.pstdev(arr) or 1e-6)
+    return _DOMS[flags]
+
+
+def estimate_calib(results):
+    """Empirical null (Efron): real signals are more spread out and more persistent than independent standard normals,
+    so the calm-world domain scores are re-centred and re-scaled to match the bulk of the live domain scores.
+    Each live domain score is standardised against its simulated calm distribution; the median of those is the shift
+    (mu), 1.4826 x the median absolute deviation the stretch (kappa). A few real crises barely move a median/MAD.
+    -> (mu, kappa), clamped to [-0.5, 1] and [1, 3]."""
+    u = []
+    for r in results:
+        for d in r["doms"].values():
+            if d["z"] is not None and d.get("shape") is not None and r["theatre"] != "global":
+                _, m, sd = _dom_null(tuple(d["shape"]))
+                u.append((d["z"] - m) / sd)
+    if len(u) < 8:
+        return (0.0, 1.0)
+    med = statistics.median(u)
+    mad = statistics.median(abs(x - med) for x in u)
+    return (max(-0.5, min(1.0, med)), max(1.0, min(3.0, 1.4826 * mad)))
 
 
 _NULLS = {}
 
 
-def thresholds(shape, weights, key):
-    ck = (key, shape)
+def thresholds(shape, weights, key, calib=(0.0, 1.0)):
+    ck = (shape, tuple(round(c, 2) for c in calib), tuple(round(weights[d], 4) for d in C.DOMAINS))
     if ck not in _NULLS:
-        _NULLS[ck] = _null(shape, weights, key)
+        mu, kap = calib
+        parts = [(weights[d], _dom_null(tuple(fl))) for d, fl in shape if fl]
+        out = []
+        for i in range(NULL_N):
+            vals = [m + mu * sd + kap * (arr[i] - m) for _, (arr, m, sd) in parts]
+            out.append((mpi(vals, [w for w, _ in parts])[2] - 100) / 10)
+        out.sort()
+        _NULLS[ck] = out
     n = _NULLS[ck]
     return n, [n[min(len(n) - 1, int(p * len(n)))] for p in PCTS]
 
@@ -187,7 +209,7 @@ def logistic_score(zc, th):
     return 100 / (1 + math.exp(x))
 
 
-def theatre_composite(series, theatre, wt):
+def theatre_composite(series, theatre, wt, calib=(0.0, 1.0)):
     """One theatre. wt = load_weights()['weights'][theatre]. Returns the dashboard fields plus an audit trail."""
     items = theatre_items(series, theatre)
     total = sum(1 for s in series if s["theatre"] == theatre)
@@ -233,7 +255,7 @@ def theatre_composite(series, theatre, wt):
     for d in live:
         doms[d]["contrib"] = round(wt[d] / tw * doms[d]["z"], 3)
     shape = tuple((d, tuple(doms[d]["shape"]) if d in live else ()) for d in C.DOMAINS)
-    null, th = thresholds(shape, wt, theatre)
+    null, th = thresholds(shape, wt, theatre, calib)
     zc = (idx - 100) / 10
     lvl = LEVELS[sum(zc >= t for t in th)]
     firing = sorted(d for d in live if doms[d]["z"] >= C.THRESH_WATCH)
@@ -241,7 +263,7 @@ def theatre_composite(series, theatre, wt):
     if lvl in ("Elevated", "Critical"):
         basis = "leading and lagging" if any(doms[d]["fast"] for d in firing) else "lagging only"
     res.update(level=lvl, zc=round(zc, 3), index=round(idx, 2), score=round(logistic_score(zc, th), 1),
-               imbalance=round(sd, 2), firing=firing, basis=basis, th=[round(t, 3) for t in th],
+               imbalance=round(sd, 2), firing=firing, basis=basis, th=[round(t, 3) for t in th], calib=[round(c, 2) for c in calib],
                pctl=round(100 * bisect.bisect_left(null, zc) / len(null), 1))
     return res, {"groups": audit_groups, "correlated": pairs_all, "mean": round(m, 2), "sd": round(sd, 2), "mpi": round(idx, 2)}
 
@@ -291,10 +313,17 @@ def compute_composite_score(metrics, weights, baseline_window=90):
     return res
 
 
+def evaluate_all(series, theatres, wv_weights):
+    """Two passes: plain, then re-run with the empirical-null calibration estimated from all theatres."""
+    first = {t: theatre_composite(series, t, wv_weights[t]) for t in theatres}
+    calib = estimate_calib([r for r, _ in first.values()])
+    return {t: theatre_composite(series, t, wv_weights[t], calib) for t in theatres}, calib
+
+
 def evaluate(series, regions=None, version=None):
     wv = load_weights(version)
-    th, audit = {}, {}
-    for t in C.THEATRES:
-        th[t], audit[t] = theatre_composite(series, t, wv["weights"][t])
+    both, calib = evaluate_all(series, list(C.THEATRES), wv["weights"])
+    th = {t: r for t, (r, _) in both.items()}
+    audit = {t: a for t, (_, a) in both.items()}
     reg, gti = rollup(th, regions if regions is not None else C.REGIONS)
-    return {"theatres": th, "regions": reg, "global": gti, "weights_version": wv["version"], "audit": audit}
+    return {"theatres": th, "regions": reg, "global": gti, "weights_version": wv["version"], "audit": audit, "calib": calib}

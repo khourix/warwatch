@@ -155,14 +155,25 @@ def snapshot(series, d, keep=250):
     return rows
 
 
-def evaluate(rows, theatre, weights):
-    new, aud = engine.theatre_composite(rows, theatre, weights[theatre])
+def _old(rows, theatre):
     old_rows = [dict(r, score=r["old"]) for r in rows if r["theatre"] == theatre]
     dom = scoring.theatre_view(old_rows, theatre)
     lv = scoring.level(dom)
     zs = sorted((v["z"] for v in dom.values() if v["z"] is not None), reverse=True)
     proxy = len(lv["firing"]) * 10 + (statistics.fmean(zs[:2]) if zs else 0.0)    # continuous stand-in for the 0/5 count
-    return new, aud, {"level": lv["level"], "firing": lv["firing"], "proxy": proxy, "domains": {k: v["z"] for k, v in dom.items()}}
+    return {"level": lv["level"], "firing": lv["firing"], "proxy": proxy, "domains": {k: v["z"] for k, v in dom.items()}}
+
+
+def evaluate(rows, theatre, weights, calib=(0.0, 1.0)):
+    new, aud = engine.theatre_composite(rows, theatre, weights[theatre], calib)
+    return new, aud, _old(rows, theatre)
+
+
+def evaluate_day(rows, theatres, weights):
+    """Both passes of the production engine for one day: plain, then with the empirical-null calibration."""
+    first = [engine.theatre_composite(rows, t, weights[t])[0] for t in theatres]
+    calib = engine.estimate_calib(first)
+    return {t: evaluate(rows, t, weights, calib) for t in theatres}, calib
 
 
 def replay(series, weights, theatres):
@@ -170,8 +181,9 @@ def replay(series, weights, theatres):
     d = START
     while d <= END:
         rows = snapshot(series, d)
+        day, _ = evaluate_day(rows, theatres, weights)
         for t in theatres:
-            new, _, old = evaluate(rows, t, weights)
+            new, _, old = day[t]
             res[t].append({"d": d.isoformat(), "zc": new["zc"], "lvl": new["level"], "score": new["score"], "nlive": new["scorable"], "nser": sum(1 for r in rows if r["theatre"] == t and r["score"]),
                            "old": old["level"], "oldp": old["proxy"], "oldf": len(old["firing"])})
         d += dt.timedelta(days=STEP)
@@ -260,8 +272,8 @@ def sensitivity(series, weights, d, theatre):
     ranking of all theatres (Spearman) survives."""
     rows = snapshot(series, d)
     base = {}
-    for t in {r["theatre"] for r in rows if r["theatre"] != "global"}:
-        new, _, _ = evaluate(rows, t, weights)
+    day, calib = evaluate_day(rows, sorted({r["theatre"] for r in rows if r["theatre"] != "global"}), weights)
+    for t, (new, _, _) in day.items():
         if new["zc"] is not None:
             base[t] = new["zc"]
     full = base.get(theatre)
@@ -273,7 +285,7 @@ def sensitivity(series, weights, d, theatre):
         if r["theatre"] != theatre or not r["score"]:
             continue
         rest = [x for x in rows if x is not r]
-        new, _, _ = evaluate(rest, theatre, weights)
+        new, _, _ = evaluate(rest, theatre, weights, calib)
         z = new["zc"] if new["zc"] is not None else full
         rho = spearman([base[t] for t in ts], [z if t == theatre else base[t] for t in ts]) if len(ts) > 2 else 1.0
         worst_rho = min(worst_rho, rho)
@@ -282,7 +294,7 @@ def sensitivity(series, weights, d, theatre):
     dom = []
     for dname in C.DOMAINS:
         rest = [x for x in rows if not (x["theatre"] == theatre and x["domain"] == dname)]
-        new, _, _ = evaluate(rest, theatre, weights)
+        new, _, _ = evaluate(rest, theatre, weights, calib)
         dom.append((dname, (new["zc"] if new["zc"] is not None else full) - full))
     return {"theatre": theatre, "date": d.isoformat(), "zc": full, "signals": drops, "domains": dom, "min_rho": worst_rho, "n_theatres": len(ts)}
 
@@ -370,7 +382,8 @@ def cmd_run():
     for title, t, ds in SNAPSHOTS:
         d = dt.date.fromisoformat(ds)
         rows = snapshot(series, d)
-        new, _, old = evaluate(rows, t, wv["weights"])
+        day, _ = evaluate_day(rows, sorted({r["theatre"] for r in rows if r["theatre"] != "global"}), wv["weights"])
+        new, _, old = day[t]
         snaps.append((title, t, ds, new, old, None))
         sens.append(sensitivity(series, wv["weights"], d, t))
     write_report(res, mets, cal, snaps, sens, cov, wv)

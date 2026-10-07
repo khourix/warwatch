@@ -20,6 +20,8 @@ The old method counted how many of five groups were over a threshold (0/5 to 5/5
 
 Watch, Elevated and Critical are the 90th, 95th and 99th percentiles of the composite in a calm world. The calm world is simulated, not observed: 2,000 draws per theatre, each signal group a standard normal in which 10% of draws are twice as wide (fatter tails than a normal), winsorized at +-5, run through the same stages 3 to 5 with the theatre's own series counts and weights. The generator is seeded, so a theatre always gets the same thresholds.
 
+Real signals are more spread out and more persistent than independent standard normals, so a plain simulation would call far too many days rare. Each build therefore applies an **empirical null** (Efron): every live domain score is standardised against its own simulated calm distribution, the median of those values is taken as a shift and 1.4826 x their median absolute deviation as a stretch (clamped to -0.5..1 and 1..3), and the simulated domain scores are re-centred and stretched to match before the composite thresholds are read off. A handful of real crises barely moves a median and MAD. The two numbers are written to the page data (`calib`) and to `audit.json`. On 7 October 2026 they were a shift of 0.47 and a stretch of 1.32.
+
 So a theatre at Watch is in the top 10% of calm-world readings: expected by chance about one day in ten. Elevated is one in twenty, Critical one in a hundred. A level says "this reading is rare if nothing is happening", not "war is coming".
 
 Percentile thresholds from real history are better in principle, but most live signals have months, not years, of data. `docs/BACKTEST.md` compares the simulated thresholds with real calm-day percentiles wherever the slow series have enough history.
