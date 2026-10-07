@@ -22,6 +22,7 @@ import stats
 HERE = os.path.dirname(os.path.abspath(__file__))
 ORNESS = 0.3          # 0 = min (all must agree), 0.5 = mean, 1 = max
 TOPK = 6              # a domain looks at its strongest TOPK groups, so 40 quiet series cannot dilute one real signal
+LAG_K = 0.25          # confirming (late-published) signals count at a quarter: the aim is early warning, not confirmation
 LONE = 0.7            # a domain with a single scorable group is shrunk: one source alone is weak evidence
 CORR_MIN = 0.8        # redundancy: groups whose recent changes correlate above this are averaged
 CORR_DAYS, CORR_MONTHS = 30, 24
@@ -136,7 +137,8 @@ def theatre_items(series, theatre):
         d = s["direction"]
         sign = -1 if d == "down" else 1
         z = {"up": s["score"]["z"], "down": -s["score"]["z"]}.get(d, abs(s["score"]["z"]))
-        out.append({"id": s["id"], "domain": s["domain"], "z": z, "lag": bool(s["lag"]), "kind": s["kind"], "sign": sign,
+        k = LAG_K if s["lag"] else 1.0
+        out.append({"id": s["id"], "domain": s["domain"], "z": z * k, "k": k, "zfull": z, "lag": bool(s["lag"]), "kind": s["kind"], "sign": sign,
                     "both": d not in ("up", "down"), "miss": s["score"].get("miss", 0.0), "raw": s["score"].get("z_raw", s["score"]["z"]),
                     "ch": _changes(s["points"], s["kind"])})
     return out
@@ -155,8 +157,8 @@ def _dom_null(flags):
         arr = []
         for _ in range(NULL_N):
             zs = []
-            for both in flags:
-                z = max(-stats.WINSOR, min(stats.WINSOR, rnd.gauss(0, 1) * (2.0 if rnd.random() < 0.1 else 1.0) * norm))
+            for both, k in flags:
+                z = max(-stats.WINSOR, min(stats.WINSOR, rnd.gauss(0, 1) * (2.0 if rnd.random() < 0.1 else 1.0) * norm)) * k
                 zs.append(abs(z) if both else z)
             arr.append(domain_score(zs)[0])
         m = statistics.fmean(arr)
@@ -174,7 +176,7 @@ def estimate_calib(results):
     for r in results:
         for d in r["doms"].values():
             if d["z"] is not None and d.get("shape") is not None and r["theatre"] != "global":
-                _, m, sd = _dom_null(tuple(d["shape"]))
+                _, m, sd = _dom_null(tuple(tuple(x) for x in d["shape"]))
                 u.append((d["z"] - m) / sd)
     if len(u) < 8:
         return (0.0, 1.0)
@@ -225,13 +227,13 @@ def theatre_composite(series, theatre, wt, calib=(0.0, 1.0)):
         rows = []
         for g in grp:
             best = max(g, key=lambda i: i["z"])
-            rows.append({"z": sum(i["z"] for i in g) / len(g), "ids": [i["id"] for i in g], "best": best["id"],
+            rows.append({"z": sum(i["z"] for i in g) / len(g), "k": round(sum(i["k"] for i in g) / len(g), 2), "ids": [i["id"] for i in g], "best": best["id"],
                          "fast": any(not i["lag"] for i in g), "both": all(i["both"] for i in g)})
         rows.sort(key=lambda r: -r["z"])
         sc, ranked = domain_score([r["z"] for r in rows])
         doms[dom] = {"z": sc, "n": len(its), "groups": len(rows), "fast": rows[0]["fast"],
                      "drivers": [(r["best"], round(r["z"], 2)) for r in rows[:3]], "w": wt[dom], "contrib": 0.0,
-                     "shape": sorted(r["both"] for r in rows)}
+                     "shape": sorted((r["both"], r["k"]) for r in rows)}
         audit_groups[dom] = [{"ids": r["ids"], "z": round(r["z"], 3), "owa_w": round(ranked[k][0], 3) if k < len(ranked) else 0} for k, r in enumerate(rows)]
     live = [d for d in C.DOMAINS if doms[d]["z"] is not None]
     scored = len(items)
@@ -245,7 +247,7 @@ def theatre_composite(series, theatre, wt, calib=(0.0, 1.0)):
            "missing": missing, "firing": [], "scorable": len(live), "basis": "", "doms": doms, "th": None}
     if items:
         w = max(items, key=lambda i: i["z"])
-        res["worst"] = {"id": w["id"], "z": round(w["z"], 2), "lag": w["lag"]}
+        res["worst"] = {"id": w["id"], "z": round(w["zfull"], 2), "lag": w["lag"]}
     if len(live) < 2:
         return res, {"groups": audit_groups, "correlated": pairs_all}
     vals = [doms[d]["z"] for d in live]
