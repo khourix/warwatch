@@ -3,6 +3,8 @@ name: backfill
 # Dispatch with `source` = all or one of fred, nga, pla, state, firms, gfw, adsb. Safe to re-run: every job skips days it already has.
 # This workflow never touches the live score. validate.py re-tests each series before it can get weight.
 on:
+  push:
+    paths: ["backfill/run.txt"]     # a push that edits this file (one line: source [start] [end]) also starts a run; used before the workflow exists on main
   workflow_dispatch:
     inputs:
       source:
@@ -23,13 +25,32 @@ concurrency:
   group: warwatch-backfill-${{ github.ref_name }}
   cancel-in-progress: false
 env:
-  START: ${{ github.event.inputs.start }}
-  END: ${{ github.event.inputs.end }}
-  SRC: ${{ github.event.inputs.source || 'all' }}
+  START: ${{ needs.plan.outputs.start }}
+  END: ${{ needs.plan.outputs.end }}
+  SRC: ${{ needs.plan.outputs.src }}
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.p.outputs.src }}
+      start: ${{ steps.p.outputs.start }}
+      end: ${{ steps.p.outputs.end }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: p
+        run: |
+          if [ "${{ github.event_name }}" = workflow_dispatch ]; then
+            echo "src=${{ github.event.inputs.source || 'all' }}" >> $GITHUB_OUTPUT
+            echo "start=${{ github.event.inputs.start }}" >> $GITHUB_OUTPUT
+            echo "end=${{ github.event.inputs.end }}" >> $GITHUB_OUTPUT
+          else
+            read -r a b c < backfill/run.txt || true
+            echo "src=${a:-all}" >> $GITHUB_OUTPUT; echo "start=$b" >> $GITHUB_OUTPUT; echo "end=$c" >> $GITHUB_OUTPUT
+          fi
   quick:
+    needs: plan
     # FRED volatility indices, NGA warnings, Taiwan PLA counts: minutes each
-    if: contains(fromJSON('["all","fred","nga","pla"]'), github.event.inputs.source || 'all')
+    if: contains(fromJSON('["all","fred","nga","pla"]'), needs.plan.outputs.src)
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -45,7 +66,8 @@ jobs:
       - uses: ./.github/actions/commit-backfill
         if: always()
   state:
-    if: contains(fromJSON('["all","state"]'), github.event.inputs.source || 'all')
+    needs: plan
+    if: contains(fromJSON('["all","state"]'), needs.plan.outputs.src)
     runs-on: ubuntu-latest
     timeout-minutes: 340
     strategy:
@@ -61,7 +83,8 @@ jobs:
       - uses: ./.github/actions/commit-backfill
         if: always()
   firms:
-    if: contains(fromJSON('["all","firms"]'), github.event.inputs.source || 'all')
+    needs: plan
+    if: contains(fromJSON('["all","firms"]'), needs.plan.outputs.src)
     runs-on: ubuntu-latest
     timeout-minutes: 340
     strategy:
@@ -79,7 +102,8 @@ jobs:
       - uses: ./.github/actions/commit-backfill
         if: always()
   gfw:
-    if: contains(fromJSON('["all","gfw"]'), github.event.inputs.source || 'all')
+    needs: plan
+    if: contains(fromJSON('["all","gfw"]'), needs.plan.outputs.src)
     runs-on: ubuntu-latest
     timeout-minutes: 340
     strategy:
@@ -97,7 +121,8 @@ jobs:
       - uses: ./.github/actions/commit-backfill
         if: always()
   adsb:
-    if: contains(fromJSON('["all","adsb"]'), github.event.inputs.source || 'all')
+    needs: plan
+    if: contains(fromJSON('["all","adsb"]'), needs.plan.outputs.src)
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
@@ -134,7 +159,7 @@ jobs:
         if: always()
   merge:
     # folds the quarter shards into backfill/data and writes backfill/COVERAGE.md
-    needs: [quick, state, firms, gfw, adsb]
+    needs: [plan, quick, state, firms, gfw, adsb]
     if: always() && !cancelled()
     runs-on: ubuntu-latest
     timeout-minutes: 20
