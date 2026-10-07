@@ -173,11 +173,11 @@ def fetch_ted(cpvs, months=48):
 
 # ---- SAM.gov US tenders per month (needs SAM_API_KEY) ------------------------
 def parse_sam(p):
-    """UNVERIFIED live. -> {month: count} from opportunitiesData postedDate."""
+    """-> {day: count} from opportunitiesData postedDate."""
     by = {}
     for o in p.get("opportunitiesData", []) or []:
-        d = (o.get("postedDate") or "")[:7]
-        if len(d) == 7:
+        d = (o.get("postedDate") or "")[:10]
+        if len(d) == 10:
             by[d] = by.get(d, 0) + 1
     return by
 
@@ -198,7 +198,12 @@ def fetch_sam(ccodes, key, days=360):
             off += 1000
             if off >= int(p.get("totalRecords", 0)):
                 break
-    return sorted((m, float(n)) for m, n in by.items())
+    # days with no postings are real zeros, so fill them between the first and last day
+    out, d = [], dt.date.fromisoformat(min(by)) if by else None
+    while by and d <= dt.date.fromisoformat(max(by)):
+        out.append((d.isoformat(), float(by.get(d.isoformat(), 0))))
+        d += dt.timedelta(days=1)
+    return out
 
 
 # ---- IMF PortWatch: daily chokepoint transits ---------------------------------

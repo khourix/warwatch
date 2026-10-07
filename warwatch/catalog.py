@@ -96,11 +96,11 @@ for sid, label, why, kw, sub in (
 ):
     add(sid, label, "logistics", "global", "monthly", True, why, (lambda kw=kw: S.fetch_usaspending(**kw)),
         drop=DOD, url=USA, sub=sub)
-add("us_kit_tenders", "US boot and armor tenders (SAM.gov, PSC 8430, 8470)", "logistics", "global", "monthly", False,
+add("us_kit_tenders", "US boot and armor tenders posted per day (SAM.gov, PSC 8430, 8470)", "logistics", "global", "daily", False,
     "Tenders are posted before awards, so this leads the award series.",
     _slow("us_kit_tenders", lambda: S.fetch_sam(["8430", "8470"], _key("SAM_API_KEY"))), needs=["SAM_API_KEY"],
     url="https://sam.gov/", sub="Procurement")
-add("us_medical_tenders", "US medical tenders (SAM.gov, PSC 6510, 6515, 6505)", "logistics", "global", "monthly", False,
+add("us_medical_tenders", "US medical tenders posted per day (SAM.gov, PSC 6510, 6515, 6505)", "logistics", "global", "daily", False,
     "Tenders lead awards.", _slow("us_medical_tenders", lambda: S.fetch_sam(["6510", "6515", "6505"], _key("SAM_API_KEY"))),
     needs=["SAM_API_KEY"], url="https://sam.gov/", sub="Medical")
 TED = "https://ted.europa.eu/"

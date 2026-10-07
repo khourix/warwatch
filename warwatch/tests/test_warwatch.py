@@ -99,9 +99,9 @@ class TestParsers(unittest.TestCase):
                 ["2", "FRANCE", "9", "2026-06"], ["3", "UKRAINE", "7", "2026-07"]]
         self.assertEqual(S.parse_census(rows, ["UKRAINE"]), [("2026-06", 5.0), ("2026-07", 7.0)])
 
-    def test_sam_counts_by_month(self):
+    def test_sam_counts_by_day(self):
         p = {"opportunitiesData": [{"postedDate": "2026-09-01"}, {"postedDate": "2026-09-20"}, {"postedDate": "2026-08-02"}]}
-        self.assertEqual(S.parse_sam(p), {"2026-09": 2, "2026-08": 1})
+        self.assertEqual(S.parse_sam(p), {"2026-09-01": 1, "2026-09-20": 1, "2026-08-02": 1})
         self.assertEqual(S.parse_sam({}), {})
 
     def test_fcdo_daily_counts_history_by_day(self):
