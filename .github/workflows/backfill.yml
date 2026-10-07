@@ -94,6 +94,7 @@ jobs:
     timeout-minutes: 340
     strategy:
       fail-fast: false
+      max-parallel: 3     # the FIRMS key allows 5000 calls per 10 minutes across all jobs
       matrix:
         theatre: [ukraine, europe_east, iran, yemen, israel, korea, libya]
     steps:
