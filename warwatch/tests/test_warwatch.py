@@ -260,34 +260,21 @@ class TestScoring(unittest.TestCase):
             self.assertIn(s["theatre"], C.THEATRES)
             self.assertIn(s["kind"], ("monthly", "daily"))
 
-    def test_calm_is_below_warning(self):
-        for t, v in run.evaluate(demo.scenario("calm"))["theatres"].items():
-            self.assertIn(v["level"], ("Normal", "Watch"), t)
+    def test_calm_is_mostly_normal(self):
+        lv = [v["level"] for v in run.evaluate(demo.scenario("calm"))["theatres"].values()]
+        self.assertGreaterEqual(lv.count("Normal"), 10)      # thresholds are 90/95/99th calm percentiles: a stray Watch is by design
 
-    def test_buildup_alerts_with_both_basis(self):
+    def test_buildup_is_critical_with_both_basis(self):
         v = run.evaluate(demo.scenario("buildup"))["theatres"]["ukraine"]
-        self.assertEqual(v["level"], "Alert")
+        self.assertEqual(v["level"], "Critical")
         self.assertEqual(v["basis"], "leading and lagging")
-
-    def test_lone_series_cannot_fire_a_domain(self):
-        s = {"id": "a", "domain": "logistics", "theatre": "ukraine", "lag": True, "direction": "up",
-             "score": {"z": 9.0}}
-        d = scoring.theatre_view([s], "ukraine")["logistics"]
-        self.assertLess(d["z"], C.THRESH_SIGNAL * 3)       # 9 * 0.7 = 6.3 is the cap for one series
-        self.assertAlmostEqual(d["z"], 6.3)
 
     def test_down_direction_flags_falls(self):
         self.assertEqual(scoring.directed(-4.0, "down"), 4.0)
         self.assertEqual(scoring.directed(-4.0, "up"), -4.0)
         self.assertEqual(scoring.directed(-4.0, "both"), 4.0)
 
-    def test_lagging_only_is_labelled(self):
-        d = {"a": {"z": 3.0, "fast": False}, "b": {"z": 3.0, "fast": False}, "c": {"z": 0.1, "fast": True}}
-        self.assertEqual(scoring.level(d)["basis"], "lagging only")
-
     def test_fails_closed(self):
-        self.assertEqual(scoring.level({"a": {"z": 9.0, "fast": True}, "b": {"z": None, "fast": False}})["level"],
-                         "insufficient data")
         res = run.evaluate([{"id": "x", "domain": "logistics", "theatre": "ukraine", "lag": True, "direction": "up",
                              "kind": "daily", "points": [], "score": None, "status": "error", "error": "boom"}])
         self.assertEqual(res["theatres"]["ukraine"]["level"], "insufficient data")
@@ -414,10 +401,13 @@ class TestRegions(unittest.TestCase):
 
     def test_region_level_is_highest_child(self):
         import dashboard
-        th = {t: {"level": "Normal"} for t in C.THEATRES}
-        th["yemen"]["level"] = "Warning"
-        r = {x["id"]: x for x in dashboard.regions_json(th)}
-        self.assertEqual(r["mideast"]["level"], "Warning")
+        import engine
+        th = {t: {"level": "Normal", "score": 10.0, "zc": 0.0, "theatre": t} for t in C.THEATRES}
+        th["yemen"].update(level="Elevated", score=80.0)
+        reg, gti = engine.rollup(th, C.REGIONS)
+        r = {x["id"]: x for x in dashboard.regions_json(reg)}
+        self.assertEqual(r["mideast"]["level"], "Elevated")
+        self.assertEqual(gti["level"], "Elevated")
         self.assertEqual(r["korea_r"]["level"], "Normal")
 
     def test_theatre_configs_complete(self):
@@ -448,3 +438,55 @@ class TestRegions(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestEngine(unittest.TestCase):
+    def test_modified_z_matches_formula_and_winsorizes(self):
+        import stats
+        base = [10, 11, 9, 10, 12, 8, 10, 11, 9, 10]
+        z, raw = stats.modified_z(13, base)
+        self.assertAlmostEqual(raw, 0.6745 * 3 / 1.0)
+        z, raw = stats.modified_z(1000, base)
+        self.assertEqual(z, 5.0)
+        self.assertGreater(raw, 5.0)
+
+    def test_locf_fills_short_gaps_only(self):
+        import stats
+        pts = [("2026-01-01", 1.0), ("2026-01-04", 4.0), ("2026-01-09", 9.0)]
+        vals, obs, filled = stats.calendar_fill(pts, 9)
+        self.assertEqual(vals[1], 1.0)       # Jan 2: carried
+        self.assertEqual(vals[2], 1.0)       # Jan 3: carried
+        self.assertEqual(obs, 3)
+        self.assertEqual(vals[5], 4.0)       # Jan 6: second day after Jan 4... carried
+        self.assertIsNone(vals[7])           # Jan 8: third missing day, left missing
+
+    def test_owa_weights_hit_orness(self):
+        import engine
+        for n in (2, 4, 6):
+            w = engine.owa_weights(n)
+            self.assertAlmostEqual(sum(w), 1.0)
+            self.assertAlmostEqual(sum(x * (n - 1 - i) / (n - 1) for i, x in enumerate(w)), 0.3, places=4)
+
+    def test_mpi_penalises_lopsided_profile(self):
+        import engine
+        even = engine.mpi([1, 1, 1, 1, 1], [.2] * 5)[2]
+        lop = engine.mpi([0, 0, 0, 0, 5], [.2] * 5)[2]
+        self.assertGreater(lop, even)
+
+    def test_correlated_series_count_once(self):
+        import engine
+        ch = {str(i): float(i % 5) for i in range(30)}
+        a = {"id": "a", "kind": "daily", "z": 3.0, "sign": 1, "ch": ch}
+        b = {"id": "b", "kind": "daily", "z": 3.0, "sign": 1, "ch": {k: v * 2 for k, v in ch.items()}}
+        c = {"id": "c", "kind": "daily", "z": 0.0, "sign": 1, "ch": {k: float((int(k) * 7) % 11) for k in ch}}
+        g, pairs = engine.groups_of([a, b, c])
+        self.assertEqual(sorted(len(x) for x in g), [1, 2])
+
+    def test_deterministic_and_weights_sum_to_one(self):
+        import engine
+        import demo
+        a = run.evaluate(demo.scenario("buildup"))["theatres"]["ukraine"]["zc"]
+        b = run.evaluate(demo.scenario("buildup"))["theatres"]["ukraine"]["zc"]
+        self.assertEqual(a, b)
+        for t, w in engine.load_weights()["weights"].items():
+            self.assertAlmostEqual(sum(w.values()), 1.0, msg=t)

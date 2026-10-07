@@ -1,0 +1,134 @@
+{
+ "current": "1.0.0",
+ "domains": [
+  "logistics",
+  "financial",
+  "behavioral",
+  "geospatial",
+  "information"
+ ],
+ "method_note": "Weights are expert priors set from how each theatre's war signature shows up in open data. They are not fitted to outcomes; with so few historical wars a fit would be noise. Each theatre's weights sum to 1.",
+ "versions": [
+  {
+   "version": "1.0.0",
+   "date": "2026-10-07",
+   "change": "Initial weight table for the v7 engine.",
+   "weights": {
+    "ukraine": {
+     "logistics": 0.25,
+     "financial": 0.1,
+     "behavioral": 0.15,
+     "geospatial": 0.3,
+     "information": 0.2
+    },
+    "europe_east": {
+     "logistics": 0.25,
+     "financial": 0.1,
+     "behavioral": 0.15,
+     "geospatial": 0.3,
+     "information": 0.2
+    },
+    "iran": {
+     "logistics": 0.2,
+     "financial": 0.25,
+     "behavioral": 0.1,
+     "geospatial": 0.25,
+     "information": 0.2
+    },
+    "yemen": {
+     "logistics": 0.3,
+     "financial": 0.1,
+     "behavioral": 0.1,
+     "geospatial": 0.3,
+     "information": 0.2
+    },
+    "israel": {
+     "logistics": 0.2,
+     "financial": 0.15,
+     "behavioral": 0.15,
+     "geospatial": 0.25,
+     "information": 0.25
+    },
+    "taiwan": {
+     "logistics": 0.2,
+     "financial": 0.15,
+     "behavioral": 0.1,
+     "geospatial": 0.25,
+     "information": 0.3
+    },
+    "scs": {
+     "logistics": 0.25,
+     "financial": 0.1,
+     "behavioral": 0.1,
+     "geospatial": 0.3,
+     "information": 0.25
+    },
+    "korea": {
+     "logistics": 0.15,
+     "financial": 0.15,
+     "behavioral": 0.15,
+     "geospatial": 0.25,
+     "information": 0.3
+    },
+    "southasia": {
+     "logistics": 0.15,
+     "financial": 0.15,
+     "behavioral": 0.15,
+     "geospatial": 0.25,
+     "information": 0.3
+    },
+    "libya": {
+     "logistics": 0.3,
+     "financial": 0.15,
+     "behavioral": 0.1,
+     "geospatial": 0.25,
+     "information": 0.2
+    },
+    "sudan": {
+     "logistics": 0.1,
+     "financial": 0.1,
+     "behavioral": 0.25,
+     "geospatial": 0.3,
+     "information": 0.25
+    },
+    "drc": {
+     "logistics": 0.1,
+     "financial": 0.1,
+     "behavioral": 0.25,
+     "geospatial": 0.3,
+     "information": 0.25
+    },
+    "venezuela": {
+     "logistics": 0.25,
+     "financial": 0.25,
+     "behavioral": 0.15,
+     "geospatial": 0.15,
+     "information": 0.2
+    },
+    "global": {
+     "logistics": 0.25,
+     "financial": 0.35,
+     "behavioral": 0.1,
+     "geospatial": 0.1,
+     "information": 0.2
+    }
+   },
+   "rationale": {
+    "ukraine": "Land war with heavy visible logistics and sensor coverage: geospatial and logistics lead; markets already price it in.",
+    "europe_east": "NATO eastern flank: airspace, GNSS jamming and troop/air movements are the earliest observable signs.",
+    "iran": "Oil and shipping risk transmit fast to markets; aviation and GNSS activity show posture.",
+    "yemen": "Red Sea war is a shipping story: transits and vessel presence (logistics, geospatial) matter most.",
+    "israel": "Dense airspace, advisory and news flow; strong information and geospatial signals.",
+    "taiwan": "Brief's example: information 0.30, geospatial 0.25, logistics 0.20, financial 0.15, human 0.10.",
+    "scs": "Maritime grey-zone theatre: vessel presence and incidents in geospatial, shipping in logistics.",
+    "korea": "Warning language and event reporting carry most of the signal; limited procurement visibility.",
+    "southasia": "Short, sharp crises: news and event flow lead, airspace closures and advisories confirm.",
+    "libya": "Oil terminal and port disruption is the main transmission channel.",
+    "sudan": "Humanitarian and connectivity signals (advisories, outages, fires) dominate; little market/logistics data.",
+    "drc": "As Sudan: fires, outages, advisories and event data; markets and procurement carry little signal.",
+    "venezuela": "Oil exports and currency/market stress are the leading channels.",
+    "global": "Global scope: markets and shipping chokepoints weigh most; physical detail is covered by the theatres."
+   }
+  }
+ ]
+}

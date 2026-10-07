@@ -10,6 +10,7 @@ import json
 import os
 
 import config as C
+import engine
 import extras
 import geo
 import osint
@@ -77,11 +78,12 @@ def series_json(s):
 def theatre_json(t, v, res_series):
     doms = {}
     for dom in C.DOMAINS:
-        x = v["domains"][dom]
+        x = v["doms"][dom]
         doms[dom] = {"z": None if x["z"] is None else round(x["z"], 2), "n": x["n"], "fast": x["fast"],
-                     "drivers": x["drivers"]}
+                     "drivers": x["drivers"], "w": x["w"], "c": x["contrib"]}
     return {"name": C.THEATRES[t]["name"], "level": v["level"], "firing": v["firing"], "scorable": v["scorable"],
-            "basis": v["basis"], "doms": doms}
+            "basis": v["basis"], "doms": doms, "score": v["score"], "zc": v["zc"], "index": v["index"], "imb": v["imbalance"],
+            "worst": v["worst"], "conf": v["confidence"], "confl": v["conf_label"], "miss": v["missing"], "th": v["th"]}
 
 
 def map_json(topo, ex, levels_by_country):
@@ -122,16 +124,8 @@ def map_json(topo, ex, levels_by_country):
             "levels": levels_by_country}
 
 
-RANK = {"insufficient data": 0, "Normal": 1, "Watch": 2, "Warning": 3, "Alert": 4}
-
-
-def regions_json(theatres):
-    """Main tabs: each region's level is the highest level among its sub-theatres."""
-    out = []
-    for rid, name, kids in C.REGIONS:
-        lvl = max((theatres[k]["level"] for k in kids), key=lambda x: RANK.get(x, 0))
-        out.append({"id": rid, "name": name, "kids": kids, "level": lvl})
-    return out
+def regions_json(regions):
+    return [{k: r.get(k) for k in ("id", "name", "kids", "level", "score", "index", "lead")} for r in regions]
 
 
 def build_data(res, generated, demo, ex, topo):
@@ -139,10 +133,10 @@ def build_data(res, generated, demo, ex, topo):
     data = {
         "generated": generated, "demo": bool(demo),
         "domains": [{"id": k, "name": v, "help": C.GROUP_HELP[k]} for k, v in C.DOMAINS.items()],
-        "thresholds": [C.THRESH_WATCH, C.THRESH_SIGNAL],
+        "thresholds": [C.THRESH_WATCH, C.THRESH_SIGNAL], "levels": list(engine.LEVELS),
         "theatres": {t: theatre_json(t, v, res["series"]) for t, v in res["theatres"].items()},
         "order": list(C.THEATRES),
-        "regions": regions_json(res["theatres"]),
+        "regions": regions_json(res["regions"]), "global": res["global"], "weights": res["weights_version"],
         "series": [series_json(s) for s in res["series"]],
         "markets": ex.get("markets", []), "pizza": ex.get("pizza"), "errors": ex.get("errors", []),
         "unavailable": [{"n": a, "w": b} for a, b in UNAVAILABLE], "updates": [{"s": a, "e": b, "l": c} for a, b, c in UPDATES], "clsnames": CLS_NAMES,

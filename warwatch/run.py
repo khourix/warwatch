@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import catalog  # noqa: E402
 import config as C  # noqa: E402
 import dashboard  # noqa: E402
+import engine  # noqa: E402
 import extras  # noqa: E402
 import geo  # noqa: E402
 import scoring  # noqa: E402
@@ -95,11 +96,9 @@ def score(series):
 
 def evaluate(series):
     series = score(series)
-    th = {}
-    for t in C.THEATRES:
-        d = scoring.theatre_view(series, t)
-        th[t] = {"domains": d, **scoring.level(d)}
-    return {"series": series, "theatres": th}
+    res = engine.evaluate(series)
+    res["series"] = series
+    return res
 
 
 def main():
@@ -122,18 +121,24 @@ def main():
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     with open(a.out, "w", encoding="utf-8") as f:
         f.write(dashboard.render(res, now, demo=bool(a.demo), extras=ex, topo=geo.load()))
-    summ = {"generated": now, "demo": a.demo,
-            "theatres": {t: {k: v[k] for k in ("level", "firing", "scorable", "basis")} for t, v in res["theatres"].items()},
+    summ = {"generated": now, "demo": a.demo, "weights_version": res["weights_version"], "global": res["global"],
+            "theatres": {t: {k: v[k] for k in ("level", "score", "zc", "index", "imbalance", "worst", "confidence", "conf_label", "firing", "scorable", "basis")}
+                         for t, v in res["theatres"].items()},
             "series": {s["id"]: {"status": s["status"], "z": (s["score"] or {}).get("z"), "error": s["error"]}
                        for s in res["series"]}}
     with open(os.path.splitext(a.out)[0] + ".json", "w") as f:
         json.dump(summ, f, indent=1)
+    with open(os.path.join(os.path.dirname(os.path.abspath(a.out)), "audit.json"), "w") as f:
+        json.dump({"generated": now, "weights_version": res["weights_version"], "theatres": res["audit"],
+                   "series": {s["id"]: {k: (s["score"] or {}).get(k) for k in ("z", "z_raw", "value", "label", "miss", "filled", "base_med", "base_sd", "base_n", "method")}
+                              for s in res["series"] if s["score"]}}, f, separators=(",", ":"))
     print("--- scores (direction-adjusted z) ---")
     for s in sorted(res["series"], key=lambda s: -(abs(s["score"]["z"]) if s["score"] else -1)):
         z = "%+.1f" % scoring.directed(s["score"]["z"], s["direction"]) if s["score"] else s["status"]
         print(f"{z:>10}  {s['theatre']:12} {s['domain']:15} {s['id']}")
     for t, v in summ["theatres"].items():
-        print(t, v["level"], v["firing"], v["basis"], "scorable", v["scorable"])
+        print(t, v["level"], v["score"], v["firing"], v["basis"], "scorable", v["scorable"], "conf", v["conf_label"])
+    print("global", res["global"])
 
 
 if __name__ == "__main__":
