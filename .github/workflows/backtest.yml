@@ -1,0 +1,54 @@
+name: backtest
+# Fetches long histories of every series whose source serves old data, replays the v7 engine on them and
+# commits the report (docs/BACKTEST.md) and the public history it used. Run by hand: dispatch this workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "comma-separated series ids to (re)fetch (blank = all)"
+        required: false
+        default: ""
+      fetch:
+        description: "fetch histories first (false = replay what is already stored)"
+        required: false
+        default: "true"
+permissions:
+  contents: write
+concurrency:
+  group: warwatch-backtest
+  cancel-in-progress: false
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch long histories
+        if: github.event.inputs.fetch != 'false'
+        env:
+          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+        run: python3 warwatch/backtest.py fetch ${{ github.event.inputs.only }}
+      - name: Replay and report
+        run: |
+          python3 warwatch/backtest.py run
+          python3 warwatch/backtest.py weights
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backtest
+          path: |
+            docs/BACKTEST.md
+            backtest/results.json
+          retention-days: 30
+      - name: Commit report and histories (public data only)
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add backtest docs
+          git diff --cached --quiet && exit 0
+          git commit -qm "backtest: $(date -u +%FT%H:%MZ)"
+          for i in 1 2 3; do
+            git pull --rebase -q -X theirs origin main && git push -q && exit 0
+          done
+          echo "push failed"; exit 1
