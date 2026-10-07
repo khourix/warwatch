@@ -22,7 +22,7 @@ MAXPTS = {"daily": 180, "monthly": 60}
 ZH_N = 60
 CLS_NAMES = {"lift": "Airlift", "tanker": "Tanker", "isr": "Surveillance / AWACS", "fighter": "Fighter", "bomber": "Bomber", "uav": "Drone", "heli": "Helicopter", "other": "Other military"}
 UNAVAILABLE = [
-    ("NOTAMs (airspace closure notices)", "The FAA and ICAO feeds refuse automated requests from cloud servers (403/404). A free FAA NOTAM API key would let it through; in its place the dashboard reads US NGA hazard warnings, EASA airspace bulletins and live airliner counts."),
+    ("NOTAMs (airspace closure notices)", "The FAA and ICAO feeds refuse automated requests from cloud servers, and the FAA API needs an account. In their place the dashboard reads GPSJam (daily share of aircraft reporting degraded GPS, per theatre), US NGA hazard warnings, EASA airspace bulletins and live airliner counts."),
     ("Live ship positions in the Gulf, Red Sea and East Mediterranean", "The free live AIS networks (aisstream.io, and Open Waters, which mirrors it) have no receivers there: zero ships in Hormuz or the Gulf of Aden while 2,300 appear worldwide. Warships often switch AIS off anyway. Instead the dashboard scores Global Fishing Watch vessel-hours per day (satellite AIS, about four days late), IMF PortWatch transits, UKMTO incidents and the weekly USNI fleet tracker; Baltic, North Sea, Black Sea and Western Mediterranean AIS is live."),
     ("Conflict event data (ACLED API)", "The ACLED account authenticates but its data API is closed at the open tier. ACLED events arrive through the open HDX HAPI feed instead, about two months late. UCDP (Uppsala) is the planned second source once its access token arrives."),
     ("Aircraft routes and owners", "Public ADS-B carries no flight plan for military aircraft. Owner is inferred from the aircraft's address block and call sign, and shown as such."),
@@ -43,6 +43,8 @@ UPDATES = [   # (source, how often it is read, why that is enough / the free lim
     ("Internet outage data (IODA), UK travel advice", "every 3 to 12 hours", "Changes slowly; the source keeps history."),
     ("Headline counts (Google News) and GDELT events", "every 6 hours", "GDELT publishes daily files; news counts are backfilled a few days per run to stay polite."),
     ("US contract awards, trade, EU tenders, ACLED-derived conflict counts", "once a day", "Monthly data with a 1 to 3 month publishing delay; more frequent reads add nothing."),
+    ("GPS interference (GPSJam), port calls (IMF PortWatch)", "every 6 hours / every 12 hours", "GPSJam posts a daily file two days late; PortWatch posts weekly. History was backfilled on first run."),
+    ("Cloudflare Radar, OONI, Energy-Charts power prices, GIE gas storage", "every 3 to 12 hours", "Free token or key (Radar, GIE); OONI and Energy-Charts need none. Daily values."),
     ("SAM.gov tenders", "once a day, rate-limited", "Free key allows 10 requests a day, so it runs in its own job."),
 ]
 
