@@ -8,32 +8,40 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
-      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-      FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
       GFW_TOKEN: ${{ secrets.GFW_TOKEN }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: probe
         run: |
           UA="warwatch-backfill/0.1 (public-data research; github.com/khourix/warwatch)"
-          p() { echo; echo "=== $1"; shift; curl -sS -m 60 -A "$UA" -w "\n[http %{http_code} %{size_download}B]\n" "$@" | head -c 900; echo; }
-          p "adsb releases 2024" -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/adsblol/globe_history_2024/releases?per_page=2"
-          curl -sS -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/adsblol/globe_history_2024/releases?per_page=1" | python3 -c "import json,sys; r=json.load(sys.stdin)[0]; print(r['tag_name'],[ (a['name'],a['size']) for a in r['assets']])"
-          for y in 2022 2023 2025 2026; do curl -sS -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/adsblol/globe_history_$y/releases?per_page=100&page=1" | python3 -c "import json,sys; r=json.load(sys.stdin); print('$y', len(r) if isinstance(r,list) else r, [x['tag_name'] for x in r][-2:] if isinstance(r,list) else '')"; done
-          p "NGA cancelled" "https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=cancelled&navArea=P"
-          p "NGA all" "https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=all&navArea=P"
-          p "NGA year" "https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=cancelled&navArea=P&msgYear=2023"
-          p "Wayback CDX state taiwan" "https://web.archive.org/cdx/search/cdx?url=travel.state.gov/content/travel/en/traveladvisories/traveladvisories/taiwan-travel-advisory.html&output=json&limit=5&fl=timestamp,statuscode,digest"
-          p "State advisory feed" "https://cadataapi.state.gov/api/TravelAdvisories"
-          p "FRED OVX" "https://api.stlouisfed.org/fred/series/observations?series_id=OVXCLS&api_key=$FRED_API_KEY&file_type=json&observation_start=2024-01-01&observation_end=2024-01-05"
-          p "FRED GVZ" "https://api.stlouisfed.org/fred/series/observations?series_id=GVZCLS&api_key=$FRED_API_KEY&file_type=json&observation_start=2024-01-01&observation_end=2024-01-05"
-          p "FRED VIX3M" "https://api.stlouisfed.org/fred/series/observations?series_id=VXVCLS&api_key=$FRED_API_KEY&file_type=json&observation_start=2024-01-01&observation_end=2024-01-05"
-          p "FIRMS SP" "https://firms.modaps.eosdis.nasa.gov/api/area/csv/$FIRMS_MAP_KEY/VIIRS_SNPP_SP/22,44,41,53/5/2019-03-01"
-          p "FIRMS avail" "https://firms.modaps.eosdis.nasa.gov/api/data_availability/csv/$FIRMS_MAP_KEY/ALL"
-          p "GFW presence" -X POST -H "Authorization: Bearer $GFW_TOKEN" -H "Content-Type: application/json" -d '{"geojson":{"type":"Polygon","coordinates":[[[48,23],[60,23],[60,29],[48,29],[48,23]]]}}' "https://gateway.api.globalfishingwatch.org/v3/4wings/report?spatial-resolution=LOW&temporal-resolution=DAILY&group-by=FLAG&datasets[0]=public-global-presence:latest&date-range=2018-01-01,2018-01-05&format=JSON"
-          p "GFW SAR" -X POST -H "Authorization: Bearer $GFW_TOKEN" -H "Content-Type: application/json" -d '{"geojson":{"type":"Polygon","coordinates":[[[48,23],[60,23],[60,29],[48,29],[48,23]]]}}' "https://gateway.api.globalfishingwatch.org/v3/4wings/report?spatial-resolution=LOW&temporal-resolution=DAILY&group-by=FLAG&datasets[0]=public-global-sar-presence:latest&date-range=2019-01-01,2019-01-10&format=JSON"
-          p "globalmilitary adiz 2023" "https://www.globalmilitary.net/conflicts/china-taiwan/adiz-violations/2023/"
-          p "MND" "https://www.mnd.gov.tw/PublishTable.aspx?Types=%E5%8D%B3%E6%99%82%E8%BB%8D%E4%BA%8B%E5%8B%95%E6%85%8B&title=%E5%9C%8B%E9%98%B2%E6%B6%88%E6%81%AF"
-          p "jointstaff Japan" "https://www.mod.go.jp/js/Press/press2024/press_pdf/p20240401_01.pdf" -I
+          p() { echo; echo "=== $1"; shift; curl -sSL -g -m 90 -A "$UA" -w "\n[http %{http_code} %{size_download}B]\n" "$@" 2>&1 | head -c 1500; echo; }
+          BODY='{"geojson":{"type":"Polygon","coordinates":[[[48,23],[60,23],[60,29],[48,29],[48,23]]]}}'
+          p "GFW presence" -X POST -H "Authorization: Bearer $GFW_TOKEN" -H "Content-Type: application/json" -d "$BODY" "https://gateway.api.globalfishingwatch.org/v3/4wings/report?spatial-resolution=LOW&temporal-resolution=DAILY&group-by=FLAG&datasets[0]=public-global-presence:latest&date-range=2018-01-01,2018-01-05&format=JSON"
+          p "GFW SAR" -X POST -H "Authorization: Bearer $GFW_TOKEN" -H "Content-Type: application/json" -d "$BODY" "https://gateway.api.globalfishingwatch.org/v3/4wings/report?spatial-resolution=LOW&temporal-resolution=DAILY&group-by=FLAG&datasets[0]=public-global-sar-presence:latest&date-range=2019-01-01,2019-01-10&format=JSON"
+          p "GFW presence 1y" -X POST -H "Authorization: Bearer $GFW_TOKEN" -H "Content-Type: application/json" -d "$BODY" "https://gateway.api.globalfishingwatch.org/v3/4wings/report?spatial-resolution=LOW&temporal-resolution=DAILY&group-by=FLAG&datasets[0]=public-global-presence:latest&date-range=2019-01-01,2019-12-31&format=JSON" -o /dev/null
+          p "plavis" -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/ypcat/plavis/contents/"
+          p "Taiwan_ADIZ_alerts" -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/typingmonk/Taiwan_ADIZ_alerts/contents/"
+          p "air.mnd" "https://air.mnd.gov.tw/"
+          p "mnd en" "https://www.mnd.gov.tw/en/Publication/84460"
+          echo; echo "=== adsb tar"
+          TAG=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/adsblol/globe_history_2024/releases?per_page=100" | python3 -c "import json,sys; print([r['tag_name'] for r in json.load(sys.stdin)][8:12])")
+          echo $TAG
+          URL="https://github.com/adsblol/globe_history_2024/releases/download/v2024.06.15-planes-readsb-prod-0/v2024.06.15-planes-readsb-prod-0.tar.aa"
+          curl -sSL -m 120 -r 0-60000000 -o /tmp/head.tar "$URL"; ls -l /tmp/head.tar; file /tmp/head.tar
+          tar -tvf /tmp/head.tar 2>/dev/null | head -12 || true
+          python3 - <<'PY'
+          import tarfile, gzip, json
+          t = tarfile.open("/tmp/head.tar")
+          n=0
+          for m in t:
+              if m.isfile() and "trace_full" in m.name:
+                  b = t.extractfile(m).read()
+                  try: b = gzip.decompress(b)
+                  except Exception: pass
+                  d = json.loads(b); print(m.name, {k:(v if k!='trace' else v[:2]) for k,v in d.items()}); n+=1
+                  if n>=3: break
+          PY
+          p "wayback state taiwan snapshot" "https://web.archive.org/web/20220801000000id_/https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories/taiwan-travel-advisory.html"
+          p "cdx digest collapse israel" "https://web.archive.org/cdx/search/cdx?url=travel.state.gov/content/travel/en/traveladvisories/traveladvisories/israel-travel-advisory.html&output=json&fl=timestamp,statuscode,digest&filter=statuscode:200&collapse=timestamp:7&limit=8"
