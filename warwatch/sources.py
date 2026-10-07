@@ -471,6 +471,67 @@ def fetch_ioda(cc, source="bgp", days=150):
     return sorted(tot.items())[-days:]
 
 
+# ---- OONI: share of web tests showing interference per country (no key) ----------------------------
+def parse_ooni(p, min_n=50):
+    return sorted((r["measurement_start_day"], r["anomaly_count"] / r["measurement_count"])
+                  for r in p.get("result", []) if r.get("measurement_count", 0) >= min_n)
+
+
+def fetch_ooni(cc, days=150):
+    since = (dt.date.today() - dt.timedelta(days=days)).isoformat()
+    until = dt.date.today().isoformat()
+    q = urllib.parse.urlencode({"probe_cc": cc, "test_name": "web_connectivity", "since": since, "until": until,
+                                "axis_x": "measurement_start_day"})
+    return parse_ooni(get("https://api.ooni.io/api/v1/aggregation?" + q))[:-1]    # today is partial
+
+
+# ---- Cloudflare Radar (free API token, CLOUDFLARE_API_TOKEN) -----------------------------------------
+def parse_radar(p):
+    """-> [(day, value)] from a Radar timeseries answer."""
+    s = p["result"]["serie_0"]
+    out = {}
+    for t, v in zip(s["timestamps"], s.get("values") or s.get("total") or []):
+        if v is None:
+            continue
+        out.setdefault(t[:10], []).append(float(v))
+    return sorted((d, sum(v) / len(v)) for d, v in out.items())
+
+
+def fetch_radar(path, cc, token, days_drop_today=True):
+    q = urllib.parse.urlencode({"location": cc, "dateRange": "24w", "aggInterval": "1d", "format": "json"})
+    pts = parse_radar(get(f"https://api.cloudflare.com/client/v4/radar/{path}?{q}", headers={"Authorization": "Bearer " + token}))
+    return pts[:-1] if days_drop_today else pts
+
+
+# ---- Energy-Charts (Fraunhofer ISE; keyless; replaces ENTSO-E) ---------------------------------------
+def fetch_energycharts_price(bzn, days=200):
+    start = (dt.date.today() - dt.timedelta(days=days)).isoformat()
+    p = get(f"https://api.energy-charts.info/price?bzn={urllib.parse.quote(bzn)}&start={start}&end={dt.date.today().isoformat()}")
+    by = {}
+    for t, v in zip(p["unix_seconds"], p["price"]):
+        if v is not None:
+            by.setdefault(dt.datetime.fromtimestamp(t, dt.timezone.utc).date().isoformat(), []).append(float(v))
+    return sorted((d, sum(v) / len(v)) for d, v in by.items())[:-1]
+
+
+# ---- GIE AGSI+ gas storage (keyless for the public pages) -------------------------------------------
+def fetch_agsi(area, field="gasInStorage", days=300):
+    start = (dt.date.today() - dt.timedelta(days=days)).isoformat()
+    key = {"eu": "continent=eu"}.get(area, "country=" + area)
+    out, page = {}, 1
+    while page <= 12:
+        p = get(f"https://agsi.gie.eu/api?{key}&from={start}&to={dt.date.today().isoformat()}&size=300&page={page}")
+        for r in p.get("data", []):
+            try:
+                out[r["gasDayStart"]] = float(r[field])
+            except (KeyError, TypeError, ValueError):
+                pass
+        if page >= int(p.get("last_page", 1)):
+            break
+        page += 1
+    return sorted(out.items())
+
+
 # ---- Frankfurter (ECB reference rates, no key) and Twelve Data (free key) ------------------------
 def parse_frankfurter(p, ccy):
     return sorted((d, float(v[ccy])) for d, v in p.get("rates", {}).items() if ccy in v)
@@ -522,15 +583,24 @@ def fetch_yahoo(symbol, rng="2y"):
 
 def fetch_market(symbol):
     """Yahoo first; Twelve Data (free key) only if Yahoo refuses the runner."""
-    try:
-        pts = fetch_yahoo(symbol)
-        if len(pts) > 30:
-            return pts
-    except Exception as e:
-        key = os.environ.get("TWELVEDATA_API_KEY")
-        if not key:
-            raise
+    global _YAHOO_DEAD
+    if not _YAHOO_DEAD:
+        try:
+            pts = fetch_yahoo(symbol)
+            if len(pts) > 30:
+                return pts
+        except urllib.error.HTTPError as e:
+            if e.code == 429:    # GitHub runners are rate-limited by Yahoo; stop asking for the rest of this run
+                _YAHOO_DEAD = True
+            if not os.environ.get("TWELVEDATA_API_KEY"):
+                raise
+        except Exception:
+            if not os.environ.get("TWELVEDATA_API_KEY"):
+                raise
     return fetch_twelvedata(symbol, os.environ["TWELVEDATA_API_KEY"])
+
+
+_YAHOO_DEAD = False
 
 
 # ---- FRED (needs FRED_API_KEY) -------------------------------------------------
