@@ -3,6 +3,7 @@ import csv
 import datetime as dt
 import io
 import os
+import time
 import urllib.parse
 
 import common as K
@@ -53,6 +54,19 @@ def parse_firms_counts(text):
     return by
 
 
+def firms_get(url, patience=60):
+    """The key is limited to 5000 transactions per 10 minutes across all theatres at once: wait out the window instead of failing."""
+    for i in range(patience):
+        try:
+            return K.get(url, raw=True, timeout=180).decode("utf-8", "replace")
+        except RuntimeError as e:
+            if "transaction limit" not in str(e):
+                raise
+            K.log("FIRMS limit reached, waiting 90 s", i)
+            time.sleep(90)
+    raise RuntimeError("FIRMS transaction limit did not clear")
+
+
 def cmd_firms(key, theatre, start, end):
     """Standard-processing VIIRS (S-NPP) archive, five days per call. SP lags real time by about three months;
     the live feed's own cache covers the recent months, so the end date is capped at the archive's last day."""
@@ -71,7 +85,7 @@ def cmd_firms(key, theatre, start, end):
             d += dt.timedelta(days=5)
             continue
         url = f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/VIIRS_SNPP_SP/{lo0},{la0},{lo1},{la1}/5/{d.isoformat()}"
-        by = parse_firms_counts(K.get(url, raw=True, timeout=180).decode("utf-8", "replace"))
+        by = parse_firms_counts(firms_get(url))
         for x in win:
             c = by.get(x.isoformat(), [0, 0.0])
             cnt[x.isoformat()], frp[x.isoformat()] = c[0], c[1]
