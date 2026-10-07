@@ -270,6 +270,26 @@ for th, cc in IODA.items():
         "Governments tighten censorship and throttle sites before and during operations; OONI volunteers measure it daily.",
         (lambda c=cc: S.fetch_ooni(c)), url=f"https://explorer.ooni.org/country/{cc}", sub="Censorship")
 
+for th, cc in IODA.items():
+    for slug, path, lab, dirn, dom, why in (
+            ("http", "http/timeseries", "Web traffic", "down", "geospatial", "Traffic into a country falls when the internet is cut, throttled or the population leaves; Cloudflare sees it across its network."),
+            ("flows", "netflows/timeseries", "Network flows", "down", "geospatial", "Backbone traffic volume drops with outages and power loss, often before official confirmation."),
+            ("l7", "attacks/layer7/timeseries", "Attack share of web traffic", "up", "information", "Surges in hostile web traffic against a country accompany cyber operations that precede or accompany force.")):
+        add(f"cfr_{slug}_{th}", f"{lab}, {cc} (Cloudflare Radar)", dom, th, "daily", False, why,
+            (lambda p=path, c=cc: S.fetch_radar(p, c, _key("CLOUDFLARE_API_TOKEN"))), direction=dirn,
+            needs=["CLOUDFLARE_API_TOKEN"], url=f"https://radar.cloudflare.com/{cc.lower()}", sub="Network")
+
+add("gas_ua", "Ukraine gas in storage (GIE AGSI+)", "logistics", "ukraine", "daily", False,
+    "Storage draw-down ahead of winter, or strikes on gas infrastructure, show before shortages; published daily.",
+    (lambda: S.fetch_agsi("UA")), direction="down", url="https://agsi.gie.eu/", sub="Energy")
+add("gas_eu", "EU gas in storage (GIE AGSI+)", "logistics", "europe_east", "daily", False,
+    "Low or falling EU storage raises exposure to supply coercion; published daily.",
+    (lambda: S.fetch_agsi("eu")), direction="down", url="https://agsi.gie.eu/", sub="Energy")
+for bzn, th, nm in (("PL", "europe_east", "Poland"), ("LT", "europe_east", "Lithuania")):
+    add(f"power_{bzn.lower()}", f"Day-ahead power price, {nm} (Energy-Charts)", "financial", th, "daily", False,
+        "Power prices jump on grid sabotage, interconnector cuts or supply fears before they appear elsewhere; published daily.",
+        (lambda b=bzn: S.fetch_energycharts_price(b)), url="https://www.energy-charts.info/", sub="Energy")
+
 for th, slugs in C.FCDO.items():
     add(f"fcdo_{th}", f"UK travel-advice updates: {TH[th]}", "behavioral", th, "daily", False,
         "A cluster of advisory rewrites precedes evacuations and airline suspensions.",
@@ -509,7 +529,7 @@ for _s in SERIES:
         _s["every"] = 6       # daily closes
     elif _id.startswith(("portwatch_", "fcdo_")):
         _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely
-    elif _id.startswith(("ioda_", "ooni_", "fx_")):
+    elif _id.startswith(("ioda_", "ooni_", "cfr_", "gas_", "power_", "fx_")):
         _s["every"] = 3
     elif _id.startswith("ais_presence_"):
         _s["every"] = 12      # one call per box; the source posts daily with a ~5 day delay
