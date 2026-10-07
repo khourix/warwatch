@@ -234,14 +234,20 @@ def _gnss(theatre):
 
 
 NGA = "https://msi.nga.mil/"
+# Too little civil traffic is visible in public ADS-B near these hubs (Yemen's airspace is nearly empty, Venezuela's is thin),
+# so the ADS-B GPS and airliner counts cannot be measured there; GPSJam, ports and Radar cover those theatres instead.
+NO_GNSS = {"yemen", "venezuela"}
+NO_CIVIL = {"yemen"}
 for th in C.HUBS:
     nm = TH[th]
-    add(f"gnss_{th}", f"Aircraft reporting degraded GPS near {nm} (% of traffic)", "geospatial", th, "daily", False,
-        "Jamming shows up as poor navigation accuracy (NACp below 8) in airliners' own broadcasts, often before a strike or deployment. Snapshots start now.",
-        _snap(f"gnss_{th}", _gnss(th)), url=ADS, sub="Navigation")
-    add(f"civil_{th}", f"Airliners in the air near {nm}", "geospatial", th, "daily", False,
-        "A fall means airspace is being closed or avoided. Snapshots start now.",
-        _snap(f"civil_{th}", lambda t=th: float(extras.hub_stats(t)[0]) or None), direction="down", url=ADS, sub="Airspace")
+    if th not in NO_GNSS:
+        add(f"gnss_{th}", f"Aircraft reporting degraded GPS near {nm} (% of traffic)", "geospatial", th, "daily", False,
+            "Jamming shows up as poor navigation accuracy (NACp below 8) in airliners' own broadcasts, often before a strike or deployment. Snapshots start now.",
+            _snap(f"gnss_{th}", _gnss(th)), url=ADS, sub="Navigation")
+    if th not in NO_CIVIL:
+        add(f"civil_{th}", f"Airliners in the air near {nm}", "geospatial", th, "daily", False,
+            "A fall means airspace is being closed or avoided. Snapshots start now.",
+            _snap(f"civil_{th}", lambda t=th: float(extras.hub_stats(t)[0]) or None), direction="down", url=ADS, sub="Airspace")
     add(f"nga_{th}", f"New naval and air hazard warnings, last 30 days, {nm} (US NGA)", "geospatial", th, "daily", False,
         "Missile firing, exercises, mines, drones and GPS-interference notices to mariners and pilots; exercises are announced before they happen.",
         _snap(f"nga_{th}", lambda t=th: extras.nga_recent(t)), url=NGA, sub="Warnings")
