@@ -306,6 +306,23 @@ for th in C.BOXES:
         "Jamming and spoofing of navigation signals rise before and during operations; GPSJam publishes a daily map from ADS-B reports, two days late, with history from 2022.",
         _gpsjam(th), url="https://gpsjam.org/", sub="Airspace")
 
+PORTS = {   # theatre: (ISO3, port-name fragments, label)
+    "iran": ("IRN", ("Bandar Abbas",), "Bandar Abbas"),
+    "israel": ("ISR", ("Haifa", "Ashdod"), "Haifa and Ashdod"),
+    "yemen": ("YEM", ("Aden", "Hodeidah"), "Aden and Hodeidah"),
+    "taiwan": ("TWN", ("Kaohsiung",), "Kaohsiung"),
+    "korea": ("KOR", ("Busan",), "Busan"),
+    "europe_east": ("POL", ("Gdansk", "Gdynia"), "Gdansk and Gdynia"),
+    "ukraine": ("UKR", (), "all Ukrainian ports"),
+    "southasia": ("PAK", ("Karachi",), "Karachi"),
+    "libya": ("LBY", ("Tripoli",), "Tripoli"),
+    "venezuela": ("VEN", (), "all Venezuelan ports"),
+}
+for th, (iso, names, nm) in PORTS.items():
+    add(f"ports_{th}", f"Daily vessel calls, {nm} (IMF PortWatch)", "logistics", th, "daily", False,
+        "Merchant ships stop calling at ports ahead of a blockade, war-risk repricing or evacuation; satellite-derived, posted weekly, so it leads supply-chain and trade statistics by months.",
+        (lambda i=iso, n=names: S.fetch_portwatch_ports(i, n)), direction="down", url="https://portwatch.imf.org/", sub="Ports")
+
 for th, slugs in C.FCDO.items():
     add(f"fcdo_{th}", f"UK travel-advice updates: {TH[th]}", "behavioral", th, "daily", False,
         "A cluster of advisory rewrites precedes evacuations and airline suspensions.",
@@ -545,7 +562,7 @@ for _s in SERIES:
         _s["every"] = 6       # daily closes
     elif _id.startswith(("portwatch_", "fcdo_")):
         _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely
-    elif _id.startswith(("ioda_", "ooni_", "gpsjam_", "cfr_", "gas_", "power_", "fx_")):
+    elif _id.startswith(("ioda_", "ooni_", "ports_", "gpsjam_", "cfr_", "gas_", "power_", "fx_")):
         _s["every"] = 3
     elif _id.startswith("ais_presence_"):
         _s["every"] = 12      # one call per box; the source posts daily with a ~5 day delay

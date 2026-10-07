@@ -216,6 +216,30 @@ def fetch_portwatch(name_fragment, days=900):
     return parse_portwatch(get(PW + "Daily_Chokepoints_Data/FeatureServer/0/query?" + q))
 
 
+def fetch_portwatch_ports(iso3, names=(), field="portcalls", days=300):
+    """Daily vessel calls summed over the named ports of one country (all its ports if no name). IMF PortWatch, keyless."""
+    since = (dt.date.today() - dt.timedelta(days=days)).isoformat()
+    where = f"ISO3 = '{iso3}' AND date >= DATE '{since}'"
+    if names:
+        where += " AND (" + " OR ".join(f"portname LIKE '%{n}%'" for n in names) + ")"
+    by, offset = {}, 0
+    while True:
+        q = urllib.parse.urlencode({"where": where, "outFields": f"date,{field}", "returnGeometry": "false", "orderByFields": "date ASC",
+                                    "resultOffset": offset, "resultRecordCount": 2000, "f": "json"})
+        p = get(PW + "Daily_Ports_Data/FeatureServer/0/query?" + q)
+        feats = p.get("features", [])
+        for f in feats:
+            a = f["attributes"]
+            d = a["date"]
+            if isinstance(d, (int, float)):
+                d = dt.datetime.fromtimestamp(d / 1000, dt.timezone.utc).date().isoformat()
+            by[d] = by.get(d, 0) + float(a.get(field) or 0)
+        if not p.get("exceededTransferLimit") or not feats:
+            break
+        offset += len(feats)
+    return sorted(by.items())
+
+
 # ---- Advisories ---------------------------------------------------------------
 def fcdo_daily(p, days=900, today=None):
     """FCDO advice updates per day, rebuilt from the page's own change history."""
