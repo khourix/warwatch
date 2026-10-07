@@ -34,14 +34,14 @@ Positive days are the 30 days before the event; calm days are all days more than
 
 | Theatre | Event | AUC new | AUC old | Lead: new Watch | Lead: new Elevated | Lead: old Watch | Lead: old Warning | FPR new Watch | FPR new Elevated | FPR old Watch | FPR old Warning |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Ukraine | Russia invades Ukraine (2022-02-24) | 0.85 | 0.80 | never (within 60 days) | never (within 60 days) | 60 days | never (within 60 days) | 6.9% | 3.3% | 20.6% | 0.0% |
-| Eastern flank | Russia invades Ukraine (eastern flank) (2022-02-24) | 0.28 | 0.50 | never (within 60 days) | never (within 60 days) | 60 days | never (within 60 days) | 37.3% | 27.3% | 33.7% | 2.2% |
-| Yemen | Houthis seize Galaxy Leader, Red Sea campaign begins (2023-11-19) | 0.21 | 0.76 | never (within 60 days) | never (within 60 days) | 27 days | never (within 60 days) | 0.5% | 0.0% | 11.2% | 0.4% |
-| Yemen | US and UK strike the Houthis (2024-01-12) | 0.71 | 0.92 | never (within 60 days) | never (within 60 days) | 59 days | never (within 60 days) | 0.5% | 0.0% | 11.2% | 0.4% |
-| Israel | Hamas attack on Israel (2023-10-07) | 0.83 | 0.57 | 24 days | never (within 60 days) | never (within 60 days) | never (within 60 days) | 6.4% | 3.7% | 17.3% | 0.0% |
-| Israel | Iran missile and drone attack on Israel (2024-04-13) | 0.26 | 0.88 | never (within 60 days) | never (within 60 days) | 59 days | never (within 60 days) | 6.4% | 3.7% | 17.3% | 0.0% |
-| Iran | Iran strikes Israel directly (2024-04-13) | 0.34 | 0.64 | never (within 60 days) | never (within 60 days) | 51 days | never (within 60 days) | 4.7% | 1.4% | 22.6% | 0.5% |
-| Taiwan Strait | PLA drills after the Pelosi visit (2022-08-04) | 0.82 | 0.72 | never (within 60 days) | never (within 60 days) | 59 days | never (within 60 days) | 8.1% | 3.6% | 31.9% | 0.0% |
+| Ukraine | Russia invades Ukraine (2022-02-24) | 0.75 | 0.80 | 34 days | 34 days | 60 days | never (within 60 days) | 15.9% | 8.5% | 20.6% | 0.0% |
+| Eastern flank | Russia invades Ukraine (eastern flank) (2022-02-24) | 0.37 | 0.50 | 60 days | 60 days | 60 days | never (within 60 days) | 35.9% | 27.6% | 33.7% | 2.2% |
+| Yemen | Houthis seize Galaxy Leader, Red Sea campaign begins (2023-11-19) | 0.49 | 0.76 | 27 days | never (within 60 days) | 27 days | never (within 60 days) | 16.8% | 10.1% | 11.2% | 0.4% |
+| Yemen | US and UK strike the Houthis (2024-01-12) | 0.81 | 0.92 | 17 days | 17 days | 59 days | never (within 60 days) | 16.8% | 10.1% | 11.2% | 0.4% |
+| Israel | Hamas attack on Israel (2023-10-07) | 0.41 | 0.57 | never (within 60 days) | never (within 60 days) | never (within 60 days) | never (within 60 days) | 17.7% | 13.9% | 17.3% | 0.0% |
+| Israel | Iran missile and drone attack on Israel (2024-04-13) | 0.97 | 0.88 | 59 days | 59 days | 59 days | never (within 60 days) | 17.7% | 13.9% | 17.3% | 0.0% |
+| Iran | Iran strikes Israel directly (2024-04-13) | 0.54 | 0.64 | 59 days | 59 days | 51 days | never (within 60 days) | 51.7% | 46.7% | 22.6% | 0.5% |
+| Taiwan Strait | PLA drills after the Pelosi visit (2022-08-04) | 0.94 | 0.72 | 59 days | 59 days | 59 days | never (within 60 days) | 43.4% | 32.2% | 31.9% | 0.0% |
 
 ## Threshold calibration
 
@@ -49,19 +49,19 @@ Production thresholds come from a seeded Monte Carlo of a calm world (every sign
 
 | Theatre | Calm days | Empirical 90th | Empirical 95th | Empirical 99th |
 |---|---|---|---|---|
-| DR Congo | 640 | 1.01 | 1.27 | 1.53 |
-| Eastern flank | 579 | 1.36 | 1.66 | 2.02 |
-| Iran | 580 | 0.70 | 0.91 | 1.19 |
-| Israel | 519 | 0.50 | 0.64 | 0.86 |
-| Korea | 640 | 1.44 | 1.65 | 2.09 |
-| Libya | 640 | 0.55 | 0.84 | 1.28 |
-| South China Sea | 640 | 0.71 | 1.01 | 1.41 |
-| South Asia (India-Pakistan) | 640 | 0.83 | 1.13 | 1.39 |
-| Sudan | 640 | 1.52 | 1.81 | 2.25 |
-| Taiwan Strait | 580 | 0.90 | 1.05 | 1.55 |
-| Ukraine | 579 | 0.35 | 0.53 | 0.96 |
-| Americas (Venezuela and Caribbean) | 640 | 0.69 | 1.00 | 1.32 |
-| Yemen | 553 | 0.14 | 0.38 | 0.84 |
+| DR Congo | 640 | 1.05 | 1.31 | 1.86 |
+| Eastern flank | 579 | 0.82 | 1.15 | 1.45 |
+| Iran | 580 | 1.61 | 1.85 | 2.07 |
+| Israel | 519 | 0.87 | 1.08 | 1.76 |
+| Korea | 640 | 1.54 | 1.67 | 2.55 |
+| Libya | 640 | 0.25 | 1.23 | 1.39 |
+| South China Sea | 640 | 0.70 | 0.81 | 1.15 |
+| South Asia (India-Pakistan) | 640 | 1.05 | 1.30 | 1.67 |
+| Sudan | 640 | 1.63 | 1.95 | 2.00 |
+| Taiwan Strait | 580 | 1.31 | 1.50 | 1.84 |
+| Ukraine | 579 | 0.71 | 0.92 | 1.14 |
+| Americas (Venezuela and Caribbean) | 640 | 0.91 | 1.09 | 1.44 |
+| Yemen | 553 | 0.69 | 0.94 | 2.07 |
 
 Compare with the thresholds each theatre shows on the dashboard (`th` in the page data, also in `site/audit.json`). If the empirical percentile sits well above the null one, the level fires more often than the stated 10%, 5% and 1%.
 
@@ -70,14 +70,14 @@ Compare with the thresholds each theatre shows on the dashboard (`th` in the pag
 ### Ukraine, one week before the invasion (2022-02-17)
 
 - **Old method:** Normal; groups firing: none (0/5).
-- **New method:** Normal; threat score 19.10/100; composite z 0.40; imbalance 5.70; confidence Medium (4 domains scored).
+- **New method:** Normal; threat score 34.80/100; composite z 0.42; imbalance 2.99; confidence High (4 domains scored).
 
 | Domain | Weight | Domain score | Contribution to composite | Old group score | Strongest signals |
 |---|---|---|---|---|---|
-| Logistics & procurement | 0.25 | 0.71 | +0.22 | 2.77 | eu_medical_to_ukraine +3.5, us_pickups_to_ukraine +1.9, eu_boots_to_ukraine +0.9 |
-| Financial & markets | 0.10 | 1.48 | +0.18 | 1.48 | wheat +2.1 |
-| Human & behavioral | 0.15 | -0.36 | -0.07 | 0.13 | fcdo_ukraine +1.4, acled_demo_ukraine -1.1 |
-| Geospatial & physical | 0.30 | 0.07 | +0.03 | 0.02 | portwatch_bosporus +0.1, acled_viol_ukraine +0.1 |
+| Logistics & procurement | 0.25 | 0.47 | +0.15 | 2.77 | eu_medical_to_ukraine +0.9, us_pickups_to_ukraine +0.5, eu_boots_to_ukraine +0.2 |
+| Financial & markets | 0.10 | 0.37 | +0.05 | 1.48 | wheat +0.5 |
+| Human & behavioral | 0.15 | 0.94 | +0.18 | 0.13 | fcdo_ukraine +1.4, acled_demo_ukraine +0.0 |
+| Geospatial & physical | 0.30 | 0.11 | +0.04 | 0.02 | portwatch_bosporus +0.1, acled_viol_ukraine +0.0 |
 | Information space | 0.20 | n/a | +0.00 | n/a | no data |
 
 The contributions add up to the weighted mean of the domain scores (exact, so equal to each domain's Shapley share of that mean); the imbalance term of the Mazziotta-Pareto index is extra and only ever raises the index.
@@ -85,14 +85,14 @@ The contributions add up to the weighted mean of the domain scores (exact, so eq
 ### Yemen, during the Red Sea campaign (2024-01-10)
 
 - **Old method:** Watch; groups firing: geospatial (1/5).
-- **New method:** Normal; threat score 5.20/100; composite z 0.04; imbalance 23.15; confidence High (4 domains scored).
+- **New method:** Critical; threat score 98.90/100; composite z 1.65; imbalance 16.15; confidence High (4 domains scored).
 
 | Domain | Weight | Domain score | Contribution to composite | Old group score | Strongest signals |
 |---|---|---|---|---|---|
-| Logistics & procurement | 0.30 | -3.25 | -1.22 | -3.24 | dod_pop_yemen +0.8, dod_build_yemen -5.0 |
-| Financial & markets | 0.10 | 3.50 | +0.44 | 0.06 | container_equity +5.0 |
-| Human & behavioral | 0.10 | 0.72 | +0.09 | 1.20 | acled_demo_yemen +2.4, fcdo_yemen +0.0 |
-| Geospatial & physical | 0.30 | 0.44 | +0.16 | 7.23 | portwatch_bab +5.0, ioda_ping_yemen +5.0, ioda_bgp_yemen -0.8 |
+| Logistics & procurement | 0.30 | 0.14 | +0.05 | -3.24 | dod_pop_yemen +0.2 |
+| Financial & markets | 0.10 | 0.01 | +0.00 | 0.06 | container_equity +0.0 |
+| Human & behavioral | 0.10 | 0.42 | +0.05 | 1.20 | acled_demo_yemen +0.6, fcdo_yemen +0.0 |
+| Geospatial & physical | 0.30 | 3.50 | +1.31 | 7.23 | portwatch_bab +5.0, acled_viol_yemen +0.0 |
 | Information space | 0.20 | n/a | +0.00 | n/a | no data |
 
 The contributions add up to the weighted mean of the domain scores (exact, so equal to each domain's Shapley share of that mean); the imbalance term of the Mazziotta-Pareto index is extra and only ever raises the index.
@@ -100,14 +100,14 @@ The contributions add up to the weighted mean of the domain scores (exact, so eq
 ### Taiwan, days before the Pelosi drills (2022-08-01)
 
 - **Old method:** Normal; groups firing: none (0/5).
-- **New method:** Normal; threat score 33.40/100; composite z 0.63; imbalance 5.60; confidence Low (4 domains scored).
+- **New method:** Critical; threat score 95.70/100; composite z 1.32; imbalance 17.25; confidence High (4 domains scored).
 
 | Domain | Weight | Domain score | Contribution to composite | Old group score | Strongest signals |
 |---|---|---|---|---|---|
-| Logistics & procurement | 0.20 | 1.05 | +0.30 | 1.47 | dod_pop_taiwan +2.5, dod_build_taiwan +0.4 |
-| Financial & markets | 0.15 | 1.29 | +0.28 | 1.90 | fx_twd +1.7, taiwan_equity +1.1 |
+| Logistics & procurement | 0.20 | 0.44 | +0.13 | 1.47 | dod_pop_taiwan +0.6 |
+| Financial & markets | 0.15 | 4.34 | +0.93 | 1.90 | fx_twd +5.0, taiwan_equity +2.8 |
 | Human & behavioral | 0.10 | 0.00 | +0.00 | 1.40 | fcdo_taiwan +0.0 |
-| Geospatial & physical | 0.25 | 0.06 | +0.02 | -0.52 | portwatch_taiwan_strait +0.1 |
+| Geospatial & physical | 0.25 | 0.00 | +0.00 | -0.52 | portwatch_taiwan_strait +0.0 |
 | Information space | 0.30 | n/a | +0.00 | n/a | no data |
 
 The contributions add up to the weighted mean of the domain scores (exact, so equal to each domain's Shapley share of that mean); the imbalance term of the Mazziotta-Pareto index is extra and only ever raises the index.
@@ -116,71 +116,71 @@ The contributions add up to the weighted mean of the domain scores (exact, so eq
 
 Each signal is removed in turn and the day is re-scored. 'Max change' is the largest shift of the theatre's composite z; 'rank correlation' is the Spearman correlation between the full ranking of all theatres and the ranking with that one signal removed (1.0 = unchanged).
 
-### Ukraine, 2022-02-17 (composite z 0.40, 13 theatres ranked)
+### Ukraine, 2022-02-17 (composite z 0.42, 13 theatres ranked)
 
-Lowest rank correlation over all single-signal removals: **0.984**.
+Lowest rank correlation over all single-signal removals: **0.967**.
 
 | Signal removed | Change in composite z | Rank correlation |
 |---|---|---|
-| acled_demo_ukraine | +0.235 | 0.995 |
-| wheat | -0.174 | 0.984 |
-| dod_build_ukraine | -0.121 | 0.995 |
-| eu_trucks_to_ukraine | +0.114 | 0.995 |
-| eu_medical_to_ukraine | -0.065 | 1.000 |
-| fcdo_ukraine | -0.063 | 1.000 |
-| dod_pop_ukraine | +0.051 | 1.000 |
-| us_pickups_to_ukraine | -0.028 | 1.000 |
+| fcdo_ukraine | -0.182 | 0.967 |
+| eu_medical_to_ukraine | -0.062 | 1.000 |
+| portwatch_bosporus | -0.034 | 1.000 |
+| dod_pop_ukraine | +0.016 | 1.000 |
+| eu_trucks_to_ukraine | +0.016 | 1.000 |
+| us_pickups_to_ukraine | -0.013 | 1.000 |
+| us_boots_to_ukraine | +0.010 | 1.000 |
+| wheat | +0.007 | 1.000 |
 
 | Domain removed | Change in composite z |
 |---|---|
-| Logistics & procurement | -0.152 |
-| Financial & markets | -0.174 |
-| Human & behavioral | +0.160 |
-| Geospatial & physical | +0.188 |
+| Logistics & procurement | -0.023 |
+| Financial & markets | +0.007 |
+| Human & behavioral | -0.129 |
+| Geospatial & physical | +0.178 |
 | Information space | +0.000 |
 
-### Yemen, 2024-01-10 (composite z 0.04, 13 theatres ranked)
+### Yemen, 2024-01-10 (composite z 1.65, 13 theatres ranked)
 
-Lowest rank correlation over all single-signal removals: **0.945**.
+Lowest rank correlation over all single-signal removals: **0.802**.
 
 | Signal removed | Change in composite z | Rank correlation |
 |---|---|---|
-| dod_build_yemen | +0.959 | 0.967 |
-| container_equity | -0.750 | 0.945 |
-| acled_viol_yemen | +0.608 | 0.967 |
-| ioda_bgp_yemen | +0.459 | 0.967 |
-| portwatch_bab | -0.284 | 0.945 |
-| ioda_ping_yemen | -0.284 | 0.945 |
-| fcdo_yemen | +0.156 | 0.995 |
-| acled_demo_yemen | -0.103 | 0.967 |
+| portwatch_bab | -1.539 | 0.802 |
+| dod_pop_yemen | +0.752 | 0.995 |
+| container_equity | +0.202 | 0.995 |
+| acled_demo_yemen | -0.041 | 1.000 |
+| dod_build_yemen | +0.000 | 1.000 |
+| ioda_bgp_yemen | +0.000 | 1.000 |
+| ioda_ping_yemen | +0.000 | 1.000 |
+| fcdo_yemen | +0.000 | 1.000 |
 
 | Domain removed | Change in composite z |
 |---|---|
-| Logistics & procurement | +1.200 |
-| Financial & markets | -0.750 |
-| Human & behavioral | -0.113 |
-| Geospatial & physical | -0.281 |
+| Logistics & procurement | +0.752 |
+| Financial & markets | +0.202 |
+| Human & behavioral | +0.158 |
+| Geospatial & physical | -1.475 |
 | Information space | +0.000 |
 
-### Taiwan Strait, 2022-08-01 (composite z 0.63, 13 theatres ranked)
+### Taiwan Strait, 2022-08-01 (composite z 1.32, 13 theatres ranked)
 
-Lowest rank correlation over all single-signal removals: **0.995**.
+Lowest rank correlation over all single-signal removals: **0.967**.
 
 | Signal removed | Change in composite z | Rank correlation |
 |---|---|---|
-| portwatch_taiwan_strait | +0.290 | 1.000 |
-| dod_build_taiwan | +0.232 | 1.000 |
-| dod_pop_taiwan | -0.223 | 0.995 |
-| fx_twd | -0.121 | 0.995 |
-| fcdo_taiwan | +0.098 | 1.000 |
-| taiwan_equity | -0.021 | 1.000 |
+| fx_twd | -0.725 | 0.967 |
+| portwatch_taiwan_strait | +0.632 | 0.967 |
+| dod_pop_taiwan | +0.326 | 0.984 |
+| taiwan_equity | -0.273 | 0.995 |
+| fcdo_taiwan | +0.197 | 0.995 |
+| dod_build_taiwan | +0.000 | 1.000 |
 
 | Domain removed | Change in composite z |
 |---|---|
-| Logistics & procurement | -0.177 |
-| Financial & markets | -0.197 |
-| Human & behavioral | +0.098 |
-| Geospatial & physical | +0.290 |
+| Logistics & procurement | +0.326 |
+| Financial & markets | -1.160 |
+| Human & behavioral | +0.197 |
+| Geospatial & physical | +0.632 |
 | Information space | +0.000 |
 
 ## Reading this honestly

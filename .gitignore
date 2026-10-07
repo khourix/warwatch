@@ -2,4 +2,4 @@ site/
 __pycache__/
 *.pyc
 .env*
-__pycache__/
+backtest/cache/

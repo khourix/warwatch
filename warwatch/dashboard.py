@@ -61,7 +61,7 @@ def series_json(s):
     d = {"id": s["id"], "l": s["label"], "d": s["domain"], "s": s.get("sub", ""), "t": s["theatre"], "lag": bool(s["lag"]),
          "dir": s["direction"], "why": s["why"], "url": s.get("url", ""), "st": s["status"], "er": s.get("error", ""),
          "stale": s.get("stale", ""), "kind": kind, "n": len(pts), "need": 40 if kind == "monthly" else 84,
-         "needs": s.get("needs", []), "z": None}
+         "needs": s.get("needs", []), "z": None, "w0": not s.get("scored", True)}
     if pts:
         d["pts"] = [[lab, round(v, 3)] for lab, v in pts[-MAXPTS[kind]:]]
         d["last"] = pts[-1][0]
@@ -77,6 +77,20 @@ def series_json(s):
     return d
 
 
+def _r(x, n):
+    return None if x is None else round(x, n)
+
+
+def _why(t, contrib, res_series):
+    """Family contributions to the 30-day log-odds, labelled with the family's series name in this theatre."""
+    import model
+    lab = {}
+    for s in res_series:
+        if s["theatre"] in (t, "global"):
+            lab.setdefault(model.family(s["id"]), s["label"])
+    return [[lab.get(f, f), c] for f, c in contrib]
+
+
 def theatre_json(t, v, res_series):
     doms = {}
     for dom in C.DOMAINS:
@@ -85,7 +99,9 @@ def theatre_json(t, v, res_series):
                      "drivers": x["drivers"], "w": x["w"], "c": x["contrib"]}
     return {"name": C.THEATRES[t]["name"], "level": v["level"], "firing": v["firing"], "scorable": v["scorable"],
             "basis": v["basis"], "doms": doms, "score": v["score"], "zc": v["zc"], "index": v["index"], "imb": v["imbalance"],
-            "worst": v["worst"], "conf": v["confidence"], "confl": v["conf_label"], "miss": v["missing"], "th": v["th"]}
+            "worst": v["worst"], "conf": v["confidence"], "confl": v["conf_label"], "miss": v["missing"], "th": v["th"],
+            "p": _r(v.get("p"), 4), "plo": _r(v.get("p_lo"), 4), "phi": _r(v.get("p_hi"), 4), "why": _why(t, v.get("p_why", []), res_series), "aft": bool(v.get("p_aftermath")),
+            "lvc": v.get("level_composite")}
 
 
 def map_json(topo, ex, levels_by_country):
@@ -139,12 +155,21 @@ def build_data(res, generated, demo, ex, topo):
         "theatres": {t: theatre_json(t, v, res["series"]) for t, v in res["theatres"].items()},
         "order": list(C.THEATRES),
         "regions": regions_json(res["regions"]), "global": res["global"], "weights": res["weights_version"],
+        "model": model_json(res.get("model")),
         "series": [series_json(s) for s in res["series"]],
         "markets": ex.get("markets", []), "pizza": ex.get("pizza"), "errors": ex.get("errors", []),
         "unavailable": [{"n": a, "w": b} for a, b in UNAVAILABLE], "updates": [{"s": a, "e": b, "l": c} for a, b, c in UPDATES], "clsnames": CLS_NAMES,
         "map": map_json(topo, ex, ex.get("levels", {})) if topo else None,
     }
     return data
+
+
+def model_json(m):
+    if not m:
+        return None
+    g = m["global"]
+    return {"v": m["version"], "fitted": m["fitted"], "active": m["active"], "bands": m["bands"], "gates": m["gates"],
+            "any": _r(g["p_any"], 4), "mm": _r(g["p_market_moving"], 4), "clim": g["clim"]}
 
 
 def render(result, generated, demo=False, extras=None, topo=None):

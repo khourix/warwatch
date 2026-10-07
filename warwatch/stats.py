@@ -77,6 +77,9 @@ def legacy_score_series(points, kind):
 
 WINSOR = 5.0
 BASE_DAYS = 90
+YEAR_DAYS = 365   # preferred baseline: the year before the newest 30 days
+GUARD_DAYS = 30   # the newest month is left out of the baseline, so a slow build-up is not absorbed into its own yardstick
+YEAR_MIN = 120    # rolling means needed in the year baseline; shorter histories use the plain 90-day baseline
 FILL_MAX = 2   # carry the last value forward over at most this many missing days
 
 
@@ -122,13 +125,15 @@ def calendar_fill(points, days, end=None):
     return vals, obs, filled
 
 
-def score_series(points, kind, base_days=BASE_DAYS):
+def score_series(points, kind, base_days=None):
     """-> dict(z, z_raw, method, value, label, miss, filled, ...) for the newest point, or None.
 
     z is the modified z (winsorized at +-5; z_raw keeps the unclamped value for the audit log).
     monthly: log, remove calendar-month seasonality, against the previous 36 months (needs 40).
-    daily: the latest 7-day mean against 7-day means over the prior 90 days (gaps <=2 days carried
-    forward, longer gaps left missing; needs 45 of those baseline means and 4 of the last 7 days)."""
+    daily: the latest 7-day mean against the 7-day means of the year before the newest 30 days (gaps <=2 days
+    carried forward, longer gaps left missing; needs YEAR_MIN such means and 4 of the last 7 days). Series with
+    less history than that, and any call with an explicit base_days, use the plain trailing window of base_days
+    days (needs half of those baseline means)."""
     if kind == "monthly":
         if len(points) < 40:
             return None
@@ -136,19 +141,29 @@ def score_series(points, kind, base_days=BASE_DAYS):
         r = modified_z(res[-1], res[-37:-1])
         return None if r is None else {"z": r[0], "z_raw": r[1], "method": "seasonal-adjusted, modified z", "value": points[-1][1],
                                        "label": points[-1][0], "miss": 0.0, "filled": 0}
+    if base_days is None:
+        r = len(points) >= YEAR_MIN and _score_daily(points, YEAR_DAYS + 7 + GUARD_DAYS, GUARD_DAYS, YEAR_MIN, "vs prior year (latest 30 days left out), modified z")
+        if r:
+            return r
+        base_days = BASE_DAYS
     if len(points) < base_days // 2 + 7:
         return None
-    vals, obs, filled = calendar_fill(points, base_days + 7)
+    return _score_daily(points, base_days + 7, 0, base_days // 2, "vs prior 90 days, modified z" if base_days == BASE_DAYS else f"vs prior {base_days} days, modified z")
+
+
+def _score_daily(points, n_win, guard, min_roll, method):
+    """Latest 7-day mean against the 7-day means that ended between 6 and n_win-1-guard days before the window's end."""
+    vals, obs, filled = calendar_fill(points, n_win)
     last7 = [v for v in vals[-7:] if v is not None]
     if len(last7) < 4:
         return None
     recent = statistics.fmean(last7)
     roll = []
-    for i in range(6, base_days):
+    for i in range(6, n_win - guard):
         w = [v for v in vals[i - 6:i + 1] if v is not None]
         if len(w) >= 5:
             roll.append(statistics.fmean(w))
-    if len(roll) < base_days // 2:
+    if len(roll) < min_roll:
         return None
     r = modified_z(recent, roll)
     if r is None:
@@ -156,8 +171,7 @@ def score_series(points, kind, base_days=BASE_DAYS):
     med = statistics.median(roll)
     mad = statistics.median(abs(x - med) for x in roll)
     sd = mad / 0.6745 if mad else statistics.fmean(abs(x - med) for x in roll) * 1.2533
-    n_win = base_days + 7
-    return {"z": r[0], "z_raw": r[1], "method": "vs prior 90 days, modified z", "value": recent, "label": points[-1][0],
+    return {"z": r[0], "z_raw": r[1], "method": method, "value": recent, "label": points[-1][0],
             "base_med": med, "base_sd": sd, "base_n": len(roll), "miss": round(1 - (obs + filled) / n_win, 3), "filled": filled}
 
 

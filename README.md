@@ -6,7 +6,8 @@ supplies, forward infrastructure), sea and air flows, and public attention,
 for the US and EU supply side and for the Ukraine and Middle East theatres.
 
 It is decision support, not a prediction. Levels count how many independent
-domains move together; they are not probabilities. See [docs/PROPOSAL.md](docs/PROPOSAL.md)
+domains move together; since the Phase 2 model they are set from a fitted, validated
+30-day probability per theatre (see [docs/MODEL.md](docs/MODEL.md), [docs/EVENTS.md](docs/EVENTS.md)). See [docs/PROPOSAL.md](docs/PROPOSAL.md)
 for the design, the verified data routes and the limits.
 
 - Runs on GitHub Actions every 6 hours, standard-library Python, no database.
@@ -17,3 +18,5 @@ for the design, the verified data routes and the limits.
   `CENSUS_API_KEY`, `SAM_API_KEY`, `FRED_API_KEY`. Never commit a key.
 - `warwatch/history/` holds small CSVs for sources that only expose "now"
   (ADS-B, US advisory levels). Public data only.
+- `python3 warwatch/validate.py fit` refits the probability model and rewrites `docs/MODEL.md` (needs numpy, pandas, scipy; runs monthly in
+  `.github/workflows/refit.yml`). `forward/log.csv` is the hash-chained forward record; `python3 warwatch/forward_score.py` scores it.
