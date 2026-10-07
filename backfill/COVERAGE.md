@@ -70,6 +70,7 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | adsb_yemen_lift | 5 | 2024-03-20 | 2024-06-16 | 0% |
 | adsb_yemen_mil | 5 | 2024-03-20 | 2024-06-16 | 0% |
 | adsb_yemen_tanker | 5 | 2024-03-20 | 2024-06-16 | 0% |
+| ais_presence_taiwan | 180 | 2018-01-01 | 2018-06-29 | 99% |
 | firms_europe_east | 600 | 2018-01-01 | 2019-08-23 | 98% |
 | firms_frp_europe_east | 600 | 2018-01-01 | 2019-08-23 | 98% |
 | firms_frp_israel | 400 | 2018-01-01 | 2019-02-04 | 100% |
@@ -82,3 +83,8 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | firms_libya | 200 | 2018-01-01 | 2018-07-19 | 100% |
 | firms_ukraine | 400 | 2018-01-01 | 2019-02-04 | 98% |
 | firms_yemen | 200 | 2018-01-01 | 2018-07-19 | 100% |
+| vol_gvz | 4617 | 2008-06-03 | 2026-10-06 | 100% |
+| vol_ovx | 4885 | 2007-05-10 | 2026-10-06 | 100% |
+| vol_vix | 5004 | 2007-01-03 | 2026-10-06 | 100% |
+| vol_vix3m | 4739 | 2007-12-04 | 2026-10-06 | 100% |
+| vol_vix_term | 4739 | 2007-12-04 | 2026-10-06 | 100% |
