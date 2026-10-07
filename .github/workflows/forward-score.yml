@@ -1,0 +1,30 @@
+name: forward-score
+# Quarterly: verify the hash chain of the forward record and score the forecasts that have matured. Standard library only.
+on:
+  schedule:
+    - cron: "37 5 3 1,4,7,10 *"
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: warwatch-forward-score
+  cancel-in-progress: false
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and score
+        run: python3 warwatch/forward_score.py
+      - name: Commit the report
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add docs/FORWARD.md
+          git diff --cached --quiet && exit 0
+          git commit -qm "forward record scored: $(date -u +%F)"
+          for i in 1 2 3; do
+            git pull --rebase -q -X theirs origin main && git push -q && exit 0
+          done
+          echo "push failed"; exit 1

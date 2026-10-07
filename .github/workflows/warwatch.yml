@@ -58,7 +58,7 @@ jobs:
         run: |
           git config user.name "warwatch-bot"
           git config user.email "warwatch-bot@users.noreply.github.com"
-          git add $WW/history $WW/assets 2>/dev/null || true
+          git add $WW/history $WW/assets forward 2>/dev/null || true
           # history files are append-only; .gitattributes merges concurrent appends (union).
           # Best effort: a failed history push must not fail the dashboard build.
           git diff --cached --quiet && exit 0

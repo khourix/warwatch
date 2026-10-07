@@ -22,6 +22,7 @@ import dashboard  # noqa: E402
 import engine  # noqa: E402
 import extras  # noqa: E402
 import geo  # noqa: E402
+import model  # noqa: E402
 import scoring  # noqa: E402
 import stats  # noqa: E402
 import store  # noqa: E402
@@ -117,6 +118,12 @@ def main():
             return
     res = evaluate(series)
     ex = None if a.demo else extras.collect()
+    if not a.demo:
+        try:   # the probability model must never break the build; without it the page keeps the composite levels
+            res = model.apply(res, markets=(ex or {}).get("markets"))
+            print("forward record: appended", model.forward_append(res), "rows")
+        except Exception as e:
+            print("model skipped:", str(e)[:200])
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     with open(a.out, "w", encoding="utf-8") as f:
@@ -126,6 +133,12 @@ def main():
                          for t, v in res["theatres"].items()},
             "series": {s["id"]: {"status": s["status"], "z": (s["score"] or {}).get("z"), "error": s["error"]}
                        for s in res["series"]}}
+    if res.get("model"):
+        mo = res["model"]
+        summ["model"] = {"version": mo["version"], "active": mo["active"], "gates_pass": mo["gates"]["pass"], "any_theatre": round(mo["global"]["p_any"], 4),
+                         "market_moving": round(mo["global"]["p_market_moving"], 4),
+                         "theatres": {t: {"p": round(v["p"], 4), "lo": round(v["lo"], 4), "hi": round(v["hi"], 4), "level": v["level"], "why": v["contrib"],
+                                          "history": v["history"], "aftermath": v["aftermath"]} for t, v in mo["theatres"].items()}}
     with open(os.path.splitext(a.out)[0] + ".json", "w") as f:
         json.dump(summ, f, indent=1)
     with open(os.path.join(os.path.dirname(os.path.abspath(a.out)), "audit.json"), "w") as f:

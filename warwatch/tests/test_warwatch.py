@@ -16,6 +16,7 @@ import dashboard  # noqa: E402
 import demo  # noqa: E402
 import extras  # noqa: E402
 import geo  # noqa: E402
+import model  # noqa: E402
 import run  # noqa: E402
 import scoring  # noqa: E402
 import sources as S  # noqa: E402
@@ -59,6 +60,25 @@ class TestStats(unittest.TestCase):
     def test_short_series_unscored(self):
         self.assertIsNone(stats.score_series([("a", 1)] * 10, "monthly"))
         self.assertIsNone(stats.score_series([("a", 1)] * 30, "daily"))
+
+    def test_year_baseline_leaves_out_the_latest_30_days(self):
+        import datetime as dt
+        d0 = dt.date(2025, 1, 1)
+        def series(vals):
+            return [((d0 + dt.timedelta(days=i)).isoformat(), v) for i, v in enumerate(vals)]
+        noise = [10 + (i * 7 % 5) for i in range(500)]
+        ramp = noise[:440] + [10 + (i * 7 % 5) + 1.5 * (i - 440) / 10 for i in range(440, 500)]   # a slow build-up over the last 60 days
+        yr = stats.score_series(series(ramp), "daily")
+        short = stats.score_series(series(ramp), "daily", base_days=90)
+        self.assertIn("prior year", yr["method"])
+        self.assertGreater(yr["z"], short["z"])    # the 90-day yardstick has absorbed the ramp; the year one has not
+        thin = stats.score_series(series(noise[:150]), "daily")
+        self.assertIn("90 days", thin["method"])   # not enough history for a year baseline: plain 90-day window
+
+    def test_backtest_replays_market_series(self):
+        import backtest
+        self.assertIn("fetch_market", backtest.LONG)
+        self.assertIn("fetch_market", backtest.LAG)
 
     def test_false_alarm_rate_on_pure_noise_is_low(self):
         for kind in ("monthly", "daily"):
@@ -225,7 +245,25 @@ class TestSources(unittest.TestCase):
         row[28], row[51] = "15", "IR"
         other = list(row); other[51] = "US"
         got = S.parse_gdelt_events([row, other, row], ["IR"])
-        self.assertEqual(sum(got.values()), 2)
+        self.assertEqual(got, {("IR", "all"): 2, ("IR", "15"): 2})   # every event counts toward 'all' (the share's denominator), watched roots also count alone
+
+    def test_gdelt_series_merges_history_and_cache_and_builds_shares(self):
+        import store
+        import tempfile
+        old = store.ROOT
+        store.ROOT = tempfile.mkdtemp()
+        try:
+            hist = S.gdelt_history()
+            self.assertTrue(hist, "committed GDELT history missing")
+            last = max(d for v in hist.values() for d in v)
+            day = (dt.date.fromisoformat(last) + dt.timedelta(days=1)).isoformat()
+            store.cache_rows_save("gdelt_events", [[day, "IR", "13", "10"], [day, "IR", "all", "100"]])
+            pts = dict(S.gdelt_series("iran", ("13",)))
+            self.assertEqual(pts[day], 10.0)
+            self.assertIn(last, pts)
+            self.assertAlmostEqual(dict(S.gdelt_series("iran", ("13",), share=True))[day], 100.0)   # 10 of 100 events = 100 per 1,000
+        finally:
+            store.ROOT = old
 
     def test_ioda_parse_daily_means(self):
         p = {"data": [[{"from": 1759708800, "step": 3600, "values": [10, 20]}]]}
@@ -423,7 +461,7 @@ class TestRegions(unittest.TestCase):
         old = store.ROOT
         store.ROOT = tempfile.mkdtemp()
         try:
-            day = dt.date(2026, 1, 10)
+            day = dt.date(2030, 1, 10)   # after the committed history, which is not re-fetched
             store.cache_rows_save("gdelt_events", [[day.isoformat(), "UP", "15", "3"]])
             calls = []
             orig = S.gdelt_day
@@ -434,6 +472,173 @@ class TestRegions(unittest.TestCase):
         finally:
             S.gdelt_day = orig
             store.ROOT = old
+
+
+def _toy_model(active=True):
+    theta = {"a0": -2.0, "delta": {}, "hist": [0.5, 0.0, 0.0], "w": {"brent": 2.0, "gdelt_threat": 1.0}}
+    return {"version": "t", "fitted": "2026-01-01", "gamma": 1.0, "phi": 0.5, "bands": [0.05, 0.10, 0.25], "base": {t: 0.05 for t in model.TH},
+            "pooled_base": 0.05, "p_any_clim": 0.4, "mm_share": {t: 0.3 for t in model.TH}, "theta": theta, "boot": [theta], "gates": {"pass": active},
+            "active": active, "p_cap": 0.6}
+
+
+class TestModel(unittest.TestCase):
+    def test_shrink_pulls_toward_base_and_floors(self):
+        self.assertAlmostEqual(model.shrink(0.5, 0.05, 1.0, 0.0), 0.5)
+        self.assertAlmostEqual(model.shrink(0.5, 0.05, 0.0, 0.0), 0.05)    # gamma 0: the base rate
+        self.assertAlmostEqual(model.shrink(0.001, 0.05, 1.0, 0.5), 0.025)  # floor at half the base rate
+
+    def test_history_counts_only_earlier_events(self):
+        ev = [("iran", dt.date(2026, 1, 1)), ("iran", dt.date(2026, 10, 1)), ("ukraine", dt.date(2026, 5, 1))]
+        h = model.history(ev, "iran", dt.date(2026, 10, 1))   # the event on the day itself is not yet history
+        self.assertEqual(h[:2], [1 / 3, 1 / 5])
+        self.assertGreater(model.history(ev, "iran", dt.date(2026, 10, 2))[0], h[0])
+
+    def test_evidence_is_one_sided_and_takes_the_strongest(self):
+        def row(i, th, z, d="up"):
+            return {"id": i, "theatre": th, "direction": d, "score": {"z": z}}
+        ev = model.evidence([row("gdelt_threat_iran", "iran", 3.0), row("gdelt_threat_ukraine", "ukraine", 5.0), row("brent", "global", -4.0),
+                             row("gold", "global", -4.0, "down")], "iran")
+        self.assertEqual(ev, {"gdelt_threat": 3.0, "brent": 0.0, "gold": 4.0})
+
+    def test_probability_rises_with_evidence_and_is_capped(self):
+        m = _toy_model()
+        quiet = model.predict(m, [], "iran", [], dt.date(2026, 10, 1))
+        hot = model.predict(m, [{"id": "brent", "theatre": "global", "direction": "up", "score": {"z": 5.0}}], "iran", [], dt.date(2026, 10, 1))
+        self.assertLess(quiet["p"], hot["p"])
+        self.assertLessEqual(hot["p"], m["p_cap"])
+        self.assertEqual(hot["contrib"][0][0], "brent")
+        self.assertLessEqual(hot["lo"], hot["p"])
+        self.assertGreaterEqual(hot["hi"], hot["p"])
+
+    def test_active_model_sets_levels_inactive_only_shadows(self):
+        for active in (True, False):
+            res = run.evaluate(demo.scenario("calm"))
+            before = {t: v["level"] for t, v in res["theatres"].items()}
+            res = model.apply(res, events=[], today=dt.date(2026, 10, 1), m=_toy_model(active))
+            self.assertEqual(res["model"]["active"], active)
+            for t in model.TH:
+                self.assertIn("p", res["theatres"][t])
+                if not active:
+                    self.assertEqual(res["theatres"][t]["level"], before[t])
+                else:
+                    self.assertEqual(res["theatres"][t]["level"], res["model"]["theatres"][t]["level"])
+                    self.assertEqual(res["theatres"][t]["level_composite"], before[t])
+            self.assertIn("p_any", res["global"])
+
+    def test_backfill_extends_the_history_file_by_missing_days(self):
+        import backfill
+        import gzip
+        import shutil
+        p = os.path.join(tempfile.mkdtemp(), "g.csv.gz")
+        shutil.copy(S.GDELT_HISTORY, p)
+        last = max(d for v in S.gdelt_history().values() for d in v)
+        orig = S.gdelt_day
+        S.gdelt_day = lambda d, ccs: {("IR", "all"): 10, ("IR", "13"): 2}
+        try:
+            n = backfill.gdelt(2, today=dt.date.fromisoformat(last) + dt.timedelta(days=5), path=p)
+        finally:
+            S.gdelt_day = orig
+        self.assertEqual(n, 2)
+        with gzip.open(p, "rt") as f:
+            self.assertEqual(f.read().splitlines()[-1].split(",")[0], (dt.date.fromisoformat(last) + dt.timedelta(days=2)).isoformat())
+
+    def test_global_probability_is_chance_of_any(self):
+        m = _toy_model()
+        per = {t: {"p": 0.1} for t in model.TH}
+        g = model.global_view(m, per)
+        self.assertAlmostEqual(g["p_any"], 1 - 0.9 ** len(model.TH))
+        self.assertAlmostEqual(g["p_market_moving"], 1 - 0.97 ** len(model.TH))
+
+    def test_market_probability_filters_converts_and_blends(self):
+        end = (dt.date.today() + dt.timedelta(days=90)).isoformat()
+        mk = [{"theatre": "iran", "p": 0.2, "vol": 100000, "end": end}, {"theatre": "iran", "p": 0.9, "vol": 1000, "end": end},
+              {"theatre": "ukraine", "p": 0.5, "vol": 100000, "end": end}]
+        p = model.market_probability(mk, "iran")           # the thin market and the other theatre are ignored
+        self.assertIsNotNone(p)
+        self.assertLess(p, 0.2)                              # 90-day 20% is about 7% over 30 days, then recalibrated
+        self.assertIsNone(model.market_probability(mk, "taiwan"))
+        self.assertAlmostEqual(model.blend(0.1, None), 0.1)
+        self.assertGreater(model.blend(0.1, 0.5), 0.1)
+
+    def test_forward_record_is_hash_chained_once_a_day(self):
+        res = model.apply(run.evaluate(demo.scenario("calm")), events=[], today=dt.date(2026, 10, 1), m=_toy_model())
+        path = os.path.join(tempfile.mkdtemp(), "log.csv")
+        n = model.forward_append(res, "2026-10-01", path)
+        self.assertEqual(n, len(model.TH) + 1)
+        self.assertEqual(model.forward_append(res, "2026-10-01", path), 0)    # one batch per day
+        self.assertGreater(model.forward_append(res, "2026-10-02", path), 0)
+        ok, bad, rows = model.forward_verify(path)
+        self.assertTrue(ok)
+        self.assertEqual(len(rows), 2 * (len(model.TH) + 1))
+        import csv
+        with open(path, newline="") as f:
+            lines = list(csv.DictReader(f))
+        lines[3]["p"] = "0.99999"
+        with open(path, "w", newline="") as f:
+            w = csv.DictWriter(f, model.FIELDS)
+            w.writeheader()
+            w.writerows(lines)
+        ok, bad, _ = model.forward_verify(path)
+        self.assertFalse(ok)
+        self.assertEqual(bad, 4)
+
+    def test_committed_model_and_events_are_consistent(self):
+        m = model.load()
+        self.assertIsNotNone(m)
+        self.assertTrue(all(w >= 0 for w in m["theta"]["w"].values()))
+        self.assertTrue(all(all(w >= 0 for w in b["w"].values()) for b in m["boot"]))
+        self.assertEqual(m["active"], m["gates"]["pass"])
+        self.assertEqual(sorted(m["base"]), sorted(model.TH))
+        ev = model.load_events()
+        self.assertGreaterEqual(len(ev), 78)
+        self.assertTrue(all(t in model.TH for t, _ in ev))
+        import csv
+        with open(os.path.join(model.DATA, "events.csv"), newline="") as f:
+            rows = list(csv.DictReader(f))
+        self.assertTrue(all(r["type"] in ("onset", "strike", "maritime", "exercise", "other") and r["source"] for r in rows))
+        self.assertEqual([r["date"] for r in rows], sorted(r["date"] for r in rows))
+
+    def test_page_data_carries_probabilities(self):
+        res = model.apply(run.evaluate(demo.scenario("calm")), events=[], today=dt.date(2026, 10, 1), m=_toy_model())
+        d = dashboard.build_data(res, "now", True, None, None)
+        self.assertTrue(d["model"]["active"])
+        self.assertIsNotNone(d["theatres"]["iran"]["p"])
+        self.assertIn("p_any", res["global"])
+
+
+try:
+    import numpy  # noqa: F401
+    import pandas  # noqa: F401
+    import scipy  # noqa: F401
+    import validate
+except ImportError:
+    validate = None
+
+
+@unittest.skipIf(validate is None, "validate.py needs numpy, pandas and scipy")
+class TestValidate(unittest.TestCase):
+    def test_labels_follow_the_codebook_windows(self):
+        import numpy as np
+        import pandas as pd
+        days = pd.date_range("2024-01-01", "2024-04-30", freq="D")
+        P = pd.DataFrame({"date": list(days) * len(validate.TH), "theatre": np.repeat(validate.TH, len(days))})
+        ev = pd.DataFrame({"date": [pd.Timestamp("2024-03-01")], "theatre": ["iran"]})
+        y, excl, unk, _ = validate.labels(P, ev, pd.Timestamp("2024-04-30"))
+        m = (P["theatre"] == "iran").values
+        d = P["date"]
+        self.assertEqual(y[m & (d == "2024-01-31").values].sum(), 1)    # 30 days ahead
+        self.assertEqual(y[m & (d == "2024-01-30").values].sum(), 0)    # 31 days ahead
+        self.assertEqual(y[m & (d == "2024-03-01").values].sum(), 0)    # the day itself is not a warning
+        self.assertTrue(excl[m & (d == "2024-03-15").values].all())     # the aftermath is left out
+        self.assertFalse(excl[m & (d == "2024-04-01").values].any())
+        self.assertEqual(y[~m].sum(), 0)
+        self.assertTrue(unk[(d > "2024-03-31").values].all())          # labels need 30 days of events file beyond them
+
+    def test_auc_and_shrink(self):
+        import numpy as np
+        self.assertAlmostEqual(validate.auc(np.array([0, 0, 1, 1]), np.array([.1, .2, .3, .4])), 1.0)
+        self.assertAlmostEqual(validate.auc(np.array([0, 1, 0, 1]), np.array([.1, .1, .1, .1])), 0.5)
+        self.assertAlmostEqual(float(validate.shrink(np.array([0.5]), np.array([0.05]), 0.0, 0.0)[0]), 0.05)
 
 
 if __name__ == "__main__":
@@ -465,7 +670,29 @@ class TestEngine(unittest.TestCase):
         for n in (2, 4, 6):
             w = engine.owa_weights(n)
             self.assertAlmostEqual(sum(w), 1.0)
-            self.assertAlmostEqual(sum(x * (n - 1 - i) / (n - 1) for i, x in enumerate(w)), 0.3, places=4)
+            self.assertAlmostEqual(sum(x * (n - 1 - i) / (n - 1) for i, x in enumerate(w)), engine.ORNESS, places=4)
+
+    def test_calm_readings_never_cancel_an_alarm(self):
+        import engine
+        def row(i, z, domain="logistics"):
+            return {"id": i, "theatre": "ukraine", "domain": domain, "direction": "up", "lag": False, "kind": "daily", "points": [],
+                    "score": {"z": z}}
+        its = engine.theatre_items([row("a", -4.0), row("b", 3.0)], "ukraine")
+        self.assertEqual({i["id"]: i["z"] for i in its}, {"a": 0.0, "b": 3.0})
+
+    def test_zero_weight_series_are_ignored_by_the_composite(self):
+        import engine
+        row = {"id": "ooni_iran", "theatre": "iran", "domain": "information", "direction": "up", "lag": False, "kind": "daily",
+               "points": [], "score": {"z": 5.0}, "scored": False}
+        self.assertEqual(engine.theatre_items([row], "iran"), [])
+        zero = [s["id"] for s in catalog.SERIES if not s["scored"]]
+        self.assertTrue(zero and all(i.startswith(catalog.ZERO_WEIGHT) for i in zero))
+        self.assertTrue(any(i.startswith("ooni_") for i in zero))
+
+    def test_levels_do_not_depend_on_the_day_s_other_readings(self):
+        import engine
+        self.assertEqual(engine.evaluate_all([], [], {})[1], (0.0, 1.0))
+        self.assertFalse(hasattr(engine, "estimate_calib"))
 
     def test_mpi_penalises_lopsided_profile(self):
         import engine
