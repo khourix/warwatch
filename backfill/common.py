@@ -16,7 +16,7 @@ import urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(ROOT, "warwatch"))   # config.py, extras.py, sources.py: reused, never edited
-DATA = os.path.join(HERE, "data")
+DATA = os.environ.get("BACKFILL_DATA") or os.path.join(HERE, "data")   # adsb quarters write to their own shard dirs, merged afterwards
 UA = {"User-Agent": "warwatch-backfill/0.1 (public-data research; github.com/khourix/warwatch)"}
 START = dt.date(2018, 1, 1)                          # same floor as the GDELT history
 YDAY = dt.datetime.now(dt.timezone.utc).date() - dt.timedelta(days=1)
@@ -57,23 +57,31 @@ def path(series):
     return os.path.join(DATA, f"{series}.csv")
 
 
-def load(series):
+def read_csv(p):
     try:
-        with open(path(series), newline="") as f:
+        with open(p, newline="") as f:
             return {r[0]: float(r[1]) for r in csv.reader(f) if len(r) == 2}
     except OSError:
         return {}
+
+
+def write_csv(p, rows):
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    with open(p, "w", newline="") as f:
+        w = csv.writer(f)
+        for d in sorted(rows):
+            w.writerow([d, f"{rows[d]:.6g}"])
+
+
+def load(series):
+    return read_csv(path(series))
 
 
 def save(series, rows):
     """Merge {iso_date: value} into the series file (new values win) and rewrite it sorted."""
     cur = load(series)
     cur.update({str(k): float(v) for k, v in dict(rows).items()})
-    os.makedirs(DATA, exist_ok=True)
-    with open(path(series), "w", newline="") as f:
-        w = csv.writer(f)
-        for d in sorted(cur):
-            w.writerow([d, f"{cur[d]:.6g}"])
+    write_csv(path(series), cur)
     return len(cur)
 
 

@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""Run: python3 backfill/test_backfill.py   (parsers only; no network)"""
+import datetime as dt
+import gzip
+import io
+import json
+import os
+import sys
+import tarfile
+import tempfile
+import unittest
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+os.environ["BACKFILL_DATA"] = tempfile.mkdtemp()
+import common as K  # noqa: E402
+import config as C  # noqa: E402
+import sources_adsb as A  # noqa: E402
+import sources_fast as F  # noqa: E402
+import sources_slow as L  # noqa: E402
+
+
+class T(unittest.TestCase):
+    def test_gfw_boxes_match_catalogue(self):
+        import catalog
+        self.assertEqual(F.GFW_BOX, catalog.GFW_BOX)
+
+    def test_fred_skips_holidays(self):
+        self.assertEqual(F.parse_fred({"observations": [{"date": "2024-01-01", "value": "."}, {"date": "2024-01-02", "value": "39.05"}]}), {"2024-01-02": 39.05})
+
+    def test_firms_counts(self):
+        self.assertEqual(F.parse_firms_counts("latitude,acq_date,frp\n1,2019-03-01,1.5\n1,2019-03-01,2\n1,2019-03-02,4\n"),
+                         {"2019-03-01": [2, 3.5], "2019-03-02": [1, 4.0]})
+
+    def test_gfw_sums_flags(self):
+        p = {"entries": [{"public-global-presence:v4.0": [{"date": "2018-01-01", "hours": 16}, {"date": "2018-01-01", "hours": 15}, {"date": "2018-01-02", "hours": 1}]}]}
+        self.assertEqual(F.parse_gfw(p, "hours"), {"2018-01-01": 31.0, "2018-01-02": 1.0})
+
+    def test_advisory(self):
+        self.assertEqual(L.parse_advisory("Taiwan - Level 1: Exercise Normal Precautions"), (1, 0))
+        self.assertEqual(L.parse_advisory("Level 4: Do Not Travel. The Department ordered departure of family members"), (4, 1))
+        self.assertIsNone(L.parse_advisory("nothing"))
+
+    def test_weekly_skips_unchanged(self):
+        s = [("20240101000000", "a"), ("20240103000000", "b"), ("20240110000000", "b"), ("20240117000000", "c")]
+        self.assertEqual(L.weekly(s), ["20240101000000", "20240110000000", "20240117000000"])
+
+    def test_fill_forward(self):
+        out = L.fill_forward([("2024-01-02", 2), ("2024-01-04", 3)], dt.date(2024, 1, 1), dt.date(2024, 1, 5))
+        self.assertEqual(out, {"2024-01-02": 2, "2024-01-03": 2, "2024-01-04": 3, "2024-01-05": 3})
+
+    def test_bulletin(self):
+        r = L.parse_bulletin("今日共機24架次，其中18架次逾越中線，共艦7艘、公務船1艘")
+        self.assertEqual(r, {"total": 24, "median": 18, "vessels": 7, "official": 1})
+        self.assertEqual(L.parse_date("113/01/15"), dt.date(2024, 1, 15))
+
+    def test_adsb_counts_one_day(self):
+        def member(tar, hexid, t, flags, pts):
+            b = gzip.compress(json.dumps({"icao": hexid, "t": t, "dbFlags": flags, "timestamp": 0, "trace": pts}).encode())
+            ti = tarfile.TarInfo(f"./traces/{hexid[-2:]}/trace_full_{hexid}.json")
+            ti.size = len(b)
+            tar.addfile(ti, io.BytesIO(b))
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w") as tar:
+            member(tar, "aaaaaa", "K35R", 1, [[1, 26.0, 52.0], [2, 26.1, 52.1]])      # tanker over Iran, twice: counted once
+            member(tar, "bbbbbb", "B738", 0, [[1, 26.0, 52.0]])                        # civil: ignored
+            member(tar, "cccccc", "F16", 1, [[1, 48.0, 30.0], [2, None, None]])       # fighter over Ukraine
+        buf.seek(0)
+        seen = {("global", "mil"): set()}
+        boxes = {"iran": C.BOXES["iran"], "ukraine": C.BOXES["ukraine"]}
+        for th in boxes:
+            for c in ["mil"] + list(A.CLASSES):
+                seen[(th, c)] = set()
+        tf = tarfile.open(fileobj=buf, mode="r|")
+        for m in tf:
+            b = gzip.decompress(tf.extractfile(m).read())
+            if int(A.FLAGS.search(b[:600]).group(1)) & 1:
+                d = json.loads(b)
+                A.count_trace(d, d["trace"], boxes, seen)
+        self.assertEqual(len(seen[("global", "mil")]), 2)
+        self.assertEqual((len(seen[("iran", "tanker")]), len(seen[("iran", "mil")]), len(seen[("ukraine", "fighter")])), (1, 1, 1))
+
+    def test_series_merge_keeps_old_rows(self):
+        K.save("x", {"2024-01-01": 1})
+        K.save("x", {"2024-01-02": 2, "2024-01-01": 3})
+        self.assertEqual(K.load("x"), {"2024-01-01": 3.0, "2024-01-02": 2.0})
+
+
+if __name__ == "__main__":
+    unittest.main()

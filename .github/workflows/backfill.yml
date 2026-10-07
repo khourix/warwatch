@@ -1,0 +1,147 @@
+name: backfill
+# History back-fills for the fast leading feeds (methodology review, phase 3). Public data only, written to backfill/data/.
+# Dispatch with `source` = all or one of fred, nga, pla, state, firms, gfw, adsb. Safe to re-run: every job skips days it already has.
+# This workflow never touches the live score. validate.py re-tests each series before it can get weight.
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "all | fred | nga | pla | state | firms | gfw | adsb"
+        required: false
+        default: "all"
+      start:
+        description: "first day (blank = each source's own default)"
+        required: false
+        default: ""
+      end:
+        description: "last day (blank = yesterday)"
+        required: false
+        default: ""
+permissions:
+  contents: write
+concurrency:
+  group: warwatch-backfill-${{ github.ref_name }}
+  cancel-in-progress: false
+env:
+  START: ${{ github.event.inputs.start }}
+  END: ${{ github.event.inputs.end }}
+  SRC: ${{ github.event.inputs.source || 'all' }}
+jobs:
+  quick:
+    # FRED volatility indices, NGA warnings, Taiwan PLA counts: minutes each
+    if: contains(fromJSON('["all","fred","nga","pla"]'), github.event.inputs.source || 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Back-fill
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          A=""; [ -n "$START" ] && A="$A --start $START"; [ -n "$END" ] && A="$A --end $END"
+          for s in fred nga pla; do
+            if [ "$SRC" = all ] || [ "$SRC" = "$s" ]; then python3 backfill/backfill.py $s $A || echo "::warning::$s failed"; fi
+          done
+      - uses: ./.github/actions/commit-backfill
+        if: always()
+  state:
+    if: contains(fromJSON('["all","state"]'), github.event.inputs.source || 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ["ukraine,europe_east", "iran,yemen", "israel,drc", "taiwan,scs,korea", "southasia,libya,sudan", "venezuela"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Back-fill advisories via Wayback
+        run: |
+          A=""; [ -n "$START" ] && A="$A --start $START"; [ -n "$END" ] && A="$A --end $END"
+          python3 backfill/backfill.py state "${{ matrix.group }}" $A
+      - uses: ./.github/actions/commit-backfill
+        if: always()
+  firms:
+    if: contains(fromJSON('["all","firms"]'), github.event.inputs.source || 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        theatre: [ukraine, europe_east, iran, yemen, israel, korea, libya]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Back-fill fires
+        env:
+          FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
+        run: |
+          A=""; [ -n "$START" ] && A="$A --start $START"; [ -n "$END" ] && A="$A --end $END"
+          python3 backfill/backfill.py firms ${{ matrix.theatre }} $A
+      - uses: ./.github/actions/commit-backfill
+        if: always()
+  gfw:
+    if: contains(fromJSON('["all","gfw"]'), github.event.inputs.source || 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        theatre: [iran, yemen, israel, ukraine, taiwan, scs, korea, venezuela]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Back-fill vessel presence
+        env:
+          GFW_TOKEN: ${{ secrets.GFW_TOKEN }}
+        run: |
+          A=""; [ -n "$START" ] && A="$A --start $START"; [ -n "$END" ] && A="$A --end $END"
+          python3 backfill/backfill.py gfw ${{ matrix.theatre }} $A
+      - uses: ./.github/actions/commit-backfill
+        if: always()
+  adsb:
+    if: contains(fromJSON('["all","adsb"]'), github.event.inputs.source || 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        # one job per quarter; each streams about 90 daily archives of ~2 GB without storing them
+        period:
+          - "2023-01-01 2023-03-31"
+          - "2023-04-01 2023-06-30"
+          - "2023-07-01 2023-09-30"
+          - "2023-10-01 2023-12-31"
+          - "2024-01-01 2024-03-31"
+          - "2024-04-01 2024-06-30"
+          - "2024-07-01 2024-09-30"
+          - "2024-10-01 2024-12-31"
+          - "2025-01-01 2025-03-31"
+          - "2025-04-01 2025-06-30"
+          - "2025-07-01 2025-09-30"
+          - "2025-10-01 2025-12-31"
+          - "2026-01-01 2026-03-31"
+          - "2026-04-01 2026-06-30"
+          - "2026-07-01 2026-10-06"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Back-fill military aircraft counts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -- ${{ matrix.period }}
+          export BACKFILL_DATA="$PWD/backfill/shards/$1"
+          python3 backfill/backfill.py adsb --start "${START:-$1}" --end "${END:-$2}"
+      - uses: ./.github/actions/commit-backfill
+        if: always()
+  merge:
+    # folds the quarter shards into backfill/data and writes backfill/COVERAGE.md
+    needs: [quick, state, firms, gfw, adsb]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git pull -q --rebase origin "$GITHUB_REF_NAME" || true
+          python3 backfill/backfill.py merge
+          python3 backfill/backfill.py coverage > /dev/null
+      - uses: ./.github/actions/commit-backfill
