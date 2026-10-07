@@ -471,6 +471,20 @@ def fetch_ioda(cc, source="bgp", days=150):
     return sorted(tot.items())[-days:]
 
 
+# ---- OONI: share of web tests showing interference per country (no key) ----------------------------
+def parse_ooni(p, min_n=50):
+    return sorted((r["measurement_start_day"], r["anomaly_count"] / r["measurement_count"])
+                  for r in p.get("result", []) if r.get("measurement_count", 0) >= min_n)
+
+
+def fetch_ooni(cc, days=150):
+    since = (dt.date.today() - dt.timedelta(days=days)).isoformat()
+    until = dt.date.today().isoformat()
+    q = urllib.parse.urlencode({"probe_cc": cc, "test_name": "web_connectivity", "since": since, "until": until,
+                                "axis_x": "measurement_start_day"})
+    return parse_ooni(get("https://api.ooni.io/api/v1/aggregation?" + q))[:-1]    # today is partial
+
+
 # ---- Frankfurter (ECB reference rates, no key) and Twelve Data (free key) ------------------------
 def parse_frankfurter(p, ccy):
     return sorted((d, float(v[ccy])) for d, v in p.get("rates", {}).items() if ccy in v)

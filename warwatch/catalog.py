@@ -265,6 +265,11 @@ for th, cc in IODA.items():
         "Active probing sees disconnections routing data misses, such as power-grid or access-network failure.",
         (lambda c=cc: S.fetch_ioda(c, "ping-slash24")), direction="down", url=u, sub="Network")
 
+for th, cc in IODA.items():
+    add(f"ooni_{th}", f"Web-test interference rate, {cc} (OONI)", "information", th, "daily", False,
+        "Governments tighten censorship and throttle sites before and during operations; OONI volunteers measure it daily.",
+        (lambda c=cc: S.fetch_ooni(c)), url=f"https://explorer.ooni.org/country/{cc}", sub="Censorship")
+
 for th, slugs in C.FCDO.items():
     add(f"fcdo_{th}", f"UK travel-advice updates: {TH[th]}", "behavioral", th, "daily", False,
         "A cluster of advisory rewrites precedes evacuations and airline suspensions.",
@@ -504,7 +509,7 @@ for _s in SERIES:
         _s["every"] = 6       # daily closes
     elif _id.startswith(("portwatch_", "fcdo_")):
         _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely
-    elif _id.startswith(("ioda_", "fx_")):
+    elif _id.startswith(("ioda_", "ooni_", "fx_")):
         _s["every"] = 3
     elif _id.startswith("ais_presence_"):
         _s["every"] = 12      # one call per box; the source posts daily with a ~5 day delay
