@@ -377,6 +377,14 @@ const MEANING = {
   'Normal':'Within the range seen in calm conditions.',
   'insufficient data':'Too few signal groups have enough history to judge yet.'};
 const T_WATCH = D.thresholds[0], T_SIG = D.thresholds[1];
+const PM = D.model && D.model.active ? D.model : null;
+const MEANING_P = {
+  'Critical':'At least a one-in-four chance of a qualifying event here in the next 30 days.',
+  'Elevated':'A 10% to 25% chance of a qualifying event in the next 30 days: two to five times the average theatre.',
+  'Watch':'A 5% to 10% chance in the next 30 days: up to twice the average.',
+  'Normal':'Below 5% in the next 30 days: roughly the average theatre-month.'};
+const pct = p => p == null ? '–' : (p < 0.1 ? (100 * p).toFixed(1) : Math.round(100 * p)) + '%';
+const whyTxt = th => (th.why || []).slice(0, 4).map(w => `${esc(w[0].replace(/ \(.*$/, ''))} +${w[1].toFixed(2)}`).join(', ');
 const DOM = {}; D.domains.forEach(d => DOM[d.id] = d);
 const SHORT = {logistics:'Logistics', financial:'Financial', behavioral:'Human', geospatial:'Geospatial', information:'Information'};
 const THEATRES = D.order.filter(t => t !== 'global');
@@ -473,11 +481,11 @@ function renderTop(){
   const titles = {overview:'Global overview', signals:'Intelligence', assets:'Assets', system:'Settings'};
   const sub = {overview:`${THEATRES.length} theatres · ${$('#gen').textContent.slice(11)}`, signals:`${D.series.length} signals, ${D.series.filter(s => s.z != null).length} scored`, assets:'Live objects on the map', system:'Display, data health and method'}[tab] || (regOf[tab] ? regOf[tab].name : 'Global markets and procurement');
   $('#tt').innerHTML = `<h1>${esc(titles[tab] || thName(tab))}</h1><small>${esc(sub)}</small>`;
-  $('#gti').innerHTML = `<div><small>Global Threat Index</small><b style="color:${col}">${fs(g.score)}</b></div><div style="display:grid;gap:5px;justify-items:start"><div class="bar"><i style="width:${g.score || 0}%;background:${col}"></i></div>${levelBadge(gl)}</div>`;
+  $('#gti').innerHTML = `<div><small>Global Threat Index</small><b style="color:${col}">${fs(g.score)}</b></div><div style="display:grid;gap:5px;justify-items:start"><div class="bar"><i style="width:${g.score || 0}%;background:${col}"></i></div>${levelBadge(gl)}${PM && g.p_any != null ? `<small title="Chance of a qualifying event in at least one theatre within 30 days; an upper bound, as theatres move together">any theatre ${pct(g.p_any)} in 30 days</small>` : ''}</div>`;
   const cnt = {}; D.order.forEach(t => cnt[D.theatres[t].level] = (cnt[D.theatres[t].level] || 0) + 1);
   $('#cnts').innerHTML = ['Critical', 'Elevated', 'Watch'].map(l => `<span class="cn" title="Theatres at ${l}"><span class="dot" style="background:${LEVEL[l]}"></span>${l}<b>${cnt[l] || 0}</b></span>`).join('');
   $('#alr').innerHTML = ALERTS.slice(0, 2).map((a, i) => `<span class="ac ${a.date && Date.now() - Date.parse(a.date) < 864e5 ? 'new' : ''}" data-al="${i}" title="${esc(a.title)}">${ic('bell')}${esc(a.title.slice(0, 48))}</span>`).join('') + (ALERTS.length > 2 ? `<span class="cn">+${ALERTS.length - 2}</span>` : '');
-  $('#meta').innerHTML = `${esc($("#gen").textContent)}<br>method v${esc(D.weights || '')}`;
+  $('#meta').innerHTML = `${esc($("#gen").textContent)}<br>method v${esc(D.weights || '')}${D.model ? ` &middot; model v${esc(D.model.v)} (${D.model.active ? 'sets the levels' : 'shadow, logged only'})` : ''}`;
 }
 $('#alr').addEventListener('click', e => { const a = e.target.closest('[data-al]'); if (a) openAlert(ALERTS[+a.dataset.al]); });
 
@@ -873,7 +881,7 @@ function theatreCard(t){
   const tr = m.trend, short = w ? w.l.replace(/ \(.*$/, '').slice(0, 34) : '';
   return `<div class="tc ${th.level === 'Critical' ? 'crit' : ''}" data-th="${t}" style="--lc:${col}">
   <div class="tc-h"><span class="sd"></span><h3>${esc(th.name)}</h3><span class="rg">${r ? esc(r.name) : 'Global'}</span>${levelBadge(th.level)}</div>
-  <div class="tc-b"><div class="sco" style="color:${col}">${fs(sc)}<small>/100</small></div>
+  <div class="tc-b"><div class="sco" style="color:${col}">${PM && th.p != null ? pct(th.p) : fs(sc)}<small>${PM && th.p != null ? '30 days' : '/100'}</small></div>
     <div class="trk" title="Threat score. Ticks mark Watch, Elevated and Critical"><i style="width:${sc || 0}%"></i>${ticks.map(x => `<u style="left:${x.toFixed(1)}%"></u>`).join('')}</div>
     <div title="History of the strongest signal">${spark(w && w.zh && w.zh.slice(-40), col, 86, 26)}</div></div>
   <div class="tc-m"><div><small>Strongest signal</small><b>${w ? `${esc(short)} <span class="num" style="color:${zcol(w.z)}">${fmtz(w.z)}</span>` : 'none scored'}</b></div>
@@ -920,8 +928,8 @@ function renderPanel(){
   if (!selDom) selDom = 'all';
   const mk = marketsFor(tab), al = ALERTS.filter(a => tab === 'global' ? true : a.th === tab), dr = driversOf(tab);
   const ticks = th.th ? [50, scPos(th.th[1], th.th), 90] : [];
-  let h = subBar() + `<div class="ph"><div class="crumbs"><a data-go="overview" href="#overview">Overview</a>${ic('chev')}${regOf[tab] && regOf[tab].kids.length > 1 && regOf[tab].name !== th.name ? esc(regOf[tab].name) + ic('chev') : ''}${esc(th.name)}</div><div class="row"><h2>${esc(th.name)}</h2>${levelBadge(th.level)}</div><p>${esc(MEANING[th.level])}${th.firing.length ? ' Firing: ' + th.firing.map(d => esc(SHORT[d])).join(', ') + '.' : ''}${th.basis === 'lagging only' ? ' <b style="color:var(--warn)">Only late-published data is firing: a confirmed build-up, not an early warning.</b>' : ''}</p>` +
-    `<div class="kpis5"><div class="kp"><small>Threat score</small><b style="color:${col}">${fs(th.score)}<span style="font-size:10px;color:var(--dim)">/100</span></b></div>` +
+  let h = subBar() + `<div class="ph"><div class="crumbs"><a data-go="overview" href="#overview">Overview</a>${ic('chev')}${regOf[tab] && regOf[tab].kids.length > 1 && regOf[tab].name !== th.name ? esc(regOf[tab].name) + ic('chev') : ''}${esc(th.name)}</div><div class="row"><h2>${esc(th.name)}</h2>${levelBadge(th.level)}</div><p>${esc((PM && th.p != null ? MEANING_P : MEANING)[th.level])}${PM && th.p != null ? ` <b>${pct(th.p)}</b> (range ${pct(th.plo)} to ${pct(th.phi)}).${th.aft ? ' An event happened here in the last 30 days, so this is outside what the model was tested on.' : ''}${th.why && th.why.length ? ' Moved by (log-odds): ' + whyTxt(th) + '.' : ''}` : ''}${th.firing.length ? ' Firing: ' + th.firing.map(d => esc(SHORT[d])).join(', ') + '.' : ''}${th.basis === 'lagging only' ? ' <b style="color:var(--warn)">Only late-published data is firing: a confirmed build-up, not an early warning.</b>' : ''}</p>` +
+    `<div class="kpis5">${PM && th.p != null ? `<div class="kp" title="Chance of a qualifying event in this theatre within 30 days, from the fitted model"><small>30-day chance</small><b style="color:${col}">${pct(th.p)}</b></div>` : ''}<div class="kp"><small>Threat score</small><b style="color:${col}">${fs(th.score)}<span style="font-size:10px;color:var(--dim)">/100</span></b></div>` +
     `<div class="kp" title="Weighted Mazziotta-Pareto index of the domain scores; 100 is normal"><small>Index</small><b>${th.index == null ? '–' : th.index.toFixed(1)}</b></div>` +
     `<div class="kp" title="Spread of the domain scores. High means one domain is doing the work"><small>Imbalance</small><b>${th.imb == null ? '–' : th.imb.toFixed(1)}</b></div>` +
     `<div class="kp" title="Share of this theatre's signals that currently have a score"><small>Confidence</small><b class="sm" style="color:${th.confl === 'Low' ? 'var(--warn)' : 'var(--ink)'}">${esc(th.confl || '')} &middot; ${Math.round((1 - (th.miss || 0)) * 100)}%</b></div></div>` +

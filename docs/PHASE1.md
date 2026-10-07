@@ -50,7 +50,7 @@ The year baseline lags a market that trends for months (Brent in 2022 stays "hig
 
 Offline replay of the live state from the committed caches (7 October 2026, keyed feeds absent): before, Iran Critical, Ukraine and South Asia Watch; after, Critical in Ukraine, Iran, Yemen, South Asia and Sudan, Elevated in Libya, Watch in Korea. The would-be empirical shift and stretch on that state are 0.12 and 1.14 (they were 0.40 and 1.38 under v7), so removing the refit changes little there; the extra Critical readings come from the scoring (GPS jamming at the +5 cap in five theatres, Brent, Bosphorus transits).
 
-Phase 2's validation job should set Watch, Elevated and Critical from calm-day percentiles of the new score, and the probability model replaces the levels as the headline. Until then, treat the levels as a ranking, not a rate.
+Phase 2 resolves this for the page: the levels now come from the fitted 30-day probability bands (`docs/MODEL.md`), not from the composite's simulated thresholds, so the composite's alert rate no longer sets what readers see. The composite remains as the threat score and the ranking.
 
 ## Caveats
 

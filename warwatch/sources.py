@@ -377,12 +377,15 @@ def gdelt_url(day):
 
 
 def parse_gdelt_events(rows, ccs):
-    """rows: tab-split GDELT 1.0 event lines -> {(cc, root): events}. ActionGeo country is column 51, root code 28."""
+    """rows: tab-split GDELT 1.0 event lines -> {(cc, root): events, (cc, "all"): all events}. ActionGeo country is column 51, root code 28."""
     out = {}
     for r in rows:
-        if len(r) > 51 and r[51] in ccs and r[28] in GDELT_ROOTS:
-            k = (r[51], r[28])
+        if len(r) > 51 and r[51] in ccs:
+            k = (r[51], "all")
             out[k] = out.get(k, 0) + 1
+            if r[28] in GDELT_ROOTS:
+                k = (r[51], r[28])
+                out[k] = out.get(k, 0) + 1
     return out
 
 
@@ -407,9 +410,31 @@ def gdelt_day(day, ccs):
     raise RuntimeError(f"GDELT {day}: {str(err)[:120]}")
 
 
+GDELT_HISTORY = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backtest", "history", "gdelt_country_day.csv.gz")
+_GH = {}
+
+
+def gdelt_history():
+    """The committed daily history (2018 on; columns day, country, root, events; roots 13, 15, 18, 19 and all) as
+    {(cc, root): {day: events}}. Read once per process."""
+    if "v" not in _GH:
+        import csv
+        import gzip
+        import io
+        idx = {}
+        try:
+            with gzip.open(GDELT_HISTORY, "rt", newline="") as f:
+                for d, cc, root, n in csv.reader(f):
+                    idx.setdefault((cc, root), {})[d] = float(n)
+        except OSError:
+            pass
+        _GH["v"] = idx
+    return _GH["v"]
+
+
 def gdelt_update(days=150, max_days=None, today=None):
-    """Extend history/cache/gdelt_events.csv by the missing days (newest first, at most max_days per run).
-    A day counts as missing while any watched country has no row for it, so adding a theatre back-fills it."""
+    """Extend history/cache/gdelt_events.csv by the days after the committed history (newest first, at most max_days per run).
+    A day counts as missing while any watched country has no 'all' row for it, so adding a theatre back-fills it."""
     import store
     if _GDELT_DONE.get("v"):
         return
@@ -417,33 +442,46 @@ def gdelt_update(days=150, max_days=None, today=None):
     today = today or dt.date.today()
     cap = max_days if max_days is not None else int(os.environ.get("GDELT_MAX", "6"))
     ccs = {c for v in C.GDELT_CC.values() for c in v}
+    last = max((d for days_ in gdelt_history().values() for d in days_), default="")
     rows = store.cache_rows("gdelt_events")
     have = {}
     for r in rows:
-        have.setdefault(r[0], set()).add(r[1])
+        if r[2] == "all":
+            have.setdefault(r[0], set()).add(r[1])
     want = [today - dt.timedelta(days=i) for i in range(1, days + 1)]
     new = []
-    for d in [d for d in want if not ccs <= have.get(d.isoformat(), set())][:cap]:
+    for d in [d for d in want if d.isoformat() > last and not ccs <= have.get(d.isoformat(), set())][:cap]:
         try:
             counts = gdelt_day(d, ccs)
         except RuntimeError:
             continue
-        for cc in sorted(ccs - have.get(d.isoformat(), set())):
-            for root in GDELT_ROOTS:
+        rows = [r for r in rows if r[0] != d.isoformat()]   # a day cached before 'all' counts existed is replaced whole
+        for cc in sorted(ccs):
+            for root in GDELT_ROOTS + ("all",):
                 new.append([d.isoformat(), cc, root, str(counts.get((cc, root), 0))])
     if new:
         store.cache_rows_save("gdelt_events", rows + new)
 
 
-def gdelt_series(theatre, roots):
-    """Daily event count for a theatre's countries and CAMEO root codes, from the cache."""
+def gdelt_series(theatre, roots, share=False):
+    """Daily event count for a theatre's countries and CAMEO root codes: the committed history, then the cache for later days.
+    share=True gives events per 1,000 of all events coded in those countries (days with at least 50 events)."""
     import store
-    ccs = set(C.GDELT_CC[theatre])
-    tot = {}
+    ccs = C.GDELT_CC[theatre]
+    idx = {k: dict(v) for k, v in gdelt_history().items() if k[0] in ccs}
     for d, cc, root, n in store.cache_rows("gdelt_events"):
-        if cc in ccs and root in roots:
-            tot[d] = tot.get(d, 0.0) + float(n)
-    return sorted(tot.items())
+        if cc in ccs:
+            idx.setdefault((cc, root), {})[d] = float(n)
+    tot, allv = {}, {}
+    for (cc, root), days_ in idx.items():
+        for d, n in days_.items():
+            if root in roots:
+                tot[d] = tot.get(d, 0.0) + n
+            elif root == "all":
+                allv[d] = allv.get(d, 0.0) + n
+    if not share:
+        return sorted(tot.items())
+    return sorted((d, 1000.0 * tot.get(d, 0.0) / allv[d]) for d in allv if allv[d] >= 50)
 
 
 # ---- Global Fishing Watch vessel presence (AIS from terrestrial and satellite receivers; token needed; ~5 days late) ----------

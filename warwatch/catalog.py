@@ -369,11 +369,11 @@ def _news(th):
     return go
 
 
-def _gdelt(th, roots):
+def _gdelt(th, roots, share=False):
     def go():
         if os.environ.get("WARWATCH_LIVE"):
             S.gdelt_update(days=150)
-        pts = S.gdelt_series(th, roots)
+        pts = S.gdelt_series(th, roots, share)
         if not pts:
             raise RuntimeError("first refresh pending (GDELT history fills from the news job)")
         return pts
@@ -539,6 +539,13 @@ def _preforce(th):
 
 
 for th in C.GNEWS:
+    # shares of all coded events: a rise in coverage of a country does not move them, a change in the kind of event does
+    for key, roots, nm, why in (("threat", ("13",), "Threat share", "Threats and ultimatums (CAMEO 13) per 1,000 coded events."),
+                                ("posture", ("15",), "Posture share", "Military-posture events (CAMEO 15) per 1,000 coded events."),
+                                ("fight", ("18", "19"), "Armed-attack share", "Assault and fight events (CAMEO 18, 19) per 1,000 coded events. Reactive, so it confirms escalation."),
+                                ("preforce", ("13", "15"), "Pre-force share", "Threats plus military posture events per 1,000 coded events; the strongest broad lead in the methodology review.")):
+        add(f"gdeltshare_{key}_{th}", f"{nm}, {TH[th]} (GDELT)", "information", th, "daily", False, why + " A share, so changes in news volume do not move it.",
+            _gdelt(th, roots, True), url=GD, sub="Events")
     add(f"gdelt_preforce_{th}", f"Pre-force index: threats plus military posture events per day, {TH[th]} (GDELT)", "information", th, "daily", False,
         "Derived: ultimatums (CAMEO 13) and shows of force (CAMEO 15) together. Escalation ladders run threat, then posture, then force, so both rising together is the pattern that precedes strikes.",
         _preforce(th), url=GD, sub="Derived")
