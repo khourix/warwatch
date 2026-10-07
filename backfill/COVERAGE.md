@@ -75,6 +75,8 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | ais_presence_korea | 3201 | 2018-01-01 | 2026-10-06 | 99% |
 | ais_presence_scs | 3201 | 2018-01-01 | 2026-10-06 | 99% |
 | ais_presence_taiwan | 3201 | 2018-01-01 | 2026-10-06 | 99% |
+| ais_presence_ukraine | 3201 | 2018-01-01 | 2026-10-06 | 99% |
+| ais_presence_venezuela | 3201 | 2018-01-01 | 2026-10-06 | 99% |
 | ais_presence_yemen | 3201 | 2018-01-01 | 2026-10-06 | 99% |
 | firms_europe_east | 3103 | 2018-01-01 | 2026-06-30 | 96% |
 | firms_frp_europe_east | 3103 | 2018-01-01 | 2026-06-30 | 96% |
@@ -125,6 +127,8 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | sar_korea | 3201 | 2018-01-01 | 2026-10-06 | 57% |
 | sar_scs | 3201 | 2018-01-01 | 2026-10-06 | 79% |
 | sar_taiwan | 3201 | 2018-01-01 | 2026-10-06 | 49% |
+| sar_ukraine | 3201 | 2018-01-01 | 2026-10-06 | 97% |
+| sar_venezuela | 3201 | 2018-01-01 | 2026-10-06 | 77% |
 | sar_yemen | 3201 | 2018-01-01 | 2026-10-06 | 58% |
 | state_level_belarus | 3191 | 2018-01-11 | 2026-10-06 | 100% |
 | state_level_democratic-republic-of-the-congo | 3078 | 2018-05-04 | 2026-10-06 | 100% |
