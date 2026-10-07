@@ -522,15 +522,24 @@ def fetch_yahoo(symbol, rng="2y"):
 
 def fetch_market(symbol):
     """Yahoo first; Twelve Data (free key) only if Yahoo refuses the runner."""
-    try:
-        pts = fetch_yahoo(symbol)
-        if len(pts) > 30:
-            return pts
-    except Exception as e:
-        key = os.environ.get("TWELVEDATA_API_KEY")
-        if not key:
-            raise
+    global _YAHOO_DEAD
+    if not _YAHOO_DEAD:
+        try:
+            pts = fetch_yahoo(symbol)
+            if len(pts) > 30:
+                return pts
+        except urllib.error.HTTPError as e:
+            if e.code == 429:    # GitHub runners are rate-limited by Yahoo; stop asking for the rest of this run
+                _YAHOO_DEAD = True
+            if not os.environ.get("TWELVEDATA_API_KEY"):
+                raise
+        except Exception:
+            if not os.environ.get("TWELVEDATA_API_KEY"):
+                raise
     return fetch_twelvedata(symbol, os.environ["TWELVEDATA_API_KEY"])
+
+
+_YAHOO_DEAD = False
 
 
 # ---- FRED (needs FRED_API_KEY) -------------------------------------------------
