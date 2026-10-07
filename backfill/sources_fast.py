@@ -175,6 +175,7 @@ def cmd_nga(start, end):
         roll = {}
         for d in K.days(start, end):
             roll[d.isoformat()] = sum(daily.get((d - dt.timedelta(days=i)).isoformat(), 0.0) for i in range(30))
-        K.save(f"nga_new_{th}", daily)
-        K.save(f"nga_{th}", {d: v for d, v in roll.items() if d >= (start + dt.timedelta(days=29)).isoformat()})
+        # rewritten, not merged: an earlier run may have left zero-filled days after the database stops
+        K.write_csv(K.path(f"nga_new_{th}"), daily)
+        K.write_csv(K.path(f"nga_{th}"), {d: v for d, v in roll.items() if d >= (start + dt.timedelta(days=29)).isoformat()})
         K.log(th, "warnings", sum(per.values()))
