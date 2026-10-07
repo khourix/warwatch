@@ -24,10 +24,6 @@ permissions:
 concurrency:
   group: warwatch-backfill-${{ github.ref_name }}
   cancel-in-progress: false
-env:
-  START: ${{ needs.plan.outputs.start }}
-  END: ${{ needs.plan.outputs.end }}
-  SRC: ${{ needs.plan.outputs.src }}
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -49,6 +45,10 @@ jobs:
           fi
   quick:
     needs: plan
+    env:
+      START: ${{ needs.plan.outputs.start }}
+      END: ${{ needs.plan.outputs.end }}
+      SRC: ${{ needs.plan.outputs.src }}
     # FRED volatility indices, NGA warnings, Taiwan PLA counts: minutes each
     if: contains(fromJSON('["all","fred","nga","pla"]'), needs.plan.outputs.src)
     runs-on: ubuntu-latest
@@ -67,6 +67,10 @@ jobs:
         if: always()
   state:
     needs: plan
+    env:
+      START: ${{ needs.plan.outputs.start }}
+      END: ${{ needs.plan.outputs.end }}
+      SRC: ${{ needs.plan.outputs.src }}
     if: contains(fromJSON('["all","state"]'), needs.plan.outputs.src)
     runs-on: ubuntu-latest
     timeout-minutes: 340
@@ -84,6 +88,10 @@ jobs:
         if: always()
   firms:
     needs: plan
+    env:
+      START: ${{ needs.plan.outputs.start }}
+      END: ${{ needs.plan.outputs.end }}
+      SRC: ${{ needs.plan.outputs.src }}
     if: contains(fromJSON('["all","firms"]'), needs.plan.outputs.src)
     runs-on: ubuntu-latest
     timeout-minutes: 340
@@ -103,6 +111,10 @@ jobs:
         if: always()
   gfw:
     needs: plan
+    env:
+      START: ${{ needs.plan.outputs.start }}
+      END: ${{ needs.plan.outputs.end }}
+      SRC: ${{ needs.plan.outputs.src }}
     if: contains(fromJSON('["all","gfw"]'), needs.plan.outputs.src)
     runs-on: ubuntu-latest
     timeout-minutes: 340
@@ -122,6 +134,10 @@ jobs:
         if: always()
   adsb:
     needs: plan
+    env:
+      START: ${{ needs.plan.outputs.start }}
+      END: ${{ needs.plan.outputs.end }}
+      SRC: ${{ needs.plan.outputs.src }}
     if: contains(fromJSON('["all","adsb"]'), needs.plan.outputs.src)
     runs-on: ubuntu-latest
     timeout-minutes: 350
