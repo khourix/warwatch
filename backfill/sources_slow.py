@@ -204,9 +204,10 @@ def cmd_pla(start, end, max_pages=400):
                 n = shown.get(day.year, 0)
                 if n < 2:          # two samples per year are enough to see the wording the patterns miss
                     shown[day.year] = n + 1
-                    m = re.search(r"\d+\s*(?:架|艘)|共機|共軍", text)
-                    k = m.start() if m else 600
-                    K.log("unparsed", day, i, text[max(0, k - 80):k + 260])
+                    # the page starts with the site menu; print what follows it, and any attachments the page links
+                    tail = text.split("資訊服務", 1)[-1]
+                    files = re.findall(r'(?:href|src)="([^"]+\.(?:pdf|odt|ods|jpg|jpeg|png|docx?))"', body, re.I)
+                    K.log("unparsed", day, i, "len", len(text), "files", files[:3], "|", tail[:420])
                 continue
             found += 1
             for key, sid in (("total", "pla_aircraft"), ("median", "pla_median"), ("vessels", "pla_vessels"), ("official", "pla_official_ships")):
