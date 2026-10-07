@@ -33,6 +33,8 @@ jobs:
             https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json || echo "basemap download failed; page renders without it"
       - name: Unit tests
         run: python3 $WW/tests/test_warwatch.py
+      - name: Install h3 (GPSJam cell centres)
+        run: python3 -m pip install --quiet --break-system-packages h3
       - name: Fetch, score, render
         env:
           CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
@@ -40,6 +42,7 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
           GFW_TOKEN: ${{ secrets.GFW_TOKEN }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
           FIRMS_MAX: "12"
