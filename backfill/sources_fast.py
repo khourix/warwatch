@@ -160,6 +160,12 @@ def cmd_nga(start, end):
                 seen.update((w.get("navArea"), w.get("msgYear"), w.get("msgNumber")) for w in new)
                 warns.extend(extras.parse_nga(new))
                 K.log("nga", year, area, status, len(rows), "returned", len(new), "new")
+    # The NGA warning database stops at 2024-05-10 (probe of 2026-10-07: nothing issued later is returned for any status or navarea),
+    # so days after the newest warning are unknown, not quiet. Never write zeros for them.
+    newest = max((m["issued"] for m in warns if m["issued"]), default=None)
+    if newest:
+        end = min(end, dt.date.fromisoformat(newest))
+        K.log("NGA newest warning", newest, "- series end clipped to it")
     for th, box in C.THEATRE_BOX.items():
         per = {}
         for m in warns:

@@ -21,6 +21,7 @@ Output: `backfill/data/<series>.csv`, one `date,value` row per UTC day. `COVERAG
 
 * **ADS-B level differs from live.** The archive counts different military aircraft seen in the box during the day; the live feed counts aircraft present at one instant. Score each on its own baseline. The network of feeders grew, so divide by `adsb_global_mil` or use ranks before comparing years.
 * **FIRMS** standard processing lags about three months. The jobs stop at the archive's last day; the live cache covers the rest.
+* **NGA stopped publishing in May 2024.** The `broadcast-warn` API returns nothing issued after 2024-05-10 (all statuses, all four navareas, checked 2026-10-07), so `nga_*` and `nga_new_*` end there and are not zero-filled. The live `nga_*` catalogue series reads that same frozen database, so it is not a working early-warning feed today. A replacement source is needed before NGA data can be used after May 2024.
 * **NGA**: a warning is placed at its first coordinate (same rule as the live parser, `extras.parse_nga`), and only hazard text counts (missile, firing, gunnery, exercise, GPS, mine, drone).
 * **State advisories** are read from one capture per week (and only when the page changed), then carried forward, so a level change is dated to within a week.
   Ordered departure is detected from the words "ordered departure" on the page, which also appear when one is being lifted.
