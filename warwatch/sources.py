@@ -522,12 +522,12 @@ def fetch_energycharts_price(bzn, days=200):
 
 
 # ---- GIE AGSI+ gas storage (keyless for the public pages) -------------------------------------------
-def fetch_agsi(area, field="gasInStorage", days=300):
+def fetch_agsi(area, key_value, field="gasInStorage", days=300):
     start = (dt.date.today() - dt.timedelta(days=days)).isoformat()
     key = {"eu": "continent=eu"}.get(area, "country=" + area)
     out, page = {}, 1
     while page <= 14:
-        p = get(f"https://agsi.gie.eu/api?{key}&from={start}&to={dt.date.today().isoformat()}&page={page}")
+        p = get(f"https://agsi.gie.eu/api?{key}&from={start}&to={dt.date.today().isoformat()}&page={page}", headers={"x-key": key_value})
         if p.get("error"):
             raise RuntimeError("AGSI: " + str(p.get("message") or p["error"]))
         for r in p.get("data", []):

@@ -281,10 +281,10 @@ for th, cc in IODA.items():
 
 add("gas_ua", "Ukraine gas in storage (GIE AGSI+)", "logistics", "ukraine", "daily", False,
     "Storage draw-down ahead of winter, or strikes on gas infrastructure, show before shortages; published daily.",
-    (lambda: S.fetch_agsi("UA")), direction="down", url="https://agsi.gie.eu/", sub="Energy")
+    (lambda: S.fetch_agsi("UA", _key("GIE_API_KEY"))), direction="down", needs=["GIE_API_KEY"], url="https://agsi.gie.eu/", sub="Energy")
 add("gas_eu", "EU gas in storage (GIE AGSI+)", "logistics", "europe_east", "daily", False,
     "Low or falling EU storage raises exposure to supply coercion; published daily.",
-    (lambda: S.fetch_agsi("eu")), direction="down", url="https://agsi.gie.eu/", sub="Energy")
+    (lambda: S.fetch_agsi("eu", _key("GIE_API_KEY"))), direction="down", needs=["GIE_API_KEY"], url="https://agsi.gie.eu/", sub="Energy")
 for bzn, th, nm in (("PL", "europe_east", "Poland"), ("LT", "europe_east", "Lithuania")):
     add(f"power_{bzn.lower()}", f"Day-ahead power price, {nm} (Energy-Charts)", "financial", th, "daily", False,
         "Power prices jump on grid sabotage, interconnector cuts or supply fears before they appear elsewhere; published daily.",
