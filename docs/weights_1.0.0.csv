@@ -1,0 +1,15 @@
+version,theatre,logistics,financial,behavioral,geospatial,information,rationale
+1.0.0,ukraine,0.25,0.1,0.15,0.3,0.2,Land war with heavy visible logistics and sensor coverage: geospatial and logistics lead; markets already price it in.
+1.0.0,europe_east,0.25,0.1,0.15,0.3,0.2,"NATO eastern flank: airspace, GNSS jamming and troop/air movements are the earliest observable signs."
+1.0.0,iran,0.2,0.25,0.1,0.25,0.2,Oil and shipping risk transmit fast to markets; aviation and GNSS activity show posture.
+1.0.0,yemen,0.3,0.1,0.1,0.3,0.2,"Red Sea war is a shipping story: transits and vessel presence (logistics, geospatial) matter most."
+1.0.0,israel,0.2,0.15,0.15,0.25,0.25,"Dense airspace, advisory and news flow; strong information and geospatial signals."
+1.0.0,taiwan,0.2,0.15,0.1,0.25,0.3,"Brief's example: information 0.30, geospatial 0.25, logistics 0.20, financial 0.15, human 0.10."
+1.0.0,scs,0.25,0.1,0.1,0.3,0.25,"Maritime grey-zone theatre: vessel presence and incidents in geospatial, shipping in logistics."
+1.0.0,korea,0.15,0.15,0.15,0.25,0.3,Warning language and event reporting carry most of the signal; limited procurement visibility.
+1.0.0,southasia,0.15,0.15,0.15,0.25,0.3,"Short, sharp crises: news and event flow lead, airspace closures and advisories confirm."
+1.0.0,libya,0.3,0.15,0.1,0.25,0.2,Oil terminal and port disruption is the main transmission channel.
+1.0.0,sudan,0.1,0.1,0.25,0.3,0.25,"Humanitarian and connectivity signals (advisories, outages, fires) dominate; little market/logistics data."
+1.0.0,drc,0.1,0.1,0.25,0.3,0.25,"As Sudan: fires, outages, advisories and event data; markets and procurement carry little signal."
+1.0.0,venezuela,0.25,0.25,0.15,0.15,0.2,Oil exports and currency/market stress are the leading channels.
+1.0.0,global,0.25,0.35,0.1,0.1,0.2,Global scope: markets and shipping chokepoints weigh most; physical detail is covered by the theatres.
