@@ -60,9 +60,10 @@ def firms_get(url, patience=60):
         try:
             return K.get(url, raw=True, timeout=180).decode("utf-8", "replace")
         except RuntimeError as e:
-            if "transaction limit" not in str(e):
+            # a key that was just over its limit answers "Invalid MAP_KEY" for a while; a truly bad key still ends after 8 tries
+            if "transaction limit" not in str(e) and not ("Invalid MAP_KEY" in str(e) and i < 8):
                 raise
-            K.log("FIRMS limit reached, waiting 90 s", i)
+            K.log("FIRMS limit reached, waiting 90 s", i, str(e)[:60])
             time.sleep(90)
     raise RuntimeError("FIRMS transaction limit did not clear")
 
@@ -71,8 +72,8 @@ def cmd_firms(key, theatre, start, end):
     """Standard-processing VIIRS (S-NPP) archive, five days per call. SP lags real time by about three months;
     the live feed's own cache covers the recent months, so the end date is capped at the archive's last day."""
     la0, la1, lo0, lo1 = C.FIRMS_BOX[theatre]
-    avail = {r.split(",")[0]: r.split(",") for r in K.get(
-        f"https://firms.modaps.eosdis.nasa.gov/api/data_availability/csv/{key}/ALL", raw=True).decode().splitlines()}
+    avail = {r.split(",")[0]: r.split(",") for r in firms_get(
+        f"https://firms.modaps.eosdis.nasa.gov/api/data_availability/csv/{key}/ALL").splitlines()}
     last = dt.date.fromisoformat(avail["VIIRS_SNPP_SP"][2])
     end = min(end, last)
     have = K.load(f"firms_{theatre}")
