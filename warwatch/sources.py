@@ -497,10 +497,17 @@ def parse_radar(p):
     return sorted((d, sum(v) / len(v)) for d, v in out.items())
 
 
-def fetch_radar(path, cc, token, days_drop_today=True):
-    q = urllib.parse.urlencode({"location": cc, "dateRange": "24w", "aggInterval": "1d", "format": "json"})
-    pts = parse_radar(get(f"https://api.cloudflare.com/client/v4/radar/{path}?{q}", headers={"Authorization": "Bearer " + token}))
-    return pts[:-1] if days_drop_today else pts
+def fetch_radar(path, cc, token, chunks=5):
+    """Radar refuses daily buckets over long ranges, so ask for 28-day windows and stitch them."""
+    out = {}
+    end = dt.date.today()
+    for _ in range(chunks):
+        start = end - dt.timedelta(days=28)
+        q = urllib.parse.urlencode({"location": cc, "dateStart": start.isoformat() + "T00:00:00Z", "dateEnd": end.isoformat() + "T00:00:00Z",
+                                    "aggInterval": "1d", "format": "json"})
+        out.update(dict(parse_radar(get(f"https://api.cloudflare.com/client/v4/radar/{path}?{q}", headers={"Authorization": "Bearer " + token}))))
+        end = start
+    return sorted(out.items())[:-1]
 
 
 # ---- Energy-Charts (Fraunhofer ISE; keyless; replaces ENTSO-E) ---------------------------------------
@@ -519,8 +526,10 @@ def fetch_agsi(area, field="gasInStorage", days=300):
     start = (dt.date.today() - dt.timedelta(days=days)).isoformat()
     key = {"eu": "continent=eu"}.get(area, "country=" + area)
     out, page = {}, 1
-    while page <= 12:
-        p = get(f"https://agsi.gie.eu/api?{key}&from={start}&to={dt.date.today().isoformat()}&size=300&page={page}")
+    while page <= 14:
+        p = get(f"https://agsi.gie.eu/api?{key}&from={start}&to={dt.date.today().isoformat()}&page={page}")
+        if p.get("error"):
+            raise RuntimeError("AGSI: " + str(p.get("message") or p["error"]))
         for r in p.get("data", []):
             try:
                 out[r["gasDayStart"]] = float(r[field])
