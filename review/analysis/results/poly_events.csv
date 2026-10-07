@@ -1,2 +1,39 @@
 theatre,date,desc,p-30,p-14,p-7,p-3,p-1,p1
-israel,2026-03-02,Hezbollah-Israel war resumes,0.017,0.015,0.013,0.014,0.013,0.031
+ukraine,2024-11-21,Oreshnik IRBM on Dnipro,0.065,0.113,0.117,0.098,0.234,0.232
+europe_east,2025-09-09,Russian drones into Poland,0.012,0.011,0.012,0.011,0.011,0.24
+europe_east,2025-09-12,Zapad 2025,0.011,0.011,0.011,0.013,0.052,0.16
+europe_east,2025-09-19,MiG-31s violate Estonian airspace,0.012,0.011,0.3,0.305,0.195,0.17
+iran,2024-01-16,Iran-Pakistan border strikes,0.076,0.023,0.036,0.036,0.028,0.029
+iran,2024-02-02,US strikes militias in Iraq and Syria,0.025,0.015,0.205,0.165,0.075,0.038
+iran,2024-04-13,Iran first direct attack on Israel,,,,,0.07,0.57
+iran,2024-07-31,Haniyeh assassinated in Tehran,0.041,0.047,0.059,0.077,0.085,0.214
+iran,2024-10-01,Iran 200 missiles at Israel,0.106,0.104,0.14,0.395,0.326,0.544
+iran,2024-10-26,Israel strikes Iran,0.205,0.83,0.875,0.655,0.775,0.232
+iran,2025-06-13,Twelve-Day War,0.161,0.233,0.215,0.27,0.555,0.999
+iran,2025-06-22,US Midnight Hammer,0.233,0.205,0.97,0.99,0.984,0.988
+iran,2025-06-23,Iran strikes Al Udeid,0.238,0.205,0.992,0.994,0.994,0.905
+iran,2026-02-28,US-Israel war on Iran,0.941,0.875,0.75,0.825,0.905,0.955
+iran,2026-03-02,Hormuz standstill and Gulf strikes,0.915,0.875,0.805,0.905,0.955,0.992
+iran,2026-03-18,South Pars and Qatar LNG strikes,0.875,0.998,0.874,0.884,0.86,0.895
+iran,2026-07-08,Ceasefire collapse in Hormuz,0.982,0.998,0.145,0.125,0.167,0.66
+yemen,2023-12-18,Prosperity Guardian and carrier suspensions,,,,0.165,0.12,0.465
+yemen,2024-01-12,First US-UK strikes on Houthis,,0.371,0.66,0.655,0.805,0.215
+yemen,2025-07-06,Magic Seas and Eternity C sunk,0.098,0.274,0.032,0.135,0.095,0.145
+yemen,2026-03-28,Houthis join 2026 Iran war,0.184,0.424,0.205,0.485,0.302,0.581
+israel,2024-04-01,Damascus consulate strike,0.265,0.115,0.204,0.439,0.365,0.285
+israel,2024-09-17,Pager attacks,0.122,0.064,0.076,0.095,0.103,0.186
+israel,2024-09-23,Israel air campaign in Lebanon,0.104,0.074,0.103,0.279,0.299,0.326
+israel,2024-11-27,HTS offensive and fall of Assad,0.991,0.17,0.14,0.15,0.139,0.142
+israel,2025-03-18,Israel ends Gaza ceasefire,,,,,,0.01
+israel,2025-09-09,Israeli strike in Doha,0.635,0.998,0.845,0.815,0.955,0.996
+israel,2026-03-02,Hezbollah-Israel war resumes,0.93,0.999,0.73,0.92,0.755,0.995
+taiwan,2024-05-23,Joint Sword-2024A,0.008,0.012,0.012,0.012,0.012,0.019
+taiwan,2024-10-14,Joint Sword-2024B,0.015,0.015,0.015,0.014,0.014,0.02
+taiwan,2025-04-01,Strait Thunder-2025A,0.015,0.014,0.017,0.019,0.018,0.019
+taiwan,2025-12-29,Justice Mission-2025,0.027,0.015,0.013,0.013,0.016,0.02
+scs,2025-08-11,Scarborough collision,0.012,0.015,0.014,0.015,0.015,0.018
+southasia,2025-05-07,Operation Sindoor,0.009,0.203,0.784,0.425,0.445,0.976
+southasia,2025-05-10,Pakistan strikes Indian bases,0.008,0.515,0.435,0.999,0.996,0.575
+venezuela,2025-09-02,First US boat strike,0.02,0.021,0.02,0.02,0.018,0.021
+venezuela,2025-12-10,US seizes tanker Skipper,0.039,0.062,0.062,0.048,0.059,0.036
+venezuela,2026-01-03,US strikes and capture of Maduro,0.06,0.4,0.145,0.06,0.033,0.495
