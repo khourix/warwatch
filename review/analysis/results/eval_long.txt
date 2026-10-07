@@ -1,0 +1,6 @@
+{'method': 'v7 as built', 'n_days': 34752, 'pos_days': 1729, 'auc': 0.554, 'aupr': 0.071, 'base': np.float64(0.05), 'events_hit@10%FPR': '23/59', 'median_lead@10%': 16.0, 'events_hit@5%FPR': '16/59', 'median_lead@5%': 17.0}
+{'method': 'v7 one-sided (z floored at 0)', 'n_days': 34752, 'pos_days': 1729, 'auc': 0.608, 'aupr': 0.077, 'base': np.float64(0.05), 'events_hit@10%FPR': '24/59', 'median_lead@10%': 18.0, 'events_hit@5%FPR': '17/59', 'median_lead@5%': 16.0}
+{'method': 'v7 one-sided, OWA orness 0.7', 'n_days': 34752, 'pos_days': 1729, 'auc': 0.628, 'aupr': 0.075, 'base': np.float64(0.05), 'events_hit@10%FPR': '27/59', 'median_lead@10%': 19.0, 'events_hit@5%FPR': '15/59', 'median_lead@5%': 16.0}
+{'method': 'KLR signals, naive Bayes (LOTO)', 'n_days': 34752, 'pos_days': 1729, 'auc': 0.603, 'aupr': 0.1, 'base': np.float64(0.05), 'events_hit@10%FPR': '29/59', 'median_lead@10%': 21.0, 'events_hit@5%FPR': '25/59', 'median_lead@5%': 18.0}
+{'method': 'Penalised logit (LOTO)', 'n_days': 34752, 'pos_days': 1729, 'auc': 0.639, 'aupr': 0.073, 'base': np.float64(0.05), 'events_hit@10%FPR': '28/59', 'median_lead@10%': 24.0, 'events_hit@5%FPR': '14/59', 'median_lead@5%': 21.5}
+logit Brier 0.0513 climatology 0.0473 BSS -0.085

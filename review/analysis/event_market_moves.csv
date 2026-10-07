@@ -1,0 +1,79 @@
+theatre,date,event,largest_mover,move_sd,market_moving
+ukraine,2018-11-25,Kerch Strait incident,brent,2.0,False
+ukraine,2022-02-24,Russia full-scale invasion,poland_equity,5.5,True
+ukraine,2022-10-10,First mass missile wave on Ukrainian gri,gold,1.6,False
+ukraine,2023-07-17,Russia quits grain deal and strikes Odes,brent,1.1,False
+ukraine,2024-08-06,Ukraine Kursk offensive,brent,1.3,False
+ukraine,2024-11-21,Oreshnik IRBM on Dnipro,gold,1.6,False
+ukraine,2025-06-01,Operation Spiderweb,gold,2.3,False
+europe_east,2021-09-10,Zapad 2021,poland_equity,0.8,False
+europe_east,2022-02-24,Russia invades Ukraine (flank),poland_equity,5.5,True
+europe_east,2022-11-15,Przewodow missile,brent,0.8,False
+europe_east,2024-12-25,Estlink 2 cable damage,gold,0.7,False
+europe_east,2025-09-09,Russian drones into Poland,brent,1.9,False
+europe_east,2025-09-12,Zapad 2025,brent,1.0,False
+europe_east,2025-09-19,MiG-31s violate Estonian airspace,gold,1.7,False
+iran,2019-05-12,Fujairah tanker sabotage,gold,1.7,False
+iran,2019-06-13,Gulf of Oman tanker attacks,tanker_equity,2.4,False
+iran,2019-06-20,Iran downs US Global Hawk,gold,4.5,True
+iran,2019-09-14,Abqaiq-Khurais attack,brent,5.1,True
+iran,2020-01-03,Soleimani killed,gold,2.2,False
+iran,2020-01-08,Iran missiles on Ain al-Asad,tanker_equity,2.0,False
+iran,2024-01-16,Iran-Pakistan border strikes,gold,1.8,False
+iran,2024-02-02,US strikes militias in Iraq and Syria,gold,1.3,False
+iran,2024-04-13,Iran first direct attack on Israel,gold,1.8,False
+iran,2024-07-31,Haniyeh assassinated in Tehran,gold,2.1,False
+iran,2024-10-01,Iran 200 missiles at Israel,brent,2.5,True
+iran,2024-10-26,Israel strikes Iran,brent,2.4,False
+iran,2025-06-13,Twelve-Day War,brent,3.4,True
+iran,2025-06-22,US Midnight Hammer,brent,4.3,True
+iran,2025-06-23,Iran strikes Al Udeid,brent,4.3,True
+iran,2026-02-28,US-Israel war on Iran,brent,5.4,True
+iran,2026-03-02,Hormuz standstill and Gulf strikes,brent,6.5,True
+iran,2026-03-18,South Pars and Qatar LNG strikes,gold,3.7,True
+iran,2026-07-08,Ceasefire collapse in Hormuz,brent,1.9,False
+yemen,2022-01-17,Houthi attack on Abu Dhabi,tanker_equity,1.3,False
+yemen,2023-11-19,Red Sea attacks begin,container_equity,1.4,False
+yemen,2023-12-18,Prosperity Guardian and carrier suspensi,container_equity,2.0,False
+yemen,2024-01-12,First US-UK strikes on Houthis,gold,1.2,False
+yemen,2024-07-20,Israel strikes Hodeidah,tanker_equity,1.4,False
+yemen,2025-03-15,US Rough Rider campaign,tanker_equity,1.4,False
+yemen,2025-07-06,Magic Seas and Eternity C sunk,tanker_equity,1.4,False
+yemen,2026-03-28,Houthis join 2026 Iran war,gold,1.8,False
+israel,2018-05-10,Golan rockets and Israeli raid in Syria,fx_ils,0.7,False
+israel,2021-05-10,11-day Gaza war,israel_equity,2.6,True
+israel,2023-10-07,Hamas attack,israel_equity,3.5,True
+israel,2024-04-01,Damascus consulate strike,gold,2.7,True
+israel,2024-09-17,Pager attacks,israel_equity,0.9,False
+israel,2024-09-23,Israel air campaign in Lebanon,israel_equity,2.0,False
+israel,2024-11-27,HTS offensive and fall of Assad,israel_equity,1.3,False
+israel,2025-03-18,Israel ends Gaza ceasefire,gold,1.1,False
+israel,2025-09-09,Israeli strike in Doha,brent,1.9,False
+israel,2026-03-02,Hezbollah-Israel war resumes,brent,6.5,True
+taiwan,2022-08-04,PLA drills after Pelosi,gold,1.9,False
+taiwan,2023-04-08,Joint Sword,gold,0.8,False
+taiwan,2024-05-23,Joint Sword-2024A,gold,2.6,True
+taiwan,2024-10-14,Joint Sword-2024B,brent,2.4,False
+taiwan,2025-04-01,Strait Thunder-2025A,brent,3.6,True
+taiwan,2025-12-29,Justice Mission-2025,gold,2.4,False
+scs,2024-06-17,Second Thomas Shoal boarding,brent,1.4,False
+scs,2025-08-11,Scarborough collision,china_equity,1.0,False
+korea,2020-06-16,Kaesong liaison office blown up,korea_equity,0.9,False
+korea,2022-03-24,First ICBM since 2017,brent,2.5,True
+korea,2022-10-04,Missile over Japan,korea_equity,2.9,True
+korea,2022-11-02,23 missiles in a day,gold,1.2,False
+southasia,2019-02-26,Balakot,gold,2.4,False
+southasia,2019-02-27,Pakistan retaliation and dogfight,gold,2.9,True
+southasia,2025-05-07,Operation Sindoor,fx_inr,5.1,True
+southasia,2025-05-10,Pakistan strikes Indian bases,india_equity,3.5,True
+libya,2019-04-04,Haftar Tripoli offensive,brent,0.8,False
+libya,2020-01-18,Oil port blockade,brent,0.9,False
+libya,2024-08-26,Oil shutdown over central bank,brent,0.5,False
+sudan,2023-04-15,SAF-RSF war,brent,0.5,False
+sudan,2025-05-04,Drone strikes on Port Sudan,gold,3.8,True
+sudan,2025-10-26,El Fasher falls,gold,1.8,False
+drc,2025-01-23,M23 Goma offensive,brent,1.2,False
+drc,2025-03-13,Bisie tin mine halted,copper_miners,1.7,False
+venezuela,2025-09-02,First US boat strike,gold,1.8,False
+venezuela,2025-12-10,US seizes tanker Skipper,gold,1.0,False
+venezuela,2026-01-03,US strikes and capture of Maduro,gold,2.1,False

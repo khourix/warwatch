@@ -1,0 +1,79 @@
+theatre,date,type,surprise_or_buildup,description
+ukraine,2018-11-25,maritime,surprise,Kerch Strait incident
+ukraine,2022-02-24,onset,buildup,Russia full-scale invasion
+ukraine,2022-10-10,strike,buildup,First mass missile wave on Ukrainian grid
+ukraine,2023-07-17,maritime,buildup,Russia quits grain deal and strikes Odesa ports
+ukraine,2024-08-06,onset,surprise,Ukraine Kursk offensive
+ukraine,2024-11-21,strike,surprise,Oreshnik IRBM on Dnipro
+ukraine,2025-06-01,strike,surprise,Operation Spiderweb
+europe_east,2021-09-10,exercise,buildup,Zapad 2021
+europe_east,2022-02-24,onset,buildup,Russia invades Ukraine (flank)
+europe_east,2022-11-15,strike,surprise,Przewodow missile
+europe_east,2024-12-25,other,surprise,Estlink 2 cable damage
+europe_east,2025-09-09,strike,surprise,Russian drones into Poland
+europe_east,2025-09-12,exercise,buildup,Zapad 2025
+europe_east,2025-09-19,other,surprise,MiG-31s violate Estonian airspace
+iran,2019-05-12,maritime,buildup,Fujairah tanker sabotage
+iran,2019-06-13,maritime,buildup,Gulf of Oman tanker attacks
+iran,2019-06-20,strike,buildup,Iran downs US Global Hawk
+iran,2019-09-14,strike,surprise,Abqaiq-Khurais attack
+iran,2020-01-03,strike,buildup,Soleimani killed
+iran,2020-01-08,strike,buildup,Iran missiles on Ain al-Asad
+iran,2024-01-16,strike,surprise,Iran-Pakistan border strikes
+iran,2024-02-02,strike,buildup,US strikes militias in Iraq and Syria
+iran,2024-04-13,strike,buildup,Iran first direct attack on Israel
+iran,2024-07-31,strike,surprise,Haniyeh assassinated in Tehran
+iran,2024-10-01,strike,buildup,Iran 200 missiles at Israel
+iran,2024-10-26,strike,buildup,Israel strikes Iran
+iran,2025-06-13,onset,buildup,Twelve-Day War
+iran,2025-06-22,strike,buildup,US Midnight Hammer
+iran,2025-06-23,strike,buildup,Iran strikes Al Udeid
+iran,2026-02-28,onset,buildup,US-Israel war on Iran
+iran,2026-03-02,maritime,buildup,Hormuz standstill and Gulf strikes
+iran,2026-03-18,strike,buildup,South Pars and Qatar LNG strikes
+iran,2026-07-08,maritime,surprise,Ceasefire collapse in Hormuz
+yemen,2022-01-17,strike,surprise,Houthi attack on Abu Dhabi
+yemen,2023-11-19,maritime,buildup,Red Sea attacks begin
+yemen,2023-12-18,maritime,buildup,Prosperity Guardian and carrier suspensions
+yemen,2024-01-12,strike,buildup,First US-UK strikes on Houthis
+yemen,2024-07-20,strike,buildup,Israel strikes Hodeidah
+yemen,2025-03-15,strike,buildup,US Rough Rider campaign
+yemen,2025-07-06,maritime,surprise,Magic Seas and Eternity C sunk
+yemen,2026-03-28,strike,buildup,Houthis join 2026 Iran war
+israel,2018-05-10,strike,buildup,Golan rockets and Israeli raid in Syria
+israel,2021-05-10,onset,buildup,11-day Gaza war
+israel,2023-10-07,onset,surprise,Hamas attack
+israel,2024-04-01,strike,surprise,Damascus consulate strike
+israel,2024-09-17,strike,surprise,Pager attacks
+israel,2024-09-23,onset,buildup,Israel air campaign in Lebanon
+israel,2024-11-27,onset,surprise,HTS offensive and fall of Assad
+israel,2025-03-18,strike,buildup,Israel ends Gaza ceasefire
+israel,2025-09-09,strike,surprise,Israeli strike in Doha
+israel,2026-03-02,onset,buildup,Hezbollah-Israel war resumes
+taiwan,2022-08-04,exercise,buildup,PLA drills after Pelosi
+taiwan,2023-04-08,exercise,buildup,Joint Sword
+taiwan,2024-05-23,exercise,buildup,Joint Sword-2024A
+taiwan,2024-10-14,exercise,buildup,Joint Sword-2024B
+taiwan,2025-04-01,exercise,surprise,Strait Thunder-2025A
+taiwan,2025-12-29,exercise,buildup,Justice Mission-2025
+scs,2024-06-17,maritime,buildup,Second Thomas Shoal boarding
+scs,2025-08-11,maritime,surprise,Scarborough collision
+korea,2020-06-16,other,buildup,Kaesong liaison office blown up
+korea,2022-03-24,other,buildup,First ICBM since 2017
+korea,2022-10-04,strike,surprise,Missile over Japan
+korea,2022-11-02,strike,buildup,23 missiles in a day
+southasia,2019-02-26,strike,buildup,Balakot
+southasia,2019-02-27,strike,buildup,Pakistan retaliation and dogfight
+southasia,2025-05-07,strike,buildup,Operation Sindoor
+southasia,2025-05-10,strike,buildup,Pakistan strikes Indian bases
+libya,2019-04-04,onset,surprise,Haftar Tripoli offensive
+libya,2020-01-18,other,buildup,Oil port blockade
+libya,2024-08-26,other,buildup,Oil shutdown over central bank
+sudan,2023-04-15,onset,buildup,SAF-RSF war
+sudan,2025-05-04,strike,surprise,Drone strikes on Port Sudan
+sudan,2025-10-26,other,buildup,El Fasher falls
+drc,2025-01-23,onset,buildup,M23 Goma offensive
+drc,2025-03-13,other,buildup,Bisie tin mine halted
+venezuela,2025-09-02,strike,buildup,First US boat strike
+venezuela,2025-12-10,maritime,buildup,US seizes tanker Skipper
+venezuela,2026-01-03,onset,buildup,US strikes and capture of Maduro

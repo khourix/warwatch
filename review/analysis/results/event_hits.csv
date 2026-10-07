@@ -1,0 +1,52 @@
+theatre,date,kind,type,hit,desc
+ukraine,2022-02-24,buildup,onset,False,Russia full-scale invasion
+ukraine,2022-10-10,buildup,strike,False,First mass missile wave on Ukrainian grid
+ukraine,2023-07-17,buildup,maritime,False,Russia quits grain deal and strikes Odesa ports
+ukraine,2024-08-06,surprise,onset,True,Ukraine Kursk offensive
+ukraine,2024-11-21,surprise,strike,True,Oreshnik IRBM on Dnipro
+ukraine,2025-06-01,surprise,strike,True,Operation Spiderweb
+europe_east,2021-09-10,buildup,exercise,False,Zapad 2021
+europe_east,2022-02-24,buildup,onset,True,Russia invades Ukraine (flank)
+europe_east,2022-11-15,surprise,strike,False,Przewodow missile
+europe_east,2024-12-25,surprise,other,False,Estlink 2 cable damage
+europe_east,2025-09-09,surprise,strike,False,Russian drones into Poland
+iran,2024-01-16,surprise,strike,True,Iran-Pakistan border strikes
+iran,2024-04-13,buildup,strike,True,Iran first direct attack on Israel
+iran,2024-07-31,surprise,strike,True,Haniyeh assassinated in Tehran
+iran,2024-10-01,buildup,strike,False,Iran 200 missiles at Israel
+iran,2025-06-13,buildup,onset,True,Twelve-Day War
+iran,2026-02-28,buildup,onset,True,US-Israel war on Iran
+iran,2026-07-08,surprise,maritime,False,Ceasefire collapse in Hormuz
+yemen,2022-01-17,surprise,strike,False,Houthi attack on Abu Dhabi
+yemen,2023-11-19,buildup,maritime,True,Red Sea attacks begin
+yemen,2024-07-20,buildup,strike,True,Israel strikes Hodeidah
+yemen,2025-03-15,buildup,strike,True,US Rough Rider campaign
+yemen,2025-07-06,surprise,maritime,False,Magic Seas and Eternity C sunk
+yemen,2026-03-28,buildup,strike,True,Houthis join 2026 Iran war
+israel,2021-05-10,buildup,onset,False,11-day Gaza war
+israel,2023-10-07,surprise,onset,True,Hamas attack
+israel,2024-04-01,surprise,strike,True,Damascus consulate strike
+israel,2024-09-17,surprise,strike,False,Pager attacks
+israel,2024-11-27,surprise,onset,False,HTS offensive and fall of Assad
+israel,2025-03-18,buildup,strike,True,Israel ends Gaza ceasefire
+israel,2025-09-09,surprise,strike,True,Israeli strike in Doha
+israel,2026-03-02,buildup,onset,True,Hezbollah-Israel war resumes
+taiwan,2022-08-04,buildup,exercise,False,PLA drills after Pelosi
+taiwan,2023-04-08,buildup,exercise,False,Joint Sword
+taiwan,2024-05-23,buildup,exercise,False,Joint Sword-2024A
+taiwan,2024-10-14,buildup,exercise,False,Joint Sword-2024B
+taiwan,2025-04-01,surprise,exercise,True,Strait Thunder-2025A
+taiwan,2025-12-29,buildup,exercise,False,Justice Mission-2025
+scs,2024-06-17,buildup,maritime,False,Second Thomas Shoal boarding
+scs,2025-08-11,surprise,maritime,False,Scarborough collision
+korea,2022-03-24,buildup,other,False,First ICBM since 2017
+korea,2022-10-04,surprise,strike,False,Missile over Japan
+southasia,2025-05-07,buildup,strike,False,Operation Sindoor
+libya,2024-08-26,buildup,other,False,Oil shutdown over central bank
+sudan,2023-04-15,buildup,onset,False,SAF-RSF war
+sudan,2025-05-04,surprise,strike,False,Drone strikes on Port Sudan
+sudan,2025-10-26,buildup,other,False,El Fasher falls
+drc,2025-01-23,buildup,onset,False,M23 Goma offensive
+drc,2025-03-13,buildup,other,False,Bisie tin mine halted
+venezuela,2025-09-02,buildup,strike,False,First US boat strike
+venezuela,2025-12-10,buildup,maritime,False,US seizes tanker Skipper
