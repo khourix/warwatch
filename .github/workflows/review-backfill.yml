@@ -1,0 +1,72 @@
+name: review-backfill
+# Methodology review only (branch claude/project-thread-k7j869): back-fills long histories of the leading feeds so the
+# review can test whether they rose before past wars. Public data only; touches nothing the dashboard uses.
+on:
+  push:
+    branches: [claude/project-thread-k7j869]
+    paths: [review/backfill.py, .github/workflows/review-backfill.yml]
+permissions:
+  contents: write
+concurrency:
+  group: review-backfill
+  cancel-in-progress: true
+jobs:
+  gdelt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 review/backfill.py gdelt ${{ matrix.shard }} 16 | tail -5
+      - uses: actions/upload-artifact@v4
+        with: {name: "gdelt-${{ matrix.shard }}", path: review/data/, retention-days: 7}
+  gpsjam:
+    runs-on: ubuntu-latest
+    timeout-minutes: 200
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m pip install --quiet --break-system-packages h3
+      - run: python3 review/backfill.py gpsjam ${{ matrix.shard }} 4 | tail -5
+      - uses: actions/upload-artifact@v4
+        with: {name: "gpsjam-${{ matrix.shard }}", path: review/data/, retention-days: 7}
+  misc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 200
+    strategy:
+      fail-fast: false
+      matrix:
+        what: [polymarket, ooni, gpr, ucdp]
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 review/backfill.py ${{ matrix.what }} | tail -30
+      - uses: actions/upload-artifact@v4
+        with: {name: "misc-${{ matrix.what }}", path: review/data/, retention-days: 7}
+  collect:
+    needs: [gdelt, gpsjam, misc]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {path: art}
+      - name: Merge, compress and commit to the review branch
+        run: |
+          mkdir -p review/data
+          cat art/gdelt-*/gdelt_*.csv 2>/dev/null | sort -u | gzip -9 > review/data/gdelt_country_day.csv.gz || true
+          cat art/gpsjam-*/gpsjam_*.csv 2>/dev/null | sort -u | gzip -9 > review/data/gpsjam_theatre_day.csv.gz || true
+          for f in art/misc-*/*; do b=$(basename "$f"); gzip -9c "$f" > "review/data/$b.gz"; done
+          ls -la review/data
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add review/data
+          git diff --cached --quiet && exit 0
+          git commit -qm "review: back-filled histories $(date -u +%FT%H:%MZ)"
+          for i in 1 2 3; do git pull --rebase -q origin claude/project-thread-k7j869 && git push -q origin HEAD:claude/project-thread-k7j869 && exit 0; sleep 5; done
+          exit 1
