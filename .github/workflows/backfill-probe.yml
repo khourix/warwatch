@@ -9,41 +9,40 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
       - name: probe
         continue-on-error: true
         run: |
           UA="warwatch-backfill/0.1 (public-data research; github.com/khourix/warwatch)"
-          p() { echo; echo "=== $1"; shift; curl -sSL -g -m 90 -A "$UA" -w "\n[http %{http_code} %{size_download}B]\n" "$@" 2>&1 | head -c ${LIM:-1500}; echo; }
-          for r in ypcat/plavis typingmonk/Taiwan_ADIZ_alerts; do echo "== tree $r"; curl -sS -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$r/git/trees/main?recursive=1" | python3 -c "import json,sys; t=json.load(sys.stdin).get('tree',[]); print(len(t)); [print(x['path'],x.get('size')) for x in t if not x['path'].startswith(('.github','node_modules')) ][:60]" | head -70; done
-          LIM=3800 p "plavis CLAUDE.md" "https://raw.githubusercontent.com/ypcat/plavis/main/CLAUDE.md"
-          LIM=1200 p "adiz README" "https://raw.githubusercontent.com/typingmonk/Taiwan_ADIZ_alerts/main/README.md"
-          LIM=2500 p "mnd en pla page text" "https://www.mnd.gov.tw/en/Publication/84460"
-          p "mnd list" "https://www.mnd.gov.tw/en/Publication?types=PLA"
-          p "wayback state taiwan snapshot" "https://web.archive.org/web/20220801000000id_/https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories/taiwan-travel-advisory.html"
-          p "cdx digest collapse israel" "https://web.archive.org/cdx/search/cdx?url=travel.state.gov/content/travel/en/traveladvisories/traveladvisories/israel-travel-advisory.html&output=json&fl=timestamp,statuscode,digest&filter=statuscode:200&collapse=timestamp:7&limit=8"
+          echo "=== plavis csv"; curl -sSL -A "$UA" https://raw.githubusercontent.com/ypcat/plavis/main/data/pla_activity.csv -o /tmp/pla.csv; wc -l /tmp/pla.csv; head -3 /tmp/pla.csv | cut -c1-400; tail -2 /tmp/pla.csv | cut -c1-300
+          echo "=== cdx prefix"; curl -sSL -m 120 -A "$UA" "https://web.archive.org/cdx/search/cdx?url=travel.state.gov/content/travel/en/traveladvisories/traveladvisories/&matchType=prefix&output=txt&fl=original&collapse=urlkey&filter=statuscode:200&limit=400" | sed 's#.*/##' | sort -u | tr '\n' ' ' | cut -c1-3000
+          echo; echo "=== cdx israel"; curl -sSL -m 120 -A "$UA" "https://web.archive.org/cdx/search/cdx?url=travel.state.gov/content/travel/en/traveladvisories/traveladvisories/israel-the-west-bank-and-gaza-travel-advisory.html&output=txt&fl=timestamp,digest&filter=statuscode:200&collapse=timestamp:6" | head -40 | tr '\n' ' '
+          echo; echo "=== snapshot levels"
+          for u in taiwan-travel-advisory.html; do for ts in 20190101 20220801 20240601 20260101; do curl -sSL -m 90 -A "$UA" "https://web.archive.org/web/${ts}id_/https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories/$u" | python3 -c "
+          import sys,re; t=sys.stdin.read(); print('$ts', len(t), re.findall(r'Level\s*[1-4]\s*:[^<\n]{0,40}', t)[:3], 'OD' if re.search('ordered departure',t,re.I) else '-')"; done; done
           echo "=== adsb tar traces"
           URL="https://github.com/adsblol/globe_history_2024/releases/download/v2024.06.15-planes-readsb-prod-0/v2024.06.15-planes-readsb-prod-0.tar.aa"
           python3 - "$URL" <<'PY'
           import sys, tarfile, gzip, json, urllib.request, time
           r = urllib.request.urlopen(sys.argv[1], timeout=120)
           t = tarfile.open(fileobj=r, mode="r|")
-          n = 0; t0=time.time(); seen=0
+          n = 0; t0=time.time(); seen=0; mil=0; trace=0; kinds={}
           for m in t:
               seen+=1
-              if m.name.endswith("/") or "traces" not in m.name:
-                  if seen<30 or seen%2000==0: print("skip", m.name, m.size)
+              if not m.isfile():
+                  kinds[m.type]=kinds.get(m.type,0)+1
                   continue
+              if "trace" not in m.name:
+                  continue
+              trace+=1
               b = t.extractfile(m).read()
               try: b = gzip.decompress(b)
-              except Exception as e: pass
-              try: d = json.loads(b)
-              except Exception as e: print("nojson", m.name, b[:80]); continue
-              if n < 4 or (d.get("dbFlags",0) & 1 and n < 12):
+              except Exception: pass
+              d = json.loads(b)
+              if n < 2 or (d.get("dbFlags",0) & 1 and mil < 3):
                   print(m.name, m.size, {k:(v if k!='trace' else (len(v), v[:2])) for k,v in d.items()})
                   n += 1
-              if n >= 12 or time.time()-t0 > 150: break
-          print("members", seen, "secs", round(time.time()-t0))
+              if d.get("dbFlags",0) & 1: mil+=1
+              if time.time()-t0 > 100: break
+          print("members", seen, "trace files", trace, "mil", mil, "nonfile types", kinds, "secs", round(time.time()-t0))
           PY
