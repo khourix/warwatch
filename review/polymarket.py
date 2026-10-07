@@ -17,6 +17,10 @@ NOT_RX = re.compile(r"counter-strike|\bcs2?\b|\bnba\b|\bnfl\b|\bufc\b|\bmlb\b|\b
                     r"strike ?out|election|nominee|bitcoin|\bbtc\b|eth\b|box office|album|movie|song|video", re.I)
 
 
+SLUGS = ("geopolitics", "world", "middle-east", "ukraine", "russia", "israel", "iran", "china", "taiwan", "korea", "north-korea", "venezuela",
+         "india", "pakistan", "yemen", "gaza", "lebanon", "syria", "military-strikes", "military-invasion", "war", "ukraine-map", "world-affairs")
+
+
 def get(url, tries=4):
     for i in range(tries):
         try:
@@ -34,14 +38,22 @@ def main():
     tags = []
     off = 0
     while True:
-        page = get(f"{G}/tags?limit=500&offset={off}")
+        page = get(f"{G}/tags?limit=100&offset={off}")
         if not page:
             break
         tags += page
-        off += 500
-        if len(page) < 500 or off > 20000:
+        off += len(page)
+        if off > 30000:
             break
     keep = [t for t in tags if TAG_RX.search((t.get("label") or "") + " " + (t.get("slug") or ""))]
+    for slug in SLUGS:                       # Polymarket's main geopolitics tags, in case the tag list is truncated
+        if not any(t.get("slug") == slug for t in keep):
+            try:
+                t = get(f"{G}/tags/slug/{slug}")
+                if t and t.get("id"):
+                    keep.append(t)
+            except Exception:
+                pass
     print("tags", len(tags), "kept", len(keep), [t.get("slug") for t in keep][:80], flush=True)
     seen, n = set(), 0
     with open(os.path.join(OUT, "polymarket_war.jsonl"), "w") as f:
