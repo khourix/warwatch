@@ -166,8 +166,12 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -- ${{ matrix.period }}
+          S="${START:-$1}"; E="${END:-$2}"
+          # an explicit range runs only in the quarters it touches, clipped to them
+          [[ "$S" < "$1" ]] && S="$1"; [[ "$E" > "$2" ]] && E="$2"
+          if [[ "$S" > "$E" ]]; then echo "outside this quarter"; exit 0; fi
           export BACKFILL_DATA="$PWD/backfill/shards/$1"
-          python3 backfill/backfill.py adsb --start "${START:-$1}" --end "${END:-$2}"
+          python3 backfill/backfill.py adsb --start "$S" --end "$E"
       - uses: ./.github/actions/commit-backfill
         if: always()
   merge:
