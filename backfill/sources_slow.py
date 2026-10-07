@@ -3,6 +3,7 @@ import csv
 import datetime as dt
 import io
 import re
+from html import unescape
 import time
 import urllib.parse
 
@@ -115,7 +116,7 @@ MND = "https://www.mnd.gov.tw/"
 BROWSER = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8"}   # the site's firewall refuses bare clients
 LINK = re.compile(r'href="[^"]*?news/plaact/(\d+)[^"]*"[^>]*>(.*?)</a>', re.S)
-TOTAL = [re.compile(p) for p in (r"共機\s*(\d+)\s*架次", r"共軍機\s*(\d+)\s*架次", r"(\d+)\s*(?:sorties|PLA aircraft|military aircraft)\b")]
+TOTAL = [re.compile(p) for p in (r"共機\s*(\d+)\s*架次", r"共軍機\s*(\d+)\s*架次", r"共機\s*(\d+)\s*架", r"共機[^0-9]{0,6}(\d+)\s*架", r"(\d+)\s*(?:sorties|PLA aircraft|military aircraft)\b")]
 MEDIAN = [re.compile(p) for p in (r"(\d+)\s*架次\s*(?:逾越|跨越)\s*(?:海峽)?中線", r"(?:逾越|跨越)\s*(?:海峽)?中線[^0-9]{0,12}(\d+)\s*架次", r"(\d+)\s*(?:of which|sorties)?[^.]{0,40}crossed the median line")]
 VESSELS = [re.compile(p) for p in (r"共艦\s*(\d+)\s*艘", r"(\d+)\s*PLAN vessels")]
 OFFICIAL = [re.compile(p) for p in (r"公務船\s*(\d+)\s*艘", r"(\d+)\s*official ships")]
@@ -150,14 +151,15 @@ def parse_bulletin(text):
 
 
 def strip_tags(html):
-    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", re.sub(r"(?is)<(script|style).*?</\1>", " ", html)))
+    """Page -> plain text. The site writes much of its Chinese as numeric entities (&#x5171;), so decode them before matching."""
+    return re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", re.sub(r"(?is)<(script|style).*?</\1>", " ", html))))
 
 
 def cmd_pla(start, end, max_pages=400):
     """Walk the MND list pages newest first, read each bulletin, keep one total per day (the first bulletin of the day wins).
     The ypcat/plavis community archive (public CSV, 2025 onward) is merged for days the crawl could not parse."""
     have = {s: K.load(s) for s in ("pla_aircraft", "pla_median", "pla_vessels", "pla_official_ships")}
-    seen, found, empty = set(), 0, 0
+    seen, found, empty, unparsed = set(), 0, 0, 0
     parsed = {s: {} for s in have}
     for page in range(1, max_pages + 1):
         try:
@@ -191,7 +193,10 @@ def cmd_pla(start, end, max_pages=400):
                 continue
             row = parse_bulletin(text)
             if row["total"] is None:
-                K.log("unparsed", day, i, text[:160])
+                unparsed += 1
+                if unparsed <= 6:      # enough to see the wording the patterns miss
+                    k = max(text.find("共機"), text.find("架"), 0)
+                    K.log("unparsed", day, i, text[max(0, k - 60):k + 140])
                 continue
             found += 1
             for key, sid in (("total", "pla_aircraft"), ("median", "pla_median"), ("vessels", "pla_vessels"), ("official", "pla_official_ships")):
