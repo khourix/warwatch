@@ -104,7 +104,15 @@ def gfw_report(token, dataset, box, a, b):
     q = urllib.parse.urlencode({"spatial-resolution": "LOW", "temporal-resolution": "DAILY", "group-by": "FLAG",
                                 "datasets[0]": dataset, "date-range": f"{a},{b}", "format": "JSON"})
     body = {"geojson": {"type": "Polygon", "coordinates": [[[lo0, la0], [lo1, la0], [lo1, la1], [lo0, la1], [lo0, la0]]]}}
-    return K.get(GFW + "?" + q, data=body, headers={"Authorization": "Bearer " + token}, timeout=300, retries=3, wait=20)
+    for i in range(40):
+        try:
+            return K.get(GFW + "?" + q, data=body, headers={"Authorization": "Bearer " + token}, timeout=300, retries=2, wait=20)
+        except RuntimeError as e:
+            if "429" not in str(e):
+                raise
+            K.log("GFW rate limit, waiting 70 s", i)     # the token's quota is shared by every job
+            time.sleep(70)
+    raise RuntimeError("GFW rate limit did not clear")
 
 
 def parse_gfw(payload, field):

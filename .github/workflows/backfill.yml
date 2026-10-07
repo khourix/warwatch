@@ -118,6 +118,7 @@ jobs:
     timeout-minutes: 340
     strategy:
       fail-fast: false
+      max-parallel: 2     # the GFW token is rate limited across all jobs
       matrix:
         theatre: [iran, yemen, israel, ukraine, taiwan, scs, korea, venezuela]
     steps:
