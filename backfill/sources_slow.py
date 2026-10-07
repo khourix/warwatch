@@ -146,7 +146,10 @@ def first_int(pats, text):
 def parse_bulletin(text):
     """Bulletin body -> dict(total, median, vessels, official), each None when the text does not say."""
     flat = " ".join((text or "").split())
-    return {"total": first_int(TOTAL, flat), "median": first_int(MEDIAN, flat),
+    total = first_int(TOTAL, flat)
+    if total is None and re.search(r"未偵獲共機|未發現共機|無共機", flat):
+        total = 0          # the bulletin says no aircraft were detected
+    return {"total": total, "median": first_int(MEDIAN, flat),
             "vessels": first_int(VESSELS, flat), "official": first_int(OFFICIAL, flat)}
 
 
@@ -159,7 +162,7 @@ def cmd_pla(start, end, max_pages=400):
     """Walk the MND list pages newest first, read each bulletin, keep one total per day (the first bulletin of the day wins).
     The ypcat/plavis community archive (public CSV, 2025 onward) is merged for days the crawl could not parse."""
     have = {s: K.load(s) for s in ("pla_aircraft", "pla_median", "pla_vessels", "pla_official_ships")}
-    seen, found, empty, unparsed = set(), 0, 0, 0
+    seen, found, empty, unparsed, shown = set(), 0, 0, 0, {}
     parsed = {s: {} for s in have}
     for page in range(1, max_pages + 1):
         try:
@@ -178,6 +181,10 @@ def cmd_pla(start, end, max_pages=400):
         empty = 0
         oldest = None
         for i, title in new:
+            tday = parse_date(title)
+            if tday and not (start <= tday <= end):
+                oldest = min(oldest, tday) if oldest else tday
+                continue       # the list title already dates it: no need to open it
             try:
                 body = K.get(f"{MND}news/plaact/{i}", headers=BROWSER, raw=True, timeout=90, retries=3, wait=10).decode("utf-8", "replace")
             except RuntimeError as e:
@@ -192,11 +199,14 @@ def cmd_pla(start, end, max_pages=400):
             if not (start <= day <= end):
                 continue
             row = parse_bulletin(text)
-            if row["total"] is None:
+            if all(v is None for v in row.values()):
                 unparsed += 1
-                if unparsed <= 6:      # enough to see the wording the patterns miss
-                    k = max(text.find("共機"), text.find("架"), 0)
-                    K.log("unparsed", day, i, text[max(0, k - 60):k + 140])
+                n = shown.get(day.year, 0)
+                if n < 2:          # two samples per year are enough to see the wording the patterns miss
+                    shown[day.year] = n + 1
+                    m = re.search(r"\d+\s*(?:架|艘)|共機|共軍", text)
+                    k = m.start() if m else 600
+                    K.log("unparsed", day, i, text[max(0, k - 80):k + 260])
                 continue
             found += 1
             for key, sid in (("total", "pla_aircraft"), ("median", "pla_median"), ("vessels", "pla_vessels"), ("official", "pla_official_ships")):

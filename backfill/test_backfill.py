@@ -52,6 +52,9 @@ class T(unittest.TestCase):
     def test_bulletin(self):
         r = L.parse_bulletin("今日共機24架次，其中18架次逾越中線，共艦7艘、公務船1艘")
         self.assertEqual(r, {"total": 24, "median": 18, "vessels": 7, "official": 1})
+        quiet = L.parse_bulletin("偵獲共艦8艘及公務船9艘，持續活動。三、上述期間未偵獲共機，故無提供航跡圖。")
+        self.assertEqual((quiet["total"], quiet["vessels"], quiet["official"]), (0, 8, 9))
+        self.assertEqual(L.strip_tags("<p>&#x5171;&#x6A5F;24&#x67B6;&#x6B21;</p>").strip(), "共機24架次")
         self.assertEqual(L.parse_date("113/01/15"), dt.date(2024, 1, 15))
 
     def test_adsb_counts_one_day(self):
