@@ -60,6 +60,25 @@ class TestStats(unittest.TestCase):
         self.assertIsNone(stats.score_series([("a", 1)] * 10, "monthly"))
         self.assertIsNone(stats.score_series([("a", 1)] * 30, "daily"))
 
+    def test_year_baseline_leaves_out_the_latest_30_days(self):
+        import datetime as dt
+        d0 = dt.date(2025, 1, 1)
+        def series(vals):
+            return [((d0 + dt.timedelta(days=i)).isoformat(), v) for i, v in enumerate(vals)]
+        noise = [10 + (i * 7 % 5) for i in range(500)]
+        ramp = noise[:440] + [10 + (i * 7 % 5) + 1.5 * (i - 440) / 10 for i in range(440, 500)]   # a slow build-up over the last 60 days
+        yr = stats.score_series(series(ramp), "daily")
+        short = stats.score_series(series(ramp), "daily", base_days=90)
+        self.assertIn("prior year", yr["method"])
+        self.assertGreater(yr["z"], short["z"])    # the 90-day yardstick has absorbed the ramp; the year one has not
+        thin = stats.score_series(series(noise[:150]), "daily")
+        self.assertIn("90 days", thin["method"])   # not enough history for a year baseline: plain 90-day window
+
+    def test_backtest_replays_market_series(self):
+        import backtest
+        self.assertIn("fetch_market", backtest.LONG)
+        self.assertIn("fetch_market", backtest.LAG)
+
     def test_false_alarm_rate_on_pure_noise_is_low(self):
         for kind in ("monthly", "daily"):
             zs = [stats.score_series(demo.monthly(s, 0) if kind == "monthly" else demo.daily(s, 0), kind)["z"]
@@ -465,7 +484,29 @@ class TestEngine(unittest.TestCase):
         for n in (2, 4, 6):
             w = engine.owa_weights(n)
             self.assertAlmostEqual(sum(w), 1.0)
-            self.assertAlmostEqual(sum(x * (n - 1 - i) / (n - 1) for i, x in enumerate(w)), 0.3, places=4)
+            self.assertAlmostEqual(sum(x * (n - 1 - i) / (n - 1) for i, x in enumerate(w)), engine.ORNESS, places=4)
+
+    def test_calm_readings_never_cancel_an_alarm(self):
+        import engine
+        def row(i, z, domain="logistics"):
+            return {"id": i, "theatre": "ukraine", "domain": domain, "direction": "up", "lag": False, "kind": "daily", "points": [],
+                    "score": {"z": z}}
+        its = engine.theatre_items([row("a", -4.0), row("b", 3.0)], "ukraine")
+        self.assertEqual({i["id"]: i["z"] for i in its}, {"a": 0.0, "b": 3.0})
+
+    def test_zero_weight_series_are_ignored_by_the_composite(self):
+        import engine
+        row = {"id": "ooni_iran", "theatre": "iran", "domain": "information", "direction": "up", "lag": False, "kind": "daily",
+               "points": [], "score": {"z": 5.0}, "scored": False}
+        self.assertEqual(engine.theatre_items([row], "iran"), [])
+        zero = [s["id"] for s in catalog.SERIES if not s["scored"]]
+        self.assertTrue(zero and all(i.startswith(catalog.ZERO_WEIGHT) for i in zero))
+        self.assertTrue(any(i.startswith("ooni_") for i in zero))
+
+    def test_levels_do_not_depend_on_the_day_s_other_readings(self):
+        import engine
+        self.assertEqual(engine.evaluate_all([], [], {})[1], (0.0, 1.0))
+        self.assertFalse(hasattr(engine, "estimate_calib"))
 
     def test_mpi_penalises_lopsided_profile(self):
         import engine

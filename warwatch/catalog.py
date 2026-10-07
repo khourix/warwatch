@@ -26,7 +26,7 @@ def add(id, label, domain, theatre, kind, lag, why, fetch, direction="up", needs
     if drop is None:
         drop = 1 if kind == "monthly" else 0
     SERIES.append(dict(id=id, label=label, domain=domain, theatre=theatre, kind=kind, lag=lag, why=why,
-                       fetch=fetch, direction=direction, needs=list(needs), drop=drop, url=url, sub=sub, every=None))
+                       fetch=fetch, direction=direction, needs=list(needs), drop=drop, url=url, sub=sub, every=None, scored=True))
 
 
 def _slow(sid, fn):
@@ -578,3 +578,13 @@ for _s in SERIES:
         _s["every"] = 3
     elif _id.startswith("ais_presence_"):
         _s["every"] = 12      # one call per box; the source posts daily with a ~5 day delay
+
+
+# ============ Zero weight: families the methodology review found to be noise ============
+# Their noise-to-signal ratio on 78 labelled events (2018-2026) was 1 or more, so they raised false alarms without adding
+# warning (docs/METHODOLOGY.md, "Zero-weight families"). They stay on the page and keep being scored; the composite ignores
+# them until a refit shows they lead events. Remove an id here to give it weight again.
+ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_build_")
+for _s in SERIES:
+    if _s["id"].startswith(ZERO_WEIGHT):
+        _s["scored"] = False

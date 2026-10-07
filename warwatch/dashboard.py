@@ -61,7 +61,7 @@ def series_json(s):
     d = {"id": s["id"], "l": s["label"], "d": s["domain"], "s": s.get("sub", ""), "t": s["theatre"], "lag": bool(s["lag"]),
          "dir": s["direction"], "why": s["why"], "url": s.get("url", ""), "st": s["status"], "er": s.get("error", ""),
          "stale": s.get("stale", ""), "kind": kind, "n": len(pts), "need": 40 if kind == "monthly" else 84,
-         "needs": s.get("needs", []), "z": None}
+         "needs": s.get("needs", []), "z": None, "w0": not s.get("scored", True)}
     if pts:
         d["pts"] = [[lab, round(v, 3)] for lab, v in pts[-MAXPTS[kind]:]]
         d["last"] = pts[-1][0]

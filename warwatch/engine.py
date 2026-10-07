@@ -1,8 +1,9 @@
 """Composite threat engine (v7). Standard library only, deterministic, every intermediate kept for audit.
 
-series -> modified z (stats.score_series: 90-day baseline, winsorized +-5)
+series -> modified z (stats.score_series: 1-year baseline that leaves out the latest 30 days, 90-day baseline for
+          shorter histories, winsorized +-5), then only the warning direction counts: max(0, z)
        -> redundancy groups (correlated series are averaged, so one signal is not counted twice)
-       -> domain score (OWA over the strongest groups, orness 0.3: agreement is needed, one spike is not enough)
+       -> domain score (OWA over the strongest groups, orness 0.7: the strongest evidence leads, but a lone series is shrunk)
        -> theatre composite: weighted Mazziotta-Pareto index over domains (non-compensatory: a lopsided
           profile is not averaged away), then level by calibrated thresholds
        -> region -> global (same idea, see rollup).
@@ -20,7 +21,7 @@ import config as C
 import stats
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ORNESS = 0.3          # 0 = min (all must agree), 0.5 = mean, 1 = max
+ORNESS = 0.7          # 0 = min (all must agree), 0.5 = mean, 1 = max; 0.7 leans to the strongest signal (backtest AUC 0.61 -> 0.63 vs 0.3)
 TOPK = 6              # a domain looks at its strongest TOPK groups, so 40 quiet series cannot dilute one real signal
 LAG_K = 0.25          # confirming (late-published) signals count at a quarter: the aim is early warning, not confirmation
 LONE = 0.7            # a domain with a single scorable group is shrunk: one source alone is weak evidence
@@ -132,11 +133,11 @@ def domain_score(zs):
 def theatre_items(series, theatre):
     out = []
     for s in series:
-        if s["theatre"] != theatre or not s.get("score"):
+        if s["theatre"] != theatre or not s.get("score") or not s.get("scored", True):
             continue
         d = s["direction"]
         sign = -1 if d == "down" else 1
-        z = {"up": s["score"]["z"], "down": -s["score"]["z"]}.get(d, abs(s["score"]["z"]))
+        z = max(0.0, {"up": s["score"]["z"], "down": -s["score"]["z"]}.get(d, abs(s["score"]["z"])))   # only evidence in the warning direction counts: calm readings never cancel an alarm
         k = LAG_K if s["lag"] else 1.0
         out.append({"id": s["id"], "domain": s["domain"], "z": z * k, "k": k, "zfull": z, "lag": bool(s["lag"]), "kind": s["kind"], "sign": sign,
                     "both": d not in ("up", "down"), "miss": s["score"].get("miss", 0.0), "raw": s["score"].get("z_raw", s["score"]["z"]),
@@ -159,30 +160,11 @@ def _dom_null(flags):
             zs = []
             for both, k in flags:
                 z = max(-stats.WINSOR, min(stats.WINSOR, rnd.gauss(0, 1) * (2.0 if rnd.random() < 0.1 else 1.0) * norm)) * k
-                zs.append(abs(z) if both else z)
+                zs.append(abs(z) if both else max(0.0, z))
             arr.append(domain_score(zs)[0])
         m = statistics.fmean(arr)
         _DOMS[flags] = (arr, m, statistics.pstdev(arr) or 1e-6)
     return _DOMS[flags]
-
-
-def estimate_calib(results):
-    """Empirical null (Efron): real signals are more spread out and more persistent than independent standard normals,
-    so the calm-world domain scores are re-centred and re-scaled to match the bulk of the live domain scores.
-    Each live domain score is standardised against its simulated calm distribution; the median of those is the shift
-    (mu), 1.4826 x the median absolute deviation the stretch (kappa). A few real crises barely move a median/MAD.
-    -> (mu, kappa), clamped to [-0.5, 1] and [1, 3]."""
-    u = []
-    for r in results:
-        for d in r["doms"].values():
-            if d["z"] is not None and d.get("shape") is not None and r["theatre"] != "global":
-                _, m, sd = _dom_null(tuple(tuple(x) for x in d["shape"]))
-                u.append((d["z"] - m) / sd)
-    if len(u) < 8:
-        return (0.0, 1.0)
-    med = statistics.median(u)
-    mad = statistics.median(abs(x - med) for x in u)
-    return (max(-0.5, min(1.0, med)), max(1.0, min(3.0, 1.4826 * mad)))
 
 
 _NULLS = {}
@@ -214,7 +196,7 @@ def logistic_score(zc, th):
 def theatre_composite(series, theatre, wt, calib=(0.0, 1.0)):
     """One theatre. wt = load_weights()['weights'][theatre]. Returns the dashboard fields plus an audit trail."""
     items = theatre_items(series, theatre)
-    total = sum(1 for s in series if s["theatre"] == theatre)
+    total = sum(1 for s in series if s["theatre"] == theatre and s.get("scored", True))
     doms, audit_groups = {}, {}
     pairs_all = []
     for dom in C.DOMAINS:
@@ -300,7 +282,7 @@ def rollup(theatres, regions):
                  "counts": {l: sum(1 for r in live if r["level"] == l) for l in LEVELS}}
 
 
-def compute_composite_score(metrics, weights, baseline_window=90):
+def compute_composite_score(metrics, weights, baseline_window=None):
     """Stand-alone entry point for one theatre or portfolio.
     metrics: {name: {"domain": str, "direction": "up|down|both", "kind": "daily|monthly", "lag": bool,
                      "points": [(label, value), ...]}}; weights: {domain: weight}.
@@ -316,9 +298,9 @@ def compute_composite_score(metrics, weights, baseline_window=90):
 
 
 def evaluate_all(series, theatres, wv_weights):
-    """Two passes: plain, then re-run with the empirical-null calibration estimated from all theatres."""
-    first = {t: theatre_composite(series, t, wv_weights[t]) for t in theatres}
-    calib = estimate_calib([r for r, _ in first.values()])
+    """One pass. The thresholds come from the calm-world simulation alone: an earlier version re-fitted them on the
+    day's live readings (empirical null), which moved levels whenever feeds dropped out. calib stays (0, 1) for the page data."""
+    calib = (0.0, 1.0)
     return {t: theatre_composite(series, t, wv_weights[t], calib) for t in theatres}, calib
 
 

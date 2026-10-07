@@ -35,10 +35,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HIST = os.path.join(ROOT, "backtest", "history")
 DOCS = os.path.join(ROOT, "docs")
 START, END, STEP = dt.date(2021, 7, 1), dt.date(2024, 12, 31), 2
-LONG = {"fetch_fred", "fetch_twelvedata", "fetch_portwatch", "fetch_fcdo", "fetch_ioda", "fetch_frankfurter",
+LONG = {"fetch_fred", "fetch_twelvedata", "fetch_market", "fetch_portwatch", "fetch_fcdo", "fetch_ioda", "fetch_frankfurter",
         "fetch_usaspending", "fetch_comext", "fetch_census", "fetch_ted", "fetch_hapi_events"}
 # days between a point's date (end of the month for monthly series) and the day it is public
-LAG = {"fetch_fred": 2, "fetch_twelvedata": 1, "fetch_portwatch": 7, "fetch_fcdo": 0, "fetch_ioda": 1, "fetch_frankfurter": 1,
+LAG = {"fetch_fred": 2, "fetch_twelvedata": 1, "fetch_market": 1, "fetch_portwatch": 7, "fetch_fcdo": 0, "fetch_ioda": 1, "fetch_frankfurter": 1,
        "fetch_usaspending": 45, "fetch_comext": 70, "fetch_census": 40, "fetch_ted": 20, "fetch_hapi_events": 60}
 EVENTS = {   # theatre -> [(what happened, date)]
     "ukraine": [("Russia invades Ukraine", "2022-02-24")],
@@ -86,6 +86,7 @@ def _patch():
         q = S.urllib.parse.urlencode({"symbol": symbol, "interval": "1day", "outputsize": 5000, "start_date": "2018-01-01", "apikey": key})
         return S.parse_twelvedata(S.get("https://api.twelvedata.com/time_series?" + q))
     S.fetch_twelvedata = twelve
+    S.fetch_market = lambda symbol: twelve(symbol, os.environ["TWELVEDATA_API_KEY"])   # Yahoo refuses runners; long history from Twelve Data
 
 
 def _fetcher(s):
@@ -137,7 +138,7 @@ def load_series():
             avail = [(dt.date.fromisoformat(l[:10]) + dt.timedelta(days=LAG[fn])).toordinal() for l, _ in pts]
         else:
             avail = [(_eom(l) + dt.timedelta(days=LAG[fn])).toordinal() for l, _ in pts]
-        out.append({"id": s["id"], "theatre": s["theatre"], "domain": s["domain"], "direction": s["direction"], "lag": s["lag"], "kind": s["kind"],
+        out.append({"id": s["id"], "theatre": s["theatre"], "domain": s["domain"], "direction": s["direction"], "lag": s["lag"], "kind": s["kind"], "scored": s["scored"],
                     "all": pts, "avail": avail, "status": "ok"})
     return out
 
@@ -149,7 +150,7 @@ def snapshot(series, d, keep=250):
     for s in series:
         cut = bisect.bisect_right(s["avail"], o)
         pts = s["all"][max(0, cut - keep):cut]
-        r = {k: s[k] for k in ("id", "theatre", "domain", "direction", "lag", "kind")}
+        r = {k: s[k] for k in ("id", "theatre", "domain", "direction", "lag", "kind", "scored")}
         r.update(points=pts, score=stats.score_series(pts, s["kind"]), old=stats.legacy_score_series(pts, s["kind"]))
         rows.append(r)
     return rows
@@ -170,9 +171,8 @@ def evaluate(rows, theatre, weights, calib=(0.0, 1.0)):
 
 
 def evaluate_day(rows, theatres, weights):
-    """Both passes of the production engine for one day: plain, then with the empirical-null calibration."""
-    first = [engine.theatre_composite(rows, t, weights[t])[0] for t in theatres]
-    calib = engine.estimate_calib(first)
+    """The production engine for one day (one pass: thresholds come from the calm-world simulation, not from the day's readings)."""
+    calib = (0.0, 1.0)
     return {t: evaluate(rows, t, weights, calib) for t in theatres}, calib
 
 

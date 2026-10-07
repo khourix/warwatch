@@ -8,11 +8,12 @@ The old method counted how many of five groups were over a threshold (0/5 to 5/5
 
 | # | Stage | What it does | Where |
 |---|---|---|---|
-| 1 | Baseline | Each signal is compared with its own recent past: the last 90 days for daily signals (7-day mean against rolling 7-day means), the last 36 months with calendar-month seasonality removed for monthly ones. Gaps of up to 2 days are carried forward (LOCF); longer gaps stay missing and lower confidence. | `stats.score_series` |
+| 1 | Baseline | Each signal is compared with its own past: for daily signals the latest 7-day mean against the rolling 7-day means of the year before the newest 30 days (the latest month is left out so a slow build-up is not absorbed into its own yardstick; needs 120 such means, otherwise the last 90 days), the last 36 months with calendar-month seasonality removed for monthly ones. Gaps of up to 2 days are carried forward (LOCF); longer gaps stay missing and lower confidence. | `stats.score_series` |
 | 2 | Modified z | `z = 0.6745 * (x - median) / MAD`, winsorized at +-5. The unclamped value is kept as `z_raw` in the audit log. A zero MAD (flat history) falls back to the mean absolute deviation. | `stats.modified_z` |
+| 2a | One-sided evidence | Only evidence in the warning direction counts: each signal's z is floored at 0 (`max(0, z)`), so a calm reading in one source never cancels an alarm in another. Signals flagged `scored=False` in the catalogue (zero-weight families, below) are skipped. | `engine.theatre_items` |
 | 2b | Early-warning focus | Confirming (late-published) signals have their z multiplied by `LAG_K = 0.25` before grouping, in the live scores and in the calm-world simulation, so they can corroborate but not drive a level. Set `LAG_K = 0` to exclude them. | `engine.LAG_K` |
 | 3 | Redundancy | Within one theatre and domain, signals whose last 30 daily changes (24 monthly) correlate above 0.8 are merged into one group scored at their mean, so one event seen by three sources is counted once. | `engine.groups_of` |
-| 4 | Domain score | The strongest 6 groups are combined with an ordered weighted average (exponential weights, orness 0.3). Orness 0.3 leans towards "all must agree" without being a minimum: one spike barely moves a domain, several agreeing signals do. A domain with a single group is shrunk to 70%. | `engine.domain_score` |
+| 4 | Domain score | The strongest 6 groups are combined with an ordered weighted average (exponential weights, orness 0.7). Orness 0.7 leans towards the strongest evidence: with one-sided scoring, one or two strong groups move a domain, and the weaker ones add little. At 0.3 the weakest of six groups carried six times the weight of the strongest, so quiet series buried real signals. A domain with a single group is shrunk to 70%. | `engine.domain_score` |
 | 5 | Theatre composite | Domain scores are put on a 100 +- 10 scale (`100 + 10 z`) and combined with the theatre's versioned domain weights by a weighted Mazziotta-Pareto index, `MPI = M + S * S / M` (M weighted mean, S weighted standard deviation). The penalty is added because higher means worse: a lopsided profile reads higher than an even one with the same mean. | `engine.mpi` |
 | 6 | Level and scores | Level from calibrated thresholds (below). Threat score 0 to 100 is a logistic of the composite z, 50 at the Watch line and 90 at the Critical line. Also reported: imbalance (S), worst offender (largest single-signal z), confidence, and each domain's contribution `w * z`. | `engine.theatre_composite` |
 | 7 | Hierarchy | Region level = worst child level (a crisis is not averaged away); region score = highest child score. Global Threat Index = MPI+ of the region scores (0 to 100), level = worst region level. | `engine.rollup` |
@@ -21,7 +22,7 @@ The old method counted how many of five groups were over a threshold (0/5 to 5/5
 
 Watch, Elevated and Critical are the 90th, 95th and 99th percentiles of the composite in a calm world. The calm world is simulated, not observed: 2,000 draws per theatre, each signal group a standard normal in which 10% of draws are twice as wide (fatter tails than a normal), winsorized at +-5, run through the same stages 3 to 5 with the theatre's own series counts and weights. The generator is seeded, so a theatre always gets the same thresholds.
 
-Real signals are more spread out and more persistent than independent standard normals, so a plain simulation would call far too many days rare. Each build therefore applies an **empirical null** (Efron): every live domain score is standardised against its own simulated calm distribution, the median of those values is taken as a shift and 1.4826 x their median absolute deviation as a stretch (clamped to -0.5..1 and 1..3), and the simulated domain scores are re-centred and stretched to match before the composite thresholds are read off. A handful of real crises barely moves a median and MAD. The two numbers are written to the page data (`calib`) and to `audit.json`. On 7 October 2026 they were a shift of 0.47 and a stretch of 1.32.
+Thresholds come from the simulation alone. An earlier version re-fitted them each build on the day's live domain scores (an empirical null, after Efron); that made levels jump whenever feeds dropped out of the sample (Iran moved from Watch to Critical when key-gated inputs went missing), so it was removed. The page data still carries `calib` as `[0, 1]`. `docs/BACKTEST.md` checks the simulated thresholds against real calm-day percentiles where the slow series have enough history.
 
 So a theatre at Watch is in the top 10% of calm-world readings: expected by chance about one day in ten. Elevated is one in twenty, Critical one in a hundred. A level says "this reading is rare if nothing is happening", not "war is coming".
 
@@ -36,15 +37,15 @@ Fewer than two domains with a score gives **insufficient data**. Elevated or Cri
 ## Pseudocode
 
 ```
-compute_composite_score(metrics, weights, baseline_window = 90):
+compute_composite_score(metrics, weights, baseline_window = None):   # None = 1-year baseline, 90 days if too short
     for each metric m:
         s[m] = score_series(m.points, m.kind, baseline_window)       # stage 1-2
-        z[m] = direction(m.direction, s[m].z)                        # up: z, down: -z, both: |z|
+        z[m] = max(0, direction(m.direction, s[m].z))                # up: z, down: -z, both: |z|; one-sided
     for each domain d:
         groups = merge metrics of d whose recent changes correlate > 0.8      # stage 3
         zg     = mean z within each group
         top    = strongest 6 of zg, sorted descending
-        w      = exponential OWA weights solved for orness 0.3
+        w      = exponential OWA weights solved for orness 0.7
         D[d]   = sum(w * top)  (x 0.7 if only one group)             # stage 4
     live     = domains with a score  (need at least two)
     I[d]     = 100 + 10 * D[d]
@@ -67,12 +68,12 @@ compute_composite_score(metrics, weights, baseline_window = 90):
 
 | Brief | What was built | Reason |
 |---|---|---|
-| STL/MSTL decomposition | Monthly series: per-calendar-month median seasonal factor on log values. Daily series: 90-day rolling baseline, no seasonal term. | STL needs years of data per series; the live daily series have under 6 months. Weekly seasonality is absorbed by the 7-day mean. |
+| STL/MSTL decomposition | Monthly series: per-calendar-month median seasonal factor on log values. Daily series: 1-year rolling baseline (90 days for short histories), no seasonal term. | STL needs years of data per series; the live daily series have under 6 months. Weekly seasonality is absorbed by the 7-day mean. |
 | NumPy/Pandas | Python standard library | Keeps the build dependency-free on free GitHub runners. The maths is vectorisable if needed. |
 | REST API | `audit.json` and `index.json` published with the site, plus a Python entry point | The site is static (free hosting). A REST service would need a server. |
 | `MPI = M +- S(S/M)` | `+` for higher = worse | The sign of the penalty depends on the direction of the index. The brief's text allows either; with risk rising, `+` stops a single extreme domain being averaged away. |
 | Correlation on levels | Correlation on recent changes | Two trending series correlate by construction. |
-| OWA across all signals | OWA over each domain's strongest 6 groups | With 40 quiet signals in one domain, a pure OWA at orness 0.3 would bury a real signal. |
+| OWA across all signals | OWA over each domain's strongest 6 groups | With 40 quiet signals in one domain, a pure OWA would bury a real signal. |
 | Choquet integral | Not used | Needs an interaction capacity for each domain pair, which cannot be set without outcome data. The redundancy step covers the same ground. |
 | Backtests on Ukraine 2022, Houthi 2024, Hamas-Israel 2023, Taiwan 2022 | Run on the slow indicators only (`docs/BACKTEST.md`) | The leading feeds do not exist before 2026. |
 | Shapley values | Exact additive contributions `w * z` | The mean part of the index is additive, so these are its Shapley shares. The imbalance penalty is an extra term. |
@@ -81,3 +82,14 @@ compute_composite_score(metrics, weights, baseline_window = 90):
 ## References
 
 OECD/JRC (2008) *Handbook on Constructing Composite Indicators*. Mazziotta and Pareto (2016) "On a generalized non-compensatory composite index for measuring socio-economic phenomena", *Social Indicators Research*. Yager (1988) "On ordered weighted averaging aggregation operators", *IEEE Trans. SMC*. Grabisch (1996) "The application of fuzzy integrals in multicriteria decision making", *EJOR*. Nardo et al. (2005) *Tools for Composite Indicators Building*, JRC. Iglewicz and Hoaglin (1993) *How to Detect and Handle Outliers* (modified z-score).
+
+## Phase 1 changes (October 2026 review)
+
+Six changes from the methodology review, each measured in `docs/PHASE1.md`:
+
+1. **One-sided evidence**: `max(0, z)` per signal (`engine.theatre_items`), in the calm-world simulation too.
+2. **1-year baseline leaving out the latest 30 days** (`stats.score_series`), falling back to the 90-day baseline for series with under 120 baseline means.
+3. **Orness 0.7** (`engine.ORNESS`).
+4. **No refit of the thresholds on today's readings**: `engine.estimate_calib` is removed.
+5. **Backtest replays equities and ETFs**: `fetch_market` added to `backtest.LONG` and `LAG`, with Twelve Data supplying the history because Yahoo refuses GitHub runners.
+6. **Zero-weight families**: `catalog.ZERO_WEIGHT` (IODA, OONI, diesel, jet fuel, the shekel, DoD construction). They stay on the page (flag `w0` in the series data) and are still scored, but the composite ignores them. These had a noise-to-signal ratio of 1 or more on 78 labelled events. GPR acts, also flagged by the review, are not in the live catalogue, so nothing changes for them.
