@@ -21,3 +21,13 @@ for u in ["https://api.exchangerate.host/timeseries?start_date=2026-09-01&end_da
           "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=ITA&apikey=demo",
           "https://api.coingecko.com/api/v3/ping"]:
     s, b = get(u); print("MISC", u[:60], s, b[:100])
+s, b = get("https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=400&Site=945&max=3")
+t = b.decode("utf-8", "replace")
+i = t.index("<item>"); print("RSS ITEM", t[i:i+2500].replace("\n", " "))
+print("RSS items", t.count("<item>"))
+s, b = get("https://api.ooni.io/api/v1/aggregation?probe_cc=UA&since=2026-09-20&until=2026-10-06&axis_x=measurement_start_day&test_name=web_connectivity")
+print("OONI UA", b[:300])
+s, b = get("https://public-api.prozorro.gov.ua/api/2.5/tenders?limit=1&descending=1&opt_fields=value,procuringEntity,items,dateModified")
+print("PROZ", b[:700])
+s, b = get("https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?publishedFrom=2026-10-01&publishedTo=2026-10-06&limit=1")
+j = json.loads(b); print("CF keys", list(j.keys()), j.get("releases", [{}])[0].get("tender", {}).keys() if j.get("releases") else "")
