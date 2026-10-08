@@ -403,6 +403,16 @@ class TestOsint(unittest.TestCase):
         out = osint.parse_firms(t)
         self.assertEqual(len(out), 1)
         self.assertEqual(out[0]["frp"], 12.5)
+        self.assertEqual(out[0]["ts"], "")   # no acq_time column: no pass time
+        t = "latitude,longitude,acq_date,acq_time,confidence,frp\n48.1,37.2,2026-10-05,912,n,12.5\n"
+        self.assertEqual(osint.parse_firms(t)[0]["ts"], "2026-10-05T09:12Z")
+
+    def test_firms_routine_sources_burn_on_several_days(self):
+        import osint
+        flare = [{"lat": 30.0 + 0.001 * i, "lon": 48.0, "date": f"2026-10-0{i + 1}", "frp": 9} for i in range(3)]
+        new = [{"lat": 31.5, "lon": 47.0, "date": "2026-10-07", "frp": 40}, {"lat": 31.5, "lon": 47.0, "date": "2026-10-07", "frp": 30}]
+        out = osint.mark_routine(flare + new)
+        self.assertEqual([p["routine"] for p in out], [True, True, True, False, False])
 
     def test_digitraffic_military(self):
         import osint
@@ -605,6 +615,15 @@ class TestModel(unittest.TestCase):
             rows = list(csv.DictReader(f))
         self.assertTrue(all(r["type"] in ("onset", "strike", "maritime", "exercise", "other") and r["source"] for r in rows))
         self.assertEqual([r["date"] for r in rows], sorted(r["date"] for r in rows))
+
+    def test_chance_change_against_the_forward_record(self):
+        import tempfile
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as f:
+            f.write("date,theatre,p\n2026-09-28,iran,0.05\n2026-10-01,iran,0.06\n2026-10-08,iran,0.09\n2026-10-08,korea,0.03\n")
+        got = dashboard.p_change({"iran": 0.093, "korea": 0.03, "global": None}, path=f.name)
+        os.unlink(f.name)
+        self.assertEqual(got["iran"], [0.033, 7])   # the newest day at least 7 days back
+        self.assertNotIn("korea", got)              # one day of record: nothing to compare with
 
     def test_page_data_carries_probabilities(self):
         res = model.apply(run.evaluate(demo.scenario("calm")), events=[], today=dt.date(2026, 10, 1), m=_toy_model())
