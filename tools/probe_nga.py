@@ -1,7 +1,7 @@
 import json, re, urllib.request, urllib.parse, collections
 H = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) warwatch-probe", "Accept": "application/json,text/html,*/*"}
 def get(url):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=H), timeout=60) as f:
+    with urllib.request.urlopen(urllib.request.Request(url, headers=H), timeout=12) as f:
         return f.status, f.headers.get("content-type"), f.read()
 # 1. every host and api path named in the live site's own JS
 s, c, b = get("https://msi.nga.mil/NavWarnings")
