@@ -10,8 +10,6 @@ on:
         description: "how many days back to check"
         required: false
         default: "5"
-  push:
-    paths: ["backfill/adsb-daily.txt"]   # editing this file starts a run before the workflow is on the default branch
 permissions:
   contents: write
 concurrency:
