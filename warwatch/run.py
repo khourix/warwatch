@@ -123,6 +123,10 @@ def main():
         try:   # the probability model must never break the build; without it the page keeps the composite levels
             res = model.apply(res, markets=(ex or {}).get("markets"))
             print("forward record: appended", model.forward_append(res), "rows")
+            try:   # hidden armed-force model, own record, never shown
+                print("armed-force shadow record: appended", model.shadow(res), "rows")
+            except Exception as e:
+                print("shadow model skipped:", str(e)[:200])
         except Exception as e:
             print("model skipped:", str(e)[:200])
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
