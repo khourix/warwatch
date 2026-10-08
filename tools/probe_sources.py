@@ -10,7 +10,7 @@ def get(u, n=3000):
 
 hdr("Twelve Data free key: which symbols answer")
 key = os.environ.get("TWELVEDATA_API_KEY", "")
-for sym in ("USD/TWD", "USD/KRW", "USD/INR", "VIXY", "BNO", "USO", "UNG", "WEAT", "CPER", "WEAT", "VIX", "BRENT", "XBR/USD", "CL", "HG1", "TTF", "SPY"):
+for sym in ("USD/TWD", "WEAT", "CPER", "BNO", "VIX", "XBR/USD", "TTF", "SPY"):
     try:
         p = S.fetch_twelvedata(sym, key)
         print(f"{sym:9} OK n={len(p)} last={p[-1]}", flush=True)
@@ -22,13 +22,6 @@ try:
     t = urllib.request.urlopen(urllib.request.Request("https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv", headers=UA), timeout=40).read().decode()
     r = list(csv.reader(io.StringIO(t))); print(len(r), r[0], r[-1])
 except Exception as e: print("ERR", e)
-
-hdr("Stooq")
-for s in ("cb.f", "cl.f", "hg.f", "zw.f", "ng.f", "ttf.f", "usdtwd", "usdkrw", "usdinr", "^vix", "vi.f"):
-    try:
-        t = get(f"https://stooq.com/q/d/l/?s={s}&i=d", 200000).decode(errors="replace")
-        lines = t.strip().splitlines(); print(f"{s:8} lines={len(lines)} last={lines[-1][:60] if lines else ''} head={lines[0][:60] if lines else ''}", flush=True)
-    except Exception as e: print(s, "ERR", str(e)[:60])
 
 hdr("Frankfurter (ECB) currencies")
 try:
@@ -56,4 +49,10 @@ for host, path in (("ais.openwaters.io", "/v1/stream"), ("ais.openwaters.io", "/
 
 hdr("Live dashboard: non-ok and stale series")
 d = json.loads(get("https://khourix.github.io/warwatch/index.json", 5_000_000))
-ser = d["series"]; print(type(ser[0]), (list(ser[0])[:25] if isinstance(ser[0], dict) else ser[0]))
+ser = d["series"]; print(type(ser), list(ser)[:3] if isinstance(ser, dict) else "")
+items = ser.items() if isinstance(ser, dict) else [(x.get("id"), x) for x in ser]
+from collections import Counter
+print(Counter((v.get("status") if isinstance(v, dict) else "?") for _, v in items))
+for k, v in items:
+    if isinstance(v, dict) and (v.get("status") not in ("ok", None) or v.get("stale")):
+        print(f"{str(v.get('status')):14} {k:28} {str(v.get('error') or v.get('er') or '')[:90]} stale={v.get('stale')}")
