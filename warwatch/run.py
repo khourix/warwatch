@@ -12,6 +12,7 @@ import csv
 import datetime as dt
 import json
 import os
+import shutil
 import sys
 import time
 
@@ -126,6 +127,9 @@ def main():
             print("model skipped:", str(e)[:200])
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
+    static = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")   # tab icons and the link-preview image, served next to the page
+    for fn in os.listdir(static) if os.path.isdir(static) else []:
+        shutil.copyfile(os.path.join(static, fn), os.path.join(os.path.dirname(os.path.abspath(a.out)), fn))
     with open(a.out, "w", encoding="utf-8") as f:
         f.write(dashboard.render(res, now, demo=bool(a.demo), extras=ex, topo=geo.load()))
     summ = {"generated": now, "demo": a.demo, "weights_version": res["weights_version"], "global": res["global"],
