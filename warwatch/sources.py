@@ -794,7 +794,6 @@ def fetch_hapi_events(locations, types):
 
 
 # ---- FAA NOTAM Management Service (NMS-API, OAuth2 client credentials) ----
-NMS_HOST = "https://api-staging.cgifederal-aim.com"   # test environment until the FAA enables production
 NMS_RESTRICT = re.compile(
     r"PROHIBIT|RESTRICTED AREA|DANGER AREA|AIRSPACE (?:CLOSED|CLSD|SAFETY|SECURITY|WARNING)|NOT TO ENTER|DO NOT ENTER"
     r"|MISSILE|ROCKET|LIVE FIRING|MILITARY|GNSS|GPS|JAMM|SPOOF|UAV|DRONE|CLSD|CLOSED|WARNING|CAUTION", re.I)
@@ -820,38 +819,54 @@ def parse_nms(items, today, days=30):
     return float(n)
 
 
-def nms_token(client_id, client_secret, host=None):
-    host = host or os.environ.get("NMS_HOST") or NMS_HOST
+NMS_HOSTS = ("https://api-nms.aim.faa.gov", "https://api-staging.cgifederal-aim.com")   # production first, test environment as fallback
+
+
+def nms_token(client_id, client_secret):
+    """(host, bearer token) from the first environment that accepts the keys."""
     auth = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
-    req = urllib.request.Request(host + "/v1/auth/token", data=b"grant_type=client_credentials", headers={
-        "Content-Type": "application/x-www-form-urlencoded", "Authorization": "Basic " + auth})
-    return json.loads(urllib.request.urlopen(req, timeout=40).read())["access_token"]
+    err = None
+    for host in ([os.environ["NMS_HOST"]] if os.environ.get("NMS_HOST") else NMS_HOSTS):
+        req = urllib.request.Request(host + "/v1/auth/token", data=b"grant_type=client_credentials", headers={
+            "Content-Type": "application/x-www-form-urlencoded", "Authorization": "Basic " + auth})
+        try:
+            return host, json.loads(urllib.request.urlopen(req, timeout=40).read())["access_token"]
+        except (urllib.error.URLError, ValueError, KeyError) as e:
+            err = e
+    raise RuntimeError(f"NMS sign-in refused: {err}")
 
 
-def nms_notams(token, location, host=None):
-    host = host or os.environ.get("NMS_HOST") or NMS_HOST
-    url = host + "/nmsapi/v1/notams?" + urllib.parse.urlencode({"location": location})
-    req = urllib.request.Request(url, headers={"Authorization": "Bearer " + token, "nmsResponseFormat": "GEOJSON"})
-    return json.loads(urllib.request.urlopen(req, timeout=60).read()).get("data", {}).get("geojson", [])
+def nms_bulk(host, token, classification="INTERNATIONAL"):
+    """The full active load for one classification: one call a day is within the FAA's usage rule."""
+    req = urllib.request.Request(host + "/nmsapi/v1/notams?" + urllib.parse.urlencode({"classification": classification}),
+                                 headers={"Authorization": "Bearer " + token, "nmsResponseFormat": "GEOJSON"})
+    raw = urllib.request.urlopen(req, timeout=300).read()
+    if raw[:2] == b"\x1f\x8b":
+        raw = gzip.decompress(raw)
+    return json.loads(raw)
 
 
 def nms_update(firs, store, today=None, cid=None, secret=None):
-    """One call per FIR code; writes the day's count of fresh restriction NOTAMs into each theatre's cache."""
+    """Once a day: pull the international load, count each theatre's fresh restriction NOTAMs by flight information region."""
     cid = cid or os.environ.get("FAA_CLIENT_ID", "")
     secret = secret or os.environ.get("FAA_CLIENT_SECRET", "")
-    if not (cid and secret):
-        return
     today = today or dt.date.today()
-    tok = nms_token(cid, secret)
+    if not (cid and secret) or all(str(today) in dict(store.cache_load(f"notam_{th}")) for th in firs):
+        return
+    host, tok = nms_token(cid, secret)
+    items = nms_bulk(host, tok)
+    if isinstance(items, dict):
+        items = items.get("data", {}).get("geojson", []) if isinstance(items.get("data"), dict) else items.get("features", [])
+    by_fir = {}
+    for f in items:
+        try:
+            by_fir.setdefault(f["properties"]["coreNOTAMData"]["notam"].get("affectedFir"), []).append(f)
+        except (KeyError, TypeError):
+            continue
     for th, locs in firs.items():
-        items = []
-        for loc in locs:
-            try:
-                items += nms_notams(tok, loc)
-            except (urllib.error.URLError, ValueError):
-                continue
-        if not items:
+        mine = [f for loc in locs for f in by_fir.get(loc, [])]
+        if not mine:
             continue
         have = dict(store.cache_load(f"notam_{th}"))
-        have[str(today)] = parse_nms(items, today)
+        have[str(today)] = parse_nms(mine, today)
         store.cache_save(f"notam_{th}", sorted(have.items()))
