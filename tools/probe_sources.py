@@ -1,109 +1,59 @@
 #!/usr/bin/env python3
-"""One-off runner probe: which data routes work from a GitHub runner. Prints a report; changes nothing."""
-import json, os, sys, time, urllib.request, urllib.error
+"""One-off runner probe, round 2. Prints a report; changes nothing."""
+import csv, io, json, os, sys, time, urllib.request, urllib.error
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "warwatch"))
 import sources as S  # noqa: E402
-
+UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/124"}
 def hdr(t): print(f"\n===== {t} =====", flush=True)
+def get(u, n=3000):
+    return urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=30).read(n)
 
-# 1. Yahoo vs FRED
-CAND = [("vix", "^VIX", "VIXCLS"), ("diesel_nyh", "HO=F", "DDFUELNYH"), ("brent", "BZ=F", "DCOILBRENTEU"),
-        ("eu_gas(TTF)", "TTF=F", "PNGASEUUSDM"), ("wheat", "ZW=F", "PWHEAMTUSDM"), ("copper", "HG=F", "PCOPPUSDM"),
-        ("fx_twd", "TWD=X", "DEXTAUS"), ("fx_krw", "KRW=X", "DEXKOUS"), ("fx_inr", "INR=X", "DEXINUS"),
-        ("jet_fuel_gulf?", "JET=F", "DJFUELUSGULF"), ("natgas HH", "NG=F", None), ("USO", "USO", None)]
-hdr("Yahoo chart endpoint vs FRED (last observation date, rows)")
-fk = os.environ.get("FRED_API_KEY", "")
-for name, ysym, fred in CAND:
-    y = f = "-"
+hdr("Twelve Data free key: which symbols answer")
+key = os.environ.get("TWELVEDATA_API_KEY", "")
+for sym in ("USD/TWD", "USD/KRW", "USD/INR", "VIXY", "BNO", "USO", "UNG", "WEAT", "CPER", "WEAT", "VIX", "BRENT", "XBR/USD", "CL", "HG1", "TTF", "SPY"):
     try:
-        p = S.fetch_yahoo(ysym)
-        y = f"OK n={len(p)} last={p[-1][0]} v={p[-1][1]:.4g}" if p else "EMPTY"
-    except urllib.error.HTTPError as e:
-        y = f"HTTP {e.code}"
+        p = S.fetch_twelvedata(sym, key)
+        print(f"{sym:9} OK n={len(p)} last={p[-1]}", flush=True)
     except Exception as e:
-        y = f"ERR {str(e)[:80]}"
-    if fred and fk:
-        try:
-            q = S.fetch_fred(fred, fk, days=3300); f = f"OK n={len(q)} last={q[-1][0]}" if q else "EMPTY"
-        except Exception as e:
-            f = f"ERR {str(e)[:60]}"
-    print(f"{name:16} yahoo[{ysym:7}] {y:45} | fred[{fred}] {f}", flush=True)
-    time.sleep(1)
-# long history from Yahoo
-hdr("Yahoo range=max depth")
-for ysym in ("BZ=F", "^VIX", "TWD=X"):
-    try:
-        req = urllib.request.Request(f"https://query1.finance.yahoo.com/v8/finance/chart/{ysym}?range=max&interval=1d",
-                                     headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/124"})
-        p = S.parse_yahoo(json.loads(urllib.request.urlopen(req, timeout=40).read()))
-        print(ysym, "n=", len(p), "first", p[0][0], "last", p[-1][0])
-    except Exception as e:
-        print(ysym, "ERR", str(e)[:100])
+        print(f"{sym:9} FAIL {str(e)[:110]}", flush=True)
 
-# 2. NOTAM
-hdr("FAA NMS sign-in")
-cid, sec = os.environ.get("FAA_CLIENT_ID", ""), os.environ.get("FAA_CLIENT_SECRET", "")
-print("keys present:", bool(cid), bool(sec))
-if cid and sec:
-    for host in S.NMS_HOSTS:
-        try:
-            os.environ["NMS_HOST"] = host
-            h, tok = S.nms_token(cid, sec)
-            print(host, "sign-in OK")
-        except Exception as e:
-            print(host, "FAIL", str(e)[:150])
-
-# 3. AIS in the three chokepoint regions
-hdr("aisstream.io / Open Waters sample (60 s) per region")
-import osint  # noqa: E402
-BOX = {"hormuz_gulf": (22, 30, 47, 60), "red_sea_aden": (11, 22, 37, 46), "east_med": (30, 37, 26, 37), "suez_bab": (12, 31, 32, 44)}
-for label, tok_name, host, path in (("aisstream", "AISSTREAM_API_KEY", "stream.aisstream.io", "/v0/stream"),
-                                    ("openwaters", "OPENWATERS_AIS_TOKEN", "ais.openwaters.io", "/v1/stream")):
-    key = os.environ.get(tok_name, "")
-    if not key:
-        print(label, "no key"); continue
-    for rn, b in BOX.items():
-        try:
-            ships = osint.fetch_aisstream(key, [b], seconds=45, host=host, path=path)
-            print(f"{label:11} {rn:12} ships={len(ships)}", flush=True)
-        except Exception as e:
-            print(f"{label:11} {rn:12} ERR {str(e)[:100]}", flush=True)
-
-# 4. Candidate new routes (no key): reachability only
-hdr("Reachability of candidate sources")
-URLS = {"UCDP api": "https://ucdpapi.pcr.uu.se/api/gedevents/25.1?pagesize=1",
-        "Digitraffic AIS": "https://meri.digitraffic.fi/api/ais/v1/locations?from=0",
-        "IMF PortWatch chokepoints": "https://portwatch.imf.org/",
-        "Kpler/MarineTraffic": "https://www.marinetraffic.com/",
-        "Gdelt": "https://api.gdeltproject.org/api/v2/doc/doc?query=hormuz&mode=artlist&format=json&maxrecords=1",
-        "Metaculus": "https://www.metaculus.com/api/",
-        "Polymarket": "https://gamma-api.polymarket.com/markets?limit=1",
-        "EIA": "https://api.eia.gov/v2/", "Stooq": "https://stooq.com/q/d/l/?s=cl.f&i=d",
-        "ECB SDW": "https://data-api.ecb.europa.eu/service/data/EXR/D.USD.EUR.SP00.A?lastNObservations=1&format=jsondata",
-        "Cboe VIX csv": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
-        "TTF ICE": "https://www.ice.com/", "Sentinel/Copernicus": "https://catalogue.dataspace.copernicus.eu/odata/v1/Products?$top=1",
-        "GFW": "https://gateway.api.globalfishingwatch.org/v3/datasets"}
-for n, u in URLS.items():
-    try:
-        r = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"}), timeout=25)
-        print(f"{n:28} {r.status} {len(r.read(2000))}B")
-    except urllib.error.HTTPError as e:
-        print(f"{n:28} HTTP {e.code}")
-    except Exception as e:
-        print(f"{n:28} ERR {str(e)[:70]}")
-
-# 5. what the live dashboard currently reports as failing
-hdr("Live dashboard: non-ok series")
+hdr("Cboe VIX history csv")
 try:
-    d = json.loads(urllib.request.urlopen("https://khourix.github.io/warwatch/index.json", timeout=40).read())
-    ser = d.get("series") or d.get("data", {}).get("series") or []
-    print("keys:", list(d)[:15], "series:", len(ser))
-    bad = [s for s in ser if s.get("status") not in ("ok",)]
-    from collections import Counter
-    print(Counter(s.get("status") for s in ser))
-    for s in bad:
-        print(f"{s.get('status'):13} {s.get('id'):26} {str(s.get('error') or s.get('er'))[:110]}")
-    stale = [s for s in ser if s.get("stale")]
-    print("stale:", [(s["id"], s["stale"]) for s in stale])
-except Exception as e:
-    print("ERR", e)
+    t = urllib.request.urlopen(urllib.request.Request("https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv", headers=UA), timeout=40).read().decode()
+    r = list(csv.reader(io.StringIO(t))); print(len(r), r[0], r[-1])
+except Exception as e: print("ERR", e)
+
+hdr("Stooq")
+for s in ("cb.f", "cl.f", "hg.f", "zw.f", "ng.f", "ttf.f", "usdtwd", "usdkrw", "usdinr", "^vix", "vi.f"):
+    try:
+        t = get(f"https://stooq.com/q/d/l/?s={s}&i=d", 200000).decode(errors="replace")
+        lines = t.strip().splitlines(); print(f"{s:8} lines={len(lines)} last={lines[-1][:60] if lines else ''} head={lines[0][:60] if lines else ''}", flush=True)
+    except Exception as e: print(s, "ERR", str(e)[:60])
+
+hdr("Frankfurter (ECB) currencies")
+try:
+    print(json.loads(get("https://api.frankfurter.dev/v1/currencies"))) 
+except Exception as e: print("ERR", e)
+
+hdr("EIA open data (no key)")
+for u in ("https://api.eia.gov/v2/petroleum/pri/spt/data/?frequency=daily&data[0]=value&facets[series][]=RBRTE&length=1",
+          "https://www.eia.gov/dnav/pet/hist_xls/RBRTEd.xls"):
+    try: print(u[:70], "->", len(get(u)))
+    except urllib.error.HTTPError as e: print(u[:70], "HTTP", e.code)
+    except Exception as e: print(u[:70], "ERR", str(e)[:60])
+
+hdr("OpenWaters handshake")
+import osint  # noqa: E402
+tok = os.environ.get("OPENWATERS_AIS_TOKEN", "")
+import socket, ssl, base64
+for host, path in (("ais.openwaters.io", "/v1/stream"), ("ais.openwaters.io", "/")):
+    try:
+        ctx = ssl.create_default_context(); s = ctx.wrap_socket(socket.create_connection((host, 443), timeout=15), server_hostname=host)
+        k = base64.b64encode(os.urandom(16)).decode()
+        s.sendall(f"GET {path} HTTP/1.1\r\nHost: {host}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {k}\r\nSec-WebSocket-Version: 13\r\n\r\n".encode())
+        print(host, path, s.recv(600)[:300])
+    except Exception as e: print(host, path, "ERR", str(e)[:80])
+
+hdr("Live dashboard: non-ok and stale series")
+d = json.loads(get("https://khourix.github.io/warwatch/index.json", 5_000_000))
+ser = d["series"]; print(type(ser[0]), (list(ser[0])[:25] if isinstance(ser[0], dict) else ser[0]))
