@@ -19,11 +19,17 @@ jobs:
       - name: Install analysis libraries (the live build does not need them)
         run: python3 -m pip install --quiet --break-system-packages numpy pandas scipy
       - name: Unit tests
-        run: python3 warwatch/tests/test_warwatch.py
+        run: |
+          python3 warwatch/tests/test_warwatch.py
+          python3 warwatch/tests/test_eventstudy.py
       - name: Extend GDELT history to yesterday
         run: python3 warwatch/backfill.py gdelt
       - name: Validate and refit
         run: python3 warwatch/validate.py fit
+      - name: Backtest against past events (lead times, false alarms, fast feeds)
+        run: |
+          python3 warwatch/eventstudy.py --refresh > /dev/null
+          python3 warwatch/fastfeeds.py --refresh > /dev/null
       - name: Score the forward record
         run: python3 warwatch/forward_score.py
       - uses: actions/upload-artifact@v4
@@ -33,12 +39,14 @@ jobs:
             warwatch/data/model_weights.json
             docs/MODEL.md
             docs/FORWARD.md
+            docs/BACKTEST_EVENTS.md
+            docs/BACKTEST_FASTFEEDS.md
           retention-days: 30
       - name: Commit the refit (public data only)
         run: |
           git config user.name "warwatch-bot"
           git config user.email "warwatch-bot@users.noreply.github.com"
-          git add warwatch/data/model_weights.json docs/MODEL.md docs/FORWARD.md backtest/history/gdelt_country_day.csv.gz
+          git add warwatch/data/model_weights.json docs/MODEL.md docs/FORWARD.md docs/BACKTEST_EVENTS.md docs/BACKTEST_FASTFEEDS.md backtest/event_study.csv backtest/alert_episodes.csv backtest/fastfeeds.csv backtest/history/gdelt_country_day.csv.gz
           git diff --cached --quiet && exit 0
           git commit -qm "model refit: $(date -u +%F)"
           for i in 1 2 3; do
