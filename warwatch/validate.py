@@ -4,6 +4,7 @@
     python3 warwatch/validate.py panel    # point-in-time evidence for every family and theatre-day -> backtest/cache/panel.pkl
     python3 warwatch/validate.py report   # rolling-origin test, gates, shuffled-timing control -> docs/MODEL.md
     python3 warwatch/validate.py fit      # report, then fit on all history and write warwatch/data/model_weights.json
+    python3 warwatch/validate.py fit-armed  # the same on armed-force events only -> model_weights_armed.json, docs/MODEL_ARMED.md (hidden shadow model)
 
 Unlike the live build this needs numpy, pandas and scipy. It reads only committed data: backtest/history (prices, transits, advisories,
 procurement, trade, conflict counts, GDELT and GPSJam histories) and warwatch/data/events.csv (the labels, see docs/EVENTS.md).
@@ -50,11 +51,15 @@ LAM_T, LAM_H = 10.0, 1.0      # theatre intercepts pooled toward the global one;
 BASE_PRIOR = 1000             # pseudo-days of the pooled base rate mixed into each theatre's base rate
 KEEP = 450                    # points of history a point-in-time score may see (a year baseline needs ~400 days)
 BOOT = 40
+EVENT_TYPES = None            # set by `fit-armed`: train and label on these event types only (the hidden armed-force model)
+REPORT = "MODEL.md"
 
 
 # ------------------------------------------------------------------ data
 def read_events():
     ev = pd.read_csv(os.path.join(DATA, "events.csv"), parse_dates=["date"])
+    if EVENT_TYPES:
+        ev = ev[ev["type"].isin(EVENT_TYPES)].reset_index(drop=True)
     return ev
 
 
@@ -554,9 +559,9 @@ def write_report(o):
               f"Published probabilities are capped at {m['p_cap']:.0%}, the highest the model produced out of sample, rounded up: it is not shown claiming more than it was tested on."]
         L += ["", "Theatre base rates (30-day probability on a quiet day with no history): " + ", ".join(f"{C.THEATRES[t]['name']} {v:.1%}" for t, v in m["base"].items()) + ".",
               f"Shrink toward the base rate gamma = {m['gamma']}, floor phi = {m['phi']}. Chance of an event somewhere within 30 days, climatological: {m['p_any_clim']:.0%}."]
-    with open(os.path.join(ROOT, "docs", "MODEL.md"), "w") as f:
+    with open(os.path.join(ROOT, "docs", REPORT), "w") as f:
         f.write("\n".join(L) + "\n")
-    print("wrote docs/MODEL.md")
+    print("wrote docs/" + REPORT)
 
 
 if __name__ == "__main__":
@@ -565,5 +570,10 @@ if __name__ == "__main__":
         zhistory(refresh=True)
     elif cmd in ("report", "fit"):
         run(write=cmd == "fit")
+    elif cmd == "fit-armed":     # hidden shadow model: armed-force events only (onset, strike, maritime); never drives the page
+        EVENT_TYPES = ("onset", "strike", "maritime")
+        MODEL_PATH = os.path.join(DATA, "model_weights_armed.json")
+        REPORT = "MODEL_ARMED.md"
+        run(write=True)
     else:
         sys.exit(__doc__)

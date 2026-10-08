@@ -39,11 +39,18 @@ def load(path=None):
         return None
 
 
-def load_events(path=None):
+ARMED_TYPES = ("onset", "strike", "maritime")
+ARMED_MODEL = os.path.join(DATA, "model_weights_armed.json")
+FORWARD_ARMED = os.path.join(ROOT, "forward", "log_armed.csv")
+
+
+def load_events(path=None, types=None):
     out = []
     try:
         with open(path or os.path.join(DATA, "events.csv"), newline="") as f:
             for r in csv.DictReader(f):
+                if types and r.get("type") not in types:
+                    continue
                 out.append((r["theatre"], dt.date.fromisoformat(r["date"])))
     except OSError:
         pass
@@ -211,6 +218,19 @@ def apply(res, markets=None, today=None, events=None, m=None, forward_path=None)
     else:
         res["global"].update(p_any=glob["p_any"], p_market_moving=glob["p_market_moving"])
     return res
+
+
+def shadow(res, today=None, model_path=None, log_path=None):
+    """Hidden armed-force model: predicts every theatre with the model trained on onset, strike and maritime events only and appends to its own
+    forward record (forward/log_armed.csv). It never touches the page, the levels or the main record. Returns rows appended."""
+    m = load(model_path or ARMED_MODEL)
+    if not m or "model" not in res:
+        return 0
+    today = today or dt.date.today()
+    events = load_events(types=ARMED_TYPES)
+    per = {t: predict(m, res["series"], t, events, today) for t in TH if t in res["theatres"]}
+    fake = {"model": {"theatres": per, "global": global_view(m, per), "active": False, "version": m["version"] + "-armed"}, "theatres": res["theatres"]}
+    return forward_append(fake, path=log_path or FORWARD_ARMED)
 
 
 # ------------------------------------------------------------------ forward record

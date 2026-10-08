@@ -26,6 +26,8 @@ jobs:
         run: python3 warwatch/backfill.py gdelt
       - name: Validate and refit
         run: python3 warwatch/validate.py fit
+      - name: Refit the hidden armed-force shadow model (never drives the page)
+        run: python3 warwatch/validate.py fit-armed
       - name: Backtest against past events (lead times, false alarms, fast feeds)
         run: |
           python3 warwatch/eventstudy.py --refresh > /dev/null
@@ -50,7 +52,7 @@ jobs:
         run: |
           git config user.name "warwatch-bot"
           git config user.email "warwatch-bot@users.noreply.github.com"
-          git add warwatch/data/model_weights.json docs/MODEL.md docs/FORWARD.md docs/BACKTEST_EVENTS.md docs/BACKTEST_FASTFEEDS.md docs/CALIBRATION.md docs/IMPROVEMENTS.md backtest/improvements.csv backtest/alert_rules.csv backtest/training_focus.csv backtest/family_evidence.csv backtest/weight_schemes.csv backtest/event_study.csv backtest/alert_episodes.csv backtest/fastfeeds.csv backtest/history/gdelt_country_day.csv.gz
+          git add warwatch/data/model_weights.json warwatch/data/model_weights_armed.json docs/MODEL.md docs/MODEL_ARMED.md docs/FORWARD.md docs/FORWARD_ARMED.md docs/BACKTEST_EVENTS.md docs/BACKTEST_FASTFEEDS.md docs/CALIBRATION.md docs/IMPROVEMENTS.md backtest/improvements.csv backtest/alert_rules.csv backtest/training_focus.csv backtest/family_evidence.csv backtest/weight_schemes.csv backtest/event_study.csv backtest/alert_episodes.csv backtest/fastfeeds.csv backtest/history/gdelt_country_day.csv.gz
           git diff --cached --quiet && exit 0
           git commit -qm "model refit: $(date -u +%F)"
           for i in 1 2 3; do

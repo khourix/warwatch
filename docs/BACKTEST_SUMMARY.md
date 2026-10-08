@@ -59,3 +59,9 @@ Tables and method: [IMPROVEMENTS.md](IMPROVEMENTS.md). Everything below is out o
 3. **Training on armed-force events only (onset, strike, maritime) helps modestly.** Judged on those events it flags 16 of 39 at 10% false alarms against 13 of 39, AUC 0.667 against 0.658, lift 3.1x against 2.6x, and is better in 5 of 6 years (not 2022). Drills and "other" events are close to unforecastable from these data and add noise to the target. Three events is within noise, so treat it as the leading candidate, not a result.
 
 What would actually raise capture is new information, not tuning: leading indicators with real history before 2024, and more labelled events. My recommended order: (a) adopt the 7-day maximum for alerts; (b) run the armed-force target in parallel with the current model and score both on the forward log; (c) keep adding events as they happen.
+
+## Hidden armed-force shadow model
+
+Running since 2026-10-08 as agreed: `model_weights_armed.json` (trained on onset, strike and maritime events only) predicts every theatre in each live build and logs to its own hash-chained record, `forward/log_armed.csv`. It never changes the page, the levels or `forward/log.csv`. `forward_score.py` scores both records side by side (`docs/FORWARD.md`, `docs/FORWARD_ARMED.md`), and the monthly refit refits it (`validate.py fit-armed`, report `docs/MODEL_ARMED.md`).
+
+One caution from its own validation: its AUC is 0.641 (interval 0.52 to 0.75) and Brier skill +0.020, but it does not beat the shuffled-timing control (p = 0.16; the current model has p = 0.027), so it fails the model's gates and would not be allowed to drive the page even if switched on. The 13-against-16 events gain in the improvement tests is therefore not yet distinguishable from luck; the forward record is the test.

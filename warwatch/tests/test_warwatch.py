@@ -727,6 +727,25 @@ class AlertSmoothing(unittest.TestCase):
             os.unlink(f.name)
 
 
+class ArmedShadow(unittest.TestCase):
+    def test_shadow_logs_to_its_own_record_and_leaves_the_page_alone(self):
+        import demo
+        import model
+        res = run.evaluate(demo.scenario("buildup"))
+        res = model.apply(res, today=dt.date(2026, 10, 8), forward_path=os.devnull)
+        levels = {t: v["level"] for t, v in res["theatres"].items()}
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "log_armed.csv")
+            n = model.shadow(res, today=dt.date(2026, 10, 8), log_path=log)
+            self.assertEqual(n, len(res["model"]["theatres"]) + 1)
+            ok, bad, rows = model.forward_verify(log)
+            self.assertTrue(ok)
+            self.assertEqual(rows[0]["model"], res["model"]["version"] + "-armed")
+            self.assertEqual(model.shadow(res, today=dt.date(2026, 10, 8), log_path=log), 0)   # once per day
+        self.assertEqual(levels, {t: v["level"] for t, v in res["theatres"].items()})
+        self.assertEqual(model.load_events(types=model.ARMED_TYPES) != [], True)
+
+
 if __name__ == "__main__":
     unittest.main()
 

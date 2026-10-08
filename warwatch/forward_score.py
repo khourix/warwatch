@@ -47,19 +47,19 @@ def score(rows, events, through, bands):
     return out, anyrows
 
 
-def main():
-    ok, bad, rows = model.forward_verify()
+def main(armed=False):
+    ok, bad, rows = model.forward_verify(model.FORWARD_ARMED if armed else None)
     os.makedirs(DOCS, exist_ok=True)
     with open(os.path.join(HERE, "data", "events_through.txt")) as f:
         through = dt.date.fromisoformat(f.read().strip())
-    m = model.load() or {"bands": [0.05, 0.10, 0.25]}
+    m = model.load(model.ARMED_MODEL if armed else None) or {"bands": [0.05, 0.10, 0.25]}
     bands = m["bands"]
-    L = ["# Forward record", "",
+    L = ["# Forward record" + (", armed-force shadow model (hidden from the page)" if armed else ""), "",
          "Every day the live build appends its probabilities for all theatres to `forward/log.csv` before any outcome is known. Each row carries the hash of the row before it, so a "
          "later edit anywhere breaks the chain from that row on; `python3 warwatch/forward_score.py` checks it. This report scores the forecasts that have matured: made at least 30 days before "
          f"`warwatch/data/events_through.txt` ({through}), outside the 30 days after an event.", "",
          f"Chain: **{'intact' if ok else f'BROKEN at row {bad}'}**, {len(rows):,} rows" + (f", {rows[0]['date']} to {rows[-1]['date']}." if rows else "."), ""]
-    scored, anyrows = score(rows, model.load_events(), through, bands) if ok else ([], {})
+    scored, anyrows = score(rows, model.load_events(types=model.ARMED_TYPES if armed else None), through, bands) if ok else ([], {})
     if len(scored) < 100:
         L += [f"Matured forecasts so far: {len(scored)}. Too few to score; the first report with numbers needs about a quarter of daily forecasts.", ""]
     else:
@@ -81,11 +81,15 @@ def main():
             fr = sum(h for _, h in anyrows.values()) / len(anyrows)
             L += ["", f"Chance of an event in any theatre within 30 days: mean forecast {mp:.0%}, followed by an event {fr:.0%} of days (an upper bound is expected, as theatres move together)."]
         L += ["", "Compare with the validation report (`docs/MODEL.md`): the backtest can be tuned, this cannot."]
-    with open(os.path.join(DOCS, "FORWARD.md"), "w") as f:
+    name = "FORWARD_ARMED.md" if armed else "FORWARD.md"
+    with open(os.path.join(DOCS, name), "w") as f:
         f.write("\n".join(L) + "\n")
-    print("wrote docs/FORWARD.md;", "chain intact" if ok else f"CHAIN BROKEN at row {bad}")
+    print("wrote docs/" + name + ";", "chain intact" if ok else f"CHAIN BROKEN at row {bad}")
     return 0 if ok else 1
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    rc = main()
+    if os.path.exists(model.FORWARD_ARMED):
+        rc = main(armed=True) or rc
+    sys.exit(rc)
