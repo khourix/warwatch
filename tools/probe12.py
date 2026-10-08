@@ -3,27 +3,22 @@ i = os.environ["FAA_CLIENT_ID"].strip(); s = os.environ["FAA_CLIENT_SECRET"].str
 B = base64.b64encode(f"{i}:{s}".encode()).decode()
 def call(url, h, data=None):
     try:
-        r = urllib.request.urlopen(urllib.request.Request(url, data=data, headers=h), timeout=40)
-        return r.status, r.read()
+        r = urllib.request.urlopen(urllib.request.Request(url, data=data, headers=h), timeout=120)
+        return r.status, r.read(), r.geturl()
     except Exception as e:
-        return getattr(e, "code", "ERR"), (getattr(e, "read", lambda: str(e).encode())() or b"")[:300]
-tok = None
-for host in ("https://api-staging.cgifederal-aim.com/nmsapi/v1/auth/token", "https://api-staging.cgifederal-aim.com/v1/auth/token"):
-    st, b = call(host, {"Content-Type": "application/x-www-form-urlencoded", "Authorization": "Basic " + B}, b"grant_type=client_credentials")
-    print("token", host, st, b[:120] if st != 200 else "ok keys=" + str(list(json.loads(b))))
-    if st == 200:
-        tok = json.loads(b)["access_token"]; base = "https://api-staging.cgifederal-aim.com/nmsapi/v1"; break
-if tok:
+        return getattr(e, "code", "ERR"), (getattr(e, "read", lambda: str(e).encode())() or b"")[:300], ""
+for host in ("https://api-nms.aim.faa.gov", "https://api-staging.cgifederal-aim.com"):
+    st, b, _ = call(host + "/v1/auth/token", {"Content-Type": "application/x-www-form-urlencoded", "Authorization": "Basic " + B}, b"grant_type=client_credentials")
+    print(host, "token", st, b[:100] if st != 200 else "ok")
+    if st != 200: continue
+    tok = json.loads(b)["access_token"]
     H = {"Authorization": "Bearer " + tok, "nmsResponseFormat": "GEOJSON"}
-    for q in ({"location": "JFK"}, {"classification": "INTERNATIONAL", "location": "UKBV"}, {"location": "OIIX"},
-              {"latitude": 50.45, "longitude": 30.5, "radius": 100},
-              {"feature": "AIRSPACE", "latitude": 48.0, "longitude": 11.0, "radius": 100}):
-        st, b = call(base + "/notams?" + urllib.parse.urlencode(q), H)
-        n = "?"
-        try:
-            d = json.loads(b if st == 200 else b"{}"); n = len(d["data"].get("geojson", []))
-        except Exception: pass
-        print(q, st, "items", n, b[:200] if st != 200 else ""); 
-        if st == 200 and n: print(json.dumps(d["data"]["geojson"][0])[:900])
-    st, b = call(base + "/notams/checklist?" + urllib.parse.urlencode({"classification": "INTERNATIONAL"}), H)
-    print("checklist", st, len(b) if st == 200 else b)
+    for ac in ("false", None):
+        q = {"classification": "INTERNATIONAL"}
+        if ac: q["allowRedirect"] = ac
+        st, b, final = call(host + "/nmsapi/v1/notams?" + urllib.parse.urlencode(q), H)
+        print(" bulk", q, st, len(b), final[:90], b[:200] if len(b) < 2000 or st != 200 else "")
+        if st == 200 and len(b) > 2000:
+            try:
+                d = json.loads(b); print("  parsed keys", list(d), list(d.get("data", {})) if isinstance(d, dict) else "", "n", len(d.get("data", {}).get("geojson", [])))
+            except Exception as e: print("  not json", e, b[:100])
