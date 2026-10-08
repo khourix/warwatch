@@ -1,0 +1,31 @@
+name: model-trial
+# Re-runs the rolling-origin validation with and without the backfill families. Writes reports only; never the weights file.
+on:
+  push:
+    branches: [claude/project-thread-2mgl2x]
+    paths: [.github/workflows/trial.yml, warwatch/validate.py]
+jobs:
+  trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [baseline, backfill]
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m pip install --quiet --break-system-packages numpy pandas scipy
+      - name: Validate
+        env:
+          MODEL_REPORT: docs/trial_${{ matrix.mode }}.md
+          WARWATCH_NO_BACKFILL: ${{ matrix.mode == 'baseline' && '1' || '0' }}
+        run: python3 warwatch/validate.py report
+      - name: Show the report
+        run: head -c 9000 docs/trial_${{ matrix.mode }}.md
+      - name: Commit the report
+        run: |
+          git config user.name "warwatch-bot"; git config user.email "warwatch-bot@users.noreply.github.com"
+          git add docs/trial_${{ matrix.mode }}.md
+          git diff --cached --quiet && exit 0
+          git commit -qm "trial report: ${{ matrix.mode }}"
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q && exit 0; sleep 5; done

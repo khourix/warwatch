@@ -48,6 +48,9 @@ LEVELS = ("Normal", "Watch", "Elevated", "Critical")
 LAMBDAS = (0.3, 1, 3, 10, 30, 100)   # ridge strength on family weights (evidence is scaled to 0-1)
 LAM_T, LAM_H = 10.0, 1.0      # theatre intercepts pooled toward the global one; conflict-history terms
 BASE_PRIOR = 1000             # pseudo-days of the pooled base rate mixed into each theatre's base rate
+USE_BACKFILL = os.environ.get("WARWATCH_NO_BACKFILL") != "1"   # =1 reproduces the fit without the backfill/data families
+REPORT = os.environ.get("MODEL_REPORT") or os.path.join(ROOT, "docs", "MODEL.md")
+BACKFILL_LAG = {"adsb_": 1, "package_": 1, "firms_": 1, "nga_": 1, "state_": 7, "ais_presence_": 6}   # days after the date a value was public
 KEEP = 450                    # points of history a point-in-time score may see (a year baseline needs ~400 days)
 BOOT = 40
 
@@ -86,6 +89,26 @@ def build_series():
         if c and c["scored"]:
             out.append({"id": c["id"], "theatre": th, "domain": c["domain"], "direction": c["direction"], "lag": c["lag"], "kind": "daily", "all": pts,
                         "avail": [(dt.date.fromisoformat(l) + dt.timedelta(days=1)).toordinal() for l, _ in pts]})
+    if USE_BACKFILL:
+        out.extend(backfill_series())
+    return out
+
+
+def backfill_series():
+    """Series the live catalogue scores whose long history is in backfill/data (aircraft, advisories, fires, warnings, vessel presence,
+    and the strike-package index built from the aircraft classes). Same ids and definitions as live, so the family weights carry over."""
+    import store
+    out = []
+    for c in catalog.SERIES:
+        sid = c["id"]
+        lag = next((v for k, v in BACKFILL_LAG.items() if sid.startswith(k)), None)
+        if lag is None or not c["scored"] or c["kind"] != "daily":
+            continue
+        pts = catalog._package(sid[len("package_"):])() if sid.startswith("package_") else store.backfill(sid)
+        if len(pts) < 200:
+            continue
+        out.append({"id": sid, "theatre": c["theatre"], "domain": c["domain"], "direction": c["direction"], "lag": c["lag"], "kind": "daily", "all": pts,
+                    "avail": [(dt.date.fromisoformat(l[:10]) + dt.timedelta(days=lag)).toordinal() for l, _ in pts]})
     return out
 
 
@@ -107,7 +130,7 @@ def _zjob(s):
 
 def zhistory(refresh=False):
     """{series id: meta + {date: z}}: each series scored point by point exactly as the live build scores it."""
-    path = os.path.join(CACHE, "zhist.pkl")
+    path = os.path.join(CACHE, "zhist.pkl" if USE_BACKFILL else "zhist_nobackfill.pkl")
     if os.path.exists(path) and not refresh:
         return pickle.load(open(path, "rb"))
     series = build_series()
@@ -123,7 +146,8 @@ def zhistory(refresh=False):
 
 def family(sid):
     import re
-    return re.sub(f"_({'|'.join(TH)})$", "", sid)
+    m = re.match(f"^adsb_(?:{'|'.join(TH)})_(\\w+)$", sid)   # one family per aircraft class, pooled across theatres
+    return f"adsb_{m.group(1)}" if m else re.sub(f"_({'|'.join(TH)})$", "", sid)
 
 
 def panel(H, end=None):
@@ -554,9 +578,9 @@ def write_report(o):
               f"Published probabilities are capped at {m['p_cap']:.0%}, the highest the model produced out of sample, rounded up: it is not shown claiming more than it was tested on."]
         L += ["", "Theatre base rates (30-day probability on a quiet day with no history): " + ", ".join(f"{C.THEATRES[t]['name']} {v:.1%}" for t, v in m["base"].items()) + ".",
               f"Shrink toward the base rate gamma = {m['gamma']}, floor phi = {m['phi']}. Chance of an event somewhere within 30 days, climatological: {m['p_any_clim']:.0%}."]
-    with open(os.path.join(ROOT, "docs", "MODEL.md"), "w") as f:
+    with open(REPORT, "w") as f:
         f.write("\n".join(L) + "\n")
-    print("wrote docs/MODEL.md")
+    print("wrote", REPORT)
 
 
 if __name__ == "__main__":
