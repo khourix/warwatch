@@ -22,7 +22,7 @@ MAXPTS = {"daily": 180, "monthly": 60}
 ZH_N = 60
 CLS_NAMES = {"lift": "Airlift", "tanker": "Tanker", "isr": "Surveillance / AWACS", "fighter": "Fighter", "bomber": "Bomber", "uav": "Drone", "heli": "Helicopter", "other": "Other military"}
 UNAVAILABLE = [
-    ("NOTAMs (airspace closure notices)", "The FAA and ICAO feeds refuse automated requests from cloud servers, and the FAA API needs an account. In their place the dashboard reads GPSJam (daily share of aircraft reporting degraded GPS, per theatre), US NGA hazard warnings, EASA airspace bulletins and live airliner counts."),
+    ("NOTAMs (airspace closure notices)", "The FAA NOTAM service (new NMS-API, test environment) supplies counts of fresh airspace-restriction notices for each theatre's flight information regions; ICAO's feed refuses automated requests. Alongside it the dashboard reads GPSJam (daily share of aircraft reporting degraded GPS, per theatre), US NGA hazard warnings, EASA airspace bulletins and live airliner counts."),
     ("Live ship positions in the Gulf, Red Sea and East Mediterranean", "The free live AIS networks (aisstream.io, and Open Waters, which mirrors it) have no receivers there: zero ships in Hormuz or the Gulf of Aden while 2,300 appear worldwide. Warships often switch AIS off anyway. Instead the dashboard scores Global Fishing Watch vessel-hours per day (satellite AIS, about four days late), IMF PortWatch transits, UKMTO incidents and the weekly USNI fleet tracker; Baltic, North Sea, Black Sea and Western Mediterranean AIS is live."),
     ("Conflict event data (ACLED API)", "The ACLED account authenticates but its data API is closed at the open tier. ACLED events arrive through the open HDX HAPI feed instead, about two months late. UCDP (Uppsala) is the planned second source once its access token arrives."),
     ("Aircraft routes and owners", "Public ADS-B carries no flight plan for military aircraft. Owner is inferred from the aircraft's address block and call sign, and shown as such."),
@@ -31,6 +31,7 @@ UNAVAILABLE = [
 
 
 UPDATES = [   # (source, how often it is read, why that is enough / the free limit)
+    ("FAA NOTAM service (NMS-API)", "Every 6 hours", "Free with an FAA account (test environment for now); counts of new airspace-restriction notices per flight information region."),
     ("Aircraft positions, emergency squawks (adsb.lol)", "every 30 minutes", "Community feed with no stated cap; one call per layer per run."),
     ("US Navy fleet (USNI Fleet Tracker)", "every 30 minutes, changes weekly", "USNI publishes once a week, usually Monday or Thursday."),
     ("UKMTO incidents and maritime news", "every 30 minutes", "Incidents are posted within hours of the report."),

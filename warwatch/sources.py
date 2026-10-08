@@ -3,7 +3,9 @@ shapes were verified from a GitHub runner on 2026-10-06 except where a
 function's docstring says UNVERIFIED (needs a key nobody has supplied yet).
 """
 import datetime as dt
+import base64
 import gzip
+import re
 import json
 import os
 import time
@@ -789,3 +791,67 @@ def fetch_hapi_events(locations, types):
                 break
             off += 10000
     return sorted(tot.items())
+
+
+# ---- FAA NOTAM Management Service (NMS-API, OAuth2 client credentials) ----
+NMS_HOST = "https://api-staging.cgifederal-aim.com"   # test environment until the FAA enables production
+NMS_RESTRICT = re.compile(
+    r"PROHIBIT|RESTRICTED AREA|DANGER AREA|AIRSPACE (?:CLOSED|CLSD|SAFETY|SECURITY|WARNING)|NOT TO ENTER|DO NOT ENTER"
+    r"|MISSILE|ROCKET|LIVE FIRING|MILITARY|GNSS|GPS|JAMM|SPOOF|UAV|DRONE|CLSD|CLOSED|WARNING|CAUTION", re.I)
+
+
+def parse_nms(items, today, days=30):
+    """NOTAMs issued in the last `days` that restrict or warn about airspace (Q-code R/W areas, or warning words in the text)."""
+    cut = str(today - dt.timedelta(days=days))
+    seen = set()
+    n = 0
+    for f in items:
+        try:
+            nt = f["properties"]["coreNOTAMData"]["notam"]
+        except (KeyError, TypeError):
+            continue
+        nid = nt.get("id")
+        if nid in seen or nt.get("type") == "C" or str(nt.get("issued", ""))[:10] < cut:
+            continue
+        seen.add(nid)
+        code = str(nt.get("selectionCode", ""))
+        if code[:2] in ("QR", "QW") or NMS_RESTRICT.search(str(nt.get("text", ""))):
+            n += 1
+    return float(n)
+
+
+def nms_token(client_id, client_secret, host=None):
+    host = host or os.environ.get("NMS_HOST") or NMS_HOST
+    auth = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+    req = urllib.request.Request(host + "/v1/auth/token", data=b"grant_type=client_credentials", headers={
+        "Content-Type": "application/x-www-form-urlencoded", "Authorization": "Basic " + auth})
+    return json.loads(urllib.request.urlopen(req, timeout=40).read())["access_token"]
+
+
+def nms_notams(token, location, host=None):
+    host = host or os.environ.get("NMS_HOST") or NMS_HOST
+    url = host + "/nmsapi/v1/notams?" + urllib.parse.urlencode({"location": location})
+    req = urllib.request.Request(url, headers={"Authorization": "Bearer " + token, "nmsResponseFormat": "GEOJSON"})
+    return json.loads(urllib.request.urlopen(req, timeout=60).read()).get("data", {}).get("geojson", [])
+
+
+def nms_update(firs, store, today=None, cid=None, secret=None):
+    """One call per FIR code; writes the day's count of fresh restriction NOTAMs into each theatre's cache."""
+    cid = cid or os.environ.get("FAA_CLIENT_ID", "")
+    secret = secret or os.environ.get("FAA_CLIENT_SECRET", "")
+    if not (cid and secret):
+        return
+    today = today or dt.date.today()
+    tok = nms_token(cid, secret)
+    for th, locs in firs.items():
+        items = []
+        for loc in locs:
+            try:
+                items += nms_notams(tok, loc)
+            except (urllib.error.URLError, ValueError):
+                continue
+        if not items:
+            continue
+        have = dict(store.cache_load(f"notam_{th}"))
+        have[str(today)] = parse_nms(items, today)
+        store.cache_save(f"notam_{th}", sorted(have.items()))

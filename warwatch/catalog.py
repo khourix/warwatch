@@ -307,6 +307,22 @@ def _gpsjam(th):
     return go
 
 
+def _notam(th):
+    def go():
+        if os.environ.get("WARWATCH_LIVE"):
+            S.nms_update(C.FIRS, store)
+        pts = store.cache_load(f"notam_{th}")
+        if not pts:
+            raise RuntimeError("first refresh pending (FAA NOTAM snapshots start now)")
+        return pts
+    return go
+
+
+for th in C.FIRS:
+    add(f"notam_{th}", f"New airspace restriction and warning NOTAMs, last 30 days, {TH[th]} (FAA)", "geospatial", th, "daily", False,
+        "Airspace closures, restricted areas and conflict warnings are issued before and during operations. Snapshots start now.",
+        _notam(th), url="https://notams.aim.faa.gov/", sub="Airspace")
+
 for th in C.BOXES:
     add(f"gpsjam_{th}", f"Aircraft with degraded GPS, share per day, {TH[th]} (GPSJam)", "geospatial", th, "daily", False,
         "Jamming and spoofing of navigation signals rise before and during operations; GPSJam publishes a daily map from ADS-B reports, two days late, with history from 2022.",

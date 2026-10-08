@@ -119,6 +119,14 @@ class TestParsers(unittest.TestCase):
                 ["2", "FRANCE", "9", "2026-06"], ["3", "UKRAINE", "7", "2026-07"]]
         self.assertEqual(S.parse_census(rows, ["UKRAINE"]), [("2026-06", 5.0), ("2026-07", 7.0)])
 
+    def test_nms_counts_fresh_restrictions(self):
+        def f(i, issued, text, code="QXXXX", typ="N"):
+            return {"properties": {"coreNOTAMData": {"notam": {"id": i, "issued": issued, "text": text, "selectionCode": code, "type": typ}}}}
+        items = [f("1", "2026-10-05T00:00:00Z", "AIRSPACE CLOSED DUE MILITARY ACTIVITY"), f("1", "2026-10-05T00:00:00Z", "AIRSPACE CLOSED"),
+                 f("2", "2026-10-06T00:00:00Z", "RWY LGT U/S"), f("3", "2026-10-06T00:00:00Z", "x", code="QRTCA"),
+                 f("4", "2026-08-01T00:00:00Z", "PROHIBITED AREA"), f("5", "2026-10-06T00:00:00Z", "PROHIBITED", typ="C")]
+        self.assertEqual(S.parse_nms(items, dt.date(2026, 10, 8)), 2.0)
+
     def test_sam_counts_by_day(self):
         p = {"opportunitiesData": [{"postedDate": "2026-09-01"}, {"postedDate": "2026-09-20"}, {"postedDate": "2026-08-02"}]}
         self.assertEqual(S.parse_sam(p), {"2026-09-01": 1, "2026-09-20": 1, "2026-08-02": 1})

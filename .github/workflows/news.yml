@@ -28,9 +28,11 @@ jobs:
           WARWATCH_LIVE: "1"
           GNEWS_MAX: ${{ github.event.inputs.max_requests || '12' }}
           GPSJAM_MAX: ${{ github.event.inputs.max_requests || '25' }}
+          FAA_CLIENT_ID: ${{ secrets.FAA_CLIENT_ID }}
+          FAA_CLIENT_SECRET: ${{ secrets.FAA_CLIENT_SECRET }}
           GDELT_MAX: ${{ github.event.inputs.max_requests || '6' }}
         run: |
-          ids=$(python3 -c "import sys; sys.path.insert(0,'warwatch'); import catalog; print(','.join(s['id'] for s in catalog.SERIES if s['id'].startswith(('news_','gdelt_','gpsjam_'))))")
+          ids=$(python3 -c "import sys; sys.path.insert(0,'warwatch'); import catalog; print(','.join(s['id'] for s in catalog.SERIES if s['id'].startswith(('news_','gdelt_','gpsjam_','notam_'))))")
           python3 warwatch/run.py --only "$ids" --fetch-only
       - name: Commit cache (public data only)
         run: |
@@ -43,7 +45,7 @@ jobs:
             git pull --rebase -q -X theirs origin main && git push -q && exit 0
             git rebase --abort 2>/dev/null || true
             # the dashboard build pushed in between: re-apply only this job's files on top of the new head
-            mkdir -p /tmp/mine && cp warwatch/history/cache/news_* warwatch/history/cache/gdelt_* warwatch/history/cache/gpsjam_* /tmp/mine/ 2>/dev/null || true
+            mkdir -p /tmp/mine && cp warwatch/history/cache/news_* warwatch/history/cache/gdelt_* warwatch/history/cache/gpsjam_* warwatch/history/cache/notam_* /tmp/mine/ 2>/dev/null || true
             git fetch -q origin main && git reset -q --hard origin/main
             cp /tmp/mine/* warwatch/history/cache/ && git add warwatch/history/cache && git commit -qm "news: $(date -u +%FT%H:%MZ)" || exit 0
           done
