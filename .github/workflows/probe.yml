@@ -1,0 +1,19 @@
+name: probe
+on:
+  push:
+    branches: ["claude/project-thread-2mgl2x"]
+    paths: ["tools/probe_sources.py", ".github/workflows/probe.yml"]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe
+        env:
+          TIINGO_API_KEY: ${{ secrets.TIINGO_API_KEY }}
+          FAA_CLIENT_ID: ${{ secrets.FAA_CLIENT_ID }}
+          FAA_CLIENT_SECRET: ${{ secrets.FAA_CLIENT_SECRET }}
+        run: python3 tools/probe_sources.py 2>&1 | tee probe.txt
