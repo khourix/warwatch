@@ -370,7 +370,7 @@ def fetch_incidents():
 
 # ---------------------------------------------------------------- NASA FIRMS thermal detections
 def parse_firms(text):
-    """VIIRS CSV -> [{lat, lon, date, frp}] without low-confidence hits."""
+    """VIIRS CSV -> [{lat, lon, date, ts, frp}] without low-confidence hits. ts is the satellite pass time, UTC."""
     out = []
     lines = text.strip().splitlines()
     if len(lines) < 2 or not lines[0].startswith("latitude"):
@@ -382,10 +382,32 @@ def parse_firms(text):
         try:
             if f[ix["confidence"]].lower() == "l":
                 continue
-            out.append({"lat": float(f[ix["latitude"]]), "lon": float(f[ix["longitude"]]), "date": f[ix["acq_date"]], "frp": float(f[ix["frp"]] or 0)})
+            p = {"lat": float(f[ix["latitude"]]), "lon": float(f[ix["longitude"]]), "date": f[ix["acq_date"]], "frp": float(f[ix["frp"]] or 0)}
+            hm = f[ix["acq_time"]].strip().zfill(4) if "acq_time" in ix else ""
+            p["ts"] = f"{p['date']}T{hm[:2]}:{hm[2:]}Z" if len(hm) == 4 and hm.isdigit() else ""
+            out.append(p)
         except (ValueError, IndexError, KeyError):
             continue
     return out
+
+
+FIRE_CELL = 0.02          # degrees (about 2 km): VIIRS pixels are 375 m, and a flare's detections scatter within a few hundred metres
+ROUTINE_DAYS = 3          # a cell (or a neighbour) that burns on this many of the days read is a routine source: gas flare, refinery, steel works
+
+
+def mark_routine(pts, days=ROUTINE_DAYS):
+    """Sets p['routine'] on each detection whose 3 x 3 cell neighbourhood has detections on at least `days` distinct dates."""
+    cells = {}
+    for p in pts:
+        cells.setdefault((round(p["lat"] / FIRE_CELL), round(p["lon"] / FIRE_CELL)), set()).add(p["date"])
+    for p in pts:
+        i, j = round(p["lat"] / FIRE_CELL), round(p["lon"] / FIRE_CELL)
+        seen = set()
+        for di in (-1, 0, 1):
+            for dj in (-1, 0, 1):
+                seen |= cells.get((i + di, j + dj), set())
+        p["routine"] = len(seen) >= days
+    return pts
 
 
 def firms_url(key, box, days, date=None):
@@ -445,24 +467,34 @@ def firms_series(theatre):
     return sorted(out.items())
 
 
-def fetch_fires(key, boxes, top=250):
-    """Last two days of detections across the theatre boxes for the map layer (strongest first)."""
+def fetch_fires(key, boxes, top=300, days=7, today=None):
+    """Last `days` days of detections across the theatre boxes for the map layer, each with its pass time and a routine flag.
+    FIRMS serves at most 5 days per call, so 7 days take two calls per box. Per box the newest unusual detections come
+    first, then the strongest routine ones."""
+    today = today or dt.datetime.now(dt.timezone.utc).date()
     pts, seen = [], set()
     for th, box in boxes.items():
-        got = []
-        try:
-            t = S.get(firms_url(key, box, 2), raw=True, retries=2, wait=4)
-            for p in parse_firms(t.decode("utf-8", "replace") if isinstance(t, bytes) else t):
-                k = (round(p["lat"], 3), round(p["lon"], 3), p["date"])
-                if k in seen:
-                    continue
-                seen.add(k)
-                p["th"] = theatre_at(p["lat"], p["lon"]) or th
-                got.append(p)
-        except Exception:
-            continue
-        got.sort(key=lambda p: -p["frp"])
-        pts.extend(got[:top])
+        got, left, end = [], days, today
+        while left > 0:
+            n = min(5, left)
+            start = end - dt.timedelta(days=n - 1)
+            try:
+                t = S.get(firms_url(key, box, n, start.isoformat()), raw=True, retries=2, wait=4)
+                for p in parse_firms(t.decode("utf-8", "replace") if isinstance(t, bytes) else t):
+                    k = (round(p["lat"], 3), round(p["lon"], 3), p["date"], p.get("ts", ""))
+                    if k in seen:
+                        continue
+                    seen.add(k)
+                    p["th"] = theatre_at(p["lat"], p["lon"]) or th
+                    got.append(p)
+            except Exception:
+                pass
+            left -= n
+            end = start - dt.timedelta(days=1)
+        mark_routine(got)
+        new = sorted((p for p in got if not p["routine"]), key=lambda p: (p.get("ts") or p["date"], p["frp"]), reverse=True)
+        old = sorted((p for p in got if p["routine"]), key=lambda p: -p["frp"])
+        pts.extend(new[:top] + old[:top // 3])
     return pts
 
 

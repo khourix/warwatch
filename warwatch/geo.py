@@ -93,6 +93,7 @@ def paths(topo, proj, level_of=None):
     for cid, name, rings in countries(topo):
         d = []
         for ring in rings:
+            ring = _unwrap(ring)
             lons = [p[0] for p in ring]
             lats = [p[1] for p in ring]
             if max(lons) < proj.lo or min(lons) > proj.hi or max(lats) < proj.la0 or min(lats) > proj.la1:
@@ -112,8 +113,10 @@ def paths(topo, proj, level_of=None):
 
 
 # ---- one region-wide basemap for the interactive page (the page zooms and pans in the browser) ----
-REGION = (-100, 150, -20, 64)   # lon_min, lon_max, lat_min, lat_max: the Americas to the Western Pacific, so every market-moving theatre is on the map
+REGION = (-180, 180, -57, 84)   # lon_min, lon_max, lat_min, lat_max: the whole inhabited world, so no coast is cut at the map edge
+HOME = (-170, 180, -48, 78)     # the overview's starting view: Alaska to New Zealand, the Arctic coast of Russia to Tasmania
 MARGIN = 6
+SKIP = {"Antarctica", "Fr. S. Antarctic Lands"}
 
 
 def _area_centroid(ring):
@@ -128,6 +131,22 @@ def _area_centroid(ring):
     return (cx / (3 * a), cy / (3 * a)), abs(a) / 2
 
 
+def _unwrap(ring):
+    """Rings that cross the antimeridian (Russia's Chukotka, Fiji) jump from +180 to -180; a straight jump draws a line across the
+    whole world map. Make the longitudes continuous, then move the ring to the side where most of it lies."""
+    out, shift, prev = [], 0.0, None
+    for lon, lat in ring:
+        if prev is not None and abs(lon + shift - prev) > 180:
+            shift += 360 if lon + shift < prev else -360
+        prev = lon + shift
+        out.append((prev, lat))
+    if shift:
+        mean = sum(p[0] for p in out) / len(out)
+        k = -360 if mean > 180 else 360 if mean < -180 else 0
+        out = [(lon + k, lat) for lon, lat in out]
+    return out
+
+
 def region_map(topo, width=3200):
     """-> dict(w, h, proj, countries=[{name, d, cx, cy, area}]) for the whole region.
 
@@ -138,8 +157,11 @@ def region_map(topo, width=3200):
     lo, hi, la0, la1 = REGION
     out = []
     for _cid, name, rings in countries(topo):
+        if name in SKIP:
+            continue
         parts, best = [], (None, 0.0)
         for ring in rings:
+            ring = _unwrap(ring)
             lons = [p[0] for p in ring]
             lats = [p[1] for p in ring]
             if max(lons) < lo - MARGIN or min(lons) > hi + MARGIN or max(lats) < la0 - MARGIN or min(lats) > la1 + MARGIN:
