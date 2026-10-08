@@ -524,6 +524,22 @@ for sid, sym, label, th, why in (
     add(sid, f"{label} (Yahoo Finance, Twelve Data fallback)", "financial", th, "daily", False, why, (lambda s=sym: S.fetch_market(s)),
         url=TD, sub="Commodities")
 
+# ============ Radar ship counts (Sentinel-1), filled by the sar workflow ============
+def _sar(box):
+    def go():
+        pts = store.cache_load(f"sar_{box}")
+        if not pts:
+            raise RuntimeError("first refresh pending (the radar job fills this; history backfills in slices)")
+        return pts
+    return go
+
+
+for box, th, nm in (("hormuz", "iran", "the Strait of Hormuz"), ("bab_el_mandeb", "yemen", "Bab el-Mandeb"), ("gulf_of_aden", "yemen", "the Gulf of Aden")):
+    add(f"sar_{box}", f"Radar-detected vessels per 10,000 km2 of sea, {nm} (Sentinel-1)", "geospatial", th, "daily", False,
+        "Free live AIS has no receivers here, but radar satellites see every ship, including those with transponders off. Scenes arrive about every two days. "
+        "Counts include oil rigs and miss small boats; a fall means fewer ships, a rise means more.",
+        _sar(box), direction="down", url="https://planetarycomputer.microsoft.com/dataset/sentinel-1-rtc", sub="Sea")
+
 # ============ Vessel presence from Global Fishing Watch (fills the gaps where live AIS has no receivers) ============
 GFW_BOX = {"iran": (23, 29, 48, 60), "yemen": (11, 22, 37, 46), "israel": (31, 36, 29, 36), "ukraine": (41, 46, 27, 41), "taiwan": (21, 27, 117, 124),
            "scs": (5, 20, 108, 121), "korea": (33, 40, 124, 131), "venezuela": (8, 14, -74, -60)}
@@ -618,7 +634,7 @@ for _s in SERIES:
 # Their noise-to-signal ratio on 78 labelled events (2018-2026) was 1 or more, so they raised false alarms without adding
 # warning (docs/METHODOLOGY.md, "Zero-weight families"). They stay on the page and keep being scored; the composite ignores
 # them until a refit shows they lead events. Remove an id here to give it weight again.
-ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_build_", "wheat_etf", "copper_etf", "brent_etf")
+ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_build_", "wheat_etf", "copper_etf", "brent_etf", "sar_")
 for _s in SERIES:
     if _s["id"].startswith(ZERO_WEIGHT):
         _s["scored"] = False

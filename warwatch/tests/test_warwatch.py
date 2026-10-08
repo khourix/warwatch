@@ -136,6 +136,37 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(got(["UKLV", "UKXX"], "UK"), ["1", "2", "3"])
         self.assertEqual(got(["HLLL"], "HL"), ["5"])    # Helena, Montana (HLN) is a US airport, not Libya
 
+    def test_sar_detector_counts_ships_not_land_or_big_blobs(self):
+        try:
+            import numpy as np
+            import sar
+            import scipy  # noqa: F401
+        except ImportError:
+            self.skipTest("numpy and scipy not installed")
+        rng = np.random.default_rng(1)
+        db = rng.normal(-20, 1.5, (400, 400))
+        for y, x in ((50, 60), (200, 300), (350, 100)):
+            db[y:y + 3, x:x + 2] += 14          # three ships
+        db[120:150, 120:150] += 14              # a 900-pixel patch is not a ship
+        land = np.zeros((400, 400), bool)
+        land[:, :30] = True
+        db[:, :30] = -5
+        db[100:102, 32:34] += 14                # bright spot inside the coastal strip
+        self.assertEqual(sar.detect(db, land)[0], 3)
+
+    def test_sar_daily_value_needs_enough_sea_in_view(self):
+        import sar
+        import tempfile
+        rows = [["a", "hormuz", "2026-10-01", "400", "5"], ["b", "hormuz", "2026-10-03", "3000", "6"], ["c", "hormuz", "2026-10-03", "1000", "2"]]
+        with tempfile.TemporaryDirectory() as d:
+            old = store.ROOT
+            store.ROOT = d
+            try:
+                sar.rebuild(rows)
+                self.assertEqual(store.cache_load("sar_hormuz"), [("2026-10-03", 20.0)])   # 8 ships in 4000 km2
+            finally:
+                store.ROOT = old
+
     def test_sam_counts_by_day(self):
         p = {"opportunitiesData": [{"postedDate": "2026-09-01"}, {"postedDate": "2026-09-20"}, {"postedDate": "2026-08-02"}]}
         self.assertEqual(S.parse_sam(p), {"2026-09-01": 1, "2026-09-20": 1, "2026-08-02": 1})

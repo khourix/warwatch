@@ -1,0 +1,13 @@
+name: sar-test
+on:
+  push:
+    branches: ["claude/project-thread-2mgl2x"]
+    paths: ["warwatch/sar.py", ".github/workflows/sar-test.yml"]
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m pip install --quiet --break-system-packages numpy scipy rasterio
+      - run: python3 warwatch/sar.py --days 8 --max-scenes 8 --dry-run
