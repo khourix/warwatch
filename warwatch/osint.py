@@ -341,15 +341,28 @@ def ukmto_all():
     return _UK["all"]
 
 
+def ukmto_archive(rows):
+    """Folds the feed's incidents into history/cache/ukmto_inc.csv (incident, date, lat, lon), which keeps what the feed later drops. -> [(date, lat, lon)]"""
+    import store
+    kept = {r[0]: r for r in store.cache_rows("ukmto_inc")}
+    for x in rows:
+        k = f"{x['t']} {x['d']}"
+        kept[k] = [k, x["d"], f"{x['lat']}", f"{x['lon']}"]
+    out = sorted(kept.values(), key=lambda r: (r[1], r[0]))
+    store.cache_rows_save("ukmto_inc", out)
+    return [(r[1], float(r[2]), float(r[3])) for r in out]
+
+
 def ukmto_series(theatre, days=30, today=None):
-    """The 30-day incident count for every day the feed covers completely. The feed keeps only the last ~100 days, so a window that
-    reaches back past its oldest incident is left out rather than undercounted. -> [(date, count)]"""
+    """The 30-day incident count for every day the archive covers completely. The feed keeps only the last ~100 days, so the archive
+    starts there and grows daily; a window that reaches back past the oldest archived incident is left out rather than undercounted.
+    -> [(date, count)]"""
     today = today or dt.date.today()
-    rows = parse_ukmto(ukmto_all(), today, 100000)
-    if not rows:
+    inc = ukmto_archive(parse_ukmto(ukmto_all(), today, 100000))
+    if not inc:
         return []
-    first = dt.date.fromisoformat(rows[-1]["d"]) + dt.timedelta(days=days)
-    mine = [dt.date.fromisoformat(x["d"]) for x in rows if x["th"] == theatre]
+    first = dt.date.fromisoformat(inc[0][0]) + dt.timedelta(days=days)
+    mine = [dt.date.fromisoformat(d) for d, la, lo in inc if theatre_at(la, lo) == theatre]
     out, d = [], first
     while d <= today:
         out.append((d.isoformat(), float(sum(1 for m in mine if 0 <= (d - m).days <= days))))

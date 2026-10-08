@@ -481,14 +481,23 @@ class TestOsint(unittest.TestCase):
 
     def test_ukmto_series_only_where_the_feed_covers_the_whole_window(self):
         import osint
-        rows = [{"utcDateOfIncident": d, "locationLatitude": 26.5, "locationLongitude": 56.2} for d in ("2026-07-01", "2026-08-10", "2026-08-12")]
-        osint._UK["all"] = rows
-        out = dict(osint.ukmto_series("iran", today=dt.date(2026, 8, 20)))
-        self.assertEqual(min(out), "2026-07-31")                 # a month after the oldest incident
-        self.assertEqual(out["2026-07-31"], 1.0)                  # 07-01 is still inside the 30 days
-        self.assertEqual(out["2026-08-01"], 0.0)
-        self.assertEqual(out["2026-08-20"], 2.0)
-        osint._UK.clear()
+        rows = [{"utcDateOfIncident": d, "locationLatitude": 26.5, "locationLongitude": 56.2, "incidentNumber": n}
+                for n, d in enumerate(("2026-07-01", "2026-08-10", "2026-08-12"))]
+        d, old = tempfile.mkdtemp(), store.ROOT
+        store.ROOT = d
+        try:
+            osint._UK["all"] = rows
+            out = dict(osint.ukmto_series("iran", today=dt.date(2026, 8, 20)))
+            self.assertEqual(min(out), "2026-07-31")                 # a month after the oldest incident
+            self.assertEqual(out["2026-07-31"], 1.0)                  # 07-01 is still inside the 30 days
+            self.assertEqual(out["2026-08-01"], 0.0)
+            self.assertEqual(out["2026-08-20"], 2.0)
+            osint._UK["all"] = rows[1:]                               # the feed drops the oldest incident; the archive keeps it
+            out = dict(osint.ukmto_series("iran", today=dt.date(2026, 8, 20)))
+            self.assertEqual((min(out), out["2026-07-31"]), ("2026-07-31", 1.0))
+        finally:
+            store.ROOT = old
+            osint._UK.clear()
 
     def test_seed_uses_archive_only_before_the_live_series_starts(self):
         d = tempfile.mkdtemp()
