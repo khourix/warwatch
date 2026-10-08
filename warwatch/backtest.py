@@ -35,10 +35,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HIST = os.path.join(ROOT, "backtest", "history")
 DOCS = os.path.join(ROOT, "docs")
 START, END, STEP = dt.date(2021, 7, 1), dt.date(2024, 12, 31), 2
-LONG = {"fetch_fred", "fetch_twelvedata", "fetch_market", "fetch_portwatch", "fetch_fcdo", "fetch_ioda", "fetch_frankfurter",
+LONG = {"fetch_fred", "fetch_twelvedata", "fetch_market", "fetch_portwatch", "fetch_fcdo", "fetch_ioda", "fetch_frankfurter", "fetch_cboe_vix", "fetch_fx_current",
         "fetch_usaspending", "fetch_comext", "fetch_census", "fetch_ted", "fetch_hapi_events"}
 # days between a point's date (end of the month for monthly series) and the day it is public
-LAG = {"fetch_fred": 2, "fetch_twelvedata": 1, "fetch_market": 1, "fetch_portwatch": 7, "fetch_fcdo": 0, "fetch_ioda": 1, "fetch_frankfurter": 1,
+LAG = {"fetch_fred": 2, "fetch_twelvedata": 1, "fetch_market": 1, "fetch_portwatch": 7, "fetch_fcdo": 0, "fetch_ioda": 1, "fetch_frankfurter": 1, "fetch_cboe_vix": 1, "fetch_fx_current": 1,
        "fetch_usaspending": 45, "fetch_comext": 70, "fetch_census": 40, "fetch_ted": 20, "fetch_hapi_events": 60}
 EVENTS = {   # theatre -> [(what happened, date)]
     "ukraine": [("Russia invades Ukraine", "2022-02-24")],
@@ -57,7 +57,8 @@ PRE, CALM_GAP, LOOK = 30, 60, 60     # pre-event window, days away from any even
 def _patch():
     o = {n: getattr(S, n) for n in LONG | {"fcdo_daily"} if hasattr(S, n)}
     S.fetch_fred = lambda series, key, days=0: o["fetch_fred"](series, key, days=3300)
-    S.fetch_frankfurter = lambda ccy, days=0: o["fetch_frankfurter"](ccy, days=3300)
+    S.fetch_frankfurter = lambda ccy, days=0, base="EUR": o["fetch_frankfurter"](ccy, days=3300, base=base)
+    S.fetch_cboe_vix = lambda days=0: o["fetch_cboe_vix"](days=12000)
     S.fetch_ioda = lambda cc, source="bgp", days=0: o["fetch_ioda"](cc, source, days=1500)
     S.fetch_usaspending = lambda *a, **k: o["fetch_usaspending"](*a, **{**k, "years": 9})
     S.fetch_comext = lambda product, partners, since=None: o["fetch_comext"](product, partners, since="2018-01")

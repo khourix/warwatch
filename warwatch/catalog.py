@@ -117,8 +117,8 @@ for sid, label, why, cpv, sub in (
     add(sid, label, "logistics", "global", "monthly", False, why, (lambda c=cpv: S.fetch_ted(c)), url=TED, sub=sub)
 
 FRED = "https://fred.stlouisfed.org/series/"
-add("vix", "VIX equity fear gauge (FRED)", "financial", "global", "daily", False, "Equity markets price in escalation risk.",
-    lambda: S.fetch_fred("VIXCLS", _key("FRED_API_KEY")), needs=["FRED_API_KEY"], url=FRED + "VIXCLS", sub="Markets")
+add("vix", "VIX equity fear gauge (Cboe)", "financial", "global", "daily", False, "Equity markets price in escalation risk.",
+    lambda: S.fetch_cboe_vix(), url="https://www.cboe.com/tradable_products/vix/vix_historical_data/", sub="Markets")
 add("diesel_nyh", "Diesel, New York Harbor, USD per gallon (FRED)", "financial", "global", "daily", False,
     "Diesel stress shows up before crude when refineries and shipping lanes are hit.",
     lambda: S.fetch_fred("DDFUELNYH", _key("FRED_API_KEY")), needs=["FRED_API_KEY"], url=FRED + "DDFUELNYH", sub="Fuel")
@@ -491,13 +491,15 @@ add("news_evac_global", "Embassy drawdown and ordered-departure headlines per da
 
 
 # ============ Added theatres: currencies, commodities and equities that price their risk ============
-for sid, series, label, th, why, direction in (
-    ("fx_twd", "DEXTAUS", "Taiwan dollars per US dollar (FRED)", "taiwan", "A weaker Taiwan dollar means capital is leaving ahead of a Strait crisis.", "up"),
-    ("fx_krw", "DEXKOUS", "Korean won per US dollar (FRED)", "korea", "The won weakens first when a peninsula crisis is priced.", "up"),
-    ("fx_inr", "DEXINUS", "Indian rupees per US dollar (FRED)", "southasia", "Rupee stress shows up as India-Pakistan tension builds.", "up"),
+add("fx_twd", "Taiwan dollars per US dollar (Twelve Data)", "financial", "taiwan", "daily", False,
+    "A weaker Taiwan dollar means capital is leaving ahead of a Strait crisis.",
+    lambda: S.fetch_fx_current("USD/TWD", "DEXTAUS", _key("FRED_API_KEY")), url="https://twelvedata.com/", sub="Currency")
+for sid, ccy, label, th, why in (
+    ("fx_krw", "KRW", "Korean won per US dollar (ECB reference rate via Frankfurter)", "korea", "The won weakens first when a peninsula crisis is priced."),
+    ("fx_inr", "INR", "Indian rupees per US dollar (ECB reference rate via Frankfurter)", "southasia", "Rupee stress shows up as India-Pakistan tension builds."),
 ):
-    add(sid, label, "financial", th, "daily", False, why, (lambda s=series: S.fetch_fred(s, _key("FRED_API_KEY"))), direction=direction,
-        needs=["FRED_API_KEY"], url=FRED + series, sub="Currency")
+    add(sid, label, "financial", th, "daily", False, why, (lambda c=ccy: S.fetch_frankfurter(c, base="USD")), direction="up",
+        url="https://frankfurter.dev/", sub="Currency")
 add("copper", "Copper price, USD per tonne (FRED, monthly)", "financial", "drc", "monthly", True,
     "Congo's copper and cobalt belt supplies a large share of world output, so mine and route disruption moves copper.",
     lambda: S.fetch_fred("PCOPPUSDM", _key("FRED_API_KEY"), days=2400), drop=0, needs=["FRED_API_KEY"], url=FRED + "PCOPPUSDM", sub="Commodities")
@@ -512,6 +514,15 @@ for sid, sym, label, th, why, direction in (
     add(sid, f"{label} (Yahoo Finance)", "financial", th, "daily", False, why, (lambda s=sym: S.fetch_market(s)),
         direction=direction, url=TD, sub="Markets")
 
+
+# Same-day proxies for the monthly or two-day-late FRED commodity series. Weightless until validate.py re-tests them (ZERO_WEIGHT below).
+for sid, sym, label, th, why in (
+    ("wheat_etf", "WEAT", "Wheat futures ETF (WEAT)", "ukraine", "Same-day read on Black Sea grain risk; the monthly wheat series above runs about three months late."),
+    ("copper_etf", "CPER", "Copper futures ETF (CPER)", "drc", "Same-day read on Congo copper supply risk; the monthly copper series above runs about three months late."),
+    ("brent_etf", "BNO", "Brent crude futures ETF (BNO)", "iran", "Same-day read on Gulf and Hormuz risk; FRED's Brent runs two days late."),
+):
+    add(sid, f"{label} (Yahoo Finance, Twelve Data fallback)", "financial", th, "daily", False, why, (lambda s=sym: S.fetch_market(s)),
+        url=TD, sub="Commodities")
 
 # ============ Vessel presence from Global Fishing Watch (fills the gaps where live AIS has no receivers) ============
 GFW_BOX = {"iran": (23, 29, 48, 60), "yemen": (11, 22, 37, 46), "israel": (31, 36, 29, 36), "ukraine": (41, 46, 27, 41), "taiwan": (21, 27, 117, 124),
@@ -607,7 +618,7 @@ for _s in SERIES:
 # Their noise-to-signal ratio on 78 labelled events (2018-2026) was 1 or more, so they raised false alarms without adding
 # warning (docs/METHODOLOGY.md, "Zero-weight families"). They stay on the page and keep being scored; the composite ignores
 # them until a refit shows they lead events. Remove an id here to give it weight again.
-ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_build_")
+ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_build_", "wheat_etf", "copper_etf", "brent_etf")
 for _s in SERIES:
     if _s["id"].startswith(ZERO_WEIGHT):
         _s["scored"] = False

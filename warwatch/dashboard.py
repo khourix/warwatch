@@ -22,8 +22,8 @@ MAXPTS = {"daily": 180, "monthly": 60}
 ZH_N = 60
 CLS_NAMES = {"lift": "Airlift", "tanker": "Tanker", "isr": "Surveillance / AWACS", "fighter": "Fighter", "bomber": "Bomber", "uav": "Drone", "heli": "Helicopter", "other": "Other military"}
 UNAVAILABLE = [
-    ("NOTAMs (airspace closure notices)", "The FAA NOTAM service (new NMS-API, test environment) supplies counts of fresh airspace-restriction notices for each theatre's flight information regions; ICAO's feed refuses automated requests. Alongside it the dashboard reads GPSJam (daily share of aircraft reporting degraded GPS, per theatre), US NGA hazard warnings, EASA airspace bulletins and live airliner counts."),
-    ("Live ship positions in the Gulf, Red Sea and East Mediterranean", "The free live AIS networks (aisstream.io, and Open Waters, which mirrors it) have no receivers there: zero ships in Hormuz or the Gulf of Aden while 2,300 appear worldwide. Warships often switch AIS off anyway. Instead the dashboard scores Global Fishing Watch vessel-hours per day (satellite AIS, about four days late), IMF PortWatch transits, UKMTO incidents and the weekly USNI fleet tracker; Baltic, North Sea, Black Sea and Western Mediterranean AIS is live."),
+    ("NOTAMs (airspace closure notices)", "The FAA NOTAM service (NMS-API, production) supplies counts of fresh airspace-restriction notices for each theatre's flight information regions; ICAO's feed refuses automated requests. Alongside it the dashboard reads GPSJam (daily share of aircraft reporting degraded GPS, per theatre), US NGA hazard warnings, EASA airspace bulletins and live airliner counts."),
+    ("Live ship positions in the Gulf and Red Sea", "The free live AIS networks (aisstream.io, and Open Waters, which mirrors it) have no receivers there: a 45-second test in October 2026 saw zero ships in the Gulf, the Strait of Hormuz and the Red Sea, but about 36 in the East Mediterranean. Warships often switch AIS off anyway. Instead the dashboard scores Global Fishing Watch vessel-hours per day (satellite AIS, about four days late), IMF PortWatch transits, UKMTO incidents and the weekly USNI fleet tracker; Baltic, North Sea, Black Sea and Western Mediterranean AIS is live."),
     ("Conflict event data (ACLED API)", "The ACLED account authenticates but its data API is closed at the open tier. ACLED events arrive through the open HDX HAPI feed instead, about two months late. UCDP (Uppsala) is the planned second source once its access token arrives."),
     ("Aircraft routes and owners", "Public ADS-B carries no flight plan for military aircraft. Owner is inferred from the aircraft's address block and call sign, and shown as such."),
     ("Strava heat maps, lobster and steak orders, strip-club traffic, freight-forwarder leaks, Telegram channels", "No open data, or only through private apps and terms of service that forbid scraping. Not used."),
@@ -31,7 +31,7 @@ UNAVAILABLE = [
 
 
 UPDATES = [   # (source, how often it is read, why that is enough / the free limit)
-    ("FAA NOTAM service (NMS-API)", "Every 6 hours", "Free with an FAA account (test environment for now); counts of new airspace-restriction notices per flight information region."),
+    ("FAA NOTAM service (NMS-API)", "Every 6 hours", "Free with an FAA account (production keys); counts of new airspace-restriction notices per flight information region."),
     ("Aircraft positions, emergency squawks (adsb.lol)", "every 30 minutes", "Community feed with no stated cap; one call per layer per run."),
     ("US Navy fleet (USNI Fleet Tracker)", "every 30 minutes, changes weekly", "USNI publishes once a week, usually Monday or Thursday."),
     ("UKMTO incidents and maritime news", "every 30 minutes", "Incidents are posted within hours of the report."),
@@ -40,7 +40,7 @@ UPDATES = [   # (source, how often it is read, why that is enough / the free lim
     ("NASA FIRMS fires and thermal detections", "every 30 minutes", "Satellite passes update every ~3 hours; free limit is 5,000 requests per 10 minutes, we use about 15."),
     ("Prediction-market odds and history", "every 30 minutes", "Polymarket and Kalshi public APIs; about 60 calls per run."),
     ("Hazard warnings (NGA), airspace bulletins (EASA), GPS-jamming and airliner counts", "every 30 minutes, averaged per day", "Snapshots are appended and averaged into a daily value."),
-    ("Share prices (Yahoo Finance), FRED, ECB rates", "every 6 hours", "These publish one close per day; Yahoo needs no key and we use about 25 requests. Twelve Data is the fallback if Yahoo blocks the runner."),
+    ("Share prices (Yahoo Finance, else Twelve Data), Cboe VIX, FRED, ECB rates", "every 6 hours", "These publish one close per day; Yahoo refuses GitHub's runners (it answers 429 to every request), so Twelve Data does the work in practice."),
     ("Internet outage data (IODA), UK travel advice", "every 3 to 12 hours", "Changes slowly; the source keeps history."),
     ("Headline counts (Google News) and GDELT events", "every 6 hours", "GDELT publishes daily files; news counts are backfilled a few days per run to stay polite."),
     ("US contract awards, trade, EU tenders, ACLED-derived conflict counts", "once a day", "Monthly data with a 1 to 3 month publishing delay; more frequent reads add nothing."),

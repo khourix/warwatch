@@ -162,6 +162,10 @@ class TestParsers(unittest.TestCase):
                                                         {"date": "2026-01-02", "value": "5.5"}]}),
                          [("2026-01-02", 5.5)])
 
+    def test_cboe_vix_csv(self):
+        txt = "DATE,OPEN,HIGH,LOW,CLOSE\n10/06/2026,15.1,16.0,14.9,15.5\n10/07/2026,15.21,16.01,14.97,15.08\n\n"
+        self.assertEqual(S.parse_cboe_vix(txt), [("2026-10-06", 15.5), ("2026-10-07", 15.08)])
+
 
 class TestExtras(unittest.TestCase):
     def test_nga_coordinates_and_issue_date(self):

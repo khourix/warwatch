@@ -4,7 +4,9 @@ function's docstring says UNVERIFIED (needs a key nobody has supplied yet).
 """
 import datetime as dt
 import base64
+import csv
 import gzip
+import io
 import re
 import json
 import os
@@ -673,9 +675,31 @@ def parse_frankfurter(p, ccy):
     return sorted((d, float(v[ccy])) for d, v in p.get("rates", {}).items() if ccy in v)
 
 
-def fetch_frankfurter(ccy, days=420):
+def fetch_frankfurter(ccy, days=420, base="EUR"):
     start = (dt.date.today() - dt.timedelta(days=days)).isoformat()
-    return parse_frankfurter(get(f"https://api.frankfurter.dev/v1/{start}..?from=EUR&to={ccy}"), ccy)
+    return parse_frankfurter(get(f"https://api.frankfurter.dev/v1/{start}..?from={base}&to={ccy}"), ccy)
+
+
+def parse_cboe_vix(text):
+    """Cboe's public history file: DATE (mm/dd/yyyy), OPEN, HIGH, LOW, CLOSE -> sorted (iso date, close)."""
+    out = []
+    for r in csv.reader(io.StringIO(text)):
+        try:
+            m, d, y = r[0].split("/")
+            out.append((f"{y}-{int(m):02d}-{int(d):02d}", float(r[4])))
+        except (ValueError, IndexError):
+            continue    # header or blank line
+    return sorted(out)
+
+
+def fetch_cboe_vix(days=900):
+    """VIX close straight from Cboe: no key, posted the same evening (FRED's copy runs two days behind)."""
+    req = urllib.request.Request("https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
+                                 headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/124"})
+    with urllib.request.urlopen(req, timeout=40) as r:
+        pts = parse_cboe_vix(r.read().decode("utf-8", "replace"))
+    cut = str(dt.date.today() - dt.timedelta(days=days))
+    return [p for p in pts if p[0] >= cut]
 
 
 def parse_twelvedata(p):
@@ -737,6 +761,18 @@ def fetch_market(symbol):
 
 
 _YAHOO_DEAD = False
+
+
+def fetch_fx_current(td_symbol, fred_series, fred_key):
+    """A daily exchange rate from Twelve Data (current to yesterday); FRED's H.10 copy (about a week late) if Twelve Data fails."""
+    try:
+        if not os.environ.get("TWELVEDATA_API_KEY"):
+            raise RuntimeError("no Twelve Data key")
+        return fetch_twelvedata(td_symbol, os.environ["TWELVEDATA_API_KEY"])
+    except Exception:
+        if not fred_key:
+            raise
+        return fetch_fred(fred_series, fred_key)
 
 
 # ---- FRED (needs FRED_API_KEY) -------------------------------------------------
