@@ -49,3 +49,13 @@ Full tables: [CALIBRATION.md](CALIBRATION.md). Two questions were asked of the 2
 2. Treat the eight above as a watch-list, not a verdict: when the forward log (`forward/log.csv`) has a year, test whether they pull their weight there. If the support-weighted ridge is level or better on the forward record, switch to it (it caps exactly these).
 3. Do not promote any fast feed. None clears the bar alone (BACKTEST_FASTFEEDS.md) and adding them lowers skill (+0.0010). Revisit when ADS-B has two or more years and more events.
 4. The one calibration change the evidence points at is base rates that follow recent event frequency (see Calibration above), not family weights; that needs its own nested test before shipping.
+
+## Improvement tests: how to catch more of the next events
+
+Tables and method: [IMPROVEMENTS.md](IMPROVEMENTS.md). Everything below is out of sample and none of it is shipped.
+
+1. **Nothing tried on the model's inputs helps reliably.** Extra history terms (events 30 to 90 days ago, in linked theatres such as Iran-Israel-Yemen, anywhere else), recency-weighted training and a three-year base rate each move Brier skill by less than a year-to-year swing, and none beats the published model on skill and AUC together. The model is near what these 78 events and public indicators can give.
+2. **Alerting on the rise in probability looks better and is not.** It flags 19 of 51 events against 14 at the same share of calm days, but raises 181 separate false alarms against 55. Taking the highest of the last 7 days of the published probability catches the same events with 43 false episodes instead of 55. That is the one small, safe change.
+3. **Training on armed-force events only (onset, strike, maritime) helps modestly.** Judged on those events it flags 16 of 39 at 10% false alarms against 13 of 39, AUC 0.667 against 0.658, lift 3.1x against 2.6x, and is better in 5 of 6 years (not 2022). Drills and "other" events are close to unforecastable from these data and add noise to the target. Three events is within noise, so treat it as the leading candidate, not a result.
+
+What would actually raise capture is new information, not tuning: leading indicators with real history before 2024, and more labelled events. My recommended order: (a) adopt the 7-day maximum for alerts; (b) run the armed-force target in parallel with the current model and score both on the forward log; (c) keep adding events as they happen.
