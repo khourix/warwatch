@@ -1,0 +1,26 @@
+name: commit-backfill
+description: Commit backfill/data (public data only) to the branch the workflow runs on, retrying around concurrent jobs.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        git config user.name "warwatch-bot"
+        git config user.email "warwatch-bot@users.noreply.github.com"
+        git add -A backfill 2>/dev/null || true
+        git diff --cached --quiet && exit 0
+        # The checkout is shallow, so a rebase over many newer commits has no merge base and fails. Jobs write disjoint
+        # files: keep this job's files aside, move to the newest branch tip, put them back and commit there.
+        keep="${RUNNER_TEMP}/keep"; rm -rf "$keep"; mkdir -p "$keep"
+        git diff --cached --name-only --diff-filter=AM | while read -r f; do cp --parents "$f" "$keep"; done
+        for i in 1 2 3 4 5 6 7 8; do
+          git fetch -q --depth=1 origin "${GITHUB_REF_NAME}" || { sleep 10; continue; }
+          git reset -q --hard FETCH_HEAD
+          cp -r "$keep"/. .
+          git add -A backfill 2>/dev/null || true
+          git diff --cached --quiet && exit 0
+          git commit -qm "backfill: ${GITHUB_JOB} $(date -u +%FT%H:%MZ)"
+          git push -q origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+          sleep $((RANDOM % 20 + 5))
+        done
+        echo "::warning::push failed"; exit 1
