@@ -882,6 +882,23 @@ def nms_bulk(host, token, classification="INTERNATIONAL"):
     return json.loads(raw)
 
 
+def nms_select(items, firs, prefix=None):
+    """Notices for a theatre: filed under one of its flight information regions, or (prefix) at an airport or airspace with that
+    ICAO prefix. Ukraine's closed airspace is filed under the placeholder region UKXX, so the region alone misses it."""
+    out, seen = [], set()
+    for f in items:
+        try:
+            nt = f["properties"]["coreNOTAMData"]["notam"]
+        except (KeyError, TypeError):
+            continue
+        loc = str(nt.get("location") or "")
+        if nt.get("affectedFir") in firs or (prefix and len(loc) == 4 and loc.startswith(prefix)):
+            if nt.get("id") not in seen:
+                seen.add(nt.get("id"))
+                out.append(f)
+    return out
+
+
 def nms_update(firs, store, today=None, cid=None, secret=None):
     """Once a day: pull the international load, count each theatre's fresh restriction NOTAMs by flight information region."""
     cid = cid or os.environ.get("FAA_CLIENT_ID", "")
@@ -893,14 +910,8 @@ def nms_update(firs, store, today=None, cid=None, secret=None):
     items = nms_bulk(host, tok)
     if isinstance(items, dict):
         items = items.get("data", {}).get("geojson", []) if isinstance(items.get("data"), dict) else items.get("features", [])
-    by_fir = {}
-    for f in items:
-        try:
-            by_fir.setdefault(f["properties"]["coreNOTAMData"]["notam"].get("affectedFir"), []).append(f)
-        except (KeyError, TypeError):
-            continue
     for th, locs in firs.items():
-        mine = [f for loc in locs for f in by_fir.get(loc, [])]
+        mine = nms_select(items, locs, C.NOTAM_PREFIX.get(th))
         if not mine:
             continue
         have = dict(store.cache_load(f"notam_{th}"))

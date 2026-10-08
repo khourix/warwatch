@@ -127,6 +127,15 @@ class TestParsers(unittest.TestCase):
                  f("4", "2026-08-01T00:00:00Z", "PROHIBITED AREA"), f("5", "2026-10-06T00:00:00Z", "PROHIBITED", typ="C")]
         self.assertEqual(S.parse_nms(items, dt.date(2026, 10, 8)), 2.0)
 
+    def test_nms_select_matches_region_or_icao_prefix(self):
+        def f(i, fir, loc):
+            return {"properties": {"coreNOTAMData": {"notam": {"id": i, "affectedFir": fir, "location": loc}}}}
+        items = [f("1", "UKXX", "UKBV"), f("2", "UKLV", "UKLL"), f("3", "KZLC", "UKOV"), f("4", "KZLC", "HLN"), f("5", "KZLC", "HLLL"), f("6", "EPWW", "EPWA")]
+        got = lambda firs, prefix=None: sorted(x["properties"]["coreNOTAMData"]["notam"]["id"] for x in S.nms_select(items, firs, prefix))
+        self.assertEqual(got(["UKLV"]), ["2"])
+        self.assertEqual(got(["UKLV", "UKXX"], "UK"), ["1", "2", "3"])
+        self.assertEqual(got(["HLLL"], "HL"), ["5"])    # Helena, Montana (HLN) is a US airport, not Libya
+
     def test_sam_counts_by_day(self):
         p = {"opportunitiesData": [{"postedDate": "2026-09-01"}, {"postedDate": "2026-09-20"}, {"postedDate": "2026-08-02"}]}
         self.assertEqual(S.parse_sam(p), {"2026-09-01": 1, "2026-09-20": 1, "2026-08-02": 1})

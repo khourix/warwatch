@@ -83,11 +83,12 @@ BOXES = {   # lat_min, lat_max, lon_min, lon_max for military ADS-B counts and h
 }
 THEATRE_BOX = BOXES
 FIRS = {   # flight information regions queried in the FAA NOTAM service for each theatre
-    "ukraine": ["UKBV", "UKLV", "UKOV", "UKDV"], "europe_east": ["EPWW", "EVRR", "EYVL", "EETT", "UMMV"],
+    "ukraine": ["UKBV", "UKLV", "UKOV", "UKDV", "UKXX"], "europe_east": ["EPWW", "EVRR", "EYVL", "EETT", "UMMV"],
     "iran": ["OIIX"], "yemen": ["OYSC"], "israel": ["LLLL", "OLBB", "OSTT", "ORBB"], "taiwan": ["RCAA"],
     "scs": ["RPHI", "VHHK"], "korea": ["RKRR", "ZKKP"], "southasia": ["OPKR", "OPLR", "VIDF", "VABF"],
     "libya": ["HLLL"], "sudan": ["HSSS"], "drc": ["FZZA"], "venezuela": ["SVZM"],
 }
+NOTAM_PREFIX = {"ukraine": "UK", "yemen": "OY", "libya": "HL"}   # also match 4-letter ICAO locations with this prefix (US airports use 3 letters)
 FIRMS_BOX = {   # satellite thermal boxes: wider than the aircraft boxes so they cover the Levant, Iraq and the Gulf states
     "ukraine": (44, 53, 22, 41), "europe_east": (49, 66, 14, 30),
     "iran": (22, 40, 38, 64),      # Iran, Iraq, Kuwait, Bahrain, Qatar, UAE, northern Oman, eastern Saudi Arabia
