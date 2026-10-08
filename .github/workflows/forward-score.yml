@@ -2,7 +2,7 @@ name: forward-score
 # Quarterly: verify the hash chain of the forward record and score the forecasts that have matured. Standard library only.
 on:
   schedule:
-    - cron: "37 5 3 1,4,7,10 *"
+    - cron: "0 5 3 1,4,7,10 *"
   workflow_dispatch: {}
 permissions:
   contents: write

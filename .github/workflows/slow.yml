@@ -3,7 +3,7 @@ name: slow-sources
 # dashboard build, and cache their last good result in warwatch/history/cache.
 on:
   schedule:
-    - cron: "20 4 * * *"      # SAM.gov (about 10 requests a day allowed)
+    - cron: "0 4 * * *"      # SAM.gov (about 10 requests a day allowed)
   workflow_dispatch:
     inputs:
       which:

@@ -3,7 +3,7 @@ name: news
 # First run: dispatch with max_requests=150 to backfill about 150 days for each theatre.
 on:
   schedule:
-    - cron: "40 */6 * * *"
+    - cron: "0 */6 * * *"
   workflow_dispatch:
     inputs:
       max_requests:

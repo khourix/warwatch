@@ -3,7 +3,7 @@ name: sar
 # Each night it reads any scene from the last 400 days it has not counted yet (about 90 a night, oldest first), so history fills in about a week, then only new scenes are read.
 on:
   schedule:
-    - cron: "10 5 * * *"
+    - cron: "0 5 * * *"
   workflow_dispatch:
     inputs:
       days:

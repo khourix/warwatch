@@ -3,7 +3,7 @@ name: refit
 # Writes warwatch/data/model_weights.json and docs/MODEL.md. The model drives the live levels only while its gates pass (see docs/MODEL.md).
 on:
   schedule:
-    - cron: "17 4 2 * *"
+    - cron: "0 4 2 * *"
   workflow_dispatch: {}
 permissions:
   contents: write
