@@ -21,6 +21,8 @@ import datetime as dt
 import json
 import os
 import sys
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -43,13 +45,35 @@ MIN_PX, MAX_PX = 2, 200
 MIN_SEA_KM2 = 500.0  # a day needs at least this much sea seen to give a value
 
 
+def _open(req, timeout):
+    """urlopen that waits and retries when Planetary Computer answers 429 or 5xx."""
+    for wait in (0, 5, 20, 60):
+        time.sleep(wait)
+        try:
+            return json.loads(urllib.request.urlopen(req, timeout=timeout).read())
+        except urllib.error.HTTPError as e:
+            if e.code not in (429, 500, 502, 503, 504) or wait == 60:
+                raise
+    raise RuntimeError("unreachable")
+
+
 def _post(url, body):
-    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json", "User-Agent": "warwatch"})
-    return json.loads(urllib.request.urlopen(req, timeout=90).read())
+    return _open(urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json", "User-Agent": "warwatch"}), 90)
 
 
 def sign(href):
-    return json.loads(urllib.request.urlopen(urllib.request.Request(SIGN + urllib.parse.quote(href, safe=""), headers={"User-Agent": "warwatch"}), timeout=40).read())["href"]
+    return _open(urllib.request.Request(SIGN + urllib.parse.quote(href, safe=""), headers={"User-Agent": "warwatch"}), 40)["href"]
+
+
+_WC = {}
+
+
+def worldcover_tiles(lo, la, hi, ha):
+    """Land-cover tile hrefs for a box, looked up once per run."""
+    k = (lo, la, hi, ha)
+    if k not in _WC:
+        _WC[k] = [f["assets"]["map"]["href"] for f in _post(STAC, {"collections": ["esa-worldcover"], "bbox": [lo, la, hi, ha], "limit": 20}).get("features", [])]
+    return _WC[k]
 
 
 def scenes_for(box, start, end):
@@ -107,9 +131,8 @@ def count_scene(item, box):
         nodata = ~np.isfinite(vv) | (vv <= 0)
         db = 10.0 * np.log10(np.where(nodata, 1.0, vv))
         land = np.zeros((h, w), bool)
-        wc = _post(STAC, {"collections": ["esa-worldcover"], "bbox": [lo, la, hi, ha], "limit": 20}).get("features", [])
-        for f in wc:
-            with rasterio.open(sign(f["assets"]["map"]["href"])) as src, WarpedVRT(src, crs=crs, transform=tr, width=w, height=h, resampling=Resampling.nearest) as v:
+        for href in worldcover_tiles(lo, la, hi, ha):
+            with rasterio.open(sign(href)) as src, WarpedVRT(src, crs=crs, transform=tr, width=w, height=h, resampling=Resampling.nearest) as v:
                 lc = v.read(1)
             land |= (lc > 0) & (lc != 80)       # 0 = no data (open sea), 80 = water
         n, px = detect(db, land | nodata)
