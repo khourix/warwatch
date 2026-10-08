@@ -33,3 +33,19 @@ The published 30-day probability per theatre, as the live page would have shown 
 - The event list was built for the methodology review, and the ridge strength was chosen on the same test years, so the gates are a little optimistic.
 - 60 scorable events in 13 theatres, with 18 in Iran and Israel; per-theatre numbers are small and wide.
 - Dates are the first day an event qualified; a different date convention would shift lead times by days.
+
+## Calibration proposal: which indicators earn weight
+
+Full tables: [CALIBRATION.md](CALIBRATION.md). Two questions were asked of the 2018 to 2026 events: which indicators rose before them, and would a different weighting have forecast better out of sample.
+
+**Which indicators reliably rose before events** (within-theatre AUC interval above 0.5, and above 0.5 in both 2019 to 2022 and 2023 to 2026): the GDELT news-tone families (pre-force share 0.61, threat 0.60 to 0.61, posture 0.56), VIX (0.57), and the Taiwan and India equity indices (0.62 and 0.76, few events). Their lift is real but small: AUC 0.55 to 0.62, nothing like a clean signal. Korea's equity index and the won rose before the Korean events (AUC 0.81 and 0.78) but on three events, too few to judge. Everything else, including every back-filled fast feed, shows no stable rise.
+
+**Where the model's weight is ahead of the evidence** (weight of 1 or more, interval includes 0.5): tanker equities (2.18), container equities (2.05), EU gas (1.96), US armor awards (1.44), EU truck exports (1.37, AUC 0.42, below chance), ACLED demonstrations (1.33), US individual-equipment awards (1.05) and US ammunition NAICS awards (1.04). The news-tone families that do show stable evidence carry 0.4 to 0.6.
+
+**But re-weighting by hand does not beat the fit.** Seven schemes were compared in the model's own rolling-origin test. The published ridge is best on Brier skill (+0.0148). Keeping only the families that look good in training (+0.0047), one coefficient per domain (+0.0051), an AUC-weighted index (+0.0110) and adding the fast feeds (+0.0010) all do worse. Shrinking thinly-supported families harder (+0.0137) is level on skill and slightly better outside Iran and Israel (-0.0027 against -0.0051), within noise of the published model.
+
+**Proposal**
+1. Keep the weights as fitted; do not hand-edit them. No scheme tested improves on them out of sample.
+2. Treat the eight above as a watch-list, not a verdict: when the forward log (`forward/log.csv`) has a year, test whether they pull their weight there. If the support-weighted ridge is level or better on the forward record, switch to it (it caps exactly these).
+3. Do not promote any fast feed. None clears the bar alone (BACKTEST_FASTFEEDS.md) and adding them lowers skill (+0.0010). Revisit when ADS-B has two or more years and more events.
+4. The one calibration change the evidence points at is base rates that follow recent event frequency (see Calibration above), not family weights; that needs its own nested test before shipping.
