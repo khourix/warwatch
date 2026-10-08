@@ -252,8 +252,8 @@ for th in C.HUBS:
             "A fall means airspace is being closed or avoided. Snapshots start now.",
             _snap(f"civil_{th}", lambda t=th: float(extras.hub_stats(t)[0]) or None), direction="down", url=ADS, sub="Airspace")
     add(f"nga_{th}", f"New naval and air hazard warnings, last 30 days, {nm} (US NGA)", "geospatial", th, "daily", False,
-        "Missile firing, exercises, mines, drones and GPS-interference notices to mariners and pilots; exercises are announced before they happen.",
-        _snap(f"nga_{th}", lambda t=th: extras.nga_recent(t)), url=NGA, sub="Warnings")
+        "Missile firing, exercises, mines, drones and GPS-interference notices to mariners and pilots; exercises are announced before they happen. From NGA's current feed, kept from 1 August 2026 and counted from 31 August.",
+        (lambda t=th: extras.nga_series(t)), url=NGA, sub="Warnings")
     add(f"czib_{th}", f"EASA airspace bulletins revised in last 30 days, {nm}", "geospatial", th, "daily", False,
         "EASA revises conflict-zone bulletins when it sees rising danger to airliners. Snapshots start now.",
         _snap(f"czib_{th}", lambda t=th: extras.czib_recent(box=C.BOXES[t])),
@@ -637,7 +637,7 @@ for _s in SERIES:
 # Their noise-to-signal ratio on 78 labelled events (2018-2026) was 1 or more, so they raised false alarms without adding
 # warning (docs/METHODOLOGY.md, "Zero-weight families"). They stay on the page and keep being scored; the composite ignores
 # them until a refit shows they lead events. Remove an id here to give it weight again.
-ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_build_", "wheat_etf", "copper_etf", "brent_etf", "sar_", "nga_")   # nga_: NGA stopped publishing on 2024-05-10 (its own latest-warning endpoint says so)
+ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_build_", "wheat_etf", "copper_etf", "brent_etf", "sar_")
 for _s in SERIES:
     if _s["id"].startswith(ZERO_WEIGHT):
         _s["scored"] = False

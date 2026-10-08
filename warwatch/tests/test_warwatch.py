@@ -225,6 +225,28 @@ class TestExtras(unittest.TestCase):
         self.assertEqual(len(got), 1)
         self.assertEqual(got[0]["issued"], "2026-10-01")
 
+    def test_nga_new_feed_rows_become_warnings_and_a_30_day_series(self):
+        rows = [{"createdOn": "081230Z OCT 2026", "usNavArea": "HYDROPAC", "msgSqncNumber": 2926, "status": "INFORCE",
+                 "msgText": "081230Z OCT 26\nHYDROPAC 2926/26.\nARABIAN SEA.\n1. HAZARDOUS OPERATIONS, MISSILE FIRING IN AREA 25-00.00N 060-00.00E."},
+                {"createdOn": "250000Z SEP 2026", "usNavArea": "NAVAREA IX", "msgSqncNumber": 300, "status": "CANCELED",
+                 "msgText": "GUNNERY EXERCISES 26-00.00N 056-00.00E."},
+                {"createdOn": "010000Z JUL 2026", "usNavArea": "NAVAREA IV", "msgSqncNumber": 1, "status": "INFORCE", "msgText": "LIGHT UNLIT 26-00N 056-00E."}]
+        got = extras.parse_nga(extras.smaps_to_warnings(rows))
+        self.assertEqual([(m["issued"], m["active"]) for m in got], [("2026-10-08", True), ("2026-09-25", False)])
+        d = tempfile.mkdtemp()
+        old = store.ROOT
+        store.ROOT = d
+        try:
+            extras._CACHE["nga"] = got
+            pts = dict(extras.nga_series("iran", today=dt.date(2026, 10, 8)))
+        finally:
+            store.ROOT = old
+            extras._CACHE.pop("nga", None)
+        self.assertEqual(min(pts), "2026-08-31")              # a month after the feed began keeping cancelled warnings
+        self.assertEqual(pts["2026-09-24"], 0.0)
+        self.assertEqual(pts["2026-09-25"], 1.0)              # the cancelled warning still counts as issued
+        self.assertEqual(pts["2026-10-08"], 2.0)
+
     def test_navigation_degradation(self):
         p = {"ac": [{"lat": 1, "lon": 1, "nac_p": 9}, {"lat": 1, "lon": 1, "nac_p": 3}, {"lat": 1, "lon": 1},
                     {"nac_p": 0}]}
