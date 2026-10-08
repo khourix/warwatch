@@ -1,0 +1,48 @@
+name: sar
+# Sentinel-1 radar ship counts over Hormuz, Bab el-Mandeb and the Gulf of Aden (needs numpy, scipy, rasterio, so it runs apart from the dashboard build).
+# Each night it reads any scene from the last 400 days it has not counted yet (about 90 a night, oldest first), so history fills in about a week, then only new scenes are read.
+on:
+  schedule:
+    - cron: "10 5 * * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "look back this many days"
+        required: false
+        default: "400"
+      max_scenes:
+        description: "scenes to read this run"
+        required: false
+        default: "90"
+      dry_run:
+        description: "true = print counts, write nothing"
+        required: false
+        default: "false"
+permissions:
+  contents: write
+concurrency:
+  group: warwatch-sar
+  cancel-in-progress: false
+jobs:
+  sar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install radar libraries
+        run: python3 -m pip install --quiet --break-system-packages numpy scipy rasterio
+      - name: Count vessels
+        run: python3 warwatch/sar.py --days "${{ github.event.inputs.days || '400' }}" --max-scenes "${{ github.event.inputs.max_scenes || '90' }}" ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+      - name: Commit cache (public data only)
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add warwatch/history/sar_scenes.csv warwatch/history/cache/sar_* 2>/dev/null || true
+          git diff --cached --quiet && exit 0
+          git commit -qm "sar: $(date -u +%FT%H:%MZ)"
+          for i in 1 2 3; do
+            git pull --rebase -q -X theirs origin main && git push -q && exit 0
+            git rebase --abort 2>/dev/null || true
+            sleep $((i * 5))
+          done
+          echo "push skipped"

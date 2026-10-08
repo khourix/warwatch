@@ -127,6 +127,46 @@ class TestParsers(unittest.TestCase):
                  f("4", "2026-08-01T00:00:00Z", "PROHIBITED AREA"), f("5", "2026-10-06T00:00:00Z", "PROHIBITED", typ="C")]
         self.assertEqual(S.parse_nms(items, dt.date(2026, 10, 8)), 2.0)
 
+    def test_nms_select_matches_region_or_icao_prefix(self):
+        def f(i, fir, loc):
+            return {"properties": {"coreNOTAMData": {"notam": {"id": i, "affectedFir": fir, "location": loc}}}}
+        items = [f("1", "UKXX", "UKBV"), f("2", "UKLV", "UKLL"), f("3", "KZLC", "UKOV"), f("4", "KZLC", "HLN"), f("5", "KZLC", "HLLL"), f("6", "EPWW", "EPWA")]
+        got = lambda firs, prefix=None: sorted(x["properties"]["coreNOTAMData"]["notam"]["id"] for x in S.nms_select(items, firs, prefix))
+        self.assertEqual(got(["UKLV"]), ["2"])
+        self.assertEqual(got(["UKLV", "UKXX"], "UK"), ["1", "2", "3"])
+        self.assertEqual(got(["HLLL"], "HL"), ["5"])    # Helena, Montana (HLN) is a US airport, not Libya
+
+    def test_sar_detector_counts_ships_not_land_or_big_blobs(self):
+        try:
+            import numpy as np
+            import sar
+            import scipy  # noqa: F401
+        except ImportError:
+            self.skipTest("numpy and scipy not installed")
+        rng = np.random.default_rng(1)
+        db = rng.normal(-20, 1.5, (400, 400))
+        for y, x in ((50, 60), (200, 300), (350, 100)):
+            db[y:y + 3, x:x + 2] += 14          # three ships
+        db[120:150, 120:150] += 14              # a 900-pixel patch is not a ship
+        land = np.zeros((400, 400), bool)
+        land[:, :30] = True
+        db[:, :30] = -5
+        db[100:102, 32:34] += 14                # bright spot inside the coastal strip
+        self.assertEqual(sar.detect(db, land)[0], 3)
+
+    def test_sar_daily_value_needs_enough_sea_in_view(self):
+        import sar
+        import tempfile
+        rows = [["a", "hormuz", "2026-10-01", "400", "5"], ["b", "hormuz", "2026-10-03", "3000", "6"], ["c", "hormuz", "2026-10-03", "1000", "2"]]
+        with tempfile.TemporaryDirectory() as d:
+            old = store.ROOT
+            store.ROOT = d
+            try:
+                sar.rebuild(rows)
+                self.assertEqual(store.cache_load("sar_hormuz"), [("2026-10-03", 20.0)])   # 8 ships in 4000 km2
+            finally:
+                store.ROOT = old
+
     def test_sam_counts_by_day(self):
         p = {"opportunitiesData": [{"postedDate": "2026-09-01"}, {"postedDate": "2026-09-20"}, {"postedDate": "2026-08-02"}]}
         self.assertEqual(S.parse_sam(p), {"2026-09-01": 1, "2026-09-20": 1, "2026-08-02": 1})
@@ -161,6 +201,10 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(S.parse_fred({"observations": [{"date": "2026-01-01", "value": "."},
                                                         {"date": "2026-01-02", "value": "5.5"}]}),
                          [("2026-01-02", 5.5)])
+
+    def test_cboe_vix_csv(self):
+        txt = "DATE,OPEN,HIGH,LOW,CLOSE\n10/06/2026,15.1,16.0,14.9,15.5\n10/07/2026,15.21,16.01,14.97,15.08\n\n"
+        self.assertEqual(S.parse_cboe_vix(txt), [("2026-10-06", 15.5), ("2026-10-07", 15.08)])
 
 
 class TestExtras(unittest.TestCase):
