@@ -1,0 +1,12 @@
+name: probe-nga
+on:
+  push:
+    branches: [claude/project-thread-2mgl2x]
+    paths: [tools/probe_nga.py, .github/workflows/probe.yml]
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/probe_nga.py
