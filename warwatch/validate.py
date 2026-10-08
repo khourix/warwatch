@@ -48,7 +48,11 @@ LEVELS = ("Normal", "Watch", "Elevated", "Critical")
 LAMBDAS = (0.3, 1, 3, 10, 30, 100)   # ridge strength on family weights (evidence is scaled to 0-1)
 LAM_T, LAM_H = 10.0, 1.0      # theatre intercepts pooled toward the global one; conflict-history terms
 BASE_PRIOR = 1000             # pseudo-days of the pooled base rate mixed into each theatre's base rate
-USE_BACKFILL = os.environ.get("WARWATCH_NO_BACKFILL") != "1"   # =1 reproduces the fit without the backfill/data families
+# The archive families (adsb, state, firms, nga, ais presence, package) were tried in the fit on
+# 2026-10-08: the gates went from PASS (shuffle p 0.027, AUC 0.628) to FAIL (p 0.097, AUC 0.601), because
+# nearly all of them have noise-to-signal near or above 1. So the fit leaves them out until a re-run
+# says otherwise; WARWATCH_BACKFILL_FIT=1 turns them on to re-test as history accumulates.
+USE_BACKFILL = os.environ.get("WARWATCH_BACKFILL_FIT") == "1"
 REPORT = os.environ.get("MODEL_REPORT") or os.path.join(ROOT, "docs", "MODEL.md")
 BACKFILL_LAG = {"adsb_": 1, "package_": 1, "firms_": 1, "nga_": 1, "state_": 7, "ais_presence_": 6}   # days after the date a value was public
 KEEP = 450                    # points of history a point-in-time score may see (a year baseline needs ~400 days)
