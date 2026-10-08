@@ -12,8 +12,8 @@ Method: read the VV band at 40 m (average of 4x4 pixels), compare each sea pixel
 it also counts oil rigs and buoys, misses small boats, and gives no names. The daily value is candidates per 10,000 km2 of sea
 actually seen, so a scene that only clips the box does not look like a quiet day.
 
-    python3 warwatch/sar.py --days 6                 # daily upkeep
-    python3 warwatch/sar.py --days 365 --max-scenes 60   # backfill in slices (done scenes are skipped)
+    python3 warwatch/sar.py --days 400 --max-scenes 90   # nightly: finishes any missing history in slices, then only reads new scenes
+    python3 warwatch/sar.py --days 6 --dry-run           # try it without writing
 """
 import argparse
 import csv
@@ -171,8 +171,10 @@ def main(argv=None):
     start = end - dt.timedelta(days=a.days)
     rows = load_done()
     seen = {(r[0], r[1]) for r in rows}
-    new, budget = [], a.max_scenes
-    for name in [b for b in a.boxes.split(",") if b in BOXES]:
+    new = []
+    names = [b for b in a.boxes.split(",") if b in BOXES]
+    for name in names:
+        budget = max(1, a.max_scenes // len(names))    # each box gets its share, so a long backfill in one does not starve the others
         box = BOXES[name]
         # backfills go in 30-day slices so one search never returns thousands of scenes
         s = start

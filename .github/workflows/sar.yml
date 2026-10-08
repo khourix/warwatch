@@ -1,19 +1,19 @@
 name: sar
 # Sentinel-1 radar ship counts over Hormuz, Bab el-Mandeb and the Gulf of Aden (needs numpy, scipy, rasterio, so it runs apart from the dashboard build).
-# Daily upkeep reads the last 6 days. For history, dispatch with days=365 and max_scenes=60; run it again until it prints nothing new.
+# Each night it reads any scene from the last 400 days it has not counted yet (about 90 a night, oldest first), so history fills in about a week, then only new scenes are read.
 on:
   schedule:
     - cron: "10 5 * * *"
   workflow_dispatch:
     inputs:
       days:
-        description: "look back this many days (6 = daily upkeep, 365 = backfill)"
+        description: "look back this many days"
         required: false
-        default: "6"
+        default: "400"
       max_scenes:
         description: "scenes to read this run"
         required: false
-        default: "40"
+        default: "90"
       dry_run:
         description: "true = print counts, write nothing"
         required: false
@@ -32,7 +32,7 @@ jobs:
       - name: Install radar libraries
         run: python3 -m pip install --quiet --break-system-packages numpy scipy rasterio
       - name: Count vessels
-        run: python3 warwatch/sar.py --days "${{ github.event.inputs.days || '6' }}" --max-scenes "${{ github.event.inputs.max_scenes || '40' }}" ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+        run: python3 warwatch/sar.py --days "${{ github.event.inputs.days || '400' }}" --max-scenes "${{ github.event.inputs.max_scenes || '90' }}" ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
       - name: Commit cache (public data only)
         run: |
           git config user.name "warwatch-bot"
