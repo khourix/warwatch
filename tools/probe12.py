@@ -1,24 +1,22 @@
-import os, json, base64, urllib.request, urllib.parse
+import os, json, base64, gzip, urllib.request, urllib.parse, collections
 i = os.environ["FAA_CLIENT_ID"].strip(); s = os.environ["FAA_CLIENT_SECRET"].strip()
 B = base64.b64encode(f"{i}:{s}".encode()).decode()
-def call(url, h, data=None):
-    try:
-        r = urllib.request.urlopen(urllib.request.Request(url, data=data, headers=h), timeout=120)
-        return r.status, r.read(), r.geturl()
-    except Exception as e:
-        return getattr(e, "code", "ERR"), (getattr(e, "read", lambda: str(e).encode())() or b"")[:300], ""
-for host in ("https://api-nms.aim.faa.gov", "https://api-staging.cgifederal-aim.com"):
-    st, b, _ = call(host + "/v1/auth/token", {"Content-Type": "application/x-www-form-urlencoded", "Authorization": "Basic " + B}, b"grant_type=client_credentials")
-    print(host, "token", st, b[:100] if st != 200 else "ok")
-    if st != 200: continue
-    tok = json.loads(b)["access_token"]
-    H = {"Authorization": "Bearer " + tok, "nmsResponseFormat": "GEOJSON"}
-    for ac in ("false", None):
-        q = {"classification": "INTERNATIONAL"}
-        if ac: q["allowRedirect"] = ac
-        st, b, final = call(host + "/nmsapi/v1/notams?" + urllib.parse.urlencode(q), H)
-        print(" bulk", q, st, len(b), final[:90], b[:200] if len(b) < 2000 or st != 200 else "")
-        if st == 200 and len(b) > 2000:
-            try:
-                d = json.loads(b); print("  parsed keys", list(d), list(d.get("data", {})) if isinstance(d, dict) else "", "n", len(d.get("data", {}).get("geojson", [])))
-            except Exception as e: print("  not json", e, b[:100])
+host = "https://api-staging.cgifederal-aim.com"
+r = urllib.request.urlopen(urllib.request.Request(host + "/v1/auth/token", data=b"grant_type=client_credentials", headers={"Content-Type": "application/x-www-form-urlencoded", "Authorization": "Basic " + B}), timeout=60)
+tok = json.loads(r.read())["access_token"]
+r = urllib.request.urlopen(urllib.request.Request(host + "/nmsapi/v1/notams?classification=INTERNATIONAL", headers={"Authorization": "Bearer " + tok, "nmsResponseFormat": "GEOJSON"}), timeout=180)
+raw = gzip.decompress(r.read())
+print("bytes", len(raw), raw[:150])
+d = json.loads(raw)
+print(type(d).__name__, list(d)[:10] if isinstance(d, dict) else len(d))
+def find(o):
+    if isinstance(o, list) and o and isinstance(o[0], dict) and "properties" in o[0]: return o
+    if isinstance(o, dict):
+        for v in o.values():
+            x = find(v)
+            if x: return x
+items = find(d) or []
+print("items", len(items))
+c = collections.Counter(f["properties"]["coreNOTAMData"]["notam"].get("affectedFir") for f in items)
+print({k: c.get(k) for k in ["UKBV","UKLV","UKOV","UKDV","OIIX","LLLL","OSTT","ORBB","OLBB","RCAA","RKRR","ZKKP","HLLL","HSSS","FZZA","SVZM","OYSC","OPKR","VIDF","EPWW","UMMV"]})
+print("top", c.most_common(8))
