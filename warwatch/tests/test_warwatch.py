@@ -225,6 +225,28 @@ class TestExtras(unittest.TestCase):
         self.assertEqual(len(got), 1)
         self.assertEqual(got[0]["issued"], "2026-10-01")
 
+    def test_nga_new_feed_rows_become_warnings_and_a_30_day_series(self):
+        rows = [{"createdOn": "081230Z OCT 2026", "usNavArea": "HYDROPAC", "msgSqncNumber": 2926, "status": "INFORCE",
+                 "msgText": "081230Z OCT 26\nHYDROPAC 2926/26.\nARABIAN SEA.\n1. HAZARDOUS OPERATIONS, MISSILE FIRING IN AREA 25-00.00N 060-00.00E."},
+                {"createdOn": "250000Z SEP 2026", "usNavArea": "NAVAREA IX", "msgSqncNumber": 300, "status": "CANCELED",
+                 "msgText": "GUNNERY EXERCISES 26-00.00N 056-00.00E."},
+                {"createdOn": "010000Z JUL 2026", "usNavArea": "NAVAREA IV", "msgSqncNumber": 1, "status": "INFORCE", "msgText": "LIGHT UNLIT 26-00N 056-00E."}]
+        got = extras.parse_nga(extras.smaps_to_warnings(rows))
+        self.assertEqual([(m["issued"], m["active"]) for m in got], [("2026-10-08", True), ("2026-09-25", False)])
+        d = tempfile.mkdtemp()
+        old = store.ROOT
+        store.ROOT = d
+        try:
+            extras._CACHE["nga"] = got
+            pts = dict(extras.nga_series("iran", today=dt.date(2026, 10, 8)))
+        finally:
+            store.ROOT = old
+            extras._CACHE.pop("nga", None)
+        self.assertEqual(min(pts), "2026-08-31")              # a month after the feed began keeping cancelled warnings
+        self.assertEqual(pts["2026-09-24"], 0.0)
+        self.assertEqual(pts["2026-09-25"], 1.0)              # the cancelled warning still counts as issued
+        self.assertEqual(pts["2026-10-08"], 2.0)
+
     def test_navigation_degradation(self):
         p = {"ac": [{"lat": 1, "lon": 1, "nac_p": 9}, {"lat": 1, "lon": 1, "nac_p": 3}, {"lat": 1, "lon": 1},
                     {"nac_p": 0}]}
@@ -450,6 +472,49 @@ class TestOsint(unittest.TestCase):
         self.assertEqual(out[0]["ts"], "")   # no acq_time column: no pass time
         t = "latitude,longitude,acq_date,acq_time,confidence,frp\n48.1,37.2,2026-10-05,912,n,12.5\n"
         self.assertEqual(osint.parse_firms(t)[0]["ts"], "2026-10-05T09:12Z")
+
+    def test_firms_low_confidence_counted_like_the_archive(self):
+        import osint
+        t = "latitude,longitude,acq_date,confidence,frp\n48.1,37.2,2026-10-05,n,12.5\n48.2,37.3,2026-10-05,l,3\n"
+        self.assertEqual(len(osint.parse_firms(t)), 1)
+        self.assertEqual(len(osint.parse_firms(t, keep_low=True)), 2)
+
+    def test_ukmto_series_only_where_the_feed_covers_the_whole_window(self):
+        import osint
+        rows = [{"utcDateOfIncident": d, "locationLatitude": 26.5, "locationLongitude": 56.2, "incidentNumber": n}
+                for n, d in enumerate(("2026-07-01", "2026-08-10", "2026-08-12"))]
+        d, old = tempfile.mkdtemp(), store.ROOT
+        store.ROOT = d
+        try:
+            osint._UK["all"] = rows
+            out = dict(osint.ukmto_series("iran", today=dt.date(2026, 8, 20)))
+            self.assertEqual(min(out), "2026-07-31")                 # a month after the oldest incident
+            self.assertEqual(out["2026-07-31"], 1.0)                  # 07-01 is still inside the 30 days
+            self.assertEqual(out["2026-08-01"], 0.0)
+            self.assertEqual(out["2026-08-20"], 2.0)
+            osint._UK["all"] = rows[1:]                               # the feed drops the oldest incident; the archive keeps it
+            out = dict(osint.ukmto_series("iran", today=dt.date(2026, 8, 20)))
+            self.assertEqual((min(out), out["2026-07-31"]), ("2026-07-31", 1.0))
+        finally:
+            store.ROOT = old
+            osint._UK.clear()
+
+    def test_seed_uses_archive_only_before_the_live_series_starts(self):
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "demo_series.csv"), "w") as f:
+            f.write("2026-01-01,1\n2026-01-02,2\n2026-01-03,3\n")
+        old, store.BACKFILL = store.BACKFILL, d
+        try:
+            self.assertEqual(store.seed("demo_series", [("2026-01-03", 9.0), ("2026-01-04", 8.0)]),
+                             [("2026-01-01", 1.0), ("2026-01-02", 2.0), ("2026-01-03", 9.0), ("2026-01-04", 8.0)])
+            self.assertEqual(store.seed("no_such_series", [("2026-01-03", 9.0)]), [("2026-01-03", 9.0)])
+        finally:
+            store.BACKFILL = old
+
+    def test_daily_series_need_matches_the_scorer(self):
+        pts = [(str(dt.date(2026, 1, 1) + dt.timedelta(days=i)), float(i % 5)) for i in range(stats.MIN_DAILY)]
+        self.assertIsNotNone(stats.score_series(pts, "daily"))
+        self.assertIsNone(stats.score_series(pts[:-1], "daily"))
 
     def test_firms_routine_sources_burn_on_several_days(self):
         import osint
@@ -710,6 +775,40 @@ class TestValidate(unittest.TestCase):
         self.assertAlmostEqual(validate.auc(np.array([0, 0, 1, 1]), np.array([.1, .2, .3, .4])), 1.0)
         self.assertAlmostEqual(validate.auc(np.array([0, 1, 0, 1]), np.array([.1, .1, .1, .1])), 0.5)
         self.assertAlmostEqual(float(validate.shrink(np.array([0.5]), np.array([0.05]), 0.0, 0.0)[0]), 0.05)
+
+
+class AlertSmoothing(unittest.TestCase):
+    def test_recent_max_uses_the_last_seven_days_before_today(self):
+        import datetime as dt
+        import model
+        rows = ["date,theatre,p\n", "2026-10-01,iran,0.30\n", "2026-10-02,iran,0.08\n", "2026-10-06,iran,0.04\n", "2026-10-06,_any,0.90\n", "2026-10-07,yemen,0.12\n"]
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as f:
+            f.writelines(rows)
+        try:
+            got = model.recent_max(dt.date(2026, 10, 8), path=f.name)
+            self.assertEqual(got, {"iran": 0.08, "yemen": 0.12})     # 10-01 is outside the 7-day window; _any is not a theatre
+            self.assertEqual(model.recent_max(dt.date(2026, 10, 8), path=f.name + ".missing"), {})
+        finally:
+            os.unlink(f.name)
+
+
+class ArmedShadow(unittest.TestCase):
+    def test_shadow_logs_to_its_own_record_and_leaves_the_page_alone(self):
+        import demo
+        import model
+        res = run.evaluate(demo.scenario("buildup"))
+        res = model.apply(res, today=dt.date(2026, 10, 8), forward_path=os.devnull)
+        levels = {t: v["level"] for t, v in res["theatres"].items()}
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "log_armed.csv")
+            n = model.shadow(res, today=dt.date(2026, 10, 8), log_path=log)
+            self.assertEqual(n, len(res["model"]["theatres"]) + 1)
+            ok, bad, rows = model.forward_verify(log)
+            self.assertTrue(ok)
+            self.assertEqual(rows[0]["model"], res["model"]["version"] + "-armed")
+            self.assertEqual(model.shadow(res, today=dt.date(2026, 10, 8), log_path=log), 0)   # once per day
+        self.assertEqual(levels, {t: v["level"] for t, v in res["theatres"].items()})
+        self.assertEqual(model.load_events(types=model.ARMED_TYPES) != [], True)
 
 
 if __name__ == "__main__":

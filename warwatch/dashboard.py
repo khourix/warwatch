@@ -22,7 +22,7 @@ MAXPTS = {"daily": 180, "monthly": 60}
 ZH_N = 60
 CLS_NAMES = {"lift": "Airlift", "tanker": "Tanker", "isr": "Surveillance / AWACS", "fighter": "Fighter", "bomber": "Bomber", "uav": "Drone", "heli": "Helicopter", "other": "Other military"}
 UNAVAILABLE = [
-    ("NOTAMs (airspace closure notices)", "The FAA NOTAM service (NMS-API, production) supplies counts of fresh airspace-restriction notices for each theatre's flight information regions; ICAO's feed refuses automated requests. Alongside it the dashboard reads GPSJam (daily share of aircraft reporting degraded GPS, per theatre), US NGA hazard warnings, EASA airspace bulletins and live airliner counts."),
+    ("NOTAMs (airspace closure notices)", "The FAA NOTAM service (NMS-API, production) supplies counts of fresh airspace-restriction notices for each theatre's flight information regions; ICAO's feed refuses automated requests. Alongside it the dashboard reads GPSJam (daily share of aircraft reporting degraded GPS, per theatre), US NGA hazard warnings (NGA's current feed, since its old one stopped in May 2024), EASA airspace bulletins and live airliner counts."),
     ("Live ship positions in the Gulf and Red Sea", "The free live AIS networks (aisstream.io, and Open Waters, which mirrors it) have no receivers there: a 45-second test in October 2026 saw zero ships in the Gulf, the Strait of Hormuz and the Red Sea, but about 36 in the East Mediterranean. Warships often switch AIS off anyway. Instead the dashboard counts ships on Sentinel-1 radar images (about every two days, ships with transponders off included, small boats missed) and scores Global Fishing Watch vessel-hours per day (satellite AIS, about four days late), IMF PortWatch transits, UKMTO incidents and the weekly USNI fleet tracker; Baltic, North Sea, Black Sea and Western Mediterranean AIS is live."),
     ("Conflict event data (ACLED API)", "The ACLED account authenticates but its data API is closed at the open tier. ACLED events arrive through the open HDX HAPI feed instead, about two months late. UCDP (Uppsala) is the planned second source once its access token arrives."),
     ("Aircraft routes and owners", "Public ADS-B carries no flight plan for military aircraft. Owner is inferred from the aircraft's address block and call sign, and shown as such."),
@@ -62,7 +62,7 @@ def series_json(s):
     kind = s["kind"]
     d = {"id": s["id"], "l": s["label"], "d": s["domain"], "s": s.get("sub", ""), "t": s["theatre"], "lag": bool(s["lag"]),
          "dir": s["direction"], "why": s["why"], "url": s.get("url", ""), "st": s["status"], "er": s.get("error", ""),
-         "stale": s.get("stale", ""), "kind": kind, "n": len(pts), "need": 40 if kind == "monthly" else 84,
+         "stale": s.get("stale", ""), "kind": kind, "n": len(pts), "need": 40 if kind == "monthly" else stats.MIN_DAILY,
          "needs": s.get("needs", []), "z": None, "w0": not s.get("scored", True)}
     if pts:
         d["pts"] = [[lab, round(v, 3)] for lab, v in pts[-MAXPTS[kind]:]]

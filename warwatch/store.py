@@ -36,6 +36,25 @@ def daily(series_id):
     return sorted((d, sum(v) / len(v)) for d, v in by.items())
 
 
+BACKFILL = os.environ.get("WARWATCH_BACKFILL", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backfill", "data"))
+
+
+def backfill(series_id):
+    """Daily history rebuilt from public archives by backfill/backfill.py (date,value rows), or [] when there is none."""
+    try:
+        with open(os.path.join(BACKFILL, f"{series_id}.csv"), newline="") as f:
+            return sorted((r[0], float(r[1])) for r in csv.reader(f) if len(r) == 2)
+    except OSError:
+        return []
+
+
+def seed(series_id, live):
+    """Archive history for the days before the live series starts, then the live series. The two must measure the same thing."""
+    live = list(live)
+    first = live[0][0][:10] if live else "9999"
+    return [(d, v) for d, v in backfill(series_id) if d < first] + live
+
+
 def cache_path(series_id):
     return os.path.join(ROOT, "cache", f"{series_id}.csv")
 

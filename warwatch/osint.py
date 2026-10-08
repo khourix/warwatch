@@ -341,6 +341,35 @@ def ukmto_all():
     return _UK["all"]
 
 
+def ukmto_archive(rows):
+    """Folds the feed's incidents into history/cache/ukmto_inc.csv (incident, date, lat, lon), which keeps what the feed later drops. -> [(date, lat, lon)]"""
+    import store
+    kept = {r[0]: r for r in store.cache_rows("ukmto_inc")}
+    for x in rows:
+        k = f"{x['t']} {x['d']}"
+        kept[k] = [k, x["d"], f"{x['lat']}", f"{x['lon']}"]
+    out = sorted(kept.values(), key=lambda r: (r[1], r[0]))
+    store.cache_rows_save("ukmto_inc", out)
+    return [(r[1], float(r[2]), float(r[3])) for r in out]
+
+
+def ukmto_series(theatre, days=30, today=None):
+    """The 30-day incident count for every day the archive covers completely. The feed keeps only the last ~100 days, so the archive
+    starts there and grows daily; a window that reaches back past the oldest archived incident is left out rather than undercounted.
+    -> [(date, count)]"""
+    today = today or dt.date.today()
+    inc = ukmto_archive(parse_ukmto(ukmto_all(), today, 100000))
+    if not inc:
+        return []
+    first = dt.date.fromisoformat(inc[0][0]) + dt.timedelta(days=days)
+    mine = [dt.date.fromisoformat(d) for d, la, lo in inc if theatre_at(la, lo) == theatre]
+    out, d = [], first
+    while d <= today:
+        out.append((d.isoformat(), float(sum(1 for m in mine if 0 <= (d - m).days <= days))))
+        d += dt.timedelta(days=1)
+    return out
+
+
 def ukmto_recent(theatre, days=30, today=None):
     """Official UKMTO incidents in the last `days` inside a theatre box."""
     return float(sum(1 for x in parse_ukmto(ukmto_all(), today, days) if x["th"] == theatre))
@@ -369,8 +398,8 @@ def fetch_incidents():
 
 
 # ---------------------------------------------------------------- NASA FIRMS thermal detections
-def parse_firms(text):
-    """VIIRS CSV -> [{lat, lon, date, ts, frp}] without low-confidence hits. ts is the satellite pass time, UTC."""
+def parse_firms(text, keep_low=False):
+    """VIIRS CSV -> [{lat, lon, date, ts, frp}] without low-confidence hits (unless keep_low). ts is the satellite pass time, UTC."""
     out = []
     lines = text.strip().splitlines()
     if len(lines) < 2 or not lines[0].startswith("latitude"):
@@ -380,7 +409,7 @@ def parse_firms(text):
     for ln in lines[1:]:
         f = ln.split(",")
         try:
-            if f[ix["confidence"]].lower() == "l":
+            if not keep_low and f[ix["confidence"]].lower() == "l":
                 continue
             p = {"lat": float(f[ix["latitude"]]), "lon": float(f[ix["longitude"]]), "date": f[ix["acq_date"]], "frp": float(f[ix["frp"]] or 0)}
             hm = f[ix["acq_time"]].strip().zfill(4) if "acq_time" in ix else ""
@@ -417,7 +446,7 @@ def firms_url(key, box, days, date=None):
 
 
 def _fkey(theatre):
-    return theatre + "@" + "_".join(str(v) for v in C.FIRMS_BOX[theatre])
+    return theatre + "@" + "_".join(str(v) for v in C.FIRMS_BOX[theatre]) + "#all"   # "#all": low-confidence hits included, like backfill/data
 
 
 def firms_counts(key, theatre, days=150, max_calls=None, today=None):
@@ -439,7 +468,7 @@ def firms_counts(key, theatre, days=150, max_calls=None, today=None):
         start = win[-1]
         try:
             t = S.get(firms_url(key, box, 5, start.isoformat()), raw=True, retries=2, wait=4)
-            pts = parse_firms(t.decode("utf-8", "replace") if isinstance(t, bytes) else t)
+            pts = parse_firms(t.decode("utf-8", "replace") if isinstance(t, bytes) else t, keep_low=True)   # every detection, as the archive back-fill counts them
         except Exception:
             break
         calls += 1

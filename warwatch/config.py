@@ -88,6 +88,7 @@ FIRS = {   # flight information regions queried in the FAA NOTAM service for eac
     "scs": ["RPHI", "VHHK"], "korea": ["RKRR", "ZKKP"], "southasia": ["OPKR", "OPLR", "VIDF", "VABF"],
     "libya": ["HLLL"], "sudan": ["HSSS"], "drc": ["FZZA"], "venezuela": ["SVZM"],
 }
+NGA_COVERED_FROM = "2026-08-01"   # first day NGA's current warnings feed lists cancelled as well as in-force warnings (bulk of cancelled ones start in August 2026)
 NOTAM_PREFIX = {"ukraine": "UK", "yemen": "OY", "libya": "HL"}   # also match 4-letter ICAO locations with this prefix (US airports use 3 letters)
 FIRMS_BOX = {   # satellite thermal boxes: wider than the aircraft boxes so they cover the Levant, Iraq and the Gulf states
     "ukraine": (44, 53, 22, 41), "europe_east": (49, 66, 14, 30),

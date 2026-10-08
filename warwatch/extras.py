@@ -53,7 +53,22 @@ def parse_nga(warnings):
             continue
         out.append({"id": f"{w.get('navArea', '')}-{w.get('msgNumber', '')}/{w.get('msgYear', '')}",
                     "lat": round(pos[0][0], 2), "lon": round(pos[0][1], 2),
-                    "text": " ".join(text.split())[:160], "issued": str(parse_issue(w.get("issueDate")) or "")})
+                    "text": " ".join(text.split())[:160], "issued": str(parse_issue(w.get("issueDate")) or ""),
+                    "active": w.get("status") != "CANCELED"})
+    return out
+
+
+NGA_URL = "https://msi.nga.mil/api/publications/smaps?output=json&status=all"   # NGA's current warnings feed; the old broadcast-warn feed stopped on 2024-05-10
+
+
+def smaps_to_warnings(rows):
+    """NGA MSI 'smaps' rows -> the {text, issueDate, navArea, msgNumber, msgYear, status} shape parse_nga reads."""
+    out = []
+    for r in rows:
+        issued = r.get("createdOn") or ""
+        yr = re.search(r"(\d{4})\s*$", issued)
+        out.append({"text": r.get("msgText") or "", "issueDate": issued, "navArea": r.get("usNavArea") or r.get("navArea") or "",
+                    "msgNumber": r.get("msgSqncNumber", ""), "msgYear": yr.group(1) if yr else "", "status": r.get("status", "")})
     return out
 
 
@@ -82,15 +97,38 @@ def hub_stats(theatre):
     return n, bad
 
 
-def fetch_nga(areas=("A", "P", "12", "4")):
+def fetch_nga():
+    """Every hazard warning NGA serves, in force and cancelled. Raises when the feed fails, so a bad fetch is never read as 'no warnings'."""
+    p = S.get(NGA_URL)
+    return parse_nga(smaps_to_warnings(p["smaps"]))
+
+
+def nga_archive(items):
+    """Folds the warnings into history/cache/nga_msgs.csv (id, issued, lat, lon), which keeps what NGA later drops. -> all archived rows."""
+    import store
+    rows = {r[0]: r for r in store.cache_rows("nga_msgs")}
+    for m in items:
+        if m["issued"]:
+            rows[m["id"]] = [m["id"], m["issued"], f"{m['lat']}", f"{m['lon']}"]
+    out = sorted(rows.values(), key=lambda r: (r[1], r[0]))
+    store.cache_rows_save("nga_msgs", out)
+    return out
+
+
+def nga_series(theatre, today=None):
+    """Hazard warnings issued in the 30 days up to each day, inside the theatre box -> [(date, count)].
+    NGA's new feed starts keeping cancelled warnings on C.NGA_COVERED_FROM, so counts start 30 days after it."""
+    if "nga" not in _CACHE:
+        _CACHE["nga"] = fetch_nga()
+    rows = nga_archive(_CACHE["nga"])
+    box = C.THEATRE_BOX[theatre]
+    mine = [dt.date.fromisoformat(r[1]) for r in rows if in_box(float(r[2]), float(r[3]), box)]
+    today = today or dt.date.today()
+    d = dt.date.fromisoformat(C.NGA_COVERED_FROM) + dt.timedelta(days=30)
     out = []
-    for a in areas:
-        q = urllib.parse.urlencode({"output": "json", "status": "active", "navArea": a})
-        try:
-            p = S.get("https://msi.nga.mil/api/publications/broadcast-warn?" + q)
-        except Exception:
-            continue
-        out.extend(parse_nga(p.get("broadcast-warn", [])))
+    while d <= today:
+        out.append((d.isoformat(), float(sum(1 for m in mine if 0 <= (d - m).days <= 30))))
+        d += dt.timedelta(days=1)
     return out
 
 
@@ -382,7 +420,7 @@ def collect():
     def nga():
         if "nga" not in _CACHE:
             _CACHE["nga"] = fetch_nga()
-        return _CACHE["nga"]
+        return [m for m in _CACHE["nga"] if m.get("active", True)]
     def czib():
         if "czib" not in _CACHE:
             _CACHE["czib"] = fetch_czib()

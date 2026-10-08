@@ -21,7 +21,7 @@ jobs:
         run: |
           git config user.name "warwatch-bot"
           git config user.email "warwatch-bot@users.noreply.github.com"
-          git add docs/FORWARD.md
+          git add docs/FORWARD.md docs/FORWARD_ARMED.md
           git diff --cached --quiet && exit 0
           git commit -qm "forward record scored: $(date -u +%F)"
           for i in 1 2 3; do

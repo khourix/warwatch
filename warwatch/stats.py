@@ -80,6 +80,7 @@ BASE_DAYS = 90
 YEAR_DAYS = 365   # preferred baseline: the year before the newest 30 days
 GUARD_DAYS = 30   # the newest month is left out of the baseline, so a slow build-up is not absorbed into its own yardstick
 YEAR_MIN = 120    # rolling means needed in the year baseline; shorter histories use the plain 90-day baseline
+MIN_DAILY = BASE_DAYS // 2 + 7   # fewest days of history a daily series needs to be scored at all
 FILL_MAX = 2   # carry the last value forward over at most this many missing days
 
 

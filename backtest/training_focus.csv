@@ -1,0 +1,17 @@
+judged_on,trained_on,auc,flag10,lift
+all events,all events,0.6275967239550834,14/51,2.088274044795784
+all events,"armed-force events (onset, strike, maritime)",0.5976344342985158,16/51,2.3320158102766797
+all events,onset and strike,0.5815912660759082,13/51,2.1343873517786562
+all events,market-moving events,0.5607394206002283,13/51,2.3978919631093545
+"armed-force events (onset, strike, maritime)",all events,0.6579823349927734,13/39,2.555555555555556
+"armed-force events (onset, strike, maritime)","armed-force events (onset, strike, maritime)",0.6673564656159593,16/39,3.084502474310393
+"armed-force events (onset, strike, maritime)",onset and strike,0.6545968447867182,13/39,2.768362331514037
+"armed-force events (onset, strike, maritime)",market-moving events,0.6011812037039975,13/39,3.1195353468080738
+onset and strike,all events,0.673567649336358,12/33,2.7846790890269153
+onset and strike,"armed-force events (onset, strike, maritime)",0.6686179761381594,15/33,3.425426475875575
+onset and strike,onset and strike,0.6463125909882464,11/34,2.8425849749379166
+onset and strike,market-moving events,0.6175063628733112,12/34,3.2832893781294192
+market-moving events,all events,0.655181822276269,5/15,2.2222222222222223
+market-moving events,"armed-force events (onset, strike, maritime)",0.5365600918840231,5/15,2.3110201582928855
+market-moving events,onset and strike,0.5341730619949896,3/15,1.9993762183235866
+market-moving events,market-moving events,0.6201497694372728,5/15,2.9767630106441163

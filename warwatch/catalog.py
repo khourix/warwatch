@@ -208,8 +208,11 @@ def _adsb(th, cls):
     def go():
         v = S.adsb_classes(S.fetch_adsb(), C.BOXES[th])[cls]
         sid = f"adsb_{th}_{cls}"
-        store.append(sid, v)
-        return store.daily(sid)
+        store.append(sid, v)   # the instant snapshots keep accumulating in history/, but the score reads the archive series
+        pts = store.backfill(sid)
+        if not pts:
+            raise RuntimeError("no archive history yet (the adsb-daily job fills it)")
+        return pts
     return go
 
 
@@ -217,7 +220,7 @@ ADSB_TH = [t for t in C.BOXES if t not in ("sudan", "drc")]   # too little milit
 for th in ADSB_TH:
     nm = TH[th]
     for cls, label, why in (
-        ("mil", "Military aircraft visible over", "Transponding military flights only: aircraft with transponders off are invisible. History builds from first run."),
+        ("mil", "Military aircraft visible over", "Transponding military flights only: aircraft with transponders off are invisible. Counts the different aircraft seen in the box each UTC day, from the adsb.lol daily archives (history from March 2024, one day behind)."),
         ("lift", "Airlift aircraft over", "Transports surge before operations; an 'empty' return leg means cargo was delivered."),
         ("tanker", "Aerial tankers over", "Tankers appearing with fighters and AWACS mean strike packaging, not routine training."),
         ("isr", "Surveillance and AWACS aircraft over", "Reconnaissance and early-warning aircraft orbit before and during operations."),
@@ -249,8 +252,8 @@ for th in C.HUBS:
             "A fall means airspace is being closed or avoided. Snapshots start now.",
             _snap(f"civil_{th}", lambda t=th: float(extras.hub_stats(t)[0]) or None), direction="down", url=ADS, sub="Airspace")
     add(f"nga_{th}", f"New naval and air hazard warnings, last 30 days, {nm} (US NGA)", "geospatial", th, "daily", False,
-        "Missile firing, exercises, mines, drones and GPS-interference notices to mariners and pilots; exercises are announced before they happen.",
-        _snap(f"nga_{th}", lambda t=th: extras.nga_recent(t)), url=NGA, sub="Warnings")
+        "Missile firing, exercises, mines, drones and GPS-interference notices to mariners and pilots; exercises are announced before they happen. From NGA's current feed, kept from 1 August 2026 and counted from 31 August.",
+        (lambda t=th: extras.nga_series(t)), url=NGA, sub="Warnings")
     add(f"czib_{th}", f"EASA airspace bulletins revised in last 30 days, {nm}", "geospatial", th, "daily", False,
         "EASA revises conflict-zone bulletins when it sees rising danger to airliners. Snapshots start now.",
         _snap(f"czib_{th}", lambda t=th: extras.czib_recent(box=C.BOXES[t])),
@@ -362,13 +365,13 @@ def _state(theatre):
         v = S.state_levels(S.fetch_state(), C.STATE_ISO[theatre])
         sid = f"state_{theatre}"
         store.append(sid, v)
-        return store.daily(sid)
+        return store.seed(sid, store.daily(sid))   # backfill/data holds the weekly Wayback captures back to 2018
     return go
 
 
 for th in C.STATE_ISO:
     add(f"state_{th}", f"US travel-advisory level sum: {TH[th]}", "behavioral", th, "daily", False,
-        "Any step change in a flat series is flagged. History builds from first run.", _state(th),
+        "Any step change in a flat series is flagged. History from 2018 is rebuilt from weekly Wayback captures of the State Department page.", _state(th),
         url="https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html", sub="Advisories")
 
 
@@ -452,7 +455,7 @@ def _fires(th):
         pts = osint.firms_series(th)
         if not pts:
             raise RuntimeError("first refresh pending (fire history fills over a few runs)")
-        return pts
+        return store.seed(f"firms_{th}", pts)   # standard-processing archive back to 2018, then the live cache
     return go
 
 
@@ -554,7 +557,7 @@ for th, box in GFW_BOX.items():
 def _package(th):
     """Tanker, surveillance and fighter aircraft present together: counts each class, multiplied by the number of classes present (strike packaging)."""
     def go():
-        cls = {c: dict(store.daily(f"adsb_{th}_{c}")) for c in ("tanker", "isr", "fighter")}
+        cls = {c: dict(store.backfill(f"adsb_{th}_{c}")) for c in ("tanker", "isr", "fighter")}
         days = sorted(set().union(*[set(v) for v in cls.values()]))
         out = []
         for d in days:
@@ -566,7 +569,7 @@ def _package(th):
 
 for th in ADSB_TH:
     add(f"package_{th}", f"Strike-package index over {TH[th]} (tankers + AWACS/ISR + fighters together)", "geospatial", th, "daily", False,
-        "Derived: tankers, surveillance aircraft and fighters present at the same time. Packaged air power is how operations are staged; any one alone is routine. History builds from first run.",
+        "Derived: tankers, surveillance aircraft and fighters present at the same time. Packaged air power is how operations are staged; any one alone is routine. Built from the archive daily counts.",
         _package(th), url=ADS, sub="Derived")
 
 
@@ -597,8 +600,8 @@ for th in C.GNEWS:
 # ============ Official UKMTO incident counts (the Royal Navy maritime trade centre feed behind ukmto.org) ============
 for th in ("iran", "yemen"):
     add(f"ukmto_{th}", f"UKMTO incident reports in last 30 days, {TH[th]} waters (official)", "geospatial", th, "daily", False,
-        "Suspicious approaches, hijackings and attacks reported by masters to UKMTO. Harassment and approaches usually precede strikes on shipping. Snapshots start now.",
-        _snap(f"ukmto_{th}", lambda t=th: __import__("osint").ukmto_recent(t)), url="https://www.ukmto.org/recent-incidents", sub="Sea")
+        "Suspicious approaches, hijackings and attacks reported by masters to UKMTO. Harassment and approaches usually precede strikes on shipping. The feed keeps about 100 days, so the history starts a month after its oldest incident.",
+        (lambda t=th: __import__("osint").ukmto_series(t)), url="https://www.ukmto.org/recent-incidents", sub="Sea")
 
 
 # ============ ACLED conflict-event counts via HDX HAPI (the open route to ACLED data; ~2 months behind) ============

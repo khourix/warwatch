@@ -39,11 +39,18 @@ def load(path=None):
         return None
 
 
-def load_events(path=None):
+ARMED_TYPES = ("onset", "strike", "maritime")
+ARMED_MODEL = os.path.join(DATA, "model_weights_armed.json")
+FORWARD_ARMED = os.path.join(ROOT, "forward", "log_armed.csv")
+
+
+def load_events(path=None, types=None):
     out = []
     try:
         with open(path or os.path.join(DATA, "events.csv"), newline="") as f:
             for r in csv.DictReader(f):
+                if types and r.get("type") not in types:
+                    continue
                 out.append((r["theatre"], dt.date.fromisoformat(r["date"])))
     except OSError:
         pass
@@ -157,7 +164,24 @@ def global_view(m, per):
     return {"p_any": p_any, "p_market_moving": p_mm, "clim": m["p_any_clim"], "ratio": ratio, "level": lvl}
 
 
-def apply(res, markets=None, today=None, events=None, m=None):
+ALERT_DAYS = 7      # a level is set from the highest probability of the last 7 days (docs/IMPROVEMENTS.md: same events caught, fewer separate alarms)
+
+
+def recent_max(today, days=ALERT_DAYS, path=None):
+    """{theatre: highest logged probability on the days.. before today} from the forward record; empty where nothing is logged."""
+    out = {}
+    lo = (today - dt.timedelta(days=days - 1)).isoformat()
+    try:
+        with open(path or FORWARD, newline="") as f:
+            for r in csv.DictReader(f):
+                if lo <= r["date"] < today.isoformat() and r["theatre"] != "_any" and r["p"]:
+                    out[r["theatre"]] = max(out.get(r["theatre"], 0.0), float(r["p"]))
+    except OSError:
+        pass
+    return out
+
+
+def apply(res, markets=None, today=None, events=None, m=None, forward_path=None):
     """Adds res['model'] (probabilities for every theatre) and, when the model is active, makes them the page's levels.
     Region and global levels are rebuilt from the new theatre levels. The composite level stays as 'level_composite'."""
     m = m or load()
@@ -174,6 +198,7 @@ def apply(res, markets=None, today=None, events=None, m=None):
                 pm = market_probability(markets, t)
                 per[t]["p_market"] = pm
                 per[t]["p_blend"] = blend(per[t]["p"], pm)
+    recent = recent_max(today, path=forward_path)
     glob = global_view(m, per)
     res["model"] = {"version": m["version"], "fitted": m["fitted"], "active": bool(m.get("active")), "gates": m["gates"], "bands": m["bands"],
                     "theatres": per, "global": glob, "blend_active": bool(m.get("blend_active"))}
@@ -182,7 +207,8 @@ def apply(res, markets=None, today=None, events=None, m=None):
         r.update(p=v["p"], p_lo=v["lo"], p_hi=v["hi"], p_why=v["contrib"], p_aftermath=v["aftermath"], level_composite=r["level"])
         if m.get("active"):
             p_head = v["p_blend"] if m.get("blend_active") and v.get("p_blend") is not None else v["p"]
-            r["level"] = level_of(p_head, m["bands"])
+            r["p_alert"] = max(p_head, recent.get(t, 0.0))
+            r["level"] = level_of(r["p_alert"], m["bands"])
     if m.get("active"):
         res["regions"], g = engine.rollup(res["theatres"], C.REGIONS)
         g["level_composite"] = res["global"]["level"]
@@ -192,6 +218,19 @@ def apply(res, markets=None, today=None, events=None, m=None):
     else:
         res["global"].update(p_any=glob["p_any"], p_market_moving=glob["p_market_moving"])
     return res
+
+
+def shadow(res, today=None, model_path=None, log_path=None):
+    """Hidden armed-force model: predicts every theatre with the model trained on onset, strike and maritime events only and appends to its own
+    forward record (forward/log_armed.csv). It never touches the page, the levels or the main record. Returns rows appended."""
+    m = load(model_path or ARMED_MODEL)
+    if not m or "model" not in res:
+        return 0
+    today = today or dt.date.today()
+    events = load_events(types=ARMED_TYPES)
+    per = {t: predict(m, res["series"], t, events, today) for t in TH if t in res["theatres"]}
+    fake = {"model": {"theatres": per, "global": global_view(m, per), "active": False, "version": m["version"] + "-armed"}, "theatres": res["theatres"]}
+    return forward_append(fake, path=log_path or FORWARD_ARMED)
 
 
 # ------------------------------------------------------------------ forward record
