@@ -157,7 +157,24 @@ def global_view(m, per):
     return {"p_any": p_any, "p_market_moving": p_mm, "clim": m["p_any_clim"], "ratio": ratio, "level": lvl}
 
 
-def apply(res, markets=None, today=None, events=None, m=None):
+ALERT_DAYS = 7      # a level is set from the highest probability of the last 7 days (docs/IMPROVEMENTS.md: same events caught, fewer separate alarms)
+
+
+def recent_max(today, days=ALERT_DAYS, path=None):
+    """{theatre: highest logged probability on the days.. before today} from the forward record; empty where nothing is logged."""
+    out = {}
+    lo = (today - dt.timedelta(days=days - 1)).isoformat()
+    try:
+        with open(path or FORWARD, newline="") as f:
+            for r in csv.DictReader(f):
+                if lo <= r["date"] < today.isoformat() and r["theatre"] != "_any" and r["p"]:
+                    out[r["theatre"]] = max(out.get(r["theatre"], 0.0), float(r["p"]))
+    except OSError:
+        pass
+    return out
+
+
+def apply(res, markets=None, today=None, events=None, m=None, forward_path=None):
     """Adds res['model'] (probabilities for every theatre) and, when the model is active, makes them the page's levels.
     Region and global levels are rebuilt from the new theatre levels. The composite level stays as 'level_composite'."""
     m = m or load()
@@ -174,6 +191,7 @@ def apply(res, markets=None, today=None, events=None, m=None):
                 pm = market_probability(markets, t)
                 per[t]["p_market"] = pm
                 per[t]["p_blend"] = blend(per[t]["p"], pm)
+    recent = recent_max(today, path=forward_path)
     glob = global_view(m, per)
     res["model"] = {"version": m["version"], "fitted": m["fitted"], "active": bool(m.get("active")), "gates": m["gates"], "bands": m["bands"],
                     "theatres": per, "global": glob, "blend_active": bool(m.get("blend_active"))}
@@ -182,7 +200,8 @@ def apply(res, markets=None, today=None, events=None, m=None):
         r.update(p=v["p"], p_lo=v["lo"], p_hi=v["hi"], p_why=v["contrib"], p_aftermath=v["aftermath"], level_composite=r["level"])
         if m.get("active"):
             p_head = v["p_blend"] if m.get("blend_active") and v.get("p_blend") is not None else v["p"]
-            r["level"] = level_of(p_head, m["bands"])
+            r["p_alert"] = max(p_head, recent.get(t, 0.0))
+            r["level"] = level_of(r["p_alert"], m["bands"])
     if m.get("active"):
         res["regions"], g = engine.rollup(res["theatres"], C.REGIONS)
         g["level_composite"] = res["global"]["level"]

@@ -712,6 +712,21 @@ class TestValidate(unittest.TestCase):
         self.assertAlmostEqual(float(validate.shrink(np.array([0.5]), np.array([0.05]), 0.0, 0.0)[0]), 0.05)
 
 
+class AlertSmoothing(unittest.TestCase):
+    def test_recent_max_uses_the_last_seven_days_before_today(self):
+        import datetime as dt
+        import model
+        rows = ["date,theatre,p\n", "2026-10-01,iran,0.30\n", "2026-10-02,iran,0.08\n", "2026-10-06,iran,0.04\n", "2026-10-06,_any,0.90\n", "2026-10-07,yemen,0.12\n"]
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as f:
+            f.writelines(rows)
+        try:
+            got = model.recent_max(dt.date(2026, 10, 8), path=f.name)
+            self.assertEqual(got, {"iran": 0.08, "yemen": 0.12})     # 10-01 is outside the 7-day window; _any is not a theatre
+            self.assertEqual(model.recent_max(dt.date(2026, 10, 8), path=f.name + ".missing"), {})
+        finally:
+            os.unlink(f.name)
+
+
 if __name__ == "__main__":
     unittest.main()
 
