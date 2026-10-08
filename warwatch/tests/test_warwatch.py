@@ -451,6 +451,40 @@ class TestOsint(unittest.TestCase):
         t = "latitude,longitude,acq_date,acq_time,confidence,frp\n48.1,37.2,2026-10-05,912,n,12.5\n"
         self.assertEqual(osint.parse_firms(t)[0]["ts"], "2026-10-05T09:12Z")
 
+    def test_firms_low_confidence_counted_like_the_archive(self):
+        import osint
+        t = "latitude,longitude,acq_date,confidence,frp\n48.1,37.2,2026-10-05,n,12.5\n48.2,37.3,2026-10-05,l,3\n"
+        self.assertEqual(len(osint.parse_firms(t)), 1)
+        self.assertEqual(len(osint.parse_firms(t, keep_low=True)), 2)
+
+    def test_ukmto_series_only_where_the_feed_covers_the_whole_window(self):
+        import osint
+        rows = [{"utcDateOfIncident": d, "locationLatitude": 26.5, "locationLongitude": 56.2} for d in ("2026-07-01", "2026-08-10", "2026-08-12")]
+        osint._UK["all"] = rows
+        out = dict(osint.ukmto_series("iran", today=dt.date(2026, 8, 20)))
+        self.assertEqual(min(out), "2026-07-31")                 # a month after the oldest incident
+        self.assertEqual(out["2026-07-31"], 1.0)                  # 07-01 is still inside the 30 days
+        self.assertEqual(out["2026-08-01"], 0.0)
+        self.assertEqual(out["2026-08-20"], 2.0)
+        osint._UK.clear()
+
+    def test_seed_uses_archive_only_before_the_live_series_starts(self):
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "demo_series.csv"), "w") as f:
+            f.write("2026-01-01,1\n2026-01-02,2\n2026-01-03,3\n")
+        old, store.BACKFILL = store.BACKFILL, d
+        try:
+            self.assertEqual(store.seed("demo_series", [("2026-01-03", 9.0), ("2026-01-04", 8.0)]),
+                             [("2026-01-01", 1.0), ("2026-01-02", 2.0), ("2026-01-03", 9.0), ("2026-01-04", 8.0)])
+            self.assertEqual(store.seed("no_such_series", [("2026-01-03", 9.0)]), [("2026-01-03", 9.0)])
+        finally:
+            store.BACKFILL = old
+
+    def test_daily_series_need_matches_the_scorer(self):
+        pts = [(str(dt.date(2026, 1, 1) + dt.timedelta(days=i)), float(i % 5)) for i in range(stats.MIN_DAILY)]
+        self.assertIsNotNone(stats.score_series(pts, "daily"))
+        self.assertIsNone(stats.score_series(pts[:-1], "daily"))
+
     def test_firms_routine_sources_burn_on_several_days(self):
         import osint
         flare = [{"lat": 30.0 + 0.001 * i, "lon": 48.0, "date": f"2026-10-0{i + 1}", "frp": 9} for i in range(3)]

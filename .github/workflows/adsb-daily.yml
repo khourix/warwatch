@@ -1,0 +1,33 @@
+name: adsb-daily
+# Adds the latest days of military aircraft counts from the adsb.lol daily archives to backfill/data, which the live
+# adsb_* and package_* series read. Safe to re-run: days already present are skipped.
+on:
+  schedule:
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "how many days back to check"
+        required: false
+        default: "5"
+  push:
+    paths: ["backfill/adsb-daily.txt"]   # editing this file starts a run before the workflow is on the default branch
+permissions:
+  contents: write
+concurrency:
+  group: adsb-daily
+  cancel-in-progress: false
+jobs:
+  adsb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add the latest archive days
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DAYS: ${{ github.event.inputs.days || '5' }}
+        run: |
+          python3 backfill/backfill.py adsb --start "$(date -u -d "$DAYS days ago" +%F)" --end "$(date -u -d yesterday +%F)"
+      - uses: ./.github/actions/commit-backfill
+        if: always()
