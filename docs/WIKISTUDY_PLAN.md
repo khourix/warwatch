@@ -16,3 +16,7 @@ Committed 2026-10-09 with the article lists in `backfill/sources_wiki.py`, befor
 3. AUC of the 30-day maximum above 0.55 on both halves.
 
 A family that passes goes into the feature study as a candidate, judged by that study's pass rule on the added events. One that fails is recorded here as failed and not tuned (no change to the articles, windows or cut-off).
+
+## Result (2026-10-09)
+
+Neither family passes ([WIKISTUDY.md](WIKISTUDY.md)). English views beat the false-alarm rate on the original events (50% against 35%, p = 0.016) but not on the added ones (40%, p = 0.23, AUC 0.53). Local-language views do not beat it on either half. Recorded as failed; the article lists, windows and cut-off stay as they were. One listed article does not exist under that title (`Bolivarian Armed Forces of Venezuela`) and was skipped, as the plan says.

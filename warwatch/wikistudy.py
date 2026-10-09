@@ -76,11 +76,11 @@ def write(res):
     L = ["# Wikipedia page views against past events", "",
          "Written by `warwatch/wikistudy.py` to the plan fixed before the data was read ([WIKISTUDY_PLAN.md](WIKISTUDY_PLAN.md)). "
          f"Hit = z reached {S.CUT:g} in the 30 days before an event; false-alarm rate = share of calm 30-day windows where it did.", "",
-         "| Family | Events | Hit rate | False-alarm rate | p | AUC | Added events | Hit rate | p | AUC | Passes |",
+         "| Family | Original events | Hit rate | False-alarm rate | p | AUC | Added events | Hit rate | p | AUC | Passes |",
          "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|"]
     for fam, r in res.items():
         o, a = r["orig"], r["added"]
-        L.append(f"| {fam} (original 78) | {o['n']} | {o['hit']:.0%} | {r['fa']:.0%} | {o['p']:.3f} | {o['auc']:.2f} | "
+        L.append(f"| {fam} | {o['n']} | {o['hit']:.0%} | {r['fa']:.0%} | {o['p']:.3f} | {o['auc']:.2f} | "
                  f"{a['n']} | {a['hit']:.0%} | {a['p']:.3f} | {a['auc']:.2f} | {'yes' if r['pass'] else 'no'} |")
     L += ["", "## Events where views reached z 2 or more in the 30 days before", "", "| Family | Theatre | Date | Event | Max z | List |", "|---|---|---|---|---:|---|"]
     for fam, r in res.items():
