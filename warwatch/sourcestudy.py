@@ -7,6 +7,7 @@ with the same measure in calm 30-day windows of the same theatre, on the origina
     python3 warwatch/sourcestudy.py pla        Taiwan's daily PLA counts            -> docs/PLASTUDY.md
     python3 warwatch/sourcestudy.py gdeltwide  wider GDELT event types and dyads    -> docs/GDELTWIDE.md  (docs/GDELTWIDE_PLAN.md)
     python3 warwatch/sourcestudy.py senkaku    Japan Coast Guard Senkaku counts     -> docs/SENKAKU.md    (docs/SENKAKU_PLAN.md)
+    python3 warwatch/sourcestudy.py metaculus  Metaculus military questions         -> docs/METACULUS.md  (docs/METACULUS_PLAN.md)
 """
 import csv
 import datetime as dt
@@ -166,8 +167,47 @@ def senkaku():
     return res
 
 
+def metaculus():
+    import math
+    d = os.path.join(DATA, "metaculus")
+    qs = list(csv.DictReader(open(os.path.join(d, "questions.csv"))))
+    cp = {}
+    for r in csv.DictReader(open(os.path.join(d, "cp.csv"))):
+        cp.setdefault(r["id"], {})[r["day"]] = min(max(float(r["p"]), 0.001), 0.999)
+    lo = lambda p: math.log(p / (1 - p))      # noqa: E731
+    rise, new = {}, {}
+    for q in qs:
+        days = cp.get(q["id"], {})
+        for th in q["theatres"].split(";"):
+            for day, p in days.items():
+                prev = days.get((dt.date.fromisoformat(day) - dt.timedelta(7)).isoformat())
+                if prev is not None:
+                    rise.setdefault(th, {}).setdefault(day, []).append(lo(p) - lo(prev))
+            if q["open"][:10]:
+                new.setdefault(th, {}).setdefault(q["open"][:10], 0)
+                new[th][q["open"][:10]] += 1
+    start, end = dt.date(2018, 1, 1), dt.date.today()
+    res = {}
+    zs = {th: zdaily(sorted((k, float(np.mean(v))) for k, v in days.items())) for th, days in rise.items()}
+    res["mc_rise"] = test(zs, alpha_added=0.025)
+    zs = {}
+    for th, days in new.items():
+        pts, x = [], start
+        while x <= end:
+            pts.append((x.isoformat(), float(days.get(x.isoformat(), 0))))
+            x += dt.timedelta(1)
+        zs[th] = zdaily(pts)
+    res["mc_new"] = test(zs, alpha_added=0.025)
+    per = {th: sum(th in q["theatres"].split(";") for q in qs) for th in V.TH}
+    write(os.path.join(DOCS, "METACULUS.md"), "Metaculus community forecasts against past events",
+          f"Written by `warwatch/sourcestudy.py metaculus` to the plan fixed before the data was read ([METACULUS_PLAN.md](METACULUS_PLAN.md)). "
+          f"{len(qs)} questions match the rule, {sum(1 for q in qs if q['id'] in cp)} with a community history; per theatre: "
+          + ", ".join(f"{th} {n}" for th, n in per.items()) + ". Pass rule: added events p < 0.025, original events p < 0.10, AUC above 0.55 on both.", res)
+    return res
+
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "pla"
-    r = {"pla": pla, "gdeltwide": gdeltwide, "senkaku": senkaku}[what]()
+    r = {"pla": pla, "gdeltwide": gdeltwide, "senkaku": senkaku, "metaculus": metaculus}[what]()
     for fam, x in r.items():
         print(fam, {k: x[k] for k in ("calm", "fa", "orig", "added", "pass")})
