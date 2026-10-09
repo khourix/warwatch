@@ -10,6 +10,7 @@
     python3 backfill/backfill.py wiki  [--start D --end D]     # Wikipedia page views per theatre
     python3 backfill/backfill.py forecasts                     # ConflictForecast and VIEWS monthly vintages
     python3 backfill/backfill.py gdeltwide [--start D --end D] # wider GDELT event types and dyads per theatre
+    python3 backfill/backfill.py metaculus                     # Metaculus community forecasts on military questions (token)
     python3 backfill/backfill.py senkaku                       # Japan Coast Guard Senkaku vessel counts (monthly PDFs, text kept)
     python3 backfill/backfill.py state THEATRE[,THEATRE...] [--start D --end D]
     python3 backfill/backfill.py merge       # fold ADS-B quarter shards into data/
@@ -108,6 +109,9 @@ def main():
                 K.log("::warning::", f.__name__, "failed:", str(e)[:200])
         import forecasts_compact
         forecasts_compact.main(O.RAW, O.OUT)
+    elif a.cmd == "metaculus":
+        import sources_metaculus as M
+        M.cmd_metaculus(need("METACULUS_TOKEN"))
     elif a.cmd == "senkaku":
         import sources_senkaku as J
         J.cmd_senkaku()
