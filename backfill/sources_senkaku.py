@@ -4,7 +4,6 @@ The Coast Guard publishes one PDF per month with a row per day: vessels in the c
 territorial sea. This step only downloads each month's PDF and keeps its text (backfill/data/senkaku/raw/<file>.txt), so the
 table layout can be checked before anything is parsed. The test plan is docs/SENKAKU_PLAN.md.
 """
-import io
 import os
 import re
 import subprocess
@@ -18,14 +17,11 @@ OUT = os.path.join(K.DATA, "senkaku", "raw")
 
 
 def _text(pdf):
-    try:
-        with tempfile.NamedTemporaryFile(suffix=".pdf") as f:
-            f.write(pdf)
-            f.flush()
-            return subprocess.run(["pdftotext", "-layout", f.name, "-"], capture_output=True, check=True).stdout.decode("utf-8", "replace")
-    except Exception:
-        from pypdf import PdfReader
-        return "\n".join(p.extract_text() or "" for p in PdfReader(io.BytesIO(pdf)).pages)
+    """pdftotext -layout keeps each day's row on one line (plain extraction scrambles the columns)."""
+    with tempfile.NamedTemporaryFile(suffix=".pdf") as f:
+        f.write(pdf)
+        f.flush()
+        return subprocess.run(["pdftotext", "-layout", f.name, "-"], capture_output=True, check=True).stdout.decode("utf-8", "replace")
 
 
 def cmd_senkaku():
