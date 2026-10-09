@@ -91,17 +91,26 @@ def cmd_metaculus(tok):
         w = csv.DictWriter(f, fieldnames=["id", "theatres", "title", "published", "open", "close", "resolution"])
         w.writeheader()
         w.writerows(keep)
-    rows, first = [], True
+    rows, first = [], 0
     for q in keep:
         try:
             p = _get(f"{API}/posts/{q['id']}/", tok)
         except Exception as e:
             K.log("skip", q["id"], str(e)[:100])
             continue
-        if first:
+        if not _history(p.get("question")):
+            for extra in ("?with_cp=true&include_cp_history=true", "?with_cp=true&aggregation_history=true&minimize=false"):
+                try:
+                    alt = _get(f"{API}/posts/{q['id']}/{extra}", tok)
+                except Exception:
+                    continue
+                if _history(alt.get("question")):
+                    p = alt
+                    break
+        if first < 3:
             ag = (p.get("question") or {}).get("aggregations") or {}
-            K.log("aggregation keys", {k: sorted(v)[:8] if isinstance(v, dict) else type(v).__name__ for k, v in ag.items()})
-            first = False
+            K.log("question", q["id"], {k: (len(v.get("history") or []), (v.get("history") or [None])[0], v.get("latest")) for k, v in ag.items() if isinstance(v, dict)})
+            first += 1
         day = {}
         for t, v in _history(p.get("question")):
             day[dt.datetime.fromtimestamp(t, dt.timezone.utc).date().isoformat()] = v
