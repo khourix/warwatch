@@ -57,7 +57,7 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: |
           A=""; [ -n "$START" ] && A="$A --start $START"; [ -n "$END" ] && A="$A --end $END"
-          if [ "$SRC" = senkaku ] || [ "$SRC" = all ]; then sudo apt-get install -y -q poppler-utils >/dev/null || true; fi
+          if [ "$SRC" = senkaku ] || [ "$SRC" = all ]; then { sudo apt-get update -q >/dev/null && sudo apt-get install -y -q poppler-utils >/dev/null; } || echo "::warning::poppler-utils not installed"; fi
           for s in fred nga pla wiki forecasts senkaku; do
             if [ "$SRC" = all ] || [ "$SRC" = "$s" ]; then python3 backfill/backfill.py $s $A || echo "::warning::$s failed"; fi
           done

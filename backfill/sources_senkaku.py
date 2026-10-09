@@ -34,6 +34,7 @@ def cmd_senkaku():
         if os.path.exists(dest) and not f.startswith("data_R8_"):      # the current year's files are revised as days are added
             continue
         try:
-            open(dest, "w").write(_text(K.get(BASE + f, raw=True)))
+            txt = _text(K.get(BASE + f, raw=True))
+            open(dest, "w").write(txt)
         except Exception as e:
             K.log("skip", f, str(e)[:100])
