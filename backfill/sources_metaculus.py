@@ -9,9 +9,11 @@ history and keeps the last value of each UTC day. Output, backfill/data/metaculu
 """
 import csv
 import datetime as dt
+import io
 import os
 import re
 import time
+import zipfile
 
 import common as K
 
@@ -66,10 +68,56 @@ def _history(q):
     return []
 
 
+def _download(pid, tok, log=False):
+    """[(epoch seconds, p)] from the post's data download (the post itself carries no history for API reads)."""
+    time.sleep(0.6)
+    b = K.get(f"{API}/posts/{pid}/download-data/?aggregation_methods=recency_weighted", raw=True,
+              headers={"Authorization": f"Token {tok}"}, retries=6, wait=10)
+    files = {}
+    if b[:2] == b"PK":
+        z = zipfile.ZipFile(io.BytesIO(b))
+        files = {n: z.read(n).decode("utf-8", "replace") for n in z.namelist()}
+    else:
+        files = {"body": b.decode("utf-8", "replace")}
+    if log:
+        K.log("download", pid, {n: (len(t), t.splitlines()[0][:300] if t else "") for n, t in files.items()})
+    for n, t in files.items():
+        if "aggregat" not in n.lower() and n != "body":
+            continue
+        rows = list(csv.DictReader(io.StringIO(t)))
+        if not rows:
+            continue
+        cols = {c.lower(): c for c in rows[0]}
+        tcol = next((cols[c] for c in cols if "start" in c and "time" in c), None)
+        pcol = next((cols[c] for c in cols if "probability yes" in c or c in ("centers", "center", "median", "probability_yes")), None)
+        mcol = next((cols[c] for c in cols if "method" in c), None)
+        if not (tcol and pcol):
+            continue
+        out = []
+        for r in rows:
+            if mcol and r[mcol] and "recency" not in r[mcol].lower():
+                continue
+            try:
+                v = float(str(r[pcol]).strip("[]").split(",")[0])
+                ts = r[tcol]
+                ts = float(ts) if re.fullmatch(r"[\d.]+", ts) else dt.datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
+            except (ValueError, TypeError):
+                continue
+            out.append((ts, v))
+        if out:
+            return sorted(out)
+    return []
+
+
 def cmd_metaculus(tok):
     os.makedirs(OUT, exist_ok=True)
     keep, seen, off = [], 0, 0
-    while True:
+    qpath = os.path.join(OUT, "questions.csv")
+    listed = os.path.exists(qpath)
+    if listed:                                      # the list is fixed once made; rerun only the histories
+        keep = list(csv.DictReader(open(qpath)))
+        K.log("metaculus: reusing", len(keep), "listed questions")
+    while not listed:
         js = _get(f"{API}/posts/?forecast_type=binary&statuses=open&statuses=closed&statuses=resolved&order_by=-published_at&limit=100&offset={off}", tok)
         res = js.get("results", [])
         if off == 0:
@@ -84,10 +132,11 @@ def cmd_metaculus(tok):
                              "resolution": q.get("resolution") or ""})
         seen += len(res)
         if not js.get("next") or not res:
+            K.log("metaculus: listed", seen, "binary questions;", len(keep), "match the rule")
+            listed = True
             break
         off += len(res)
-    K.log("metaculus: listed", seen, "binary questions;", len(keep), "match the rule")
-    with open(os.path.join(OUT, "questions.csv"), "w", newline="") as f:
+    with open(qpath, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["id", "theatres", "title", "published", "open", "close", "resolution"])
         w.writeheader()
         w.writerows(keep)
@@ -98,21 +147,15 @@ def cmd_metaculus(tok):
         except Exception as e:
             K.log("skip", q["id"], str(e)[:100])
             continue
-        if not _history(p.get("question")):
-            for extra in ("?with_cp=true&include_cp_history=true", "?with_cp=true&aggregation_history=true&minimize=false"):
-                try:
-                    alt = _get(f"{API}/posts/{q['id']}/{extra}", tok)
-                except Exception:
-                    continue
-                if _history(alt.get("question")):
-                    p = alt
-                    break
-        if first < 3:
-            ag = (p.get("question") or {}).get("aggregations") or {}
-            K.log("question", q["id"], {k: (len(v.get("history") or []), (v.get("history") or [None])[0], v.get("latest")) for k, v in ag.items() if isinstance(v, dict)})
-            first += 1
+        hist = _history(p.get("question"))
+        if not hist:
+            try:
+                hist = _download(q["id"], tok, log=first < 3)
+            except Exception as e:
+                K.log("download failed", q["id"], str(e)[:120])
+        first += 1
         day = {}
-        for t, v in _history(p.get("question")):
+        for t, v in hist:
             day[dt.datetime.fromtimestamp(t, dt.timezone.utc).date().isoformat()] = v
         rows += [(q["id"], d, round(v, 4)) for d, v in sorted(day.items())]
     with open(os.path.join(OUT, "cp.csv"), "w", newline="") as f:
