@@ -236,7 +236,7 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | wikiloc_libya | 3203 | 2018-01-01 | 2026-10-08 | 100% |
 | wikiloc_scs | 3203 | 2018-01-01 | 2026-10-08 | 100% |
 | wikiloc_southasia | 3203 | 2018-01-01 | 2026-10-08 | 100% |
-| wikiloc_sudan | 1274 | 2020-06-22 | 2026-10-08 | 100% |
+| wikiloc_sudan | 3203 | 2018-01-01 | 2026-10-08 | 100% |
 | wikiloc_taiwan | 3203 | 2018-01-01 | 2026-10-08 | 100% |
 | wikiloc_ukraine | 3203 | 2018-01-01 | 2026-10-08 | 100% |
 | wikiloc_venezuela | 3203 | 2018-01-01 | 2026-10-08 | 100% |
