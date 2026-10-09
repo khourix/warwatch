@@ -1,0 +1,36 @@
+name: trade
+# Monthly Japan and Thailand exports of pickups and large SUVs (Land Cruiser and Hilux sources) to war-zone countries and the hubs that
+# re-export to them, from UN Comtrade, into backfill/data/trade_*.csv. Comtrade publishes about 8 months late, so this is a slow signal.
+on:
+  schedule:
+    - cron: "0 6 5 * *"
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "first year"
+        required: false
+        default: "2015"
+  push:
+    paths: ["backfill/trade_run.txt"]     # a push that edits this file also starts a run (used before the workflow is on main)
+permissions:
+  contents: write
+concurrency:
+  group: trade
+  cancel-in-progress: false
+jobs:
+  trade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        origin: [jpn, tha]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch monthly exports
+        env:
+          COMTRADE_API_KEY: ${{ secrets.COMTRADE_API_KEY }}
+          START: ${{ github.event.inputs.start || '2015' }}
+        run: python3 backfill/trade.py --start "$START" --origin ${{ matrix.origin }}
+      - uses: ./.github/actions/commit-backfill
+        if: always()

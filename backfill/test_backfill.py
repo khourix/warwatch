@@ -91,3 +91,15 @@ class T(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TradeParse(unittest.TestCase):
+    def test_pickups_use_the_4_digit_line_and_suvs_sum_their_6_digit_lines(self):
+        import trade
+        base = {"motCode": 0, "customsCode": "C00", "partner2Code": 0}
+        rows = [dict(base, period=202301, cmdCode="8704", qty=144), dict(base, period=202301, cmdCode="870323", qty=3),
+                dict(base, period=202301, cmdCode="870324", qty=2), dict(base, period=202302, cmdCode="870421", qty=10),
+                dict(base, period=202302, cmdCode="870431", qty=5), dict(base, period=202303, cmdCode="8704", qty=9, motCode=6102)]
+        got = trade.monthly(rows)
+        self.assertEqual(got["pickup"], {"2023-01-01": 144.0, "2023-02-01": 15.0})     # the transport-mode split line is ignored
+        self.assertEqual(got["suv"], {"2023-01-01": 5.0})
