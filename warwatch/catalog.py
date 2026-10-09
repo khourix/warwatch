@@ -641,3 +641,14 @@ ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_b
 for _s in SERIES:
     if _s["id"].startswith(ZERO_WEIGHT):
         _s["scored"] = False
+
+
+# ============ Prices scored on their change ============
+# A price that trends sits above its own yearly baseline for months: gold, copper, FX and the defence stocks read z >= 2 on
+# 20-34% of calm days when scored on their level (docs/INDICATORSTUDY.md). Scored on their % change (20 trading days,
+# 3 months for monthly series) the same series do so on 2-10%. VIX and power prices mean-revert, so they keep their level.
+CHANGE_SCORED = ("def_", "brent", "gold", "fx_", "tanker_equity", "container_equity", "israel_equity", "poland_equity", "taiwan_equity",
+                 "china_equity", "korea_equity", "india_equity", "latam_equity", "copper", "eu_gas", "wheat", "diesel_nyh", "jet_fuel_gulf")
+for _s in SERIES:
+    if _s["domain"] == "financial" and _s["id"].startswith(CHANGE_SCORED):
+        _s["transform"] = "chg"

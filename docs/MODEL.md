@@ -8,67 +8,67 @@ Nothing the model says reaches the live page until all three pass on out-of-samp
 
 | Gate | Result | Pass |
 |---|---|---|
-| Brier skill against each theatre's own base rate is positive | +0.0147 (before the shrink: +0.0120) | yes |
-| Lower end of the AUC interval is above 0.5 | AUC 0.628, 95% interval 0.550 to 0.706 (resampling theatre-years) | yes |
-| Beats a shuffled-timing control | p = 0.027 on AUC, 0.000 on Brier skill (300 circular shifts per theatre; shifted AUC median 0.547, 95th percentile 0.616) | yes |
+| Brier skill against each theatre's own base rate is positive | +0.0122 (before the shrink: +0.0188) | yes |
+| Lower end of the AUC interval is above 0.5 | AUC 0.605, 95% interval 0.523 to 0.686 (resampling theatre-years) | yes |
+| Beats a shuffled-timing control | p = 0.083 on AUC, 0.010 on Brier skill (300 circular shifts per theatre; shifted AUC median 0.543, 95th percentile 0.614) | NO |
 
-**Overall: PASS. The model drives the levels on the live page.**
+**Overall: FAIL. The model runs in shadow (probabilities are logged to the forward record but the page keeps the composite levels).**
 
-Test years 2021 to 2026: 25,120 theatre-days, 1,518 positive, 51 events. Ridge strength chosen from [0.3, 1, 3, 10, 30, 100] by out-of-sample Brier (lambda = 3); this one choice used the same test years, so treat the gates as a little optimistic. The forward record is the clean test. Shrink toward the base rate (gamma, phi) is refitted each year on earlier test years only: 2021: 0.6/0.50, 2022: 0.6/0.50, 2023: 0.4/0.00, 2024: 0.2/0.00, 2025: 0.8/0.75, 2026: 0.7/0.75.
+Test years 2021 to 2026: 25,120 theatre-days, 1,518 positive, 51 events. Ridge strength chosen from [0.3, 1, 3, 10, 30, 100] by out-of-sample Brier (lambda = 100); this one choice used the same test years, so treat the gates as a little optimistic. The forward record is the clean test. Shrink toward the base rate (gamma, phi) is refitted each year on earlier test years only: 2021: 0.6/0.50, 2022: 0.6/0.50, 2023: 0.4/0.00, 2024: 0.3/0.00, 2025: 1.0/0.75, 2026: 1.0/0.75.
 
 | Ridge strength | OOS Brier |
 |---|---|
-| 0.3 | 0.05844 |
-| 1 | 0.05680 |
-| 3 | 0.05658 |
-| 10 | 0.05741 |
-| 30 | 0.05704 |
-| 100 | 0.05671 |
+| 0.3 | 0.05887 |
+| 1 | 0.05933 |
+| 3 | 0.05863 |
+| 10 | 0.05765 |
+| 30 | 0.05711 |
+| 100 | 0.05673 |
 
 ## What it buys
 
-On its top 10% of days an event follows within 30 days 12.7% of the time, against a base rate of 6.0% (2.09 times). At a 10% false-alarm rate it flags 14 of 51 events.
+On its top 10% of days an event follows within 30 days 11.1% of the time, against a base rate of 6.0% (1.83 times). At a 10% false-alarm rate it flags 13 of 51 events.
 
 ### Probability bands
 
 | Level | 30-day probability | Share of theatre-days | Event rate that followed | Mean published probability |
 |---|---|---|---|---|
-| Normal | 0% to 5% | 82.8% | 5.0% | 2.1% |
-| Watch | 5% to 10% | 10.8% | 11.0% | 6.8% |
-| Elevated | 10% to 25% | 5.4% | 8.0% | 14.7% |
-| Critical | 25% or more | 1.0% | 31.6% | 35.5% |
+| Normal | 0% to 5% | 84.2% | 5.3% | 2.1% |
+| Watch | 5% to 10% | 9.8% | 7.6% | 6.9% |
+| Elevated | 10% to 25% | 5.0% | 12.8% | 15.2% |
+| Critical | 25% or more | 0.9% | 23.9% | 34.9% |
 
 ### Reliability of the published probability
 
 | Predicted from | to | Days | Mean predicted | Event rate that followed |
 |---|---|---|---|---|
-| 0% | 2% | 11,721 | 1.1% | 4.5% |
-| 2% | 4% | 7,043 | 3.0% | 5.2% |
-| 4% | 6% | 3,030 | 4.8% | 7.4% |
-| 6% | 8% | 1,115 | 7.0% | 10.2% |
-| 8% | 10% | 609 | 8.8% | 16.6% |
-| 10% | 15% | 813 | 12.3% | 6.6% |
-| 15% | 20% | 420 | 17.0% | 9.3% |
-| 20% | 30% | 208 | 24.2% | 10.6% |
-| 30% | 100% | 161 | 39.8% | 43.5% |
+| 0% | 2% | 11,182 | 1.1% | 4.5% |
+| 2% | 4% | 8,267 | 3.0% | 6.1% |
+| 4% | 6% | 2,514 | 4.8% | 6.7% |
+| 6% | 8% | 1,061 | 7.0% | 8.0% |
+| 8% | 10% | 610 | 8.8% | 7.9% |
+| 10% | 15% | 759 | 12.3% | 10.9% |
+| 15% | 20% | 259 | 17.1% | 9.7% |
+| 20% | 30% | 337 | 23.3% | 19.0% |
+| 30% | 100% | 131 | 40.2% | 32.1% |
 
 ### By theatre
 
 | Theatre | Positive days | Brier skill | AUC |
 |---|---|---|---|
-| Ukraine | 180 | -0.050 | 0.509 |
-| Eastern flank | 150 | -0.013 | 0.414 |
-| Iran | 210 | +0.058 | 0.596 |
-| Yemen | 180 | +0.031 | 0.721 |
-| Israel | 240 | +0.069 | 0.653 |
-| Taiwan Strait | 180 | +0.023 | 0.608 |
-| South China Sea | 60 | -0.008 | 0.612 |
-| Korea | 60 | -0.044 | 0.090 |
-| South Asia (India-Pakistan) | 30 | -0.001 | 0.684 |
-| Libya | 30 | -0.033 | 0.758 |
-| Sudan | 90 | -0.007 | 0.566 |
-| DR Congo | 48 | +0.014 | 0.833 |
-| Americas (Venezuela and Caribbean) | 60 | +0.002 | 0.689 |
+| Ukraine | 180 | -0.015 | 0.494 |
+| Eastern flank | 150 | -0.035 | 0.381 |
+| Iran | 210 | +0.071 | 0.700 |
+| Yemen | 180 | +0.006 | 0.678 |
+| Israel | 240 | +0.047 | 0.645 |
+| Taiwan Strait | 180 | +0.006 | 0.587 |
+| South China Sea | 60 | -0.006 | 0.488 |
+| Korea | 60 | -0.012 | 0.066 |
+| South Asia (India-Pakistan) | 30 | +0.022 | 0.703 |
+| Libya | 30 | -0.001 | 0.704 |
+| Sudan | 90 | -0.009 | 0.576 |
+| DR Congo | 48 | -0.001 | 0.463 |
+| Americas (Venezuela and Caribbean) | 60 | +0.008 | 0.697 |
 
 ## Indicator families ranked by noise-to-signal
 
@@ -76,14 +76,14 @@ Best threshold per family over all labelled days. NSR is the false-alarm rate di
 
 | Family | Domain | Confirming | Threshold | Hit rate | False-alarm rate | NSR | Events with a signal |
 |---|---|---|---|---|---|---|---|
-| container_equity | financial | no | 3.0 | 29.4% | 2.4% | 0.08 | 2/6 |
-| korea_equity | financial | no | 1.5 | 81.1% | 20.9% | 0.26 | 3/3 |
+| tanker_equity | financial | no | 3.0 | 5.3% | 0.2% | 0.04 | 2/11 |
+| fx_krw | financial | no | 3.0 | 28.9% | 1.8% | 0.06 | 1/3 |
 | acled_demo | behavioral | yes | 3.0 | 4.5% | 1.2% | 0.26 | 2/45 |
 | us_boots_to | logistics | yes | 2.0 | 15.4% | 4.0% | 0.26 | 4/18 |
 | acled_viol | geospatial | yes | 3.0 | 10.4% | 3.1% | 0.30 | 5/43 |
+| taiwan_equity | financial | no | 3.0 | 4.4% | 1.3% | 0.30 | 1/6 |
 | eu_medical_to | logistics | yes | 2.5 | 8.0% | 2.4% | 0.30 | 2/25 |
-| fx_krw | financial | no | 3.0 | 33.3% | 11.2% | 0.34 | 1/3 |
-| taiwan_equity | financial | no | 3.0 | 16.7% | 6.1% | 0.36 | 1/6 |
+| korea_equity | financial | no | 2.5 | 6.7% | 2.4% | 0.36 | 1/3 |
 | gdeltshare_preforce | information | no | 3.0 | 11.0% | 4.0% | 0.36 | 16/59 |
 | gdeltshare_threat | information | no | 3.0 | 8.6% | 3.3% | 0.38 | 17/59 |
 | gdelt_preforce | information | no | 3.0 | 17.8% | 7.1% | 0.40 | 22/59 |
@@ -96,103 +96,107 @@ Best threshold per family over all labelled days. NSR is the false-alarm rate di
 | us_ammo_naics | logistics | yes | 2.5 | 2.6% | 1.2% | 0.45 | 3/52 |
 | eu_trucks_to | logistics | yes | 2.5 | 3.7% | 1.7% | 0.45 | 2/25 |
 | us_pickups_to | logistics | yes | 1.5 | 21.1% | 9.8% | 0.46 | 5/18 |
-| india_equity | financial | no | 1.0 | 41.7% | 19.6% | 0.47 | 2/2 |
 | gdeltshare_posture | information | no | 3.0 | 13.4% | 6.6% | 0.49 | 22/59 |
-| def_lmt | financial | no | 3.0 | 17.4% | 8.7% | 0.50 | 13/59 |
-| eu_gas | financial | yes | 3.0 | 20.0% | 10.4% | 0.52 | 1/5 |
-| def_ita | financial | no | 2.5 | 20.5% | 10.7% | 0.52 | 16/59 |
+| def_lmt | financial | no | 3.0 | 4.9% | 2.5% | 0.51 | 10/59 |
 | portwatch_hormuz | geospatial | no | 2.0 | 11.0% | 5.7% | 0.52 | 2/11 |
 | gdelt_fight | information | no | 3.0 | 12.2% | 6.4% | 0.53 | 20/59 |
 | portwatch_suez | geospatial | no | 3.0 | 12.5% | 6.6% | 0.53 | 1/8 |
-| tanker_equity | financial | no | 1.5 | 51.8% | 27.6% | 0.53 | 8/11 |
 | gdelt_posture | information | no | 3.0 | 14.5% | 7.8% | 0.54 | 22/59 |
 | us_tactical_vehicle_awards | logistics | yes | 3.0 | 8.5% | 4.8% | 0.56 | 11/52 |
 | eu_fencing_tenders | logistics | no | 1.5 | 28.1% | 15.8% | 0.56 | 16/41 |
-| fx_twd | financial | no | 1.0 | 50.0% | 29.0% | 0.58 | 3/6 |
+| def_noc | financial | no | 2.0 | 10.2% | 6.0% | 0.59 | 16/59 |
+| brent | financial | no | 1.5 | 14.3% | 8.4% | 0.59 | 3/11 |
 | us_ammo_awards | logistics | yes | 1.5 | 10.8% | 6.4% | 0.59 | 12/52 |
 | gdeltshare_fight | information | no | 3.0 | 4.7% | 3.0% | 0.63 | 11/59 |
 | us_footwear_naics | logistics | yes | 2.5 | 4.0% | 2.6% | 0.64 | 4/52 |
 | us_boots_awards | logistics | yes | 2.5 | 4.0% | 2.6% | 0.64 | 4/52 |
-| gold | financial | no | 2.0 | 47.8% | 32.4% | 0.68 | 36/59 |
 | gpsjam | geospatial | no | 2.5 | 22.3% | 15.1% | 0.68 | 18/45 |
 | fcdo | behavioral | no | 3.0 | 13.7% | 9.3% | 0.68 | 23/59 |
 | us_individual_equipment_awards | logistics | yes | 1.5 | 3.9% | 2.6% | 0.68 | 5/52 |
-| vix | financial | no | 1.0 | 36.3% | 25.5% | 0.70 | 35/59 |
-| def_rtx | financial | no | 3.0 | 10.6% | 7.5% | 0.70 | 8/59 |
+| vix | financial | no | 2.0 | 22.0% | 15.4% | 0.70 | 24/59 |
 | portwatch_taiwan_strait | geospatial | no | 2.5 | 9.4% | 6.6% | 0.70 | 2/6 |
 | us_armored_naics | logistics | yes | 2.0 | 5.5% | 3.9% | 0.71 | 6/52 |
+| container_equity | financial | no | 1.5 | 10.0% | 7.2% | 0.72 | 2/6 |
 | us_aircraft_parts_awards | logistics | yes | 1.0 | 22.4% | 17.1% | 0.76 | 19/52 |
-| def_noc | financial | no | 2.0 | 31.0% | 24.7% | 0.80 | 25/59 |
 | dod_pop | logistics | yes | 1.0 | 24.1% | 19.7% | 0.82 | 13/45 |
 | us_site_works_naics | logistics | yes | 1.5 | 17.4% | 14.7% | 0.84 | 15/52 |
-| wheat | financial | yes | 2.0 | 16.7% | 14.2% | 0.85 | 1/6 |
 | eu_vehicle_tenders | logistics | no | 2.0 | 8.6% | 7.4% | 0.87 | 5/41 |
+| def_rtx | financial | no | 2.0 | 5.6% | 5.0% | 0.89 | 7/59 |
 | us_biologics_naics | logistics | yes | 2.5 | 4.5% | 4.1% | 0.91 | 4/52 |
 | us_sealift_naics | logistics | yes | 1.5 | 4.3% | 3.9% | 0.92 | 5/52 |
+| gold | financial | no | 1.0 | 27.1% | 25.0% | 0.92 | 30/59 |
 | us_air_charter_naics | logistics | yes | 2.0 | 12.7% | 11.8% | 0.93 | 13/52 |
 | us_chem_protective_awards | logistics | yes | 1.0 | 35.9% | 33.7% | 0.94 | 31/52 |
 | eu_kit_tenders | logistics | no | 1.5 | 10.5% | 9.9% | 0.94 | 6/41 |
 | us_blood_bank_naics | logistics | yes | 1.0 | 22.6% | 22.0% | 0.98 | 22/52 |
-| poland_equity | financial | no | 1.0 | 26.7% | 26.1% | 0.98 | 2/5 |
-| fx_inr | financial | no | 1.5 | 45.0% | 45.0% | 1.00 | 1/2 |
+| def_ita | financial | no | 1.0 | 16.3% | 16.3% | 1.00 | 28/59 |
+| eu_gas | financial | yes | 1.5 | 14.7% | 15.0% | 1.02 | 1/5 |
 | eu_boots_to | logistics | yes | 1.5 | 15.9% | 16.4% | 1.03 | 4/18 |
+| fx_twd | financial | no | 1.0 | 17.8% | 19.4% | 1.09 | 4/6 |
 | us_lubricant_awards | logistics | yes | 1.5 | 10.9% | 12.2% | 1.12 | 12/52 |
-| fx_pln | financial | no | 1.0 | 24.0% | 27.7% | 1.15 | 2/5 |
+| israel_equity | financial | no | 1.5 | 10.8% | 12.8% | 1.18 | 2/8 |
 | us_fencing_bridging_awards | logistics | yes | 1.0 | 18.9% | 24.9% | 1.31 | 22/52 |
 | us_fuel_awards | logistics | yes | 1.5 | 11.6% | 15.4% | 1.32 | 6/52 |
+| wheat | financial | yes | 1.0 | 15.0% | 25.9% | 1.72 | 2/6 |
+| poland_equity | financial | no | 1.0 | 10.7% | 18.6% | 1.75 | 3/5 |
 | us_shelter_awards | logistics | yes | 1.0 | 8.1% | 16.2% | 2.00 | 11/52 |
-| brent | financial | no | 1.0 | 14.6% | 30.1% | 2.06 | 3/11 |
 | portwatch_panama | geospatial | no | 1.0 | 8.3% | 23.0% | 2.76 | 2/2 |
 | us_medical_awards | logistics | yes | 1.0 | 5.3% | 15.8% | 3.01 | 5/52 |
 | portwatch_malacca | geospatial | no | 1.0 | 6.7% | 20.1% | 3.01 | 1/2 |
 | portwatch_bosporus | geospatial | no | 1.0 | 8.3% | 25.9% | 3.11 | 3/6 |
+| fx_pln | financial | no | 1.0 | 4.0% | 19.3% | 4.83 | 1/5 |
 
 ## Fitted model
 
-Fitted 2026-10-07 on data through 2026-09-30. Family weights (log-odds per full-scale reading, evidence = max(0, z)/5; the live model multiplies the same way):
+Fitted 2026-10-09 on data through 2026-09-30. Family weights (log-odds per full-scale reading, evidence = max(0, z)/5; the live model multiplies the same way):
 
 | Family | Weight |
 |---|---|
-| eu_medical_tenders | 2.483 |
-| tanker_equity | 2.184 |
-| fx_krw | 2.139 |
-| container_equity | 2.053 |
-| eu_gas | 1.963 |
-| taiwan_equity | 1.559 |
-| us_armor_awards | 1.441 |
-| eu_trucks_to | 1.367 |
-| acled_demo | 1.335 |
-| us_individual_equipment_awards | 1.047 |
-| us_ammo_naics | 1.042 |
-| us_pickups_to | 0.882 |
-| acled_viol | 0.847 |
-| us_boots_to | 0.744 |
-| us_rations_awards | 0.716 |
-| korea_equity | 0.711 |
-| def_rtx | 0.699 |
-| india_equity | 0.610 |
-| vix | 0.585 |
-| gdeltshare_posture | 0.576 |
-| gdeltshare_preforce | 0.552 |
-| fcdo | 0.537 |
-| dod_pop | 0.535 |
-| eu_fencing_tenders | 0.507 |
-| portwatch_taiwan_strait | 0.503 |
-| gpsjam | 0.501 |
-| gdelt_threat | 0.490 |
-| eu_medical_to | 0.487 |
-| eu_boots_to | 0.462 |
-| def_ita | 0.457 |
-| gdeltshare_threat | 0.415 |
-| gold | 0.348 |
-| fx_twd | 0.235 |
-| us_armored_naics | 0.153 |
-| us_air_charter_naics | 0.113 |
-| def_lmt | 0.043 |
-| portwatch_suez | 0.030 |
+| eu_medical_tenders | 0.994 |
+| gpsjam | 0.506 |
+| eu_fencing_tenders | 0.426 |
+| us_rations_awards | 0.413 |
+| gdeltshare_preforce | 0.392 |
+| us_armor_awards | 0.343 |
+| gdeltshare_posture | 0.340 |
+| gdeltshare_threat | 0.318 |
+| def_lmt | 0.315 |
+| gdelt_threat | 0.299 |
+| vix | 0.283 |
+| acled_demo | 0.281 |
+| acled_viol | 0.276 |
+| fcdo | 0.274 |
+| def_noc | 0.215 |
+| tanker_equity | 0.210 |
+| us_pickups_to | 0.204 |
+| us_ammo_naics | 0.201 |
+| gdelt_preforce | 0.187 |
+| us_boots_to | 0.176 |
+| eu_vehicle_tenders | 0.172 |
+| eu_medical_to | 0.170 |
+| dod_pop | 0.164 |
+| eu_trucks_to | 0.127 |
+| fx_krw | 0.126 |
+| eu_boots_to | 0.126 |
+| us_air_charter_naics | 0.112 |
+| us_individual_equipment_awards | 0.093 |
+| us_armored_naics | 0.087 |
+| gdelt_fight | 0.083 |
+| portwatch_suez | 0.076 |
+| taiwan_equity | 0.049 |
+| us_tactical_vehicle_awards | 0.046 |
+| us_ammo_awards | 0.043 |
+| gdelt_posture | 0.042 |
+| korea_equity | 0.041 |
+| portwatch_taiwan_strait | 0.035 |
+| us_aircraft_parts_awards | 0.032 |
+| container_equity | 0.031 |
+| eu_kit_tenders | 0.022 |
+| gold | 0.022 |
+| brent | 0.015 |
 
-Conflict-history terms (log-odds per full-scale term): events in the last year +1.28, in the last three years -1.35, log days since the latest event +1.29. They are correlated, so read them together: risk is higher where events are recent and frequent, and a theatre is lower in the weeks right after the 30 days left out of the labels.
+Conflict-history terms (log-odds per full-scale term): events in the last year +1.36, in the last three years -0.68, log days since the latest event +0.62. They are correlated, so read them together: risk is higher where events are recent and frequent, and a theatre is lower in the weeks right after the 30 days left out of the labels.
 Published probabilities are capped at 65%, the highest the model produced out of sample, rounded up: it is not shown claiming more than it was tested on.
 
 Theatre base rates (30-day probability on a quiet day with no history): Ukraine 6.4%, Eastern flank 5.5%, Iran 10.4%, Yemen 6.5%, Israel 8.2%, Taiwan Strait 6.4%, South China Sea 3.0%, Korea 3.8%, South Asia (India-Pakistan) 3.0%, Libya 3.8%, Sudan 3.8%, DR Congo 2.6%, Americas (Venezuela and Caribbean) 3.0%.
-Shrink toward the base rate gamma = 0.7, floor phi = 0.75. Chance of an event somewhere within 30 days, climatological: 45%.
+Shrink toward the base rate gamma = 1.0, floor phi = 0.75. Chance of an event somewhere within 30 days, climatological: 45%.

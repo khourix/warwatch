@@ -140,7 +140,7 @@ def load_series():
         else:
             avail = [(_eom(l) + dt.timedelta(days=LAG[fn])).toordinal() for l, _ in pts]
         out.append({"id": s["id"], "theatre": s["theatre"], "domain": s["domain"], "direction": s["direction"], "lag": s["lag"], "kind": s["kind"], "scored": s["scored"],
-                    "all": pts, "avail": avail, "status": "ok"})
+                    "transform": s.get("transform"), "all": pts, "avail": avail, "status": "ok"})
     return out
 
 
@@ -152,7 +152,7 @@ def snapshot(series, d, keep=250):
         cut = bisect.bisect_right(s["avail"], o)
         pts = s["all"][max(0, cut - keep):cut]
         r = {k: s[k] for k in ("id", "theatre", "domain", "direction", "lag", "kind", "scored")}
-        r.update(points=pts, score=stats.score_series(pts, s["kind"]), old=stats.legacy_score_series(pts, s["kind"]))
+        r.update(points=pts, score=stats.score_series(pts, s["kind"], transform=s.get("transform")), old=stats.legacy_score_series(pts, s["kind"]))
         rows.append(r)
     return rows
 

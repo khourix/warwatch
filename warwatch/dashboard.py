@@ -57,10 +57,11 @@ def _directed_pts(zh, direction):
 
 def series_json(s):
     ok = s["status"] == "ok" and s.get("score")
-    pts = s["points"]
-    sc = s.get("score") or {}
     kind = s["kind"]
-    d = {"id": s["id"], "l": s["label"], "d": s["domain"], "s": s.get("sub", ""), "t": s["theatre"], "lag": bool(s["lag"]),
+    pts = stats.transformed(s["points"], kind, s.get("transform"))    # a price scored on its change is charted as that change
+    sc = s.get("score") or {}
+    label = s["label"] + (f", {stats.CHANGE_LAG[kind]}-{'day' if kind == 'daily' else 'month'} % change" if s.get("transform") else "")
+    d = {"id": s["id"], "l": label, "d": s["domain"], "s": s.get("sub", ""), "t": s["theatre"], "lag": bool(s["lag"]),
          "dir": s["direction"], "why": s["why"], "url": s.get("url", ""), "st": s["status"], "er": s.get("error", ""),
          "stale": s.get("stale", ""), "kind": kind, "n": len(pts), "need": 40 if kind == "monthly" else stats.MIN_DAILY,
          "needs": s.get("needs", []), "z": None, "w0": not s.get("scored", True)}

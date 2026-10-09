@@ -148,18 +148,40 @@ def theatre_items(series, theatre):
 _DOMS = {}
 
 
+def _null_quantiles():
+    """Quantiles of a real signal's z on calm days, 2019 on (warwatch/nullfit.py), or None to use the parametric draw."""
+    p = os.path.join(HERE, "data", "null_z.json")
+    if not os.path.exists(p):
+        return None
+    with open(p) as f:
+        return json.load(f)["quantiles"]
+
+
+NULL_Q = _null_quantiles()
+
+
+def _null_draw(rnd):
+    """One calm-world z. From the measured calm-day distribution when it exists: real signals are far heavier-tailed than a
+    normal (z >= 3 on about 6% of calm days, not 0.1%), and the old normal draw put the composite at Critical on about 12%
+    of calm days. Otherwise a mildly heavy-tailed standard normal (10% of draws twice as wide)."""
+    if NULL_Q:
+        u = rnd.random() * (len(NULL_Q) - 1)
+        i = int(u)
+        return NULL_Q[i] + (u - i) * (NULL_Q[min(i + 1, len(NULL_Q) - 1)] - NULL_Q[i])
+    return rnd.gauss(0, 1) * (2.0 if rnd.random() < 0.1 else 1.0) / math.sqrt(1.3)
+
+
 def _dom_null(flags):
-    """Calm-world distribution of one domain's score: its groups' z drawn from a mildly heavy-tailed standard normal
-    (10% of draws are twice as wide), winsorized, then the same OWA as production. Seeded from the shape.
+    """Calm-world distribution of one domain's score: its groups' z drawn from the calm-day distribution (_null_draw),
+    winsorized, then the same OWA as production. Seeded from the shape.
     -> (sorted-by-draw list of scores, mean, sd)."""
     if flags not in _DOMS:
         rnd = random.Random(zlib.crc32(repr((SEED, flags)).encode()))
-        norm = 1 / math.sqrt(1.3)
         arr = []
         for _ in range(NULL_N):
             zs = []
             for both, k in flags:
-                z = max(-stats.WINSOR, min(stats.WINSOR, rnd.gauss(0, 1) * (2.0 if rnd.random() < 0.1 else 1.0) * norm)) * k
+                z = max(-stats.WINSOR, min(stats.WINSOR, _null_draw(rnd))) * k
                 zs.append(abs(z) if both else max(0.0, z))
             arr.append(domain_score(zs)[0])
         m = statistics.fmean(arr)
@@ -289,7 +311,7 @@ def compute_composite_score(metrics, weights, baseline_window=None):
     -> {"level", "score", "zc", "index", "imbalance", "worst", "confidence", "domains", "audit"}"""
     series = []
     for name, m in metrics.items():
-        sc = stats.score_series(m["points"], m.get("kind", "daily"), baseline_window)
+        sc = stats.score_series(m["points"], m.get("kind", "daily"), baseline_window, m.get("transform"))
         series.append({"id": name, "theatre": "x", "domain": m["domain"], "direction": m.get("direction", "up"), "lag": m.get("lag", False),
                        "kind": m.get("kind", "daily"), "points": m["points"], "score": sc})
     res, audit = theatre_composite(series, "x", weights)
