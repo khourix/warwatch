@@ -28,22 +28,35 @@ def comtrade(reporter, partner, flow, cmd, period):
 
 
 NAMES = {729: "Sudan", 434: "Libya", 887: "Yemen", 180: "DRC", 368: "Iraq", 148: "Chad", 400: "Jordan", 784: "UAE", 792: "Turkey", 760: "Syria", 706: "Somalia"}
+import time
 if CK:
-    per = ",".join(f"2023{m:02d}" for m in range(1, 13))
-    print("\n== Mirror: Japan (392) exports of 8704 pickups to each country, 2023 monthly ==")
-    for p in (729, 434, 887, 180, 368, 148, 400, 784, 792, 760, 706):
-        s, n, rows, err = comtrade(392, p, "X", "8704", per)
-        print(NAMES[p], s, n, err or "", [(r.get("period"), r.get("qty"), r.get("primaryValue")) for r in rows[:2]])
-    print("\n== Own reports: country imports of 8704, 2023 monthly ==")
-    for r_ in (729, 434, 887, 180, 368, 148, 400):
-        s, n, rows, err = comtrade(r_, None, "M", "8704", per)
-        print(NAMES[r_], s, n, err or "")
-    print("\n== Depth: Japan -> Sudan 8704 for 2019 ==")
-    s, n, rows, err = comtrade(392, 729, "X", "8704", ",".join(f"2019{m:02d}" for m in range(1, 13)))
-    print(s, n, err or "")
-    print("\n== HS6 split available? Japan -> Yemen 870421,870422,870431,870323,870324 2023 ==")
-    s, n, rows, err = comtrade(392, 887, "X", "870421,870422,870431,870323,870324", per)
-    print(s, n, err or "", sorted({r.get("cmdCode") for r in rows}))
+    def cm(reporter, partner, flow, cmd, period):
+        time.sleep(4)
+        r = comtrade(reporter, partner, flow, cmd, period)
+        if r[0] == 429:
+            time.sleep(20)
+            r = comtrade(reporter, partner, flow, cmd, period)
+        return r
+    y23 = ",".join(f"2023{m:02d}" for m in range(1, 13))
+    y19 = ",".join(f"2019{m:02d}" for m in range(1, 13))
+    print("== Thailand (764) exports, Hilux source: 870421/870422/870431/870432 to targets, 2023 ==")
+    for p in (729, 887, 434, 180, 368, 400, 784):
+        s_, n, rows, err = cm(764, p, "X", "870421,870422,870431,870432", y23)
+        print(NAMES[p], s_, n, err or "", sorted({(r.get("cmdCode")) for r in rows}), sum(r.get("qty") or 0 for r in rows))
+    print("== South Africa (710) exports of 8704 to Sudan/Yemen/DRC 2023 ==")
+    for p in (729, 887, 180):
+        s_, n, rows, err = cm(710, p, "X", "8704", y23)
+        print(NAMES[p], s_, n, err or "")
+    print("== Japan HS6 vehicle codes to Sudan 2023 (all partners listing for 870323,870324,870333,870421,870422) ==")
+    s_, n, rows, err = cm(392, 729, "X", "870323,870324,870333,870421,870422,870431", y23)
+    print(s_, n, err or "", sorted({r.get("cmdCode") for r in rows}), sum(r.get("qty") or 0 for r in rows))
+    print("== History depth: Japan -> Sudan 8704 and 8703 in 2019, 2015 ==")
+    for yr in (2019, 2015):
+        s_, n, rows, err = cm(392, 729, "X", "8704,8703", ",".join(f"{yr}{m:02d}" for m in range(1, 13)))
+        print(yr, s_, n, err or "", sum(r.get("qty") or 0 for r in rows))
+    print("== Latest month available: Japan -> Sudan 8703/8704 2026 ==")
+    s_, n, rows, err = cm(392, 729, "X", "8704,8703", ",".join(f"2026{m:02d}" for m in range(1, 10)))
+    print(s_, n, err or "", sorted({r.get("period") for r in rows}))
 if EK:
     print("\n== e-Stat: Japanese trade statistics datasets ==")
     for w in ("貿易統計 品別国別", "普通貿易統計"):
