@@ -29,3 +29,7 @@ Shares and means need at least 50 located events, or 10 dyad events, that day; o
 3. AUC of the 30-day maximum above 0.55 on both halves.
 
 A family that passes goes into the feature study as a candidate and must pass that study's rule on the added events before it reaches the model or the page. A family that fails is recorded as failed; codes, sides, minimum counts, windows and cut-offs are not changed after the data is seen.
+
+## Result (2026-10-09)
+
+No family passes ([GDELTWIDE.md](GDELTWIDE.md)). The two closest to an early warning, threats of military force and alert or mobilisation, beat the false-alarm rate on the original events (54% and 60% against 42% and 46%, p = 0.06 and 0.03) and fall below it on the added ones (28% and 42%, AUC 0.46 and 0.47): the same pattern every earlier candidate showed. Events between the two sides of a theatre do no better than events on its soil. Calm 30-day windows reach z 2 between 26% and 46% of the time, so these series alarm often whatever happens. Recorded as failed; codes, sides and cut-offs stay as they were.
