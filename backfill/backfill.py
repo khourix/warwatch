@@ -8,6 +8,7 @@
     python3 backfill/backfill.py adsb  [--start D --end D --step N]
     python3 backfill/backfill.py pla   [--start D --end D]
     python3 backfill/backfill.py wiki  [--start D --end D]     # Wikipedia page views per theatre
+    python3 backfill/backfill.py forecasts                     # ConflictForecast and VIEWS monthly vintages
     python3 backfill/backfill.py state THEATRE[,THEATRE...] [--start D --end D]
     python3 backfill/backfill.py merge       # fold ADS-B quarter shards into data/
     python3 backfill/backfill.py coverage
@@ -96,6 +97,13 @@ def main():
     elif a.cmd == "wiki":
         import sources_wiki as W
         W.cmd_wiki(a.start, a.end)
+    elif a.cmd == "forecasts":
+        import sources_forecasts as O
+        for f in (O.cmd_conflictforecast, O.cmd_views):
+            try:
+                f()
+            except Exception as e:
+                K.log("::warning::", f.__name__, "failed:", str(e)[:200])
     elif a.cmd == "state":
         import sources_slow as L
         L.cmd_state(a.arg.split(","), a.start, a.end)
