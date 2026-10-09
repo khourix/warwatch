@@ -110,3 +110,12 @@ The composite above ranks theatres by how unusual their readings are; it is not 
 - **Gates.** The model sets the page's levels only if, on rolling-origin out-of-sample tests, the Brier skill against each theatre's base rate is positive, the lower end of the AUC interval is above 0.5, and it beats a shuffled-timing control. `active` in `warwatch/data/model_weights.json` follows the gates. Otherwise it runs in shadow: probabilities go to the forward record, and the composite keeps the levels.
 - **Forward record.** `forward/log.csv` gets every theatre's probability once per UTC day, before any outcome, each row hashed with the one before; `warwatch/forward_score.py` verifies the chain and scores matured forecasts quarterly (`docs/FORWARD.md`).
 - **Refit.** `.github/workflows/refit.yml` runs monthly: extends the GDELT history, reruns validation, refits and commits the weights. Adding an event to `events.csv` as it happens, and moving `events_through.txt`, is what keeps the labels and the conflict-history terms current.
+
+## Phase 3 changes (October 2026, after the indicator study)
+
+Two faults found by testing every series against 161 events and calm periods, 2019 on (`docs/INDICATORSTUDY.md`):
+
+1. **Prices are scored on their change, not their level.** A trending price sits above its own yearly baseline for months, so gold, copper, FX and the defence stocks read z >= 2 on 20% to 34% of calm days. `catalog.CHANGE_SCORED` marks them with `transform: "chg"`, and `stats.score_series` scores their % change over 20 trading days (3 months for monthly series) instead; the same series then read z >= 2 on 2% to 10% of calm days. VIX and power prices mean-revert and keep their level. The page charts these series as the change they are scored on.
+2. **The calm world is measured, not assumed.** The thresholds' simulation drew each signal from a near-normal. Real signals are far heavier-tailed: on calm days the pooled series read z >= 2 on 11.6% of days and z >= 3 on 6.3% (normal: 2.3% and 0.13%). `warwatch/nullfit.py` writes 1,001 quantiles of that calm-day distribution (333 series) to `warwatch/data/null_z.json`, and `engine._null_draw` samples from them. In the replay (2021 to 2024, slow indicators) the share of calm days above Normal fell from 31% to 6%: Critical 11.6% to 1.2%, Elevated 12.5% to 2.6%, Watch 7.0% to 2.0%.
+
+The levels now mean what they say: rare if nothing is happening. They still do not rise before events (replay AUC 0.45), so they describe what is unusual now, not what is coming.
