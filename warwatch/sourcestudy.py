@@ -6,6 +6,7 @@ with the same measure in calm 30-day windows of the same theatre, on the origina
 
     python3 warwatch/sourcestudy.py pla        Taiwan's daily PLA counts            -> docs/PLASTUDY.md
     python3 warwatch/sourcestudy.py gdeltwide  wider GDELT event types and dyads    -> docs/GDELTWIDE.md  (docs/GDELTWIDE_PLAN.md)
+    python3 warwatch/sourcestudy.py senkaku    Japan Coast Guard Senkaku counts     -> docs/SENKAKU.md    (docs/SENKAKU_PLAN.md)
 """
 import csv
 import datetime as dt
@@ -152,8 +153,21 @@ def gdeltwide():
     return res
 
 
+def senkaku():
+    res = {}
+    for nm in ("senkaku_contig", "senkaku_terr"):
+        z = zdaily(_csv_points(os.path.join(DATA, nm + ".csv")))
+        res[nm] = test({"taiwan": z, "scs": z}, alpha_added=0.05 / 2)
+    write(os.path.join(DOCS, "SENKAKU.md"), "Senkaku vessel counts against past events",
+          "Written by `warwatch/sourcestudy.py senkaku` to the plan fixed before the data was read ([SENKAKU_PLAN.md](SENKAKU_PLAN.md)). "
+          "Daily China Coast Guard vessels around the Senkaku Islands (Japan Coast Guard), parsed by `backfill/senkaku_parse.py` and checked "
+          "against each month's printed totals, tested against the Taiwan and South China Sea events. Pass rule: added events p < 0.025, "
+          "original events p < 0.10, AUC above 0.55 on both.", res)
+    return res
+
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "pla"
-    r = {"pla": pla, "gdeltwide": gdeltwide}[what]()
+    r = {"pla": pla, "gdeltwide": gdeltwide, "senkaku": senkaku}[what]()
     for fam, x in r.items():
         print(fam, {k: x[k] for k in ("calm", "fa", "orig", "added", "pass")})
