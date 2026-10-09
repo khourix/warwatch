@@ -7,6 +7,7 @@ Only human traffic (agent=user), all platforms. Views follow the title: a page t
 the old title, so where a title is known to have moved both are listed. A title the API does not know is logged and skipped.
 """
 import datetime as dt
+import time
 import urllib.parse
 
 import common as K
@@ -47,12 +48,14 @@ LOCAL = {
 
 
 def _views(proj, title, a, b):
+    """{day: views}, {} for a title the API does not know (404), or None when the API kept refusing (rate limit)."""
     url = API.format(proj=proj, title=urllib.parse.quote(title.replace(" ", "_"), safe=""), a=a.strftime("%Y%m%d00"), b=b.strftime("%Y%m%d00"))
+    time.sleep(1.5)     # the API answers 429 to bursts
     try:
-        js = K.get(url, retries=3)
+        js = K.get(url, retries=6, wait=20)
     except Exception as e:
         K.log("skip", proj, title, str(e)[:80])
-        return {}
+        return {} if "404" in str(e) else None
     out = {}
     for it in js.get("items", []):
         d = f"{it['timestamp'][:4]}-{it['timestamp'][4:6]}-{it['timestamp'][6:8]}"
@@ -65,10 +68,16 @@ def cmd_wiki(start, end):
     a = max(start, FLOOR)
     for th in EN:
         for sid, arts in ((f"wiki_{th}", [("en.wikipedia", t) for t in EN[th]]), (f"wikiloc_{th}", LOCAL[th])):
-            tot = {}
+            tot, failed = {}, False
             for proj, t in arts:
-                for d, v in _views(proj, t, a, end).items():
+                got = _views(proj, t, a, end)
+                if got is None:
+                    failed = True
+                    continue
+                for d, v in got.items():
                     tot[d] = tot.get(d, 0) + v
-            if tot:
+            if failed:
+                K.log("::warning::", sid, "not written: an article was refused; rerun")    # a partial sum would read as a drop
+            elif tot:
                 K.save(sid, sorted(tot.items()))
                 K.log(sid, len(tot), "days", min(tot), "to", max(tot))
