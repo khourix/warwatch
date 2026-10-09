@@ -80,6 +80,17 @@ BASE_DAYS = 90
 YEAR_DAYS = 365   # preferred baseline: the year before the newest 30 days
 GUARD_DAYS = 30   # the newest month is left out of the baseline, so a slow build-up is not absorbed into its own yardstick
 YEAR_MIN = 120    # rolling means needed in the year baseline; shorter histories use the plain 90-day baseline
+CHANGE_LAG = {"daily": 20, "monthly": 3}   # transform "chg": prices are scored on their % change over this many points
+
+
+def transformed(points, kind, transform=None):
+    """The points a series is scored on. transform "chg" turns a price into its % change over CHANGE_LAG points: a price
+    that trends sits above its own yearly baseline for months, so its level reads as a warning on 20-34% of calm days
+    (docs/INDICATORSTUDY.md); its change reads as one when the price actually moves."""
+    if transform != "chg":
+        return points
+    k = CHANGE_LAG[kind]
+    return [(points[i][0], 100.0 * (points[i][1] / points[i - k][1] - 1)) for i in range(k, len(points)) if points[i - k][1] > 0]
 MIN_DAILY = BASE_DAYS // 2 + 7   # fewest days of history a daily series needs to be scored at all
 FILL_MAX = 2   # carry the last value forward over at most this many missing days
 
@@ -126,7 +137,7 @@ def calendar_fill(points, days, end=None):
     return vals, obs, filled
 
 
-def score_series(points, kind, base_days=None):
+def score_series(points, kind, base_days=None, transform=None):
     """-> dict(z, z_raw, method, value, label, miss, filled, ...) for the newest point, or None.
 
     z is the modified z (winsorized at +-5; z_raw keeps the unclamped value for the audit log).
@@ -134,7 +145,12 @@ def score_series(points, kind, base_days=None):
     daily: the latest 7-day mean against the 7-day means of the year before the newest 30 days (gaps <=2 days
     carried forward, longer gaps left missing; needs YEAR_MIN such means and 4 of the last 7 days). Series with
     less history than that, and any call with an explicit base_days, use the plain trailing window of base_days
-    days (needs half of those baseline means)."""
+    days (needs half of those baseline means). transform: see transformed()."""
+    if transform:
+        r = score_series(transformed(points, kind, transform), kind, base_days)
+        if r:
+            r["method"] = f"{CHANGE_LAG[kind]}-{'day' if kind == 'daily' else 'month'} % change, " + r["method"]
+        return r
     if kind == "monthly":
         if len(points) < 40:
             return None
@@ -184,12 +200,12 @@ def ewma(values, alpha=0.3):
     return out
 
 
-def history_z(points, kind, n):
+def history_z(points, kind, n, transform=None):
     """[(label, z)] for the last n points, each scored as if it were the newest (what the dashboard
     would have shown that day). Points that cannot be scored yet are skipped."""
     out = []
     for i in range(max(0, len(points) - n), len(points)):
-        r = score_series(points[:i + 1], kind)
+        r = score_series(points[:i + 1], kind, transform=transform)
         if r is not None:
             out.append((points[i][0], round(r["z"], 2)))
     return out

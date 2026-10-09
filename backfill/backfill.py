@@ -7,6 +7,11 @@
     python3 backfill/backfill.py nga   [--start D --end D]
     python3 backfill/backfill.py adsb  [--start D --end D --step N]
     python3 backfill/backfill.py pla   [--start D --end D]
+    python3 backfill/backfill.py wiki  [--start D --end D]     # Wikipedia page views per theatre
+    python3 backfill/backfill.py forecasts                     # ConflictForecast and VIEWS monthly vintages
+    python3 backfill/backfill.py gdeltwide [--start D --end D] # wider GDELT event types and dyads per theatre
+    python3 backfill/backfill.py metaculus                     # Metaculus community forecasts on military questions (token)
+    python3 backfill/backfill.py senkaku                       # Japan Coast Guard Senkaku vessel counts (monthly PDFs, text kept)
     python3 backfill/backfill.py state THEATRE[,THEATRE...] [--start D --end D]
     python3 backfill/backfill.py merge       # fold ADS-B quarter shards into data/
     python3 backfill/backfill.py coverage
@@ -92,6 +97,27 @@ def main():
     elif a.cmd == "pla":
         import sources_slow as L
         L.cmd_pla(max(a.start, dt.date(2020, 1, 1)), a.end)
+    elif a.cmd == "wiki":
+        import sources_wiki as W
+        W.cmd_wiki(a.start, a.end)
+    elif a.cmd == "forecasts":
+        import sources_forecasts as O
+        for f in (O.cmd_conflictforecast, O.cmd_views):
+            try:
+                f()
+            except Exception as e:
+                K.log("::warning::", f.__name__, "failed:", str(e)[:200])
+        import forecasts_compact
+        forecasts_compact.main(O.RAW, O.OUT)
+    elif a.cmd == "metaculus":
+        import sources_metaculus as M
+        M.cmd_metaculus(need("METACULUS_TOKEN"))
+    elif a.cmd == "senkaku":
+        import sources_senkaku as J
+        J.cmd_senkaku()
+    elif a.cmd == "gdeltwide":
+        import sources_gdelt as G
+        G.cmd_gdeltwide(a.start, min(a.end, K.YDAY))
     elif a.cmd == "state":
         import sources_slow as L
         L.cmd_state(a.arg.split(","), a.start, a.end)

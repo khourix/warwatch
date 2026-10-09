@@ -129,7 +129,7 @@ def _zjob(s):
         cut = bisect.bisect_right(s["avail"], d.toordinal())
         pts = s["all"][max(0, cut - KEEP):cut]
         if pts:
-            r = stats.score_series(pts, s["kind"])
+            r = stats.score_series(pts, s["kind"], transform=s.get("transform"))
             if r is not None:
                 z[d] = r["z"]
         d += dt.timedelta(days=1)
