@@ -1,0 +1,15 @@
+name: probe-trade
+on:
+  push:
+    branches: [claude/trade-probe]
+    paths: [tools/probe_trade.py, .github/workflows/probe-trade.yml]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/probe_trade.py
+        env:
+          COMTRADE_API_KEY: ${{ secrets.COMTRADE_API_KEY }}
+          ESTAT_APP_ID: ${{ secrets.ESTAT_APP_ID }}
