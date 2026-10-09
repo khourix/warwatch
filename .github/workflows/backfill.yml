@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       source:
-        description: "all | fred | nga | pla | wiki | forecasts | gdeltwide | state | firms | gfw | adsb"
+        description: "all | fred | nga | pla | wiki | forecasts | senkaku | gdeltwide | state | firms | gfw | adsb"
         required: false
         default: "all"
       start:
@@ -47,7 +47,7 @@ jobs:
       END: ${{ needs.plan.outputs.end }}
       SRC: ${{ needs.plan.outputs.src }}
     # FRED volatility indices, NGA warnings, Taiwan PLA counts, Wikipedia page views, outside forecasts: minutes each
-    if: contains(fromJSON('["all","fred","nga","pla","wiki","forecasts"]'), needs.plan.outputs.src)
+    if: contains(fromJSON('["all","fred","nga","pla","wiki","forecasts","senkaku"]'), needs.plan.outputs.src)
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -57,7 +57,8 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: |
           A=""; [ -n "$START" ] && A="$A --start $START"; [ -n "$END" ] && A="$A --end $END"
-          for s in fred nga pla wiki forecasts; do
+          pip install -q pypdf || true
+          for s in fred nga pla wiki forecasts senkaku; do
             if [ "$SRC" = all ] || [ "$SRC" = "$s" ]; then python3 backfill/backfill.py $s $A || echo "::warning::$s failed"; fi
           done
       - uses: ./.github/actions/commit-backfill

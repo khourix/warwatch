@@ -10,6 +10,7 @@
     python3 backfill/backfill.py wiki  [--start D --end D]     # Wikipedia page views per theatre
     python3 backfill/backfill.py forecasts                     # ConflictForecast and VIEWS monthly vintages
     python3 backfill/backfill.py gdeltwide [--start D --end D] # wider GDELT event types and dyads per theatre
+    python3 backfill/backfill.py senkaku                       # Japan Coast Guard Senkaku vessel counts (monthly PDFs, text kept)
     python3 backfill/backfill.py state THEATRE[,THEATRE...] [--start D --end D]
     python3 backfill/backfill.py merge       # fold ADS-B quarter shards into data/
     python3 backfill/backfill.py coverage
@@ -105,6 +106,9 @@ def main():
                 f()
             except Exception as e:
                 K.log("::warning::", f.__name__, "failed:", str(e)[:200])
+    elif a.cmd == "senkaku":
+        import sources_senkaku as J
+        J.cmd_senkaku()
     elif a.cmd == "gdeltwide":
         import sources_gdelt as G
         G.cmd_gdeltwide(a.start, min(a.end, K.YDAY))
