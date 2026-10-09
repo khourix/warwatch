@@ -40,15 +40,49 @@ Event lists: current 78 events (`events.csv`); extended 161 (`events.csv` plus t
 
 | Candidate | Holm-corrected p | Verdict | Detail |
 |---|---:|---|---|
-| Decayed conflict history | 1.000 | fails | Brier not better (p = 0.55); better in 3.0 of 6 years; fails a model gate |
-| Global tempo | 1.000 | fails | Brier not better (p = 0.38); fewer events flagged or more false alarms per hit; better in 3.0 of 6 years; fails a model gate; worse on the current 78 events |
+| Decayed conflict history | 1.000 | fails | Brier not better (p = 0.55); better in 3 of 6 years; fails a model gate |
+| Global tempo | 1.000 | fails | Brier not better (p = 0.38); fewer events flagged or more false alarms per hit; better in 3 of 6 years; fails a model gate; worse on the current 78 events |
 | Slow build-up (GDELT) | 1.000 | fails | Brier not better (p = 0.23); AUC lower; fewer events flagged or more false alarms per hit; fails a model gate; worse on the current 78 events |
-| Cross-theatre attention | 1.000 | fails | Brier not better (p = 0.99); AUC lower; better in 3.0 of 6 years; fails a model gate; worse on the current 78 events |
-| Smoothed evidence | 1.000 | fails | Brier not better (p = 0.47); better in 3.0 of 6 years; fails a model gate; worse on the current 78 events |
+| Cross-theatre attention | 1.000 | fails | Brier not better (p = 0.99); AUC lower; better in 3 of 6 years; fails a model gate; worse on the current 78 events |
+| Smoothed evidence | 1.000 | fails | Brier not better (p = 0.47); better in 3 of 6 years; fails a model gate; worse on the current 78 events |
 | Implied volatility | 1.000 | fails | Brier not better (p = 0.21); fewer events flagged or more false alarms per hit; fails a model gate |
-| Advisory steps | 1.000 | fails | Brier not better (p = 0.82); AUC lower; better in 2.0 of 6 years; fails a model gate; worse on the current 78 events |
+| Advisory steps | 1.000 | fails | Brier not better (p = 0.82); AUC lower; better in 2 of 6 years; fails a model gate; worse on the current 78 events |
 | Air co-occurrence | 1.000 | fails | Brier not better (p = 0.81); fails a model gate; worse on the current 78 events |
-| Monotone boosted trees | 1.000 | fails | Brier not better (p = 0.89); AUC lower; fewer events flagged or more false alarms per hit; better in 3.0 of 6 years; fails a model gate; worse on the current 78 events |
+| Monotone boosted trees | 1.000 | fails | Brier not better (p = 0.89); AUC lower; fewer events flagged or more false alarms per hit; better in 3 of 6 years; fails a model gate; worse on the current 78 events |
 
 Combination run (C1): not run, no candidate met rules 1 to 6.
+
+## Gates of the published model on each list
+
+| List | Brier skill | AUC interval | Shuffled-timing p | Gates |
+|---|---:|---|---:|---|
+| current | +0.0148 | 0.550 to 0.706 | 0.027 | pass |
+| extended | +0.0084 | 0.558 to 0.690 | 0.217 | FAIL |
+
+## How the probability moved before events (extended list)
+
+Mean published probability as a multiple of the theatre's median out-of-sample probability, by day before each scorable event. A warning would show the line climbing toward day -1.
+
+| Day | Baseline (published model) | Decayed conflict history | Global tempo | Slow build-up (GDELT) | Cross-theatre attention | Smoothed evidence | Implied volatility | Advisory steps | Air co-occurrence | Monotone boosted trees |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| -60 | 1.38 | 1.29 | 1.35 | 1.37 | 1.38 | 1.40 | 1.46 | 1.38 | 1.38 | 1.08 |
+| -45 | 1.33 | 1.27 | 1.28 | 1.31 | 1.32 | 1.38 | 1.36 | 1.32 | 1.33 | 1.12 |
+| -30 | 1.41 | 1.33 | 1.39 | 1.39 | 1.41 | 1.42 | 1.48 | 1.41 | 1.41 | 1.14 |
+| -21 | 1.44 | 1.33 | 1.42 | 1.41 | 1.44 | 1.45 | 1.53 | 1.43 | 1.44 | 1.11 |
+| -14 | 1.36 | 1.27 | 1.36 | 1.34 | 1.36 | 1.42 | 1.44 | 1.36 | 1.36 | 1.10 |
+| -7 | 1.34 | 1.26 | 1.32 | 1.31 | 1.34 | 1.37 | 1.42 | 1.34 | 1.34 | 1.10 |
+| -3 | 1.33 | 1.25 | 1.30 | 1.30 | 1.32 | 1.36 | 1.40 | 1.32 | 1.33 | 1.09 |
+| -1 | 1.33 | 1.26 | 1.30 | 1.30 | 1.32 | 1.36 | 1.40 | 1.32 | 1.33 | 1.09 |
+
+## Event by event (extended list)
+
+Percentile of the day-before probability among the same theatre's out-of-sample calm days (50 = an ordinary day). Full table: `backtest/featurestudy_events.csv`.
+
+| Events | Scored | Median percentile, baseline | Flagged by the baseline |
+|---|---:|---:|---:|
+| in the current list | 55 | 61 | 16 |
+| added | 54 | 46 | 14 |
+| buildup | 74 | 57 | 19 |
+| surprise | 35 | 54 | 11 |
+| all | 109 | 56 | 30 |
 
