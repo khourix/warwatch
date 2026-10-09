@@ -106,6 +106,8 @@ def main():
                 f()
             except Exception as e:
                 K.log("::warning::", f.__name__, "failed:", str(e)[:200])
+        import forecasts_compact
+        forecasts_compact.main(O.RAW, O.OUT)
     elif a.cmd == "senkaku":
         import sources_senkaku as J
         J.cmd_senkaku()

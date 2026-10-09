@@ -2,14 +2,16 @@
 (Uppsala and PRIO). Both are free and open. Each monthly vintage is kept as published, so a backtest only ever sees the
 forecast that existed on the day: no look-ahead.
 
-Only the rows for the theatres' countries are kept, raw, under backfill/data/forecasts/:
+The downloads (rows for the theatres' countries, every field) go to a scratch folder, RAW:
   cf/<MM-YYYY>/<file>.csv       ConflictForecast files of that vintage (armed conflict and any violence, 3 and 12 months)
-  views/<run>.csv               VIEWS country-month state-based forecasts of that run, every field the API returns
-warwatch/outsidestudy.py turns them into theatre series and tests them.
+  views/<run>.csv               VIEWS country-month state-based forecasts of that run
+and backfill/forecasts_compact.py keeps only what each vintage forecast, in backfill/data/forecasts/ (each ConflictForecast
+file repeats fitted values back to 2010, about 600 MB in all, so the raw files are not committed).
 """
 import csv
 import io
 import os
+import tempfile
 
 import common as K
 
@@ -18,6 +20,7 @@ ISO = {"ukraine": ("UKR",), "europe_east": ("POL", "LTU", "LVA", "EST", "FIN", "
        "southasia": ("IND", "PAK"), "libya": ("LBY",), "sudan": ("SDN", "SSD"), "drc": ("COD",), "venezuela": ("VEN", "GUY")}
 ALL = {i for v in ISO.values() for i in v}
 OUT = os.path.join(K.DATA, "forecasts")
+RAW = os.path.join(os.environ.get("RUNNER_TEMP") or tempfile.gettempdir(), "forecasts_raw")
 CF = "https://api.backendless.com/C177D0DC-B3D5-818C-FF1E-1CC11BC69600/C5F2917E-C2F6-4F7D-9063-69555274134E/services/fileService/"
 VIEWS = "https://api.viewsforecasting.org/"
 
@@ -46,7 +49,7 @@ def cmd_conflictforecast():
         K.log("directory listing failed:", str(e)[:120])
     names = _vintages()
     for v in names:
-        dest = os.path.join(OUT, "cf", v)
+        dest = os.path.join(RAW, "cf", v)
         if os.path.isdir(dest) and os.listdir(dest):
             continue
         try:
@@ -76,10 +79,10 @@ def cmd_conflictforecast():
 def cmd_views():
     root = K.get(VIEWS)
     runs = root.get("runs", []) if isinstance(root, dict) else list(root)
-    runs = [r for r in runs if r.startswith(("fatalities", "r_"))]
+    runs = [r for r in runs if r.startswith("fatalities")]      # the 2021 r_* runs cover Africa only
     K.log("views runs:", len(runs), runs[:3], "...", runs[-3:])
     for run in runs:
-        dest = os.path.join(OUT, "views", run + ".csv")
+        dest = os.path.join(RAW, "views", run + ".csv")
         if os.path.exists(dest):
             continue
         out = []
