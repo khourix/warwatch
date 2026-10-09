@@ -130,6 +130,8 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | sar_ukraine | 3201 | 2018-01-01 | 2026-10-06 | 97% |
 | sar_venezuela | 3201 | 2018-01-01 | 2026-10-06 | 77% |
 | sar_yemen | 3201 | 2018-01-01 | 2026-10-06 | 58% |
+| senkaku_contig | 5090 | 2012-10-01 | 2026-10-08 | 77% |
+| senkaku_terr | 5090 | 2012-10-01 | 2026-10-08 | 10% |
 | state_drc | 3079 | 2018-05-04 | 2026-10-07 | 100% |
 | state_europe_east | 3191 | 2018-01-11 | 2026-10-06 | 100% |
 | state_iran | 3192 | 2018-01-11 | 2026-10-07 | 100% |
