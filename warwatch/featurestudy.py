@@ -478,7 +478,7 @@ def verdicts(df, cur):
         if r.flagged < b.flagged or r.false_per_hit > b.false_per_hit:
             fails.append("fewer events flagged or more false alarms per hit")
         if r.years_better < 4:
-            fails.append(f"better in {r.years_better} of 6 years")
+            fails.append(f"better in {int(r.years_better)} of 6 years")
         if not r.gates:
             fails.append("fails a model gate")
         c = cur.get(r.candidate)
@@ -558,6 +558,25 @@ def write_report(tables, Vd, combo, E, prof, ev_cur, ev_ext, res):
     for _, r in Vd.iterrows():
         L_.append(f"| {NAMES[r.candidate]} | {r.holm_p:.3f} | {r.verdict} | {r.detail} |")
     L_ += ["", f"Combination run (C1): {', '.join(NAMES[c] for c in combo) if combo else 'not run, no candidate met rules 1 to 6'}.", ""]
+    b = res["extended"]["base"]
+    L_ += ["## Gates of the published model on each list", "",
+           "| List | Brier skill | AUC interval | Shuffled-timing p | Gates |", "|---|---:|---|---:|---|"]
+    for lst in ("current", "extended"):
+        r = res[lst]["base"]
+        L_.append(f"| {lst} | {r['bss']:+.4f} | {r['auc_lo']:.3f} to {r['auc_hi']:.3f} | {r['shuffle_p']:.3f} | {'pass' if r['gates'] else 'FAIL'} |")
+    L_ += ["", "## How the probability moved before events (extended list)", "",
+           "Mean published probability as a multiple of the theatre's median out-of-sample probability, by day before each scorable event. "
+           "A warning would show the line climbing toward day -1.", "",
+           "| Day | " + " | ".join(NAMES[c] for c in prof) + " |", "|---|" + "---:|" * len(prof)]
+    for d in (-60, -45, -30, -21, -14, -7, -3, -1):
+        L_.append(f"| {d} | " + " | ".join(f"{prof[c].loc[d]:.2f}" for c in prof) + " |")
+    L_ += ["", "## Event by event (extended list)", "",
+           "Percentile of the day-before probability among the same theatre's out-of-sample calm days (50 = an ordinary day). "
+           "Full table: `backtest/featurestudy_events.csv`.", "",
+           "| Events | Scored | Median percentile, baseline | Flagged by the baseline |", "|---|---:|---:|---:|"]
+    for nm, m in (("in the current list", ~E.added), ("added", E.added), ("buildup", E.kind == "buildup"), ("surprise", E.kind == "surprise"), ("all", E.added | ~E.added)):
+        L_.append(f"| {nm} | {int(m.sum())} | {E.loc[m, 'pctile_base'].median():.0f} | {int(E.loc[m, 'flagged_base'].sum())} |")
+    L_.append("")
     with open(OUT_MD, "w") as f:
         f.write("\n".join(L_) + "\n")
     print("wrote", OUT_MD)
