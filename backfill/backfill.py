@@ -7,6 +7,7 @@
     python3 backfill/backfill.py nga   [--start D --end D]
     python3 backfill/backfill.py adsb  [--start D --end D --step N]
     python3 backfill/backfill.py pla   [--start D --end D]
+    python3 backfill/backfill.py wiki  [--start D --end D]     # Wikipedia page views per theatre
     python3 backfill/backfill.py state THEATRE[,THEATRE...] [--start D --end D]
     python3 backfill/backfill.py merge       # fold ADS-B quarter shards into data/
     python3 backfill/backfill.py coverage
@@ -92,6 +93,9 @@ def main():
     elif a.cmd == "pla":
         import sources_slow as L
         L.cmd_pla(max(a.start, dt.date(2020, 1, 1)), a.end)
+    elif a.cmd == "wiki":
+        import sources_wiki as W
+        W.cmd_wiki(a.start, a.end)
     elif a.cmd == "state":
         import sources_slow as L
         L.cmd_state(a.arg.split(","), a.start, a.end)
