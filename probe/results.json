@@ -38,9 +38,9 @@
  {
   "status": 200,
   "type": "application/json",
-  "bytes": 43312,
-  "secs": 0.2,
-  "snippet": "{\"ac\":[\n{\"hex\":\"ae67fd\",\"type\":\"adsb_icao\",\"dbFlags\":1,\"alt_baro\":31000,\"alt_geom\":30450,\"gs\":431.8,\"track\":127.19,\"baro_rate\":-128,\"squawk\":\"3456\",\"emergency\":\"none\",\"nav_qnh\":1012.8,\"nav_altitude_fms\":31008,\"nav_heading\":116.02,\"nav_modes\":[\"autopilot\",\"vnav\",\"lnav\",\"tcas\"],\"lat\":54.425171,\"lon\":-",
+  "bytes": 39164,
+  "secs": 0.3,
+  "snippet": "{\"ac\":[\n{\"hex\":\"ae67fd\",\"type\":\"adsb_icao\",\"dbFlags\":1,\"alt_baro\":31000,\"alt_geom\":30475,\"gs\":439.8,\"track\":127.70,\"baro_rate\":0,\"squawk\":\"3456\",\"emergency\":\"none\",\"nav_qnh\":1012.8,\"nav_altitude_fms\":31008,\"nav_heading\":116.72,\"nav_modes\":[\"autopilot\",\"vnav\",\"lnav\",\"tcas\"],\"lat\":54.135411,\"lon\":-112",
   "name": "adsb.fi military",
   "url": "https://opendata.adsb.fi/api/v2/mil"
  },
@@ -48,7 +48,7 @@
   "status": 403,
   "type": "application/json",
   "bytes": 164,
-  "secs": 0.2,
+  "secs": 0.3,
   "snippet": "{\"error\": \"Please contact us at contact@airplanes.live. Your email MUST include any links, a description of the project, and any information you deem appropriate.\"}",
   "name": "airplanes.live military",
   "url": "https://api.airplanes.live/v2/mil"
@@ -57,7 +57,7 @@
   "status": 200,
   "type": "text/html",
   "bytes": 3339,
-  "secs": 0.5,
+  "secs": 0.3,
   "snippet": "<!doctype html>\r\n<meta charset=\"utf-8\" />\r\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\r\n<link rel=\"icon\" type=\"image/png\" href=\"favicon.png\">\r\n<title>ADS-B Exchange Samples</title>\r\n<style>\r\n  body {\r\n    font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-seri",
   "name": "ADS-B Exchange monthly samples 2022-02-01",
   "url": "https://samples.adsbexchange.com/readsb-hist/2022/02/01/"
@@ -65,9 +65,9 @@
  {
   "status": 200,
   "type": "application/json",
-  "bytes": 9626,
+  "bytes": 10679,
   "secs": 0.5,
-  "snippet": "{\"time\":1791622245,\"states\":[[\"801691\",\"VTKVR   \",\"India\",1791622245,1791622245,50.8154,26.6037,13106.4,false,212.15,288.96,0.33,null,13769.34,\"6213\",false,0],[\"80165c\",\"AXB346  \",\"India\",1791622234,1791622240,56.7882,24.1081,9265.92,false,230.91,126.03,3.25,null,9829.8,\"6231\",false,0],[\"8014cf\",\"IG",
+  "snippet": "{\"time\":1791622486,\"states\":[[\"801691\",\"VTKVR   \",\"India\",1791622486,1791622486,50.3286,26.7437,13106.4,false,210.72,285.87,-0.33,null,13761.72,\"6213\",false,0],[\"800448\",\"AXB477  \",\"India\",1791622486,1791622486,55.198,24.0128,10363.2,false,223.39,301.05,0,null,10980.42,\"4703\",false,0],[\"778823\",\"FYC",
   "name": "OpenSky anonymous states (Iran box)",
   "url": "https://opensky-network.org/api/states/all?lamin=24&lomin=44&lamax=40&lomax=64"
  },
@@ -75,7 +75,7 @@
   "status": 200,
   "type": "application/json",
   "bytes": 65366,
-  "secs": 0.9,
+  "secs": 16.1,
   "snippet": "{\"hits\": {\"hits\": [{\"created\": \"2020-07-03T07:13:35.130016+00:00\", \"modified\": \"2020-07-03T12:59:19.310024+00:00\", \"id\": 3928564, \"conceptrecid\": \"3928563\", \"doi\": \"10.5281/zenodo.3928564\", \"conceptdoi\": \"10.5281/zenodo.3928563\", \"doi_url\": \"https://doi.org/10.5281/zenodo.3928564\", \"metadata\": {\"tit",
   "name": "Zenodo OpenSky flight lists",
   "url": "https://zenodo.org/api/records?q=%22opensky%22%20flightlist&size=5"
@@ -84,7 +84,7 @@
   "status": 200,
   "type": "text/html; charset=UTF-8",
   "bytes": 152989,
-  "secs": 0.8,
+  "secs": 0.9,
   "snippet": "<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n\t\n\t<!-- Meta -->\n\t<meta charset=\"UTF-8\">\n\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\n    <meta property=\"og:title\" content=\"Safe Airspace - Conflict Zone & Risk Database\">\n\t<meta property=\"og:image\" content=\"https://safeairspace.n",
   "name": "Safe Airspace Iran page",
   "url": "https://safeairspace.net/iran/"
@@ -93,7 +93,7 @@
   "status": 200,
   "type": "application/json; charset=UTF-8",
   "bytes": 10190,
-  "secs": 0.3,
+  "secs": 0.6,
   "snippet": "[{\"OBJECT_NAME\":\"SAR-LUPE 2\",\"OBJECT_ID\":\"2007-030A\",\"EPOCH\":\"2026-10-09T22:27:35.127072\",\"MEAN_MOTION\":15.65072354,\"ECCENTRICITY\":0.00030144,\"INCLINATION\":98.112,\"RA_OF_ASC_NODE\":43.1376,\"ARG_OF_PERICENTER\":138.2578,\"MEAN_ANOMALY\":221.891,\"EPHEMERIS_TYPE\":0,\"CLASSIFICATION_TYPE\":\"U\",\"NORAD_CAT_ID\":",
   "name": "CelesTrak military GP",
   "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=military&FORMAT=json"
@@ -102,7 +102,7 @@
   "status": 200,
   "type": "application/json",
   "bytes": 14995,
-  "secs": 0.5,
+  "secs": 1.7,
   "snippet": "{\"count\":471,\"next\":\"https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=3&offset=3\",\"previous\":null,\"results\":[{\"id\":\"a1bb0984-19d4-4b47-9bba-706d225573e2\",\"url\":\"https://ll.thespacedevs.com/2.2.0/launch/a1bb0984-19d4-4b47-9bba-706d225573e2/\",\"slug\":\"long-march-12-satnet-leo-group-27\",\"name\":\"",
   "name": "Launch Library 2 upcoming",
   "url": "https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=3"
@@ -111,17 +111,17 @@
   "status": 200,
   "type": "application/json; charset=utf-8",
   "bytes": 77282,
-  "secs": 0.8,
-  "snippet": "{\"type\":\"FeatureCollection\",\"metadata\":{\"generated\":1791622255000,\"url\":\"https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=explosion&starttime=2026-09-01\",\"title\":\"USGS Earthquakes\",\"status\":200,\"api\":\"2.8.1\",\"count\":106},\"features\":[{\"type\":\"Feature\",\"properties\":{\"mag\":1.65",
+  "secs": 1.2,
+  "snippet": "{\"type\":\"FeatureCollection\",\"metadata\":{\"generated\":1791622509000,\"url\":\"https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=explosion&starttime=2026-09-01\",\"title\":\"USGS Earthquakes\",\"status\":200,\"api\":\"2.8.1\",\"count\":106},\"features\":[{\"type\":\"Feature\",\"properties\":{\"mag\":1.65",
   "name": "USGS explosions",
   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=explosion&starttime=2026-09-01"
  },
  {
   "status": 200,
   "type": "application/json; charset=utf-8",
-  "bytes": 377,
-  "secs": 0.8,
-  "snippet": "{\"latitude\":35.725353,\"longitude\":51.38908,\"generationtime_ms\":0.110626220703125,\"utc_offset_seconds\":0,\"timezone\":\"GMT\",\"timezone_abbreviation\":\"GMT\",\"elevation\":1199.0,\"daily_units\":{\"time\":\"iso8601\",\"cloud_cover_mean\":\"%\"},\"daily\":{\"time\":[\"2026-10-10\",\"2026-10-11\",\"2026-10-12\",\"2026-10-13\",\"2026",
+  "bytes": 379,
+  "secs": 0.5,
+  "snippet": "{\"latitude\":35.725353,\"longitude\":51.38908,\"generationtime_ms\":0.07355213165283203,\"utc_offset_seconds\":0,\"timezone\":\"GMT\",\"timezone_abbreviation\":\"GMT\",\"elevation\":1199.0,\"daily_units\":{\"time\":\"iso8601\",\"cloud_cover_mean\":\"%\"},\"daily\":{\"time\":[\"2026-10-10\",\"2026-10-11\",\"2026-10-12\",\"2026-10-13\",\"20",
   "name": "Open-Meteo Tehran cloud",
   "url": "https://api.open-meteo.com/v1/forecast?latitude=35.7&longitude=51.4&daily=cloud_cover_mean"
  },
@@ -129,7 +129,7 @@
   "status": 403,
   "type": "text/html; charset=UTF-8",
   "bytes": 2000,
-  "secs": 0.9,
+  "secs": 0.3,
   "snippet": "<!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta name=\"robots\" content=\"noindex,nofollow\"><meta name=\"viewport\" content=\"width=device-width,initial-scal",
   "name": "Japan MOD Joint Staff press",
   "url": "https://www.mod.go.jp/js/press/index.html"
@@ -138,7 +138,7 @@
   "status": 403,
   "type": "text/html; charset=iso-8859-1",
   "bytes": 199,
-  "secs": 0.8,
+  "secs": 1.0,
   "snippet": "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html><head>\n<title>403 Forbidden</title>\n</head><body>\n<h1>Forbidden</h1>\n<p>You don't have permission to access this resource.</p>\n</body></html>\n",
   "name": "Japan Coast Guard nav warnings",
   "url": "https://www1.kaiho.mlit.go.jp/TUHO/"
@@ -147,8 +147,8 @@
   "status": 403,
   "type": "text/html",
   "bytes": 207,
-  "secs": 5.9,
-  "snippet": "<html><head><title>ERROR: ACCESS DENIED</title></head><body><center><h1>ERROR: ACCESS DENIED</h1></center><hr>\n<center>Sat, 10 Oct 2026 08:51:03 GMT i2580094_c29070</center></BODY></HTML>\n<!-- web cache -->\n",
+  "secs": 1.3,
+  "snippet": "<html><head><title>ERROR: ACCESS DENIED</title></head><body><center><h1>ERROR: ACCESS DENIED</h1></center><hr>\n<center>Sat, 10 Oct 2026 08:55:12 GMT i2147971_c26131</center></BODY></HTML>\n<!-- web cache -->\n",
   "name": "China MSA nav warnings",
   "url": "https://www.msa.gov.cn/page/outter/weather.jsp"
  },
@@ -156,7 +156,7 @@
   "status": 200,
   "type": "text/html",
   "bytes": 66823,
-  "secs": 1.3,
+  "secs": 1.5,
   "snippet": "<!DOCTYPE html>\r\n<html id=\"grayEle\">\r\n<head>\r\n    <!-- \u5b9a\u4e49\u5168\u5c40\u7684\u65e5\u671f\u683c\u5f0f -->\r\n<meta charset=\"UTF-8\">\r\n<meta name=\"viewport\" content=\"width=1200\"/>\r\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge,chrome=1\"/>\r\n<!-- \u6d4f\u89c8\u5668\u6807\u7b7e\u9875logo -->\r\n<link rel=\"icon\" href=\"/favicon.ico\" type=\"i",
   "name": "China MSA home",
   "url": "https://www.msa.gov.cn/"
@@ -165,7 +165,7 @@
   "status": 200,
   "type": "text/html; charset=utf-8",
   "bytes": 26304,
-  "secs": 0.4,
+  "secs": 0.3,
   "snippet": "<!DOCTYPE html><html lang=\"uk\" translate=\"no\" xmlns:v-on=\"http://www.w3.org/1999/xhtml\" xmlns:v-bind=\"http://www.w3.org/1999/xhtml\"><head><meta charset=\"utf-8\"><title>\u041a\u0430\u0440\u0442\u0430 \u043f\u043e\u0432\u0456\u0442\u0440\u044f\u043d\u0438\u0445 \u0442\u0440\u0438\u0432\u043e\u0433 \u0423\u043a\u0440\u0430\u0457\u043d\u0438</title><link rel=\"canonical\" href=\"https://alerts.in.ua/\"><link rel=\"llms",
   "name": "alerts.in.ua site",
   "url": "https://alerts.in.ua/"
@@ -182,9 +182,9 @@
  {
   "status": 403,
   "type": "text/html",
-  "bytes": 437,
+  "bytes": 435,
   "secs": 0.3,
-  "snippet": "<HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"http&#58;&#47;&#47;www&#46;oref&#46;org&#46;il&#47;warningMessages&#47;alert&#47;History&#47;AlertsHistory&#46;json\" on this server.<P>\nReference&#32;&#35;18&#46;b42b3417&#46;1791622",
+  "snippet": "<HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"http&#58;&#47;&#47;www&#46;oref&#46;org&#46;il&#47;warningMessages&#47;alert&#47;History&#47;AlertsHistory&#46;json\" on this server.<P>\nReference&#32;&#35;18&#46;b72b3417&#46;1791622",
   "name": "Israel Home Front Command",
   "url": "https://www.oref.org.il/warningMessages/alert/History/AlertsHistory.json"
  },
@@ -192,14 +192,14 @@
   "status": 200,
   "type": "text/html",
   "bytes": 1402,
-  "secs": 0.9,
+  "secs": 0.7,
   "snippet": "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <title>AIS Data</title>\n</head>\n<body>\n    <h1>AIS Data</h1>\n    <div id=\"directorylisting\">\n        <div id=\"navigation\"></div>\n        <div id=\"listing\"></div>\n\n   ",
   "name": "Danish AIS downloads",
   "url": "http://aisdata.ais.dk/"
  },
  {
   "error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'web.ais.dk'. (_ssl.c:1000)>",
-  "secs": 0.5,
+  "secs": 0.6,
   "name": "Danish AIS web",
   "url": "https://web.ais.dk/aisdata/"
  },
@@ -207,7 +207,7 @@
   "status": 200,
   "type": "application/json",
   "bytes": 4314,
-  "secs": 1.3,
+  "secs": 0.3,
   "snippet": "{\"issue_levels\":{},\"issue_count\":0,\"updated_at\":\"2026-10-09T15:03:06\",\"resources\":[{\"name\":\"maritime.csv\",\"checksum\":\"a6e90d81d286847684d958be9aab3de9d8c738e7\",\"mime_type\":\"text/csv\",\"title\":\"Maritime-centric tabular format\",\"size\":5111341,\"mime_type_label\":\"Comma-separated table\",\"path\":\"maritime.c",
   "name": "OpenSanctions maritime index",
   "url": "https://data.opensanctions.org/datasets/latest/maritime/index.json"
@@ -216,7 +216,7 @@
   "status": 200,
   "type": "text/html; charset=UTF-8",
   "bytes": 213470,
-  "secs": 1.0,
+  "secs": 0.9,
   "snippet": "<!DOCTYPE html>\n<html lang=\"en\">\n\n<head>\n    <script async src='https://www.googletagmanager.com/gtag/js?id=GTM-TGZWQFGN'></script>\n<script>window.dataLayer=window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config','GTM-TGZWQFGN');</script>    <meta chars",
   "name": "GUR war-sanctions ships",
   "url": "https://war-sanctions.gur.gov.ua/en/transport/ships"
@@ -225,8 +225,8 @@
   "status": 403,
   "type": "text/html",
   "bytes": 393,
-  "secs": 0.2,
-  "snippet": "<HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"http&#58;&#47;&#47;www&#46;maritime&#46;dot&#46;gov&#47;msci&#45;advisories\" on this server.<P>\nReference&#32;&#35;18&#46;953d117&#46;1791622270&#46;aa0243b\n<P>https&#58;&#47;&#47;er",
+  "secs": 0.1,
+  "snippet": "<HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"http&#58;&#47;&#47;www&#46;maritime&#46;dot&#46;gov&#47;msci&#45;advisories\" on this server.<P>\nReference&#32;&#35;18&#46;953d117&#46;1791622517&#46;aa0dbfb\n<P>https&#58;&#47;&#47;er",
   "name": "MARAD advisories",
   "url": "https://www.maritime.dot.gov/msci-advisories"
  },
@@ -243,7 +243,7 @@
   "status": 200,
   "type": "text/html; charset=utf-8",
   "bytes": 369677,
-  "secs": 1.4,
+  "secs": 0.1,
   "snippet": "<!DOCTYPE html><html lang=\"en\" class=\"__variable_f41afb __variable_5f34dc\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=5\"/><link rel=\"stylesheet\" href=\"/_next/static/css/c8426ae1ec661834.css\" data-precedence=\"next\"/><link rel=\"preloa",
   "name": "straits.live",
   "url": "https://straits.live/"
@@ -252,7 +252,7 @@
   "status": 200,
   "type": "text/html; charset=UTF-8",
   "bytes": 400000,
-  "secs": 1.0,
+  "secs": 0.7,
   "snippet": "\n<!doctype html>\n<html lang=\"en-US\">\n\n<head><meta charset=\"UTF-8\"><script>if(navigator.userAgent.match(/MSIE|Internet Explorer/i)||navigator.userAgent.match(/Trident\\/7\\..*?rv:11/i)){var href=document.location.href;if(!href.match(/[?&]nowprocket/)){if(href.indexOf(\"?\")==-1){if(href.indexOf(\"#\")==-1)",
   "name": "Freightos FBX page",
   "url": "https://terminal.freightos.com/freightos-baltic-index-global-container-pricing-index/"
@@ -261,7 +261,7 @@
   "status": 200,
   "type": "text/html;charset=UTF-8",
   "bytes": 116567,
-  "secs": 1.0,
+  "secs": 1.1,
   "snippet": "<!DOCTYPE html>\n<html lang=\"En\"> \n<head>\n<!-- Affino, www.affino.com -->\n<meta charset=\"UTF-8\">\n<link rel=\"preconnect\" href=\"https://d3oqpwy03c1jnz.cloudfront.net\">\n<link rel=\"dns-prefetch\" href=\"//d3oqpwy03c1jnz.cloudfront.net\">\n<link rel=\"shortcut icon\" href=\"https://d3oqpwy03c1jnz.cloudfront.net/",
   "name": "Drewry WCI",
   "url": "https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry"
@@ -270,7 +270,7 @@
   "status": 200,
   "type": "application/json; charset=utf-8",
   "bytes": 2226,
-  "secs": 0.6,
+  "secs": 0.2,
   "snippet": "{\"metadata\":{\"datasets\":[\"public-global-gaps-events:v4.0\"],\"dateRange\":{\"from\":\"2026-09-01\",\"to\":\"2026-09-03\"}},\"limit\":2,\"offset\":0,\"nextOffset\":2,\"total\":4371,\"entries\":[{\"start\":\"2017-02-11T14:44:09.000Z\",\"end\":\"2026-09-03T07:10:49.000Z\",\"id\":\"659945e1032d655e9f7aebdc0964ccb1\",\"type\":\"gap\",\"posit",
   "name": "GFW gaps events (token)",
   "url": "https://gateway.api.globalfishingwatch.org/v3/events?datasets[0]=public-global-gaps-events:latest&start-date=2026-09-01&end-date=2026-09-03&limit=2&offset=0"
@@ -279,7 +279,7 @@
   "status": 200,
   "type": "application/json; charset=utf-8",
   "bytes": 3075,
-  "secs": 0.8,
+  "secs": 0.1,
   "snippet": "{\"metadata\":{\"datasets\":[\"public-global-encounters-events:v4.0\"],\"dateRange\":{\"from\":\"2026-09-01\",\"to\":\"2026-09-03\"}},\"limit\":2,\"offset\":0,\"nextOffset\":2,\"total\":7056,\"entries\":[{\"start\":\"2026-05-14T13:00:00.000Z\",\"end\":\"2026-09-05T12:00:00.000Z\",\"id\":\"0d78d562d14dd84f77af2f278dc89f0f.2\",\"type\":\"enc",
   "name": "GFW encounters events (token)",
   "url": "https://gateway.api.globalfishingwatch.org/v3/events?datasets[0]=public-global-encounters-events:latest&start-date=2026-09-01&end-date=2026-09-03&limit=2&offset=0"
@@ -288,7 +288,7 @@
   "status": 200,
   "type": "application/json; charset=utf-8",
   "bytes": 3111,
-  "secs": 0.5,
+  "secs": 0.1,
   "snippet": "{\"metadata\":{\"datasets\":[\"public-global-port-visits-events:v4.0\"],\"dateRange\":{\"from\":\"2026-09-01\",\"to\":\"2026-09-02\"}},\"limit\":2,\"offset\":0,\"nextOffset\":2,\"total\":516858,\"entries\":[{\"start\":\"2012-01-01T00:29:00.000Z\",\"end\":\"2026-10-06T23:42:00.000Z\",\"id\":\"a38bd0820cc40a46c5ea57a69079d141\",\"type\":\"po",
   "name": "GFW port visits (token)",
   "url": "https://gateway.api.globalfishingwatch.org/v3/events?datasets[0]=public-global-port-visits-c2-events:latest&start-date=2026-09-01&end-date=2026-09-02&limit=2&offset=0"
@@ -297,7 +297,7 @@
   "status": 200,
   "type": "application/json",
   "bytes": 76518,
-  "secs": 1.0,
+  "secs": 0.8,
   "snippet": "{\n  \"response\": {\n    \"lastModified\": 1757063288,\n    \"226768\": {\n      \"lastModified\": 1757063288,\n      \"effective\": 1757063700,\n      \"title\": \"\u00c4quatorialguinea: Reise- und Sicherheitshinweise\",\n      \"countryCode\": \"GQ\",\n      \"iso3CountryCode\": \"GNQ\",\n      \"countryName\": \"\u00c4quatorialguinea\",\n",
   "name": "Auswaertiges Amt travel warnings",
   "url": "https://www.auswaertiges-amt.de/opendata/travelwarning"
@@ -313,7 +313,7 @@
  },
  {
   "error": "TimeoutError: The read operation timed out",
-  "secs": 40.2,
+  "secs": 40.3,
   "name": "Smartraveller export",
   "url": "https://www.smartraveller.gov.au/destinations-export"
  },
@@ -321,7 +321,7 @@
   "status": 200,
   "type": "application/xml",
   "bytes": 165507,
-  "secs": 0.5,
+  "secs": 0.2,
   "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<opendata dataType=\"A\" lastModified=\"2026/10/10 17:30:47\" mailCount=\"42\" odType=\"02\">\n    <xmlAllUrl>https://www.ezairyu.mofa.go.jp/opendata/area/newarrivalA.xml</xmlAllUrl>\n    <xmlNormalUrl>https://www.ezairyu.mofa.go.jp/opendata/area/newarriv",
   "name": "Japan MOFA open data",
   "url": "https://www.ezairyu.mofa.go.jp/opendata/area/newarrivalA.xml"
@@ -338,8 +338,8 @@
  {
   "status": 200,
   "type": "text/html; charset=utf-8",
-  "bytes": 167251,
-  "secs": 1.1,
+  "bytes": 167249,
+  "secs": 1.0,
   "snippet": "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <title>\u0420\u044b\u0431\u0430\u0440\u044c \u2013 Telegram</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\" />\n    <meta name=\"format-detection\" content=\"telephone=no\" />\n   ",
   "name": "Telegram preview (rybar)",
   "url": "https://t.me/s/rybar"
@@ -354,11 +354,11 @@
   "url": "https://t.me/s/DeepStateUA"
  },
  {
-  "status": 429,
-  "type": "",
-  "bytes": 444,
-  "secs": 8.3,
-  "snippet": "Please limit requests to one every 5 seconds or contact kalev.leetaru5@gmail.com for larger queries. All high-traffic users should switch to our ngrams dataset: https://blog.gdeltproject.org/using-the-new-web-ngrams-dataset-to-find-relevant-coverage/. For trend analysis, please see our daily newslet",
+  "status": 200,
+  "type": "application/json; charset=utf-8",
+  "bytes": 1192,
+  "secs": 12.6,
+  "snippet": "{\"query_details\": {\"title\": \"mobilization sourcecountry:RS\", \"date_resolution\": \"day\"}, \"timeline\": [ { \"series\": \"Article Count\", \"data\": [ { \"date\": \"20260911T000000Z\", \"value\": 40, \"norm\": 154253},{ \"date\": \"20260912T000000Z\", \"value\": 23, \"norm\": 120863},{ \"date\": \"20260913T000000Z\", \"value\": 3,",
   "name": "GDELT DOC timeline",
   "url": "https://api.gdeltproject.org/api/v2/doc/doc?query=mobilization%20sourcecountry:RS&mode=timelinevolraw&format=json&timespan=30d"
  },
@@ -375,7 +375,7 @@
   "status": 200,
   "type": "text/html; charset=utf-8",
   "bytes": 43342,
-  "secs": 0.3,
+  "secs": 0.2,
   "snippet": "\ufeff<!DOCTYPE html>\n<html lang=\"en\" prefix=\"og: http://ogp.me/ns#\">\n  <head>\n    <!-- Google tag (gtag.js) -->\n    <script async src=\"https://www.googletagmanager.com/gtag/js?id=G-PZF6SDPF22\"></script>\n    <script>\n      window.dataLayer = window.dataLayer || [];\n      function gtag(){dataLayer.push(",
   "name": "bonbast",
   "url": "https://www.bonbast.com/"
@@ -384,14 +384,14 @@
   "status": 200,
   "type": "text/html; charset=UTF-8",
   "bytes": 111789,
-  "secs": 0.9,
+  "secs": 0.8,
   "snippet": "<!DOCTYPE html>\n<html lang=\"en\" dir=\"ltr\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <meta name=\"robots\" content=\"index, follow\">\n    <title>Today\u2019s price of US Dollar in the open market (USDIRR)</title>\n\n    <link rel=\"canonic",
   "name": "alanchand USD",
   "url": "https://alanchand.com/en/currencies-price/usd"
  },
  {
   "error": "URLError: <urlopen error [Errno -2] Name or service not known>",
-  "secs": 0.9,
+  "secs": 0.3,
   "name": "Nobitex USDT-IRT stats",
   "url": "https://api.nobitex.ir/market/stats?srcCurrency=usdt&dstCurrency=rls"
  },
@@ -399,7 +399,7 @@
   "status": 200,
   "type": "application/json; charset=utf-8",
   "bytes": 8249,
-  "secs": 1.4,
+  "secs": 1.3,
   "snippet": "{\n\"history\": {\n\t\"metadata\": {\n\t\t\"BOARDID\": {\"type\": \"string\", \"bytes\": 12, \"max_size\": 0},\n\t\t\"SECID\": {\"type\": \"string\", \"bytes\": 36, \"max_size\": 0},\n\t\t\"TRADEDATE\": {\"type\": \"date\", \"bytes\": 10, \"max_size\": 0},\n\t\t\"SHORTNAME\": {\"type\": \"string\", \"bytes\": 189, \"max_size\": 0},\n\t\t\"NAME\": {\"type\": \"strin",
   "name": "MOEX ISS IMOEX history",
   "url": "https://iss.moex.com/iss/history/engines/stock/markets/index/securities/IMOEX.json?from=2026-09-01"
@@ -408,7 +408,7 @@
   "status": 200,
   "type": "application/vnd.ms-excel",
   "bytes": 400000,
-  "secs": 0.2,
+  "secs": 0.3,
   "snippet": "\ufffd\ufffd\u0011\u0871\u001a\ufffd\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000>\u0000\u0003\u0000\ufffd\ufffd\t\u0000\u0006\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00004\u0000\u0000\u0000\ufffd\u0018\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\ufffd\ufffd\ufffd\ufffd\u0000\u0000\u0000\u0000\ufffd\ufffd\ufffd\ufffd\u0000\u0000\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\u0018\u0000\u0000\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd",
   "name": "GPR daily",
   "url": "https://www.matteoiacoviello.com/gpr_files/data_gpr_daily_recent.xls"
@@ -426,8 +426,8 @@
   "status": 200,
   "type": "application/json",
   "bytes": 926,
-  "secs": 0.9,
-  "snippet": "{\"data\": [{\"dateModified\": \"2026-10-10T11:52:07.039297+03:00\", \"id\": \"5e1668afbaf948329209b246a8786ce9\"}, {\"dateModified\": \"2026-10-10T11:52:04.322958+03:00\", \"id\": \"f9e04d69dff042c4b53f7c1756603a9a\"}, {\"dateModified\": \"2026-10-10T11:51:40.132013+03:00\", \"id\": \"35ffdea92d794ed7b57a896578ee4e02\"}], \"",
+  "secs": 1.1,
+  "snippet": "{\"data\": [{\"dateModified\": \"2026-10-10T11:56:03.335018+03:00\", \"id\": \"6e55c89eb066407badc6c8370814a80d\"}, {\"dateModified\": \"2026-10-10T11:56:02.129763+03:00\", \"id\": \"908cef8c978e42e7868be8eb18c76d68\"}, {\"dateModified\": \"2026-10-10T11:56:00.115072+03:00\", \"id\": \"08e7923927dd46019e8539bf488183dc\"}], \"",
   "name": "Prozorro tenders",
   "url": "https://public.api.openprocurement.org/api/2.5/tenders?descending=1&limit=3"
  },
@@ -460,14 +460,14 @@
   "type": "application/json",
   "bytes": 105,
   "secs": 0.2,
-  "snippet": "{\"status\":400,\"time\":39,\"error\":{\"type\":\"BadRequestHttpException\",\"message\":\"Missing appname parameter\"}}",
+  "snippet": "{\"status\":400,\"time\":25,\"error\":{\"type\":\"BadRequestHttpException\",\"message\":\"Missing appname parameter\"}}",
   "name": "ReliefWeb (no appname)",
   "url": "https://api.reliefweb.int/v2/reports?limit=1"
  },
  {
   "status": 200,
   "type": "text/xml; charset=utf-8",
-  "bytes": 21451,
+  "bytes": 21438,
   "secs": 0.4,
   "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<rss xmlns:atom=\"http://www.w3.org/2005/Atom\" xmlns:ht=\"https://trends.google.com/trending/rss\" version=\"2.0\">\n\t<channel>\n\t\t<title>Daily Search Trends</title>\n\t\t<description>Recent searches</description>\n\t\t<link>https://trends.google.com/trendi",
   "name": "Google Trends daily RSS",
@@ -476,8 +476,8 @@
  {
   "status": 200,
   "type": "text/html",
-  "bytes": 17524,
-  "secs": 2.1,
+  "bytes": 17522,
+  "secs": 2.0,
   "snippet": "<!DOCTYPE html>\r\n<html xml:lang=\"pl\" xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"pl\">\r\n<head>\r\n<!-- Google tag (gtag.js) -->\r\n<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-8K4EH4KPQW\"></script>\r\n<script>\r\n  window.dataLayer = window.dataLayer || [];\r\n  function gtag(){dataLayer.pus",
   "name": "Poland border waits",
   "url": "https://granica.gov.pl/index_wait.php?p=b&v=en"
@@ -486,7 +486,7 @@
   "status": 200,
   "type": "text/csv",
   "bytes": 400000,
-  "secs": 4.2,
+  "secs": 1.1,
   "snippet": "36,\"AEROCARIBBEAN AIRLINES\",-0- ,\"CUBA\",-0- ,-0- ,-0- ,-0- ,-0- ,-0- ,-0- ,-0- \r\n173,\"ANGLO-CARIBBEAN CO., LTD.\",-0- ,\"CUBA\",-0- ,-0- ,-0- ,-0- ,-0- ,-0- ,-0- ,-0- \r\n306,\"BANCO NACIONAL DE CUBA\",-0- ,\"CUBA\",-0- ,-0- ,-0- ,-0- ,-0- ,-0- ,-0- ,\"a.k.a. 'BNC'.\"\r\n424,\"BOUTIQUE LA MAISON\",-0- ,\"CUBA\",-0- ",
   "name": "OFAC SDN advanced XML head",
   "url": "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN.CSV"
@@ -494,10 +494,52 @@
  {
   "status": 200,
   "type": "application/json",
-  "bytes": 6167,
+  "bytes": 6188,
   "secs": 0.1,
-  "snippet": "[{\"id\":\"559651\",\"question\":\"Xi Jinping out before 2027?\",\"conditionId\":\"0xa467b14d51f01b957109d9cbb1d6c124fab2a089d52ed8f471d23c2812e743b7\",\"slug\":\"xi-jinping-out-before-2027\",\"resolutionSource\":\"\",\"endDate\":\"2027-01-01T04:59:00Z\",\"liquidity\":\"685354.78856\",\"startDate\":\"2025-07-03T20:37:00.228Z\",\"im",
+  "snippet": "[{\"id\":\"559651\",\"question\":\"Xi Jinping out before 2027?\",\"conditionId\":\"0xa467b14d51f01b957109d9cbb1d6c124fab2a089d52ed8f471d23c2812e743b7\",\"slug\":\"xi-jinping-out-before-2027\",\"resolutionSource\":\"\",\"endDate\":\"2027-01-01T04:59:00Z\",\"liquidity\":\"688886.64547\",\"startDate\":\"2025-07-03T20:37:00.228Z\",\"im",
   "name": "Polymarket gamma",
   "url": "https://gamma-api.polymarket.com/markets?limit=1"
+ },
+ {
+  "status": 200,
+  "type": "application/json; charset=utf-8",
+  "bytes": 400000,
+  "secs": 0.7,
+  "snippet": "[\n  {\n    \"url\": \"https://api.github.com/repos/adsblol/globe_history_2023/releases/122713061\",\n    \"assets_url\": \"https://api.github.com/repos/adsblol/globe_history_2023/releases/122713061/assets\",\n    \"upload_url\": \"https://uploads.github.com/repos/adsblol/globe_history_2023/releases/122713061/assets{?name,label}\",\n    \"html_url\": \"https://github.com/adsblol/globe_history_2023/releases/tag/v2023.09.26-planes-readsb-staging-0\",\n    \"id\": 122713061,\n    \"author\": {\n      \"login\": \"iakat\",\n      \"id\": 1695469,\n      \"node_id\": \"MDQ6VXNlcjE2OTU0Njk=\",\n      \"avatar_url\": \"https://avatars.githubusercontent.com/u/1695469?v=4\",\n      \"gravatar_id\": \"\",\n      \"url\": \"https://api.github.com/users/iakat\",\n      \"html_url\": \"https://github.com/iakat\",\n      \"followers_url\": \"https://api.github.com/users/iakat/followers\",\n      \"following_url\": \"https://api.github.com/users/iakat/following{/other_user}\",\n      \"gists_url\": \"https://api.github.com/users/iakat/gists{/gist_id}\",\n      \"starred_url\": \"https://api.github.com/users/iakat/starred{/owner}{/repo}\",\n      \"subscriptions_url\": \"https://api.github.com/users/iakat/subscriptions\",\n      \"organizations_url\": \"https://api.github.com/users/iakat/orgs\",\n      \"repos_url\": \"https://api.github.com/users/iakat/repos\",\n      \"events_url\": \"https://api.github.com/users/iakat/events{/privacy}\",\n      \"received_events_url\": \"https://api.github.com/users/iakat/received_events\",\n      \"type\": \"User\",\n      \"user_view_type\": \"public\",\n      \"site_admin\": false\n    },\n    \"node_id\": \"RE_kwDOJG6Gfc4HUHPl\",\n    \"tag_name\": \"v2023.09.26-planes-readsb-staging-0\",\n    \"target_commitish\": \"main\",\n    \"name\": \"v2023.09.26-planes-readsb-staging-0\",\n    \"draft\": false,\n    \"immutable\": false,\n    \"prerelease\": false,\n    \"created_at\": \"2023-09-26T05:28:33Z\",\n    \"updated_at\": \"2023-09-27T03:12:48Z\",\n    \"published_at\": \"2023-09-27T03:11:21Z\",\n    \"assets\": [\n      {\n        \"url\": \"https://api.github.com/repos/adsblol/globe_history_2023/releases/assets/127897796\",\n        \"id\": 127897796,\n        \"node_id\": \"RA_kwDOJG6Gfc4Hn5DE\",\n        \"name\": \"v2023.09.26-planes-readsb-staging-0.tar\",\n        \"label\": \"\",\n        \"uploader\": {\n          \"login\": \"iakat\",\n          \"id\": 1695469,\n          \"node_id\": \"MDQ6VXNlcjE2OTU0Njk=\",\n          \"avatar_url\": \"https://avatars.githubusercontent.com/u/1695469?v=4\",\n          \"gravatar_id\": \"\",\n          \"url\": \"https://api.github.com/users/iakat\",\n          \"html_url\": \"https://github.com/iakat\",\n          \"followers_url\": \"https://api.github.com/users/iakat/followers\",\n          \"following_url\": \"https://api.github.com/users/iakat/following{/other_user}\",\n          \"gists_url\": \"https://api.github.com/users/iakat/gists{/gist_id}\",\n          \"starred_url\": \"https://api.github.com/users/iakat/starred{/owner}{/repo}\",\n          \"subscriptions_url\": \"https://api.github.com/users/iakat/subscriptions\",\n          \"organizations_url\": \"https://api.github.com/users/iakat/orgs\",\n          \"repos_url\": \"https://api.github.com/users/iakat/repos\",\n          \"events_url\": \"https://api.github.com/users/iakat/events{/privacy}\",\n          \"received_events_url\": \"https://api.github.com/users/iakat/received_events\",\n          \"type\": \"User\",\n          \"user_view_type\": \"public\",\n          \"site_admin\": false\n        },\n        \"content_type\": \"application/octet-stream\",\n        \"state\": \"uploaded\",\n        \"size\": 1778042880,\n        \"digest\": null,\n        \"download_count\": 111,\n        \"created_at\": \"2023-09-27T03:11:22Z\",\n        \"updated_at\": \"2023-09-27T03:12:48Z\",\n        \"browser_download_url\": \"https://github.com/adsblol/globe_history_2023/releases/download/v2023.09.26-planes-readsb-staging-0/v2023.09.26-planes-readsb-staging-0.tar\"\n      }\n    ],\n    \"tarball_url\": \"https://api.github.com/repos/adsblol/globe_history_2023/tarball/v2023.09.26-planes-readsb-staging-0\",\n    \"zipball_url\": \"https://api.github.com/repos/adsblol/globe_history_2023/zipball/v2023.09.26-planes-readsb-stag",
+  "name": "adsb.lol 2023 oldest releases",
+  "url": "https://api.github.com/repos/adsblol/globe_history_2023/releases?per_page=100&page=3"
+ },
+ {
+  "status": 200,
+  "type": "application/json",
+  "bytes": 60151,
+  "secs": 2.9,
+  "snippet": "{\"hits\": {\"hits\": [{\"created\": \"2026-10-04T12:20:12.249361+00:00\", \"modified\": \"2026-10-04T12:34:51.350610+00:00\", \"id\": 23136727, \"conceptrecid\": \"23136726\", \"doi\": \"10.5281/zenodo.23136727\", \"conceptdoi\": \"10.5281/zenodo.23136726\", \"doi_url\": \"https://doi.org/10.5281/zenodo.23136727\", \"metadata\": {\"title\": \"Open-source data generator for joint ATFCM benchmark instances, v2.0.0\", \"doi\": \"10.5281/zenodo.23136727\", \"publication_date\": \"2026-10-01\", \"description\": \"<p>Open-source data generator for joint Air Traffic Flow and Capacity Management (ATFCM) benchmark instances, version 2.0.0. From a real flight list of the OpenSky Network it generates solver-ready instances in which flights can be delayed or rerouted and airspace sectors reconfigured so that no sector exceeds its capacity: a navigation graph, sectors with capacities and their allocation, airports, aircraft and filed flights for one 24-hour day.</p>\\n<p>The pipeline has six stages: the demand model (per-airport departure profiles, an origin- and time-conditional destination model, flight durations and turnaround times, estimated from the flight list), the flight schedule, the navigation graph (a Gabriel graph on real waypoints or a rectangular grid of synthetic navpoints), the sector and capacity step, the trajectory generator (routed, time-stamped flight plans that keep every aircraft's legs in sequence inside the 24-hour window) and the solver transform. Each stage can be replaced by an own implementation through a common interface. A region is described by one configuration file (polygon, airports, time zone, time granularity, demand levels, seeds, capacities).</p>\\n<p>Further tools: <code>06_capacity_sweep.py</code> computes each instance's nominal capacity and writes the capacity levels of 10 % to 100 % used in the published datasets; <code>check_instances.py</code> checks generated instances against the formal model (24-hour window, graph adjacency, aircraft rotations, sector cover); <code>write_instance_info.py</code> makes every instance self-describing; a regression harness checks that changes leave the output unchanged.</p>\\n<p>Compared with the first version, the demand model no longer discards the flights that cross UTC midnight, and destinations are drawn depending on origin and time of day. This version generated the V2 benchmark datasets: large-scaling <a href=\\\"https://doi.org/10.5281/zenodo.23039645\\\">10.5281/zenodo.23039645</a> and small-scaling <a href=\\\"https://doi.org/10.5281/zenodo.23039835\\\">10.5281/zenodo.23039835</a>; the configurations that produced them ship with the datasets. The generator is described in the paper \\\"An Open-Source Data Generator for Joint Air Traffic Flow and Capacity Management Benchmarking\\\" (preprint: <a href=\\\"https://doi.org/10.5281/zenodo.23039874\\\">10.5281/zenodo.23039874</a>).</p>\\n<p>Requirements: Python 3.10 or later with pandas, numpy, scikit-learn, networkx and tqdm. Inputs: the OpenSky COVID-19 flight dataset (CC-BY-4.0), the OurAirports airport list (public domain, a snapshot is included) and, only for regions built on real waypoints, the X-Plane navigation data (GPL-2.0-or-later). The code is MIT licensed.</p>\", \"access_right\": \"open\", \"creators\": [{\"name\": \"Beiser, Alexander Gebhard\", \"affiliation\": \"TU Wien\", \"orcid\": \"0009-0009-4252-1043\"}, {\"name\": \"Gr\\u00e4upl, Thomas\", \"affiliation\": \"Frequentis (Austria)\", \"orcid\": \"0000-0002-7864-774X\"}, {\"name\": \"Hecher, Markus\", \"affiliation\": \"TU Wien\", \"orcid\": \"0000-0003-0131-6771\"}, {\"name\": \"Musliu, Nysret\", \"affiliation\": \"TU Wien\", \"orcid\": \"0000-0002-3992-8637\"}, {\"name\": \"Trausmuth, Georg\", \"affiliation\": \"Frequentis (Austria)\"}, {\"name\": \"Woltran, Stefan\", \"affiliation\": \"TU Wien\", \"orcid\": \"0000-0003-1594-8972\"}], \"related_identifiers\": [{\"identifier\": \"https://github.com/alexl4123/ASPaeroFlow-DataGenerator/tree/v2.0.0\", \"relation\": \"isSupplementTo\", \"resource_type\": \"software\", \"scheme\": \"url\"}, {\"identifier\": \"10.5281/zenodo.23039645\", \"relation\": \"compiles\", \"resource_type\": \"dataset\", \"scheme\": \"doi\"}, {\"identifier\": \"10.5281/zenodo.23039835\", \"relation\": \"compiles\", \"resource_type\": \"dataset\", \"scheme\": \"doi\"}, {\"identifier\": \"10.5281/zenodo.23039874\", \"relation\": \"isDocumentedBy\", \"resource_type\": \"other\", \"scheme\": \"doi\"}, {\"identifier\": \"10.5281/zenodo.5815448\", \"relation\": \"requires\", \"resource_type\": \"dataset\", \"scheme\": \"doi\"}], \"version\": \"v2.0.0\", \"custom\": {\"code:codeRepository\": \"https://github.com/alexl4123/ASPaeroFlow-DataGenerator\"}, \"resource_type\": {\"title\": \"Software\", \"type\": \"software\"}, \"license\": {\"id\": \"mit-license\"}, \"grants\": [{\"code\": \"COE12\", \"internal_id\": \"10.13039/501100002428::COE12\", \"funder\": {\"name\": \"FWF Austrian Science Fund\", \"doi\": \"10.13039/501100002428\", \"acronym\": \"FWF\"}}], \"relations\": {\"version\": [{\"index\": 0, \"is_last\": true, \"parent\": {\"pid_type\": \"recid\", \"pid_value\": \"23136726\"}}]}}, \"title\": \"Open-source data generator for joint ATFCM benchmark instances, v2.0.0\", \"links\": {\"self\": \"https://zenodo.org/api/records/23136727\", \"self_html\": \"https://zenodo.org/records/23136727\", \"preview_html\": \"https://zenodo.org/records/23136727?preview=1\", \"doi\": \"https://doi.org/10.5281/zenodo.23136727\", \"self_doi\": \"https://doi.org/10.5281/zenodo.23136727\", \"self_doi_html\": \"https://zenodo.org/doi/10.5281/zenodo.23136727\", \"reserve_doi\": \"https://zenodo.org/api/records/23136727/draft/pids/doi\", \"parent\": \"https://zenodo.org/api/records/23136726\", \"parent_html\": \"https://zenodo.org/records/23136726\", \"parent_doi\": \"https://doi.org/10.5281/zenodo.23136726\", \"parent_doi_html\": \"https://zenodo.org/doi/10.5281/zenodo.23136726\", \"self_iiif_manifest\": \"https://zenodo.org/api/iiif/record:23136727/manifest\", \"self_iiif_sequence\": \"https://zenodo.org/api/iiif/record:23136727/sequence/default\", \"files\": \"https://zenodo.org/api/records/23136727/files\", \"media_files\": \"https://zenodo.org/api/records/23136727/media-files\", \"latest\": \"https://zenodo.org/api/records/23136727/versions/latest\", \"la",
+  "name": "Zenodo OpenSky flight list titles",
+  "url": "https://zenodo.org/api/records?q=opensky%20flight%20list%20covid&size=5"
+ },
+ {
+  "error": "TimeoutError: The read operation timed out",
+  "secs": 40.3,
+  "name": "Smartraveller export retry",
+  "url": "https://www.smartraveller.gov.au/destinations-export"
+ },
+ {
+  "status": 200,
+  "type": "application/json",
+  "bytes": 11800,
+  "secs": 0.6,
+  "snippet": "{\n    \"uri\": \"https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?limit=1&updatedTo=2026-10-10T09:57:09\",\n    \"version\": \"1.1\",\n    \"extensions\": [\n        \"https://standard.open-contracting.org/profiles/eu/latest/en/extension.json\",\n        \"https://raw.githubusercontent.com/open-con",
+  "name": "UK Find a Tender (www host)",
+  "url": "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?limit=1"
+ },
+ {
+  "status": 200,
+  "type": "text/plain; charset=UTF-8",
+  "bytes": 20,
+  "secs": 0.5,
+  "snippet": "Welcome to Jetstream",
+  "name": "Bluesky Jetstream info",
+  "url": "https://jetstream2.us-east.bsky.network/"
  }
 ]
