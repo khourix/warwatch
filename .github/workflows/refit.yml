@@ -36,6 +36,8 @@ jobs:
           python3 warwatch/improve.py > /dev/null
       - name: Score the forward record
         run: python3 warwatch/forward_score.py
+      - name: Replay the timing tells over the stored history (their record on the page)
+        run: python3 warwatch/tells.py record > /dev/null
       - uses: actions/upload-artifact@v4
         with:
           name: model
@@ -52,7 +54,7 @@ jobs:
         run: |
           git config user.name "warwatch-bot"
           git config user.email "warwatch-bot@users.noreply.github.com"
-          git add warwatch/data/model_weights.json warwatch/data/model_weights_armed.json docs/MODEL.md docs/MODEL_ARMED.md docs/FORWARD.md docs/FORWARD_ARMED.md docs/BACKTEST_EVENTS.md docs/BACKTEST_FASTFEEDS.md docs/CALIBRATION.md docs/IMPROVEMENTS.md backtest/improvements.csv backtest/alert_rules.csv backtest/training_focus.csv backtest/family_evidence.csv backtest/weight_schemes.csv backtest/event_study.csv backtest/alert_episodes.csv backtest/fastfeeds.csv backtest/history/gdelt_country_day.csv.gz
+          git add warwatch/data/model_weights.json warwatch/data/model_weights_armed.json docs/MODEL.md docs/MODEL_ARMED.md docs/FORWARD.md docs/FORWARD_ARMED.md docs/BACKTEST_EVENTS.md docs/BACKTEST_FASTFEEDS.md docs/CALIBRATION.md docs/IMPROVEMENTS.md docs/TELLS.md warwatch/data/tells_record.json backtest/improvements.csv backtest/alert_rules.csv backtest/training_focus.csv backtest/family_evidence.csv backtest/weight_schemes.csv backtest/event_study.csv backtest/alert_episodes.csv backtest/fastfeeds.csv backtest/history/gdelt_country_day.csv.gz
           git diff --cached --quiet && exit 0
           git commit -qm "model refit: $(date -u +%F)"
           for i in 1 2 3; do

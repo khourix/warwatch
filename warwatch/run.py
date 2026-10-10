@@ -27,6 +27,7 @@ import model  # noqa: E402
 import scoring  # noqa: E402
 import stats  # noqa: E402
 import store  # noqa: E402
+import tells  # noqa: E402
 
 
 def _fetch(s, rec):
@@ -129,6 +130,12 @@ def main():
                 print("shadow model skipped:", str(e)[:200])
         except Exception as e:
             print("model skipped:", str(e)[:200])
+    try:   # the timing tells never set a level; like the model they must never break the build
+        res["tells"] = tells.evaluate(res["series"])
+        if not a.demo:
+            print("timing tells record: appended", tells.forward_append(res["tells"]), "rows")
+    except Exception as e:
+        print("timing tells skipped:", str(e)[:200])
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     static = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")   # tab icons and the link-preview image, served next to the page

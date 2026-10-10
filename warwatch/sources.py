@@ -275,8 +275,8 @@ def _norm_country(t):
     return " ".join(w for w in t if w != "the")
 
 
-def state_country_level(items, code, name=None):
-    """The level of one country's main advisory (Title 'X - Level 3: ...'), or None when the feed has none.
+def state_country_item(items, code, name=None):
+    """-> (level, item) for one country's main advisory (Title 'X - Level 3: ...'), or (None, None) when the feed has none.
     Several items under one code: the one titled with the country's name; failing that, the highest."""
     got = []
     for it in items:
@@ -287,14 +287,32 @@ def state_country_level(items, code, name=None):
             lv = int(title.split("Level ")[1][0])
         except (IndexError, ValueError):
             continue
-        got.append((_norm_country(title.split(" - ")[0]), lv))
+        got.append((_norm_country(title.split(" - ")[0]), lv, it))
     if not got:
-        return None
+        return None, None
     if name:
-        named = [lv for t, lv in got if t == _norm_country(name)]
+        named = [(lv, it) for t, lv, it in got if t == _norm_country(name)]
         if named:
             return named[0]
-    return max(lv for _, lv in got)
+    lv, it = max(((lv, it) for _, lv, it in got), key=lambda x: x[0])
+    return lv, it
+
+
+def state_country_level(items, code, name=None):
+    return state_country_item(items, code, name)[0]
+
+
+DEPART = re.compile(r"(?:ordered|authori[sz]ed)\s+(?:the\s+)?departure", re.I)    # as backfill/sources_slow.py reads the archived pages
+
+
+def state_departures(items, iso_list, names=None):
+    """Countries whose main US advisory mentions an ordered or an authorised departure of staff or families."""
+    names = names if names is not None else C.STATE_NAME
+    n = 0
+    for c in iso_list:
+        it = state_country_item(items, c, names.get(c))[1]
+        n += bool(it and DEPART.search(f"{it.get('Title', '')} {it.get('Summary', '')}"))
+    return float(n)
 
 
 def state_levels(items, iso_list, names=None):

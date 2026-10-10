@@ -393,6 +393,26 @@ for th in C.STATE_ISO:
         url="https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html", sub="Advisories")
 
 
+def _state_dep(theatre):
+    def go():
+        v = S.state_departures(S.fetch_state(), C.STATE_ISO[theatre])
+        live = f"state_dep_main_{theatre}"
+        store.append(live, v)
+        pts = store.daily(live)
+        first = pts[0][0] if pts else "9999"
+        hist = store.backfill(f"state_dep_{theatre}") or store.backfill(f"state_od_{theatre}")   # ordered only, until the history is re-read
+        return [(d, x) for d, x in hist if d < first] + pts
+    return go
+
+
+TELL_ONLY = ("state_dep_",)     # read by the timing panel only: never scored, never in the composite or the model
+for th in C.STATE_ISO:
+    add(f"state_dep_{th}", f"Countries with a US ordered or authorised departure: {TH[th]}", "behavioral", th, "daily", False,
+        "A timing tell, not scored: the State Department sends staff or families home days before many strikes. Read by the timing panel (tells.py).",
+        _state_dep(th), url="https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html", sub="Advisories")
+    SERIES[-1]["scored"] = False
+
+
 def _news(th):
     sid = f"news_{th}"
 
