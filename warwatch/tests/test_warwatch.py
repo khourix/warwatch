@@ -565,6 +565,29 @@ class TestOsint(unittest.TestCase):
         self.assertEqual([(o["id"], o["issued"], o["lat"], o["lon"]) for o in out],
                          [("JAPANNW-3998/26", "2026-10-10", 41.72, 141.49), ("JAPANNW-3993/26", "2026-10-09", 34.34, 124.5)])
 
+    def test_msa_military_warnings_by_bureau(self):
+        items = [{"articleId": "a", "articleTitle": "军事训练—琼航警196/26", "articlePublishTime": "2026-10-10 17:40"},
+                 {"articleId": "b", "articleTitle": "MILITARY EXERCISES—HN188/26", "articlePublishTime": "2026-10-10 17:40"},
+                 {"articleId": "c", "articleTitle": "军事活动-渤海—鲁航警883/26", "articlePublishTime": "2026-10-09 17:37"},
+                 {"articleId": "d", "articleTitle": "拖带作业—粤航警726/26", "articlePublishTime": "2026-10-10 17:49"},
+                 {"articleId": "e", "articleTitle": "实弹射击—闽航警0512/26", "articlePublishTime": "2026-09-01 08:00"}]
+        rows = extras.parse_msa(items)
+        self.assertEqual([r[:3] for r in rows], [["a", "2026-10-10", "琼"], ["c", "2026-10-09", "鲁"], ["e", "2026-09-01", "闽"]])
+        out = dict(extras.msa_counts(rows, "taiwan", dt.date(2026, 9, 1), dt.date(2026, 10, 1)))
+        self.assertEqual((out["2026-09-01"], out["2026-09-30"], out["2026-10-01"]), (1.0, 1.0, 0.0))
+        self.assertEqual(extras.msa_counts(rows, "korea", dt.date(2026, 10, 10), dt.date(2026, 10, 10)), [("2026-10-10", 1.0)])
+
+    def test_gacc_by_country(self):
+        row = lambda n, *v: "<tr><td class='x'>" + n + "</td>" + "".join(f"<td align='right'>{x}&nbsp;</td>" for x in v) + "</tr>"
+        page = ("<table>" + row("Moldova", "68,514", "512,673", "47,256", "420,060", "21,257", "92,614", "51.9", "68.7", "4.6")
+                + row("Russia", "25,603,151", "185,047,800", "11,851,101", "84,675,063", "13,752,050", "100,372,737", "28.4", "30.7", "26.5")
+                + row("Democratic People's Republic of Korea", "237,878", "1,973,931", "182,853", "1,550,580", "55,025", "423,352", "20.0", "13.4", "52.1") + "</table>")
+        out = extras.parse_gacc_country(page)
+        self.assertEqual(out, {"russia": 11851.101, "dprk": 182.853})
+        bulletin = ("<option value=\"2026\">2026</option><tr><td>(2) Imports and Exports by Country (Region) of Origin/Destination</td><td>"
+                    "<a href=http://english.customs.gov.cn/Statics/a.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/b.html> Feb.</a><span>Mar.</span></td></tr>")
+        self.assertEqual(extras.gacc_month_links(bulletin), [("2026-01-01", "http://english.customs.gov.cn/Statics/a.html"), ("2026-02-01", "http://english.customs.gov.cn/Statics/b.html")])
+
     def test_oref_mirror_waves(self):
         import osint
         text = ("data,date,time,alertDate,category,category_desc,matrix_id,rid\n"

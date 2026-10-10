@@ -4,6 +4,7 @@ US advisory levels by country. Every fetcher fails soft: a missing source
 leaves its layer empty and the dashboard says so.
 """
 import datetime as dt
+import html
 import json
 import re
 import time
@@ -207,6 +208,135 @@ def jcg_series(theatre, today=None):
         out.append((d.isoformat(), float(sum(1 for m in mine if 0 <= (d - m).days <= 30))))
         d += dt.timedelta(days=1)
     return out
+
+
+# ---- China MSA navigational warnings (航行警告), read from the MSA mobile site's list API ----
+# msa.gov.cn/page/outter/weather.jsp refuses GitHub and home connections alike; the mobile site's article API answers from GitHub and lists
+# every warning all bureaus issue, newest first, with a title naming the activity and the bureau ('军事训练—琼航警196/26').
+MSA_API = "https://www.msa.gov.cn/msacncms_wap/cmsarticle/selectPageByChannelId.jhtml"
+MSA_CHANNEL = "9c219298b27f460e995a99401b3ff6af"
+MSA_MIL = re.compile(r"军事|实弹|射击|演习|打靶|导弹|火箭")   # military, live fire, firing, exercise, target practice, missile, rocket
+MSA_BUREAU = re.compile(r"([\u4e00-\u9fff]{1,2})航警\s*\d+\s*/\s*\d+")
+MSA_THEATRE = {"taiwan": "闽浙沪", "scs": "琼粤桂深", "korea": "鲁辽冀津"}   # issuing bureaus: Taiwan Strait and East China Sea, South China Sea, Yellow Sea and Bohai
+
+
+def parse_msa(items):
+    """MSA list items -> [[id, date, bureau, title]] for the Chinese-language military warnings (the English copies would count twice)."""
+    out = []
+    for x in items or []:
+        t = (x.get("articleTitle") or "").strip()
+        m = MSA_BUREAU.search(t)
+        if not m or not MSA_MIL.search(t):
+            continue
+        out.append([str(x.get("articleId")), str(x.get("articlePublishTime") or "")[:10], m.group(1)[-1], t[:60]])
+    return out
+
+
+def fetch_msa_page(page, count=100):
+    """-> (items, total pages). Items carry articleId, articleTitle, articlePublishTime ('2026-10-10 17:40')."""
+    import urllib.request
+    req = urllib.request.Request(MSA_API, data=urllib.parse.urlencode({"channelId": MSA_CHANNEL, "pageNum": page, "count": count}).encode(),
+                                 headers={"User-Agent": C.USER_AGENT, "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                                          "X-Requested-With": "XMLHttpRequest", "Referer": "https://www.msa.gov.cn/msacncms_wap/pages/info_warn.jhtml?channelId=" + MSA_CHANNEL})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        d = json.loads(r.read().decode("utf-8"))
+    return d.get("list") or [], int(d.get("pages") or 0)
+
+
+def msa_update(max_pages=10):
+    """Reads the list newest first until it reaches warnings already kept, folding military ones into history/cache/msa_warn.csv.
+    The first row of that file, ['_from', date], is the oldest day the scans have read completely. -> (rows, covered-from date)"""
+    import store
+    rows = store.cache_rows("msa_warn")
+    start = rows[0][1] if rows and rows[0][0] == "_from" else ""
+    kept = {r[0]: r for r in rows if r[0] != "_from"}
+    seen_ids = set(kept)
+    oldest = ""
+    for page in range(1, max_pages + 1):
+        items, pages = fetch_msa_page(page)
+        if not items:
+            break
+        oldest = str(items[-1].get("articlePublishTime") or "")[:10]
+        for r in parse_msa(items):
+            kept[r[0]] = r
+        if start and (any(str(x.get("articleId")) in seen_ids for x in items) or oldest < start):
+            break
+        if page >= pages:
+            break
+        time.sleep(1)
+    start = start or oldest
+    out = sorted(kept.values(), key=lambda r: (r[1], r[0]))
+    store.cache_rows_save("msa_warn", [["_from", start]] + out)
+    return out, start
+
+
+def msa_counts(rows, theatre, first, today, days=30):
+    """Military warnings from the theatre's bureaus issued in the `days` up to each day from `first`. -> [(date, count)]"""
+    mine = [dt.date.fromisoformat(r[1]) for r in rows if r[2] in MSA_THEATRE[theatre] and r[1]]
+    out, d = [], first
+    while d <= today:
+        out.append((d.isoformat(), float(sum(1 for m in mine if 0 <= (d - m).days < days))))
+        d += dt.timedelta(days=1)
+    return out
+
+
+def msa_series(theatre, today=None):
+    import store
+    if "msa" not in _CACHE:
+        _CACHE["msa"] = msa_update()
+    rows, start = _CACHE["msa"]
+    today = today or dt.date.today()
+    live = msa_counts(rows, theatre, dt.date.fromisoformat(start) + dt.timedelta(days=30), today) if start else []
+    return store.seed(f"msa_{theatre}", live)
+
+
+# ---- China Customs (GACC) monthly bulletin: exports by destination country ----
+# stats.customs.gov.cn refuses GitHub and home connections alike (412); the English site's Monthly Bulletin answers and links one
+# table per month, 'Imports and Exports by Country (Region) of Origin/Destination', in US$1,000.
+GACC_MONTHLY = "http://english.customs.gov.cn/statics/report/monthly.html"
+GACC_COUNTRY = {"russia": "Russia", "iran": "Iran", "dprk": "Democratic People's Republic of Korea", "belarus": "Belarus"}
+
+
+def gacc_month_links(page):
+    """Monthly Bulletin page -> [(YYYY-MM-01, url)] for the by-country table of each month listed."""
+    year = re.search(r'<option value="(\d{4})"', page)
+    row = re.search(r"Imports and Exports by Country.*?</tr>", page, re.S)
+    if not year or not row:
+        raise RuntimeError("GACC monthly bulletin: by-country row not found")
+    months = {m[:3].lower(): i + 1 for i, m in enumerate("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split())}
+    return [(f"{year.group(1)}-{months[m.lower()]:02d}-01", u) for u, m in re.findall(r"href=['\"]?(http[^ '\">]+)['\"]?\s*>\s*(\w{3})", row.group(0))
+            if m.lower() in months]
+
+
+def parse_gacc_country(page):
+    """By-country table -> {country: exports that month in US$ million}. Columns: total, exports, imports, each for the month then the year to date."""
+    out = {}
+    plain = html.unescape(re.sub(r"<[^>]+>", "|", page)).replace("\xa0", " ")
+    for key, name in GACC_COUNTRY.items():
+        m = re.search(r"\|\s*" + re.escape(name) + r"\s*\|([\s|0-9,.\-]+)", plain)
+        if not m:
+            continue
+        nums = [float(x.replace(",", "")) for x in re.findall(r"-?[\d,]+(?:\.\d+)?", m.group(1))]
+        if len(nums) >= 6:
+            out[key] = nums[2] / 1000.0
+    return out
+
+
+def gacc_series(country):
+    """China's monthly exports to a country (US$ million), kept in history/cache/gacc_exports.csv (month, country, value) as each month appears."""
+    import store
+    if "gacc" not in _CACHE:
+        kept = {(r[0], r[1]): r for r in store.cache_rows("gacc_exports")}
+        have = {r[0] for r in kept.values()}
+        for month, url in gacc_month_links(S.get(GACC_MONTHLY, raw=True, retries=2, wait=5)):
+            if month in have:
+                continue
+            for k, v in parse_gacc_country(S.get(url, raw=True, retries=2, wait=5)).items():
+                kept[(month, k)] = [month, k, f"{v:.3f}"]
+            time.sleep(1)
+        _CACHE["gacc"] = sorted(kept.values())
+        store.cache_rows_save("gacc_exports", _CACHE["gacc"])
+    return store.seed(f"gacc_{country}", [(r[0], float(r[2])) for r in _CACHE["gacc"] if r[1] == country])
 
 
 def in_box(lat, lon, box):

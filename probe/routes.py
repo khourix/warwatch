@@ -422,8 +422,21 @@ def round9():
     return out
 
 
+def round10():
+    page = fetch_text("http://english.customs.gov.cn/statics/report/monthly.html")
+    k = page.find("monthlysel", page.find("</select>"))
+    scripts = [x for x in re.findall(r"<script[^>]*>(.*?)</script>", page, re.S) if "sel" in x or "year" in x.lower()]
+    return {"after select": page[k - 200: k + 1500] if k > 0 else "", "inline scripts": [x[:1500] for x in scripts][:4]}
+
+
 def main(path):
     res = []
+    if os.environ.get("ROUTES_ROUND") == "10":
+        v = round10()
+        print(json.dumps(v, ensure_ascii=False)[:800])
+        with open(path, "w") as f:
+            json.dump(v, f, indent=1, ensure_ascii=False)
+        return
     if os.environ.get("ROUTES_ROUND") == "9":
         v = round9()
         print(json.dumps(v, ensure_ascii=False)[:800])

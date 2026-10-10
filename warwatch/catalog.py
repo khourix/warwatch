@@ -605,6 +605,23 @@ for th in ("korea", "taiwan", "scs"):
         (lambda t=th: extras.jcg_series(t)), url="https://www1.kaiho.mlit.go.jp/TUHO/keiho/navarea11.html", sub="Warnings")
 
 
+# ============ China MSA military navigational warnings by issuing bureau (mobile-site list API; history from backfill.py msa) ============
+for th, where in (("taiwan", "Fujian, Zhejiang and Shanghai bureaus: Taiwan Strait and East China Sea"), ("scs", "Hainan, Guangdong, Guangxi and Shenzhen bureaus: South China Sea"),
+                  ("korea", "Shandong, Liaoning, Hebei and Tianjin bureaus: Yellow Sea and Bohai")):
+    add(f"msa_{th}", f"China's military navigational warnings, last 30 days, {TH[th]} waters (China MSA)", "geospatial", th, "daily", False,
+        f"Closures China's Maritime Safety Administration posts for military exercises, live fire and missile tests ({where}). "
+        "The PLA's large drills around Taiwan were each announced this way a day or more ahead.",
+        (lambda t=th: extras.msa_series(t)), url="https://www.msa.gov.cn/msacncms_wap/pages/info_warn.jhtml?channelId=9c219298b27f460e995a99401b3ff6af", sub="Warnings")
+
+
+# ============ China Customs: monthly exports to the countries at war or under sanctions (GACC English Monthly Bulletin) ============
+for key, th, nm in (("russia", "ukraine", "Russia"), ("belarus", "ukraine", "Belarus"), ("iran", "iran", "Iran"), ("dprk", "korea", "North Korea")):
+    add(f"gacc_{key}", f"China's exports to {nm}, US$ million a month (China Customs)", "logistics", th, "monthly", True,
+        f"What China ships to {nm} each month, from its own customs bulletin, about three weeks after the month ends. A supplier stocking a partner "
+        "before or during a war shows up here first; Comtrade's mirror data carries the same flow months later.",
+        (lambda k=key: extras.gacc_series(k)), drop=0, url=extras.GACC_MONTHLY, sub="Trade")
+
+
 # ============ Official UKMTO incident counts (the Royal Navy maritime trade centre feed behind ukmto.org) ============
 for th in ("iran", "yemen"):
     add(f"ukmto_{th}", f"UKMTO incident reports in last 30 days, {TH[th]} waters (official)", "geospatial", th, "daily", False,
@@ -657,13 +674,13 @@ for th, box in C.BOXES.items():
 # for the live layers without hammering rate-limited APIs.
 for _s in SERIES:
     _id = _s["id"]
-    if _id.startswith(("us_", "eu_", "dod_", "acled_", "ucdp_")) and _s["kind"] == "monthly":
+    if _id.startswith(("us_", "eu_", "dod_", "acled_", "ucdp_", "gacc_")) and _s["kind"] == "monthly":
         _s["every"] = 20      # trade and contract data change monthly, after a lag
     elif "FRED_API_KEY" in _s["needs"] or "fetch_market" in _s["fetch"].__code__.co_names:
         _s["every"] = 6       # daily closes
     elif _id.startswith(("portwatch_", "fcdo_", "crisiswatch_")):
         _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely, CrisisWatch is monthly
-    elif _id.startswith(("ioda_", "ooni_", "ports_", "cfr_", "gas_", "power_", "fx_")):
+    elif _id.startswith(("ioda_", "ooni_", "ports_", "cfr_", "gas_", "power_", "fx_", "msa_", "jcg_")):
         _s["every"] = 3
     elif _id.startswith("ais_presence_"):
         _s["every"] = 12      # one call per box; the source posts daily with a ~5 day delay
