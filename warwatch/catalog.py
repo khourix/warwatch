@@ -597,11 +597,65 @@ for th in C.GNEWS:
         _preforce(th), url=GD, sub="Derived")
 
 
+# ============ Japan Coast Guard warnings: NAVAREA XI (Japan coordinates it) and Japan's own navigational warnings ============
+for th in ("korea", "taiwan", "scs"):
+    add(f"jcg_{th}", f"New firing, missile and exercise warnings, last 30 days, {TH[th]} waters (Japan Coast Guard)", "geospatial", th, "daily", False,
+        "Live-fire, missile and exercise notices broadcast by Japan's Coast Guard for the northwest Pacific, including South Korean firing areas and "
+        "North Korean launch windows; exercises are announced before they happen. Kept from 10 October 2026 and counted from 9 November.",
+        (lambda t=th: extras.jcg_series(t)), url="https://www1.kaiho.mlit.go.jp/TUHO/keiho/navarea11.html", sub="Warnings")
+
+
+# ============ China MSA military navigational warnings by issuing bureau (mobile-site list API; history from backfill.py msa) ============
+for th, where in (("taiwan", "East China Sea and Taiwan Strait"), ("scs", "South China Sea and Gulf of Tonkin"), ("korea", "Yellow Sea and Bohai")):
+    add(f"msa_{th}", f"China's military navigational warnings, last 30 days, {TH[th]} waters (China MSA)", "geospatial", th, "daily", False,
+        f"Closures China's Maritime Safety Administration posts for military exercises, live fire and missile tests ({where}). "
+        "Counts routine and live-fire closures; the PLA's largest drills around Taiwan (2022, 2023, 2024) were announced through Xinhua instead, so this tracks the tempo around them. History from July 2020, when all three seas post to the list.",
+        (lambda t=th: extras.msa_series(t)), url="https://www.msa.gov.cn/msacncms_wap/pages/info_warn.jhtml?channelId=9c219298b27f460e995a99401b3ff6af", sub="Warnings")
+
+
+# ============ China Customs: monthly exports to the countries at war or under sanctions (GACC English Monthly Bulletin) ============
+for key, th, nm in (("russia", "ukraine", "Russia"), ("belarus", "ukraine", "Belarus"), ("iran", "iran", "Iran"), ("dprk", "korea", "North Korea")):
+    add(f"gacc_{key}", f"China's exports to {nm}, US$ million a month (China Customs)", "logistics", th, "monthly", True,
+        f"What China ships to {nm} each month, from its own customs bulletin, about three weeks after the month ends. A supplier stocking a partner "
+        "before or during a war shows up here first; Comtrade's mirror data carries the same flow months later.",
+        (lambda k=key: extras.gacc_series(k)), drop=0, url=extras.GACC_MONTHLY, sub="Trade")
+
+
 # ============ Official UKMTO incident counts (the Royal Navy maritime trade centre feed behind ukmto.org) ============
 for th in ("iran", "yemen"):
     add(f"ukmto_{th}", f"UKMTO incident reports in last 30 days, {TH[th]} waters (official)", "geospatial", th, "daily", False,
         "Suspicious approaches, hijackings and attacks reported by masters to UKMTO. Harassment and approaches usually precede strikes on shipping. The feed keeps about 100 days, so the history starts a month after its oldest incident.",
         (lambda t=th: __import__("osint").ukmto_series(t)), url="https://www.ukmto.org/recent-incidents", sub="Sea")
+
+
+# ============ Israel's rocket, missile and drone sirens (Tzeva Adom, which mirrors Home Front Command alerts) ============
+add("tzeva_israel", "Rocket, missile and drone alert waves in Israel, last 7 days (Tzeva Adom)", "geospatial", "israel", "daily", False,
+    "Each wave is one attack that set off Home Front Command sirens: rockets from Gaza or Lebanon, missiles from Iran or Yemen, hostile drones. "
+    "Sirens less than 10 minutes apart count as one wave. Reactive, so it confirms escalation, and a run of waves marks a new round. "
+    "Tzeva Adom serves only its latest 50 waves; the history before them comes from the open mirror of Home Front Command alerts, back to July 2014.",
+    (lambda: __import__("osint").tzeva_series()), url="https://www.tzevaadom.co.il/", sub="Strikes")
+
+# ============ Crisis Group CrisisWatch alerts (read from the Crisis Group RSS feed; the CrisisWatch pages themselves refuse automated readers) ============
+for th in __import__("osint").CW_THEATRE:
+    add(f"crisiswatch_{th}", f"CrisisWatch rating, {TH[th]} region: 2 for a conflict-risk alert, plus 1 for a deteriorated situation (Crisis Group)", "information", th, "monthly", False,
+        "Crisis Group's monthly global tracker, written by its country analysts. A conflict-risk alert is their judgement that a war or a sharp escalation is likely in the coming month. "
+        "Read from the issue posted in Crisis Group's RSS feed and kept from October 2026.",
+        (lambda t=th: __import__("osint").crisiswatch_series(t)), drop=0, url="https://www.crisisgroup.org/crisiswatch", sub="Expert")
+
+
+# ============ Ukraine air-raid alerts (alerts.in.ua; news.yml fills the cache every 6 hours) ============
+add("uaair_ukraine", "Air-raid alerts on whole oblasts across Ukraine, last 7 days (alerts.in.ua)", "geospatial", "ukraine", "daily", False,
+    "Each count is one oblast (or Kyiv city) placed under air-raid alert. A Russian missile or drone wave sets off most of the country at once, so the "
+    "count rises with each wave. Reactive, so it confirms escalation. The service keeps a month per region; the archive starts on 10 October 2026, a month back.",
+    _slow("uaair_ukraine", lambda: __import__("osint").ua_air_series(_key("ALERTS_IN_UA_TOKEN"))), needs=["ALERTS_IN_UA_TOKEN"], url="https://alerts.in.ua/", sub="Strikes")
+
+
+# ============ Bluesky war talk per theatre (Jetstream firehose sample, five minutes every half hour; news.yml fills the cache) ============
+for th in extras.KEYS:
+    add(f"bsky_{th}", f"Bluesky posts about war naming {TH[th]}, per 10,000 English posts", "information", th, "daily", False,
+        "Share of English Bluesky posts that name the theatre and use war words (strike, missiles, troops, evacuation). A share, so the network's growth "
+        "does not move it. Social talk spikes with the news, so it mostly confirms; a rise before the headlines is the signal worth watching.",
+        _slow(f"bsky_{th}", (lambda t=th: __import__("osint").bsky_series(t))), url="https://docs.bsky.app/blog/jetstream", sub="Social")
 
 
 # ============ ACLED conflict-event counts via HDX HAPI (the open route to ACLED data; ~2 months behind) ============
@@ -626,13 +680,13 @@ for th, box in C.BOXES.items():
 # for the live layers without hammering rate-limited APIs.
 for _s in SERIES:
     _id = _s["id"]
-    if _id.startswith(("us_", "eu_", "dod_", "acled_", "ucdp_")) and _s["kind"] == "monthly":
+    if _id.startswith(("us_", "eu_", "dod_", "acled_", "ucdp_", "gacc_")) and _s["kind"] == "monthly":
         _s["every"] = 20      # trade and contract data change monthly, after a lag
     elif "FRED_API_KEY" in _s["needs"] or "fetch_market" in _s["fetch"].__code__.co_names:
         _s["every"] = 6       # daily closes
-    elif _id.startswith(("portwatch_", "fcdo_")):
-        _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely
-    elif _id.startswith(("ioda_", "ooni_", "ports_", "cfr_", "gas_", "power_", "fx_")):
+    elif _id.startswith(("portwatch_", "fcdo_", "crisiswatch_")):
+        _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely, CrisisWatch is monthly
+    elif _id.startswith(("ioda_", "ooni_", "ports_", "cfr_", "gas_", "power_", "fx_", "msa_", "jcg_")):
         _s["every"] = 3
     elif _id.startswith("ais_presence_"):
         _s["every"] = 12      # one call per box; the source posts daily with a ~5 day delay

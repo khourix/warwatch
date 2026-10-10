@@ -1,5 +1,5 @@
 name: news
-# Headline counts (Google News RSS), GDELT daily event files, extended a few days per run.
+# Headline counts (Google News RSS), GDELT daily event files, extended a few days per run; a Bluesky sample (five minutes every half hour).
 # First run: dispatch with max_requests=150 to backfill about 150 days for each theatre.
 on:
   schedule:
@@ -10,6 +10,10 @@ on:
         description: "calls per series this run (12 = daily upkeep, 150 = full backfill)"
         required: false
         default: "12"
+      bsky_hours:
+        description: "hours of Bluesky to sample back (Jetstream keeps about a day; 7 = daily upkeep)"
+        required: false
+        default: "7"
 permissions:
   contents: write
 concurrency:
@@ -31,8 +35,10 @@ jobs:
           FAA_CLIENT_ID: ${{ secrets.FAA_CLIENT_ID }}
           FAA_CLIENT_SECRET: ${{ secrets.FAA_CLIENT_SECRET }}
           GDELT_MAX: ${{ github.event.inputs.max_requests || '6' }}
+          BSKY_HOURS: ${{ github.event.inputs.bsky_hours || '7' }}
+          ALERTS_IN_UA_TOKEN: ${{ secrets.ALERTS_IN_UA_TOKEN }}
         run: |
-          ids=$(python3 -c "import sys; sys.path.insert(0,'warwatch'); import catalog; print(','.join(s['id'] for s in catalog.SERIES if s['id'].startswith(('news_','gdelt_','gpsjam_','notam_'))))")
+          ids=$(python3 -c "import sys; sys.path.insert(0,'warwatch'); import catalog; print(','.join(s['id'] for s in catalog.SERIES if s['id'].startswith(('news_','gdelt_','gpsjam_','notam_','bsky_','uaair_'))))")
           python3 warwatch/run.py --only "$ids" --fetch-only
       - name: Commit cache (public data only)
         run: |
@@ -45,7 +51,7 @@ jobs:
             git pull --rebase -q -X theirs origin main && git push -q && exit 0
             git rebase --abort 2>/dev/null || true
             # the dashboard build pushed in between: re-apply only this job's files on top of the new head
-            mkdir -p /tmp/mine && cp warwatch/history/cache/news_* warwatch/history/cache/gdelt_* warwatch/history/cache/gpsjam_* warwatch/history/cache/notam_* /tmp/mine/ 2>/dev/null || true
+            mkdir -p /tmp/mine && cp warwatch/history/cache/news_* warwatch/history/cache/gdelt_* warwatch/history/cache/gpsjam_* warwatch/history/cache/notam_* warwatch/history/cache/bsky_* warwatch/history/cache/uaair_* /tmp/mine/ 2>/dev/null || true
             git fetch -q origin main && git reset -q --hard origin/main
             cp /tmp/mine/* warwatch/history/cache/ && git add warwatch/history/cache && git commit -qm "news: $(date -u +%FT%H:%MZ)" || exit 0
           done

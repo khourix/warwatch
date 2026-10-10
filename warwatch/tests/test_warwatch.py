@@ -505,6 +505,128 @@ class TestOsint(unittest.TestCase):
             store.ROOT = old
             osint._UK.clear()
 
+    def test_tzeva_counts_hostile_waves_inside_covered_windows(self):
+        import osint
+        day = lambda d, h=12: int(dt.datetime(2026, 10, d, h, tzinfo=dt.timezone.utc).timestamp())
+        groups = [{"id": 3, "alerts": [{"time": day(9), "cities": ["A", "B"], "threat": 0, "isDrill": False}, {"time": day(9, 13), "cities": ["B", "C"], "threat": 5, "isDrill": False}]},
+                  {"id": 2, "alerts": [{"time": day(5), "cities": ["A"], "threat": 3, "isDrill": False}]},     # earthquake: not an attack
+                  {"id": 1, "alerts": [{"time": day(2), "cities": ["A"], "threat": 0, "isDrill": True}]},      # drill
+                  {"id": 0, "alerts": [{"time": day(1), "cities": ["D"], "threat": 0, "isDrill": False}]}]
+        rows = osint.parse_tzeva(groups)
+        self.assertEqual([r[0] for r in rows], ["3", "0"])
+        self.assertEqual(rows[0][2:], ["0|5", "3"])
+        d, old, oldb = tempfile.mkdtemp(), store.ROOT, store.BACKFILL
+        store.ROOT = store.BACKFILL = d
+        try:
+            osint._TZ["all"] = groups
+            out = dict(osint.tzeva_series(today=dt.date(2026, 10, 10)))
+            self.assertEqual(min(out), "2026-10-08")                  # a full week after the oldest wave
+            self.assertEqual((out["2026-10-08"], out["2026-10-09"]), (0.0, 1.0))
+            osint._TZ["all"] = groups[:1]                              # the feed drops old waves; the archive keeps them
+            self.assertEqual(min(dict(osint.tzeva_series(today=dt.date(2026, 10, 10)))), "2026-10-08")
+            with open(os.path.join(d, "tzeva_israel.csv"), "w") as f:      # the Home Front Command mirror fills the days before
+                f.write("2026-10-07,4\n2026-10-08,9\n")
+            out = osint.tzeva_series(today=dt.date(2026, 10, 10))
+            self.assertEqual(out[:2], [("2026-10-07", 4.0), ("2026-10-08", 0.0)])
+        finally:
+            store.ROOT, store.BACKFILL = old, oldb
+            osint._TZ.clear()
+
+    def test_crisiswatch_from_rss(self):
+        import osint
+        body = ('&lt;h4&gt;Conflict Risk Alerts&lt;/h4&gt; &lt;p&gt; &lt;a data-entry-target="iran"&gt;Iran&lt;/a&gt; &lt;a data-entry-target="saudi-arabia"&gt;Saudi Arabia&lt;/a&gt; &lt;/p&gt;'
+                '&lt;h4&gt;Deteriorated Situations&lt;/h4&gt; &lt;p&gt; &lt;a data-entry-target="yemen"&gt;Yemen&lt;/a&gt; &lt;/p&gt;')
+        rss = (f"<rss><item><title>September Trends and October Alerts 2026</title><description>{body}</description></item>"
+               "<item><title>Inside Sudan's War</title><description>&lt;h4&gt;Conflict Risk Alerts&lt;/h4&gt;&lt;p&gt;&lt;a data-entry-target=\"sudan\"&gt;&lt;/p&gt;</description></item></rss>")
+        rows = osint.parse_crisiswatch(rss)
+        self.assertEqual(rows, [("2026-10-01", "alert", "iran"), ("2026-10-01", "alert", "saudi-arabia"), ("2026-10-01", "deteriorated", "yemen")])
+        d, old = tempfile.mkdtemp(), store.ROOT
+        store.ROOT = d
+        try:
+            osint._CW["rows"] = osint.crisiswatch_archive(rows)
+            self.assertEqual(osint.crisiswatch_series("yemen"), [("2026-10-01", 3.0)])   # Saudi alert plus Yemen deteriorated
+            self.assertEqual(osint.crisiswatch_series("iran"), [("2026-10-01", 2.0)])
+            self.assertEqual(osint.crisiswatch_series("korea"), [("2026-10-01", 0.0)])
+        finally:
+            store.ROOT = old
+            osint._CW.clear()
+
+    def test_jcg_warning_texts(self):
+        page = ("<html><body><pre>NAVAREA XI NO.26-0454 発表日時：2026年10月10日 03時 TSUNAMI INFORMATION. PACIFIC OCEAN. EARTHQUAKE IN 07-30.0N 080-48.0W."
+                "</pre><pre>NO.26-0430 発表日時：2026年09月28日 11時 KOREA, EAST COAST. GUNNERY EXERCISES 0000Z TO 0900Z DAILY 01 TO 31 OCT "
+                "IN AREA BOUNDED BY 37-40.0N 129-10.0E, 37-40.0N 129-40.0E.</pre></body></html>")
+        out = extras.parse_jcg_texts("NAVAREA11", page)
+        self.assertEqual(len(out), 1)                     # the tsunami notice is not a hazard warning
+        self.assertEqual((out[0]["id"], out[0]["issued"], out[0]["lat"]), ("NAVAREA11-0430/26", "2026-09-28", 37.67))
+        jp = (" 日本航行警報 番号：26-3998 発表日時：2026年10月10日 20時 恵山岬東南東、 射撃、１０月１５日（予備１６日）０８００−２４００、 "
+              "４１−４３．０Ｎ １４１−２９．４Ｅを中心とする半径５海里の円内。 番号：26-3996 発表日時：2026年10月10日 03時 津波情報、 太平洋、０７．５Ｎ ０８０．８Ｗ。"
+              " 番号：26-3993 発表日時：2026年10月09日 20時 ★ 朝鮮半島南岸、済州島北西、 射撃、３４−２０−３０Ｎ １２４−３０−００Ｅ で囲まれる海面。")
+        out = extras.parse_jcg_texts("JAPANNW", jp)
+        self.assertEqual([(o["id"], o["issued"], o["lat"], o["lon"]) for o in out],
+                         [("JAPANNW-3998/26", "2026-10-10", 41.72, 141.49), ("JAPANNW-3993/26", "2026-10-09", 34.34, 124.5)])
+
+    def test_msa_military_warnings_by_bureau(self):
+        items = [{"articleId": "a", "articleTitle": "军事训练—琼航警196/26", "articlePublishTime": "2026-10-10 17:40"},
+                 {"articleId": "b", "articleTitle": "MILITARY EXERCISES—HN188/26", "articlePublishTime": "2026-10-10 17:40"},
+                 {"articleId": "c", "articleTitle": "军事活动-渤海—鲁航警883/26", "articlePublishTime": "2026-10-09 17:37"},
+                 {"articleId": "d", "articleTitle": "拖带作业—粤航警726/26", "articlePublishTime": "2026-10-10 17:49"},
+                 {"articleId": "e", "articleTitle": "实弹射击—闽航警0512/26", "articlePublishTime": "2026-09-01 08:00"}]
+        items += [{"articleId": "f", "articleTitle": "渤海北部军事演习", "articlePublishTime": "2026-10-10 08:00"},
+                  {"articleId": "g", "articleTitle": "军事训练取消--桂航警58/23", "articlePublishTime": "2026-10-10 08:00"},
+                  {"articleId": "h", "articleTitle": "东海实弹射击  浙航警659/22", "articlePublishTime": "2026-09-02 08:00"}]
+        rows = extras.parse_msa(items)
+        self.assertEqual([r[:3] for r in rows], [["a", "2026-10-10", "琼"], ["c", "2026-10-09", "鲁"], ["e", "2026-09-01", "闽"], ["f", "2026-10-10", ""], ["h", "2026-09-02", "浙"]])
+        self.assertEqual([extras.msa_theatre(r[3]) for r in rows], ["scs", "korea", "taiwan", "korea", "taiwan"])
+        rows = rows[:3]
+        out = dict(extras.msa_counts(rows, "taiwan", dt.date(2026, 9, 1), dt.date(2026, 10, 1)))
+        self.assertEqual((out["2026-09-01"], out["2026-09-30"], out["2026-10-01"]), (1.0, 1.0, 0.0))
+        self.assertEqual(extras.msa_counts(rows, "korea", dt.date(2026, 10, 10), dt.date(2026, 10, 10)), [("2026-10-10", 1.0)])
+
+    def test_gacc_by_country(self):
+        row = lambda n, *v: "<tr><td class='x'>" + n + "</td>" + "".join(f"<td align='right'>{x}&nbsp;</td>" for x in v) + "</tr>"
+        page = ("<table>" + row("Moldova", "68,514", "512,673", "47,256", "420,060", "21,257", "92,614", "51.9", "68.7", "4.6")
+                + row("Russia", "25,603,151", "185,047,800", "11,851,101", "84,675,063", "13,752,050", "100,372,737", "28.4", "30.7", "26.5")
+                + row("Democratic People's Republic of Korea", "237,878", "1,973,931", "182,853", "1,550,580", "55,025", "423,352", "20.0", "13.4", "52.1") + "</table>")
+        out = extras.parse_gacc_country(page)
+        self.assertEqual(out, {"russia": 11851.101, "dprk": 182.853})
+        bulletin = ("<option value=\"2026\">2026</option><tr><td>(2) Imports and Exports by Country (Region) of Origin/Destination</td><td>"
+                    "<a href=http://english.customs.gov.cn/Statics/a.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/b.html> Feb.</a><span>Mar.</span></td></tr>")
+        self.assertEqual(extras.gacc_month_links(bulletin), [("2026-01-01", "http://english.customs.gov.cn/Statics/a.html"), ("2026-02-01", "http://english.customs.gov.cn/Statics/b.html")])
+
+    def test_ua_air_alerts_whole_regions_only(self):
+        import osint
+        p = {"alerts": [{"id": 1, "location_uid": "31", "started_at": "2026-10-09T23:10:00.000Z", "alert_type": "air_raid"},
+                        {"id": 2, "location_uid": "1293", "started_at": "2026-10-09T23:12:00.000Z", "alert_type": "air_raid"},   # a district inside it
+                        {"id": 3, "location_uid": "31", "started_at": None, "alert_type": "air_raid"}]}
+        self.assertEqual(osint.parse_ua_alerts(p, 31), [["1", "2026-10-09T23:10", "31", "air_raid"]])
+
+    def test_oref_mirror_waves(self):
+        import osint
+        text = ("data,date,time,alertDate,category,category_desc,matrix_id,rid\n"
+                "A,24.07.2014,17:05:26,2014-07-24T17:05:00,1,ירי רקטות וטילים,1,1\n"
+                "B,24.07.2014,17:09:00,2014-07-24T17:09:00,1,ירי רקטות וטילים,1,2\n"
+                "B,24.07.2014,17:12:00,2014-07-24T17:12:00,13,האירוע הסתיים,10,3\n"
+                "C,24.07.2014,19:00:00,2014-07-24T19:00:00,2,חדירת כלי טיס עוין,2,4\n"
+                "C,25.07.2014,10:00:00,2014-07-25T10:00:00,3,רעידת אדמה,3,5\n")
+        t = osint.parse_oref_csv(text)
+        self.assertEqual(len(t), 3)
+        self.assertEqual(t[0].strftime("%H:%M"), "14:05")                  # Israel summer time is UTC+3
+        w = osint.alert_waves(t)
+        self.assertEqual(len(w), 2)                                         # 17:05 and 17:09 are one wave
+        self.assertEqual(osint.weekly_waves(w, dt.date(2014, 7, 24), dt.date(2014, 7, 31))[-2:], [("2014-07-30", 2.0), ("2014-07-31", 0.0)])
+
+    def test_bsky_rate_per_theatre(self):
+        import osint
+        n, hits = osint.bsky_tally([("Missiles hit Kharkiv, Ukraine says", ["en"]), ("Ukraine is lovely in spring", ["en"]),
+                                    ("Iran war talk", ["fa"]), ("Israeli strikes in Lebanon", ["en", "ar"]), ("no langs", None)])
+        self.assertEqual((n, hits), (3, {"ukraine": 1, "israel": 1}))
+        osint._BS["rows"] = [["2026-10-09T00:00", "8000", "ukraine:4 iran:1"], ["2026-10-09T00:30", "4000", "ukraine:2"], ["2026-10-10T00:00", "500", "ukraine:5"]]
+        try:
+            self.assertEqual(osint.bsky_series("ukraine"), [("2026-10-09", 5.0)])   # 6 per 12,000; the thin day is left out
+            self.assertEqual(osint.bsky_series("iran"), [("2026-10-09", 1e4 / 12000)])
+        finally:
+            osint._BS.clear()
+
     def test_seed_uses_archive_only_before_the_live_series_starts(self):
         d = tempfile.mkdtemp()
         with open(os.path.join(d, "demo_series.csv"), "w") as f:

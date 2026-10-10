@@ -12,6 +12,8 @@
     python3 backfill/backfill.py gdeltwide [--start D --end D] # wider GDELT event types and dyads per theatre
     python3 backfill/backfill.py metaculus                     # Metaculus community forecasts on military questions (token)
     python3 backfill/backfill.py senkaku                       # Japan Coast Guard Senkaku vessel counts (monthly PDFs, text kept)
+    python3 backfill/backfill.py alerts                        # Israel's attack waves since 2014, from the Home Front Command history mirror
+    python3 backfill/backfill.py msa                           # China MSA military navigational warnings, every page of the list (about 600 requests)
     python3 backfill/backfill.py state THEATRE[,THEATRE...] [--start D --end D]
     python3 backfill/backfill.py merge       # fold ADS-B quarter shards into data/
     python3 backfill/backfill.py coverage
@@ -51,6 +53,51 @@ def cmd_coverage():
     out += [f"| {s} | {n} | {a} | {b} | {z:.0%} |" for s, n, a, b, z in rows]
     open(os.path.join(K.HERE, "COVERAGE.md"), "w").write("\n".join(out) + "\n")
     print("\n".join(out))
+
+
+def cmd_alerts():
+    """tzeva_israel: attack waves in the last 7 days, from the open mirror of Home Front Command alerts (one CSV, about 65 MB)."""
+    import urllib.request
+    sys.path.insert(0, os.path.join(os.path.dirname(K.HERE), "warwatch"))
+    import osint
+    with urllib.request.urlopen(urllib.request.Request(osint.OREF_MIRROR, headers={"User-Agent": "warwatch-backfill"}), timeout=300) as r:
+        text = r.read().decode("utf-8")
+    waves = osint.alert_waves(osint.parse_oref_csv(text))
+    if not waves:
+        sys.exit("no alerts parsed from the mirror")
+    pts = osint.weekly_waves(waves, waves[0].date() + dt.timedelta(days=7), waves[-1].date())
+    K.log("alerts:", len(waves), "waves", waves[0].date(), "to", waves[-1].date(), "->", K.save("tzeva_israel", pts), "days")
+
+
+def cmd_msa():
+    """msa_<theatre>: China's military navigational warnings in the last 30 days, from every page of the MSA warning list."""
+    import time
+    sys.path.insert(0, os.path.join(os.path.dirname(K.HERE), "warwatch"))
+    import extras
+    rows, page, pages, oldest = {}, 1, 1, ""
+    while page <= pages:
+        for i in range(4):
+            try:
+                items, pages = extras.fetch_msa_page(page)
+                break
+            except Exception as e:
+                K.log("page", page, "retry:", str(e)[:120])
+                time.sleep(10 * (i + 1))
+        else:
+            sys.exit(f"MSA list failed at page {page}")
+        for r in extras.parse_msa(items):
+            rows[r[0]] = r
+        oldest = str(items[-1].get("articlePublishTime") or "")[:10] if items else oldest
+        if page % 50 == 0:
+            K.log("page", page, "of", pages, "back to", oldest, len(rows), "military")
+        page += 1
+        time.sleep(0.3)
+    # The list reaches back to 2015, but bureaus joined it through 2020 (Yellow Sea from February, South China Sea from June): every theatre
+    # starts on 1 July 2020, once all three post there, or a month after its own first military warning if that is later.
+    for th in extras.MSA_THEATRE:
+        own = [dt.date.fromisoformat(r[1]) for r in rows.values() if r[1] and extras.msa_theatre(r[3]) == th]
+        first = max(dt.date(2020, 7, 1), min(own) + dt.timedelta(days=30)) if own else K.YDAY
+        K.log("msa", th, K.save(f"msa_{th}", extras.msa_counts(list(rows.values()), th, first, K.YDAY)), "days from", first)
 
 
 def cmd_merge():
@@ -121,6 +168,10 @@ def main():
     elif a.cmd == "state":
         import sources_slow as L
         L.cmd_state(a.arg.split(","), a.start, a.end)
+    elif a.cmd == "alerts":
+        cmd_alerts()
+    elif a.cmd == "msa":
+        cmd_msa()
     elif a.cmd == "merge":
         cmd_merge()
     elif a.cmd == "coverage":

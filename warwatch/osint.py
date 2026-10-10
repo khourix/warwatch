@@ -370,6 +370,137 @@ def ukmto_series(theatre, days=30, today=None):
     return out
 
 
+TZEVA_API = "https://api.tzevaadom.co.il/alerts-history"   # Tzeva Adom's mirror of Home Front Command alerts; oref.org.il itself refuses non-Israeli addresses
+TZEVA_HOSTILE = {0: "rockets and missiles", 2: "infiltration", 5: "hostile aircraft"}   # 1 hazmat, 3 earthquake, 4 tsunami: not attacks
+
+
+def parse_tzeva(groups):
+    """Tzeva Adom history (alert groups, each a list of {time, cities, threat, isDrill}) -> [[id, utc time, threats, cities]] for groups
+    with at least one real hostile alert. A group is one attack wave: a salvo sets off sirens in many towns within a few minutes."""
+    out = []
+    for g in groups or []:
+        al = [a for a in g.get("alerts") or [] if not a.get("isDrill") and a.get("threat") in TZEVA_HOSTILE and a.get("time")]
+        if not al:
+            continue
+        t = dt.datetime.fromtimestamp(min(a["time"] for a in al), dt.timezone.utc).strftime("%Y-%m-%dT%H:%M")
+        out.append([str(g.get("id")), t, "|".join(sorted({str(a["threat"]) for a in al})), str(len({c for a in al for c in a.get("cities") or []}))])
+    return out
+
+
+_TZ = {}
+
+
+def tzeva_archive(rows):
+    """Folds the feed's attack waves into history/cache/tzeva_alerts.csv, which keeps what the feed later drops. -> all rows, oldest first."""
+    import store
+    kept = {r[0]: r for r in store.cache_rows("tzeva_alerts")}
+    for r in rows:
+        kept[r[0]] = r
+    out = sorted(kept.values(), key=lambda r: (r[1], r[0]))
+    store.cache_rows_save("tzeva_alerts", out)
+    return out
+
+
+def alert_waves(times, gap=10):
+    """Alert times (datetimes) -> the start of each attack wave: sirens less than `gap` minutes apart belong to one wave."""
+    out, last = [], None
+    for t in sorted(times):
+        if last is None or (t - last).total_seconds() > gap * 60:
+            out.append(t)
+        last = t
+    return out
+
+
+def weekly_waves(waves, first, today, days=7):
+    """Waves in the `days` up to each day from `first` -> [(date, count)]."""
+    ds = [w.date() for w in waves]
+    out, d = [], first
+    while d <= today:
+        out.append((d.isoformat(), float(sum(1 for w in ds if 0 <= (d - w).days < days))))
+        d += dt.timedelta(days=1)
+    return out
+
+
+OREF_MIRROR = "https://raw.githubusercontent.com/dleshem/israel-alerts-data/main/israel-alerts.csv"   # Home Front Command history since July 2014 (Apache 2.0)
+OREF_HOSTILE = ("ירי רקטות וטילים", "חדירת כלי טיס עוין", "חדירת מחבלים")   # rockets and missiles, hostile aircraft, infiltration
+
+
+def parse_oref_csv(text):
+    """The Home Front Command history mirror (one row per alert message: data, date, time, alertDate, category, category_desc, ...)
+    -> alert times of real attacks. Drills, all-clears and early-warning notices are left out."""
+    import csv
+    import io
+    try:
+        from zoneinfo import ZoneInfo
+        il = ZoneInfo("Asia/Jerusalem")
+    except Exception:   # no time-zone database: winter time, an hour off in summer
+        il = dt.timezone(dt.timedelta(hours=2))
+    out = []
+    for r in csv.DictReader(io.StringIO(text)):
+        desc = r.get("category_desc") or ""
+        if desc not in OREF_HOSTILE:
+            continue
+        try:
+            out.append(dt.datetime.fromisoformat(r["alertDate"][:16]).replace(tzinfo=il).astimezone(dt.timezone.utc))
+        except (KeyError, ValueError):
+            continue
+    return out
+
+
+def tzeva_series(days=7, today=None):
+    """Attack waves that set off sirens in Israel in the `days` up to each day. The feed holds only its latest waves, so the live part
+    starts `days` after the oldest archived one; days before that come from the Home Front Command history mirror (backfill.py alerts),
+    counted the same way. -> [(date, count)]"""
+    import store
+    if "all" not in _TZ:
+        _TZ["all"] = S.get(TZEVA_API, headers={"Accept": "application/json", "Referer": "https://www.tzevaadom.co.il/"}, retries=2, wait=3)
+    rows = tzeva_archive(parse_tzeva(_TZ["all"]))
+    if not rows:
+        return store.backfill("tzeva_israel")
+    waves = alert_waves(dt.datetime.fromisoformat(r[1]).replace(tzinfo=dt.timezone.utc) for r in rows)
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    return store.seed("tzeva_israel", weekly_waves(waves, waves[0].date() + dt.timedelta(days=days), today, days))
+
+
+# ---------------------------------------------------------------- Ukraine air-raid alerts (alerts.in.ua, token in ALERTS_IN_UA_TOKEN)
+UA_API = "https://api.alerts.in.ua/v1/"
+UA_REGIONS = (3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 31)   # oblasts and Kyiv city; Crimea, Sevastopol and Luhansk are under standing alert
+
+
+def parse_ua_alerts(payload, uid):
+    """A region's month of history -> [[id, started UTC 'YYYY-MM-DDTHH:MM', uid, type]] for alerts raised on the whole region."""
+    out = []
+    for a in (payload or {}).get("alerts", []):
+        if str(a.get("location_uid")) != str(uid) or not a.get("started_at"):
+            continue
+        out.append([str(a.get("id")), str(a["started_at"])[:16], str(uid), str(a.get("alert_type") or "")])
+    return out
+
+
+def ua_air_series(token, days=7, today=None, pause=3):
+    """Air-raid alerts raised on whole oblasts (and Kyiv city) across Ukraine in the `days` up to each day. A Russian missile or drone wave
+    sets off most oblasts at once, so this rises with each wave. alerts.in.ua serves a month per region; history/cache/uaair_alerts.csv keeps the rest."""
+    import store
+    kept = {r[0]: r for r in store.cache_rows("uaair_alerts")}
+    for uid in UA_REGIONS:
+        p = S.get(f"{UA_API}regions/{uid}/alerts/month_ago.json", headers={"Authorization": "Bearer " + token}, retries=2, wait=10)
+        for r in parse_ua_alerts(p, uid):
+            if r[3] == "air_raid":
+                kept[r[0]] = r
+        time.sleep(pause)
+    rows = sorted(kept.values(), key=lambda r: (r[1], r[0]))
+    store.cache_rows_save("uaair_alerts", rows)
+    if not rows:
+        return []
+    starts = [dt.date.fromisoformat(r[1][:10]) for r in rows]
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    out, d = [], starts[0] + dt.timedelta(days=days)
+    while d <= today:
+        out.append((d.isoformat(), float(sum(1 for w in starts if 0 <= (d - w).days < days))))
+        d += dt.timedelta(days=1)
+    return out
+
+
 def ukmto_recent(theatre, days=30, today=None):
     """Official UKMTO incidents in the last `days` inside a theatre box."""
     return float(sum(1 for x in parse_ukmto(ukmto_all(), today, days) if x["th"] == theatre))
@@ -395,6 +526,190 @@ def fetch_incidents():
                 out.append(x)
     out.sort(key=lambda x: x["d"], reverse=True)
     return out[:80]
+
+
+# ---------------------------------------------------------------- Crisis Group CrisisWatch, read from its RSS feed
+# crisisgroup.org/crisiswatch refuses GitHub and home connections alike (Cloudflare), but the site's RSS feed answers and carries the
+# whole monthly CrisisWatch page, including its lists of conflict-risk alerts and deteriorated situations.
+CRISISGROUP_RSS = "https://www.crisisgroup.org/rss.xml"
+CW_LISTS = {"alert": "Conflict Risk Alerts", "resolution": "Resolution Opportunities", "deteriorated": "Deteriorated Situations", "improved": "Improved Situations"}
+CW_THEATRE = {   # CrisisWatch entry slugs -> theatre
+    "ukraine": r"ukraine|russia|belarus|moldova", "europe_east": r"poland|baltic|lithuania|latvia|estonia|finland",
+    "iran": r"iran|iraq", "yemen": r"yemen|saudi|red-sea|gulf", "israel": r"israel|palestin|lebanon|syria|jordan",
+    "taiwan": r"taiwan", "scs": r"south-china-sea|philippines", "korea": r"korea", "southasia": r"india|pakistan|kashmir",
+    "libya": r"libya", "sudan": r"sudan", "drc": r"congo", "venezuela": r"venezuela|colombia|guyana|cuba",
+}
+MONTHS_EN = {m: i + 1 for i, m in enumerate(("january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"))}
+
+
+def parse_crisiswatch(rss):
+    """Crisis Group RSS -> [(alert month 'YYYY-MM-01', list name, entry slug)] for each monthly CrisisWatch issue in the feed. An issue titled
+    'September Trends and October Alerts 2026' is filed under October 2026: its alerts look ahead to that month."""
+    out = []
+    for item in re.findall(r"<item>.*?</item>", rss, re.S):
+        m = re.search(r"<title>\s*(\w+) Trends and (\w+) Alerts (\d{4})\s*</title>", item)
+        if not m or m.group(2).lower() not in MONTHS_EN:
+            continue
+        mon, yr = MONTHS_EN[m.group(2).lower()], int(m.group(3))
+        body = html.unescape(item)
+        for key, head in CW_LISTS.items():
+            k = body.find(head + "</h4>")
+            if k < 0:
+                continue
+            seg = body[k: body.find("</p>", k)]
+            out += [(f"{yr:04d}-{mon:02d}-01", key, slug) for slug in re.findall(r'data-entry-target="([\w-]+)"', seg)]
+    return out
+
+
+def crisiswatch_archive(rows):
+    """Folds each issue's lists into history/cache/crisiswatch.csv (month, list, slug); the feed keeps only its last ten posts."""
+    import store
+    kept = {tuple(r) for r in store.cache_rows("crisiswatch")}
+    kept |= {tuple(r) for r in rows}
+    out = sorted(kept)
+    store.cache_rows_save("crisiswatch", [list(r) for r in out])
+    return out
+
+
+_CW = {}
+
+
+def crisiswatch_series(theatre):
+    """Per CrisisWatch issue: 2 for a conflict-risk alert on a country in the theatre, plus 1 for a deteriorated situation there. -> [(month, score)]"""
+    if "rows" not in _CW:
+        _CW["rows"] = crisiswatch_archive(parse_crisiswatch(S.get(CRISISGROUP_RSS, raw=True, retries=2, wait=5)))
+    pat = re.compile(CW_THEATRE[theatre])
+    months = sorted({r[0] for r in _CW["rows"]})
+    mine = {(r[0], r[1]) for r in _CW["rows"] if pat.search(r[2])}
+    return [(m, 2.0 * ((m, "alert") in mine) + 1.0 * ((m, "deteriorated") in mine)) for m in months]
+
+
+# ---------------------------------------------------------------- Bluesky posts, sampled from the Jetstream firehose
+JETSTREAM = ("jetstream2.us-east.bsky.network", "jetstream1.us-east.bsky.network", "jetstream1.us-west.bsky.network", "jetstream2.us-west.bsky.network")
+BSKY_WAR = re.compile(r"\b(war|military|troops|strikes?|airstrikes?|missiles?|rockets?|drones?|shelling|bomb\w*|attack\w*|invasion|invade\w*|mobili[sz]\w*|"
+                      r"evacuat\w*|sirens?|air raid|warships?|navy|blockade|escalat\w*|ceasefire|nuclear|explosions?|offensive)\b", re.I)
+
+
+def bsky_tally(posts):
+    """[(text, langs)] -> (English posts, {theatre: English posts that name the theatre and use war vocabulary})."""
+    import extras
+    pats = {t: re.compile(r"\b(?:" + p + ")", re.I) for t, p in extras.KEYS.items()}
+    n, hits = 0, {}
+    for text, langs in posts:
+        if "en" not in (langs or ()):
+            continue
+        n += 1
+        if not BSKY_WAR.search(text or ""):
+            continue
+        for t, pat in pats.items():
+            if pat.search(text):
+                hits[t] = hits.get(t, 0) + 1
+    return n, hits
+
+
+def jetstream_window(start_us, seconds=60, host=JETSTREAM[0], wall=120):
+    """New posts in the `seconds` after start_us (microseconds), replayed from Jetstream's buffer of the last day or so. -> [(text, langs)]"""
+    ctx = ssl.create_default_context()
+    sock = ctx.wrap_socket(socket.create_connection((host, 443), timeout=20), server_hostname=host)
+    path = f"/subscribe?wantedCollections=app.bsky.feed.post&cursor={int(start_us)}"
+    k = base64.b64encode(os.urandom(16)).decode()
+    sock.sendall(f"GET {path} HTTP/1.1\r\nHost: {host}\r\nUser-Agent: {C.USER_AGENT}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                 f"Sec-WebSocket-Key: {k}\r\nSec-WebSocket-Version: 13\r\n\r\n".encode())
+    buf = b""
+    while b"\r\n\r\n" not in buf:
+        d = sock.recv(4096)
+        if not d:
+            raise RuntimeError("jetstream closed the connection")
+        buf += d
+    head, buf = buf.split(b"\r\n\r\n", 1)
+    if b" 101 " not in head.split(b"\r\n")[0]:
+        raise RuntimeError("jetstream refused the connection: " + head.split(b"\r\n")[0].decode("latin-1")[:80])
+    end, out, t0 = start_us + seconds * 1_000_000, [], time.time()
+    sock.settimeout(10)
+    try:
+        while time.time() - t0 < wall:
+            try:
+                d = sock.recv(262144)
+            except socket.timeout:
+                continue
+            if not d:
+                break
+            buf += d
+            while True:
+                fr = ws_read(buf)
+                if not fr:
+                    break
+                op, pl, buf = fr
+                if op == 9:
+                    sock.sendall(ws_frame(pl, 10))
+                    continue
+                if op == 8:
+                    return out
+                if op != 1:
+                    continue
+                try:
+                    ev = json.loads(pl)
+                except ValueError:
+                    continue
+                if ev.get("time_us", 0) >= end:
+                    return out
+                c = ev.get("commit") or {}
+                if ev.get("kind") == "commit" and c.get("operation") == "create":
+                    r = c.get("record") or {}
+                    out.append((r.get("text") or "", r.get("langs") or ()))
+    finally:
+        sock.close()
+    raise RuntimeError(f"jetstream window not finished in {wall}s ({len(out)} posts)")
+
+
+_BS = {}
+
+
+def bsky_sample(hours=None, step_min=30, seconds=300, budget=900, now=None):
+    """Samples five minutes of posts every half hour over the last `hours` (env BSKY_HOURS, default 7), skipping windows already in
+    history/cache/bsky_windows.csv (start, English posts, 'theatre:hits ...'). Jetstream keeps about a day, so a 6-hourly job misses nothing.
+    -> all archived rows."""
+    import store
+    if "rows" in _BS:
+        return _BS["rows"]
+    hours = float(hours or os.environ.get("BSKY_HOURS") or 7)
+    kept = {r[0]: r for r in store.cache_rows("bsky_windows")}
+    now = now or dt.datetime.now(dt.timezone.utc)
+    t = now.replace(minute=(now.minute // step_min) * step_min, second=0, microsecond=0) - dt.timedelta(minutes=step_min)
+    starts = []
+    while t >= now - dt.timedelta(hours=hours):
+        starts.append(t)
+        t -= dt.timedelta(minutes=step_min)
+    t0, errs = time.time(), []
+    for st in starts:
+        key = st.strftime("%Y-%m-%dT%H:%M")
+        if key in kept or time.time() - t0 > budget:
+            continue
+        for host in JETSTREAM:
+            try:
+                n, hits = bsky_tally(jetstream_window(int(st.timestamp() * 1_000_000), seconds, host))
+            except Exception as e:
+                errs.append(f"{host}: {e}"[:120])
+                continue
+            if n:
+                kept[key] = [key, str(n), " ".join(f"{k}:{v}" for k, v in sorted(hits.items()))]
+            break
+    out = sorted(kept.values())
+    if not out:
+        raise RuntimeError("no Bluesky sample: " + "; ".join(errs[:3]))
+    store.cache_rows_save("bsky_windows", out)
+    _BS["rows"] = out
+    return out
+
+
+def bsky_series(theatre, min_posts=10000):
+    """War-vocabulary posts naming the theatre per 10,000 English Bluesky posts, per UTC day with at least `min_posts` sampled -> [(date, rate)]."""
+    by = {}
+    for key, n, hits in bsky_sample():
+        tot = by.setdefault(key[:10], [0, 0])
+        tot[0] += int(n)
+        tot[1] += sum(int(v) for k, v in (h.split(":") for h in hits.split()) if k == theatre)
+    return [(d, 1e4 * h / n) for d, (n, h) in sorted(by.items()) if n >= min_posts]
 
 
 # ---------------------------------------------------------------- NASA FIRMS thermal detections

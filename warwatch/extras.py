@@ -4,6 +4,7 @@ US advisory levels by country. Every fetcher fails soft: a missing source
 leaves its layer empty and the dashboard says so.
 """
 import datetime as dt
+import html
 import json
 import re
 import time
@@ -130,6 +131,225 @@ def nga_series(theatre, today=None):
         out.append((d.isoformat(), float(sum(1 for m in mine if 0 <= (d - m).days <= 30))))
         d += dt.timedelta(days=1)
     return out
+
+
+# ---- Japan Coast Guard navigational warnings (NAVAREA XI, which Japan coordinates, and Japan's own warnings) ----
+# The TUHO index refuses GitHub and home connections alike, but the warning list and text CGIs behind navarea11.html answer.
+JCG_CGI = "https://www1.kaiho.mlit.go.jp/TUHO/keiho/cgi/"
+JCG_TYPES = ("NAVAREA11", "JAPANNW")
+JCG_COVERED_FROM = "2026-10-10"   # first fetch: the lists show warnings in force, so ones issued and cancelled before this are missing
+JCG_MSG = re.compile(r"(?:NO\.|番号:)\s*(\d{2})-(\d{3,4})\s*発表日時:\s*(\d{4})年(\d{1,2})月(\d{1,2})日")   # after NFKC folding
+JCG_HAZARD = re.compile(r"射撃|ミサイル|ロケット|訓練|爆撃|演習|機雷")   # Japanese-language warnings: firing, missile, rocket, exercise, bombing, mines
+DMS = re.compile(r"(\d{1,3})-(\d{2})-(\d{2}(?:\.\d+)?)([NSEW])")
+
+
+def parse_jcg_texts(kind, text):
+    """disp_warnings.cgi page (warnings one after another, each 'NO.26-0454 発表日時：2026年10月10日 03時 <English text>', or for Japan's own
+    warnings '番号：26-3998 発表日時：... <Japanese text with full-width digits>') -> hazard markers
+    [{id, lat, lon, text, issued}] like parse_nga's."""
+    import unicodedata
+    plain = unicodedata.normalize("NFKC", re.sub(r"<[^>]+>", " ", text)).replace("\u2212", "-").replace("\u2010", "-")
+    plain = re.sub(r"\s+", " ", plain)
+    plain = DMS.sub(lambda m: f"{m.group(1)}-{int(m.group(2)) + float(m.group(3)) / 60:05.2f}{m.group(4)}", plain)   # 34-20-00N -> 34-20.00N
+    heads = list(JCG_MSG.finditer(plain))
+    out = []
+    for i, m in enumerate(heads):
+        body = plain[m.end(): heads[i + 1].start() if i + 1 < len(heads) else len(plain)]
+        body = re.sub(r"^\s*\d{1,2}時\s*", "", body)
+        pos = parse_coords(body)
+        if not (HAZARD.search(body) or JCG_HAZARD.search(body)) or not pos:
+            continue
+        out.append({"id": f"{kind}-{m.group(2)}/{m.group(1)}", "lat": round(pos[0][0], 2), "lon": round(pos[0][1], 2), "text": body.strip()[:160],
+                    "issued": f"{int(m.group(3)):04d}-{int(m.group(4)):02d}-{int(m.group(5)):02d}"})
+    return out
+
+
+def _jcg_post(cgi, data):
+    import urllib.request
+    req = urllib.request.Request(JCG_CGI + cgi, data=urllib.parse.urlencode(data).encode(),
+                                 headers={"User-Agent": C.USER_AGENT, "Content-Type": "application/x-www-form-urlencoded",
+                                          "Referer": "https://www1.kaiho.mlit.go.jp/TUHO/keiho/navarea11.html"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return r.read().decode("utf-8", "replace")
+
+
+def fetch_jcg(today=None):
+    """Every warning in force in both lists (this year's and last year's numbers), with its text. Raises when a list fails."""
+    yr = (today or dt.date.today()).year
+    out = []
+    for kind in JCG_TYPES:
+        tanas = []
+        for y in (yr - 1, yr):
+            tanas += re.findall(r"<tana>(\d+)</tana>", _jcg_post("warnings.cgi", {"YEAR": str(y), "TYPE": kind, "LANG": "JP"}))
+        for i in range(0, len(tanas), 25):
+            out += parse_jcg_texts(kind, _jcg_post("disp_warnings.cgi", {"TYPE": kind, "TANA": ":".join(tanas[i:i + 25]) + ":", "LANG": "JP"}))
+            time.sleep(1)
+    return out
+
+
+def jcg_series(theatre, today=None):
+    """Hazard warnings (firing, missiles, exercises) Japan's Coast Guard issued in the 30 days up to each day inside the theatre box,
+    kept in history/cache/jcg_msgs.csv. -> [(date, count)]"""
+    import store
+    if "jcg" not in _CACHE:
+        _CACHE["jcg"] = fetch_jcg(today)
+        rows = {r[0]: r for r in store.cache_rows("jcg_msgs")}
+        for m in _CACHE["jcg"]:
+            rows[m["id"]] = [m["id"], m["issued"], f"{m['lat']}", f"{m['lon']}"]
+        _CACHE["jcg_rows"] = sorted(rows.values(), key=lambda r: (r[1], r[0]))
+        store.cache_rows_save("jcg_msgs", _CACHE["jcg_rows"])
+    box = C.THEATRE_BOX[theatre]
+    mine = [dt.date.fromisoformat(r[1]) for r in _CACHE["jcg_rows"] if in_box(float(r[2]), float(r[3]), box)]
+    today = today or dt.date.today()
+    d, out = dt.date.fromisoformat(JCG_COVERED_FROM) + dt.timedelta(days=30), []
+    if d > today:
+        raise RuntimeError(f"archive building: first 30-day count on {d.isoformat()} ({len(mine)} warnings kept so far)")
+    while d <= today:
+        out.append((d.isoformat(), float(sum(1 for m in mine if 0 <= (d - m).days <= 30))))
+        d += dt.timedelta(days=1)
+    return out
+
+
+# ---- China MSA navigational warnings (航行警告), read from the MSA mobile site's list API ----
+# msa.gov.cn/page/outter/weather.jsp refuses GitHub and home connections alike; the mobile site's article API answers from GitHub and lists
+# every warning all bureaus issue since late 2015, newest first, with a title naming the activity and usually the sea or the bureau
+# ('军事训练—琼航警196/26', '渤海北部军事演习'). The PLA's largest drills around Taiwan were announced by Xinhua rather than in this list.
+MSA_API = "https://www.msa.gov.cn/msacncms_wap/cmsarticle/selectPageByChannelId.jhtml"
+MSA_CHANNEL = "9c219298b27f460e995a99401b3ff6af"
+MSA_MIL = re.compile(r"军事|实弹|射击|演习|打靶|导弹|火箭|武器")   # military, live fire, firing, exercise, target practice, missile, rocket, weapons
+MSA_OFF = re.compile(r"取消|结束|解除|终止")   # cancelled, ended, lifted: not a new closure
+MSA_BUREAU = re.compile(r"([\u4e00-\u9fff]{1,2})航警")   # 琼航警196/26, 【琼航警102】, 云航警2022（0074）, 鲁航警0409
+MSA_SEA = [("korea", "渤海|黄海|莱州|辽东"), ("taiwan", "东海|台湾|平潭|闽|浪岗|舟山"), ("scs", "南海|北部湾|珠江口|琼州|海南|西沙|南沙|湛江|汕尾")]   # sea named in the title
+MSA_THEATRE = {"taiwan": "闽浙沪", "scs": "琼粤桂深海", "korea": "鲁辽冀津云连苏"}   # else the issuing bureau (海 = Guangxi Beihai, 云 = Lianyungang)
+
+
+def msa_theatre(title):
+    """Theatre of a warning title: the sea it names, else its issuing bureau, else ''."""
+    for th, pat in MSA_SEA:
+        if re.search(pat, title):
+            return th
+    m = MSA_BUREAU.findall(title)
+    b = m[-1][-1] if m else ""   # the last match: '演习航警——津航警159/22' is Tianjin's
+    return next((th for th, bs in MSA_THEATRE.items() if b and b in bs), "")
+
+
+def parse_msa(items):
+    """MSA list items -> [[id, date, bureau, title]] for the Chinese-language military warnings (the English copies would count twice)."""
+    out = []
+    for x in items or []:
+        t = (x.get("articleTitle") or "").strip()
+        if not MSA_MIL.search(t) or MSA_OFF.search(t) or not re.search(r"[\u4e00-\u9fff]", t):
+            continue
+        m = MSA_BUREAU.findall(t)
+        out.append([str(x.get("articleId")), str(x.get("articlePublishTime") or "")[:10], m[-1][-1] if m else "", t[:60]])
+    return out
+
+
+def fetch_msa_page(page, count=100):
+    """-> (items, total pages). Items carry articleId, articleTitle, articlePublishTime ('2026-10-10 17:40')."""
+    import urllib.request
+    req = urllib.request.Request(MSA_API, data=urllib.parse.urlencode({"channelId": MSA_CHANNEL, "pageNum": page, "count": count}).encode(),
+                                 headers={"User-Agent": C.USER_AGENT, "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                                          "X-Requested-With": "XMLHttpRequest", "Referer": "https://www.msa.gov.cn/msacncms_wap/pages/info_warn.jhtml?channelId=" + MSA_CHANNEL})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        d = json.loads(r.read().decode("utf-8"))
+    return d.get("list") or [], int(d.get("pages") or 0)
+
+
+def msa_update(max_pages=10):
+    """Reads the list newest first until it reaches warnings already kept, folding military ones into history/cache/msa_warn.csv.
+    The first row of that file, ['_from', date], is the oldest day the scans have read completely. -> (rows, covered-from date)"""
+    import store
+    rows = store.cache_rows("msa_warn")
+    start = rows[0][1] if rows and rows[0][0] == "_from" else ""
+    kept = {r[0]: r for r in rows if r[0] != "_from"}
+    seen_ids = set(kept)
+    oldest = ""
+    for page in range(1, max_pages + 1):
+        items, pages = fetch_msa_page(page)
+        if not items:
+            break
+        oldest = str(items[-1].get("articlePublishTime") or "")[:10]
+        for r in parse_msa(items):
+            kept[r[0]] = r
+        if start and (any(str(x.get("articleId")) in seen_ids for x in items) or oldest < start):
+            break
+        if page >= pages:
+            break
+        time.sleep(1)
+    start = start or oldest
+    out = sorted(kept.values(), key=lambda r: (r[1], r[0]))
+    store.cache_rows_save("msa_warn", [["_from", start]] + out)
+    return out, start
+
+
+def msa_counts(rows, theatre, first, today, days=30):
+    """Military warnings from the theatre's bureaus issued in the `days` up to each day from `first`. -> [(date, count)]"""
+    mine = [dt.date.fromisoformat(r[1]) for r in rows if r[1] and msa_theatre(r[3]) == theatre]
+    out, d = [], first
+    while d <= today:
+        out.append((d.isoformat(), float(sum(1 for m in mine if 0 <= (d - m).days < days))))
+        d += dt.timedelta(days=1)
+    return out
+
+
+def msa_series(theatre, today=None):
+    import store
+    if "msa" not in _CACHE:
+        _CACHE["msa"] = msa_update()
+    rows, start = _CACHE["msa"]
+    today = today or dt.date.today()
+    live = msa_counts(rows, theatre, dt.date.fromisoformat(start) + dt.timedelta(days=30), today) if start else []
+    return store.seed(f"msa_{theatre}", live)
+
+
+# ---- China Customs (GACC) monthly bulletin: exports by destination country ----
+# stats.customs.gov.cn refuses GitHub and home connections alike (412); the English site's Monthly Bulletin answers and links one
+# table per month, 'Imports and Exports by Country (Region) of Origin/Destination', in US$1,000.
+GACC_MONTHLY = "http://english.customs.gov.cn/statics/report/monthly.html"
+GACC_COUNTRY = {"russia": "Russia", "iran": "Iran", "dprk": "Democratic People's Republic of Korea", "belarus": "Belarus"}
+
+
+def gacc_month_links(page):
+    """Monthly Bulletin page -> [(YYYY-MM-01, url)] for the by-country table of each month listed."""
+    year = re.search(r'<option value="(\d{4})"', page)
+    row = re.search(r"Imports and Exports by Country.*?</tr>", page, re.S)
+    if not year or not row:
+        raise RuntimeError("GACC monthly bulletin: by-country row not found")
+    months = {m[:3].lower(): i + 1 for i, m in enumerate("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split())}
+    return [(f"{year.group(1)}-{months[m.lower()]:02d}-01", u) for u, m in re.findall(r"href=['\"]?(http[^ '\">]+)['\"]?\s*>\s*(\w{3})", row.group(0))
+            if m.lower() in months]
+
+
+def parse_gacc_country(page):
+    """By-country table -> {country: exports that month in US$ million}. Columns: total, exports, imports, each for the month then the year to date."""
+    out = {}
+    plain = html.unescape(re.sub(r"<[^>]+>", "|", page)).replace("\xa0", " ")
+    for key, name in GACC_COUNTRY.items():
+        m = re.search(r"\|\s*" + re.escape(name) + r"\s*\|([\s|0-9,.\-]+)", plain)
+        if not m:
+            continue
+        nums = [float(x.replace(",", "")) for x in re.findall(r"-?[\d,]+(?:\.\d+)?", m.group(1))]
+        if len(nums) >= 6:
+            out[key] = nums[2] / 1000.0
+    return out
+
+
+def gacc_series(country):
+    """China's monthly exports to a country (US$ million), kept in history/cache/gacc_exports.csv (month, country, value) as each month appears."""
+    import store
+    if "gacc" not in _CACHE:
+        kept = {(r[0], r[1]): r for r in store.cache_rows("gacc_exports")}
+        have = {r[0] for r in kept.values()}
+        for month, url in gacc_month_links(S.get(GACC_MONTHLY, raw=True, retries=2, wait=5)):
+            if month in have:
+                continue
+            for k, v in parse_gacc_country(S.get(url, raw=True, retries=2, wait=5)).items():
+                kept[(month, k)] = [month, k, f"{v:.3f}"]
+            time.sleep(1)
+        _CACHE["gacc"] = sorted(kept.values())
+        store.cache_rows_save("gacc_exports", _CACHE["gacc"])
+    return store.seed(f"gacc_{country}", [(r[0], float(r[2])) for r in _CACHE["gacc"] if r[1] == country])
 
 
 def in_box(lat, lon, box):
