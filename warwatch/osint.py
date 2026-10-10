@@ -462,6 +462,45 @@ def tzeva_series(days=7, today=None):
     return store.seed("tzeva_israel", weekly_waves(waves, waves[0].date() + dt.timedelta(days=days), today, days))
 
 
+# ---------------------------------------------------------------- Ukraine air-raid alerts (alerts.in.ua, token in ALERTS_IN_UA_TOKEN)
+UA_API = "https://api.alerts.in.ua/v1/"
+UA_REGIONS = (3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 31)   # oblasts and Kyiv city; Crimea, Sevastopol and Luhansk are under standing alert
+
+
+def parse_ua_alerts(payload, uid):
+    """A region's month of history -> [[id, started UTC 'YYYY-MM-DDTHH:MM', uid, type]] for alerts raised on the whole region."""
+    out = []
+    for a in (payload or {}).get("alerts", []):
+        if str(a.get("location_uid")) != str(uid) or not a.get("started_at"):
+            continue
+        out.append([str(a.get("id")), str(a["started_at"])[:16], str(uid), str(a.get("alert_type") or "")])
+    return out
+
+
+def ua_air_series(token, days=7, today=None, pause=3):
+    """Air-raid alerts raised on whole oblasts (and Kyiv city) across Ukraine in the `days` up to each day. A Russian missile or drone wave
+    sets off most oblasts at once, so this rises with each wave. alerts.in.ua serves a month per region; history/cache/uaair_alerts.csv keeps the rest."""
+    import store
+    kept = {r[0]: r for r in store.cache_rows("uaair_alerts")}
+    for uid in UA_REGIONS:
+        p = S.get(f"{UA_API}regions/{uid}/alerts/month_ago.json", headers={"Authorization": "Bearer " + token}, retries=2, wait=10)
+        for r in parse_ua_alerts(p, uid):
+            if r[3] == "air_raid":
+                kept[r[0]] = r
+        time.sleep(pause)
+    rows = sorted(kept.values(), key=lambda r: (r[1], r[0]))
+    store.cache_rows_save("uaair_alerts", rows)
+    if not rows:
+        return []
+    starts = [dt.date.fromisoformat(r[1][:10]) for r in rows]
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    out, d = [], starts[0] + dt.timedelta(days=days)
+    while d <= today:
+        out.append((d.isoformat(), float(sum(1 for w in starts if 0 <= (d - w).days < days))))
+        d += dt.timedelta(days=1)
+    return out
+
+
 def ukmto_recent(theatre, days=30, today=None):
     """Official UKMTO incidents in the last `days` inside a theatre box."""
     return float(sum(1 for x in parse_ukmto(ukmto_all(), today, days) if x["th"] == theatre))

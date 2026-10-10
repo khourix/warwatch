@@ -643,6 +643,13 @@ for th in __import__("osint").CW_THEATRE:
         (lambda t=th: __import__("osint").crisiswatch_series(t)), drop=0, url="https://www.crisisgroup.org/crisiswatch", sub="Expert")
 
 
+# ============ Ukraine air-raid alerts (alerts.in.ua; news.yml fills the cache every 6 hours) ============
+add("uaair_ukraine", "Air-raid alerts on whole oblasts across Ukraine, last 7 days (alerts.in.ua)", "geospatial", "ukraine", "daily", False,
+    "Each count is one oblast (or Kyiv city) placed under air-raid alert. A Russian missile or drone wave sets off most of the country at once, so the "
+    "count rises with each wave. Reactive, so it confirms escalation. The service keeps a month per region; the archive starts on 10 October 2026, a month back.",
+    _slow("uaair_ukraine", lambda: __import__("osint").ua_air_series(_key("ALERTS_IN_UA_TOKEN"))), needs=["ALERTS_IN_UA_TOKEN"], url="https://alerts.in.ua/", sub="Strikes")
+
+
 # ============ Bluesky war talk per theatre (Jetstream firehose sample, five minutes every half hour; news.yml fills the cache) ============
 for th in extras.KEYS:
     add(f"bsky_{th}", f"Bluesky posts about war naming {TH[th]}, per 10,000 English posts", "information", th, "daily", False,

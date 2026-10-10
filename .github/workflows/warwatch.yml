@@ -43,6 +43,7 @@ jobs:
           TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
           GFW_TOKEN: ${{ secrets.GFW_TOKEN }}
           UCDP_TOKEN: ${{ secrets.UCDP_TOKEN }}
+          ALERTS_IN_UA_TOKEN: ${{ secrets.ALERTS_IN_UA_TOKEN }}
           GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}

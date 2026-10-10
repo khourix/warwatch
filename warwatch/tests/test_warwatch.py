@@ -593,6 +593,13 @@ class TestOsint(unittest.TestCase):
                     "<a href=http://english.customs.gov.cn/Statics/a.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/b.html> Feb.</a><span>Mar.</span></td></tr>")
         self.assertEqual(extras.gacc_month_links(bulletin), [("2026-01-01", "http://english.customs.gov.cn/Statics/a.html"), ("2026-02-01", "http://english.customs.gov.cn/Statics/b.html")])
 
+    def test_ua_air_alerts_whole_regions_only(self):
+        import osint
+        p = {"alerts": [{"id": 1, "location_uid": "31", "started_at": "2026-10-09T23:10:00.000Z", "alert_type": "air_raid"},
+                        {"id": 2, "location_uid": "1293", "started_at": "2026-10-09T23:12:00.000Z", "alert_type": "air_raid"},   # a district inside it
+                        {"id": 3, "location_uid": "31", "started_at": None, "alert_type": "air_raid"}]}
+        self.assertEqual(osint.parse_ua_alerts(p, 31), [["1", "2026-10-09T23:10", "31", "air_raid"]])
+
     def test_oref_mirror_waves(self):
         import osint
         text = ("data,date,time,alertDate,category,category_desc,matrix_id,rid\n"
