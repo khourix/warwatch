@@ -1,0 +1,28 @@
+{
+ "NAVAREA11 tanas": 21,
+ "NAVAREA11 disp 2": {
+  "bytes": 1230,
+  "heads": 2,
+  "parsed": 0,
+  "sample": " NAVAREA XI NO.26-0454 発表日時：2026年10月10日 03時 TSUNAMI INFORMATION. PACIFIC OCEAN. EARTHQUAKE, MAGNITUDE 7.6, OCCURRED AT ABOUT 091756Z OCT IN 07.5N 080.8W, PACIFIC OCEAN. TSUNAMI THREATENED TO OCCUR. VESSELS COAST AREA REQUESTED TO BECAUTION ADVISED. CANCEL THIS MSG 111400Z OCT. NO.26-0453 発表日時：2026年10月09日 22時 NORTH PACIFIC, MARSHALLS. DERELICT BARGE ADRIFT IN VICINITY OF 05-05.79N 167-14.00E AT 090330Z OCT. CANCEL 0449/26. CANCEL THIS MSG 120330Z OCT. "
+ },
+ "NAVAREA11 disp 25": {
+  "bytes": 6639,
+  "heads": 21,
+  "parsed": 0,
+  "sample": " NAVAREA XI NO.26-0454 発表日時：2026年10月10日 03時 TSUNAMI INFORMATION. PACIFIC OCEAN. EARTHQUAKE, MAGNITUDE 7.6, OCCURRED AT ABOUT 091756Z OCT IN 07.5N 080.8W, PACIFIC OCEAN. TSUNAMI THREATENED TO OCCUR. VESSELS COAST AREA REQUESTED TO BECAUTION ADVISED. CANCEL THIS MSG 111400Z OCT. NO.26-0453 発表日時：2026年10月09日 22時 NORTH PACIFIC, MARSHALLS. DERELICT BARGE ADRIFT IN VICINITY OF 05-05.79N 167-14.00E AT 090330Z OCT. CANCEL 0449/26. CANCEL THIS MSG 120330Z OCT. NO.26-0452 発表日時：2026年10月09日 21時 NORTH PACIFIC, MARSHALLS. HAZARDOUS OPERATION CONCLUDED. CANCEL 0444/26 AND THIS MSG. NO.26-0451 発表日時：2026年10月09日 16時 NORTH PACIFIC, OKINOTORI SHIMA. HATCH COVER, ABOUT 20 METRE IN SQUARE, ADRIFT IN 16-54.1N 134-39.5E AT 090625Z OCT. CANCEL 0450/26. CANCEL THIS MSG 120625Z OCT. NO.26-0448 発表日時：2026年10月08日 12時 TAIWAN STRAIT. SUBMARINE CABLE REPAIRING WORKS BY C/S ILE DE RE UNTIL FURTHER NOTICE. IN VICINITY OF LINE JOINING 24-04.12N 118-46.48E 24-03.82N 118-46.95E 23-51.56N 119-01.84E 23-51.18N 119-02.22E. NO.26-0445 発表日時：2026年10月05日 21時 SULU SEA. SPACE DEBRIS. 091700Z TO 092300Z OCT. AREA BOUNDED BY 08-57.0N 119-36.0E 08-45.0N 119-19.8E 09-16.2N 118-57.0E 09-28.2N 119-12.6E. CANCEL THIS MSG 100000Z OCT. N"
+ },
+ "JAPANNW tanas": 125,
+ "JAPANNW disp 2": {
+  "bytes": 965,
+  "heads": 0,
+  "parsed": 0,
+  "sample": " 日本航行警報 番号：26-3998 発表日時：2026年10月10日 20時 恵山岬東南東、 射撃、１０月１５日（予備１６日）０８００−２４００、 ４１−４３．０Ｎ １４１−２９．４Ｅを中心とする半径５海里の円内。 番号：26-3997 発表日時：2026年10月10日 08時 ★ インド東岸、射撃、 １０月１１日−１５日毎日０１３０Ｚ−１４３０Ｚ、 １９−１４．６Ｎ ０８４−５３．７Ｅを中心とする半径４１海里の円のうち １００−１８０度の扇形海面。 "
+ },
+ "JAPANNW disp 25": {
+  "bytes": 6651,
+  "heads": 0,
+  "parsed": 0,
+  "sample": " 日本航行警報 番号：26-3998 発表日時：2026年10月10日 20時 恵山岬東南東、 射撃、１０月１５日（予備１６日）０８００−２４００、 ４１−４３．０Ｎ １４１−２９．４Ｅを中心とする半径５海里の円内。 番号：26-3997 発表日時：2026年10月10日 08時 ★ インド東岸、射撃、 １０月１１日−１５日毎日０１３０Ｚ−１４３０Ｚ、 １９−１４．６Ｎ ０８４−５３．７Ｅを中心とする半径４１海里の円のうち １００−１８０度の扇形海面。 番号：26-3996 発表日時：2026年10月10日 03時 津波情報、 太平洋、気象庁によれば、０７．５Ｎ ０８０．８Ｗ、 １０月９日１７５６Ｚ頃、マグニチュード７．６の地震に伴い、太平洋で津波発生 の可能性あり。沿岸の船舶は注意されたい。 番号：26-3995 発表日時：2026年10月09日 22時 北太平洋、マーシャル諸島、 バージ漂流、１０月９日０３３０Ｚ、０５−０５．７９Ｎ １６７−１４．００Ｅ。 （３９６３削除） 番号：26-3993 発表日時：2026年10月09日 20時 ★ 朝鮮半島南岸、済州島北西、 射撃、１０月１２日−１７日毎日２３００Ｚ−翌日０９００Ｚ、 ３４−２０−００Ｎ １２４−３０−００Ｅ ３４−２０−００Ｎ １２５−４９−５３Ｅ ３３−４５−００Ｎ １２５−４９−５３Ｅ ３３−４５−００Ｎ １２４−３０−００Ｅ で囲まれる海面。 番号：26-3992 発表日時：2026年10月09日 20時 ★ 朝鮮半島南岸、済州島南西、 射撃、１０月１１日２３００Ｚ−翌日１０００Ｚ、１３日、１４日毎日０１００Ｚ− １０００Ｚ、１５日、１６日毎日０１００Ｚ−０８００Ｚ、３２−５９Ｎ １２５−４９Ｅ を中心とする半径５海里の円内。 番号：26-3991 発表日時：2026年10月09日 20時 ★ 朝鮮半島東岸、 射撃、１０月１２日−１６日毎日００００Ｚ−０８３０Ｚ、 ３６−０１Ｎ １２９−４９Ｅ ３６−０１Ｎ １３０−１９Ｅ ３５−４６Ｎ １３０−１２Ｅ ３５−４９Ｎ １２９−４７Ｅで囲まれる海面。 番号：26-3990 発表日時：2026年10月09日 20時 ★ 朝鮮半島東岸、注文津港東、 射撃、１０月１１日−１５日毎日２３００Ｚ−翌日０９００Ｚ、 ３８−１４Ｎ １２９−００Ｅ ３８−１４Ｎ １２９−４６Ｅ ３７−４８Ｎ １２９−４６Ｅ ３７−４８Ｎ １２９−３８Ｅ ３８−１０Ｎ １２９−１９Ｅ ３８−１０Ｎ １２９−００Ｅで囲まれる海面。 番号：26-3989 発表日時：2026年10月09日 20時 ★ 朝鮮半島西岸、大青群島付近、 射撃、１０月１２日、１３日毎日０５００Ｚ−０８００Ｚ、 １４日、１５日毎日０６００Ｚ−０９００Ｚ、１６日０８００Ｚ−１１００Ｚ、 ３７−４４−５５Ｎ "
+ }
+}
