@@ -970,9 +970,25 @@ def ucdp_events(token, start="2018-01-01"):
 _UCDP = {}
 
 
+def ucdp_months(events, box):
+    """Every month the global dataset covers, 0 where the box had no deaths: GED codes the whole world,
+    so a month without events in the box is a real zero, not a gap (Taiwan and Korea are all zeros)."""
+    months = sorted({str(e.get("date_start"))[:7] for e in events if e.get("date_start")})
+    if not months:
+        return []
+    have = dict(parse_ucdp(events, box))
+    y, m = int(months[0][:4]), int(months[0][5:7])
+    out = []
+    while f"{y:04d}-{m:02d}" <= months[-1]:
+        k = f"{y:04d}-{m:02d}"
+        out.append((k, have.get(k, 0.0)))
+        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    return out
+
+
 def fetch_ucdp(box, token):
     if not token:
         raise RuntimeError("UCDP_TOKEN not set")
     if "ev" not in _UCDP:
         _UCDP["ev"] = ucdp_events(token)
-    return parse_ucdp(_UCDP["ev"], box)
+    return ucdp_months(_UCDP["ev"], box)
