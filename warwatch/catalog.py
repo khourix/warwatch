@@ -758,3 +758,15 @@ CHANGE_SCORED = ("def_", "brent", "gold", "fx_", "tanker_equity", "container_equ
 for _s in SERIES:
     if _s["domain"] == "financial" and _s["id"].startswith(CHANGE_SCORED):
         _s["transform"] = "chg"
+
+
+# ============ Steps and actions scored as events ============
+# An advisory level is a decision that holds for months: scored as a level, one raise read +5 against a flat year and kept
+# reading high until the year baseline caught up. Scored on its step (the change in the last 14 days) it reads when the
+# decision is made and goes quiet after. A CrisisWatch rating is already a monthly judgement, so its newest value is the
+# reading (it could never have been scored as a level: that needs 40 issues). stats._scored_as_event has the scales.
+for _s in SERIES:
+    if _s["id"].startswith("state_") and not _s["id"].startswith(TELL_ONLY):
+        _s["transform"] = "step"
+    elif _s["id"].startswith("crisiswatch_"):
+        _s["transform"] = "event"

@@ -122,7 +122,7 @@ def backfill_series():
         if len(pts) < 200:
             continue
         out.append({"id": sid, "theatre": c["theatre"], "domain": c["domain"], "direction": c["direction"], "lag": c["lag"], "kind": "daily", "all": pts,
-                    "avail": [(dt.date.fromisoformat(l[:10]) + dt.timedelta(days=lag)).toordinal() for l, _ in pts]})
+                    "transform": c.get("transform"), "avail": [(dt.date.fromisoformat(l[:10]) + dt.timedelta(days=lag)).toordinal() for l, _ in pts]})
     return out
 
 
