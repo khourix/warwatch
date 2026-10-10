@@ -489,6 +489,62 @@ def fetch_incidents():
     return out[:80]
 
 
+# ---------------------------------------------------------------- Crisis Group CrisisWatch, read from its RSS feed
+# crisisgroup.org/crisiswatch refuses GitHub and home connections alike (Cloudflare), but the site's RSS feed answers and carries the
+# whole monthly CrisisWatch page, including its lists of conflict-risk alerts and deteriorated situations.
+CRISISGROUP_RSS = "https://www.crisisgroup.org/rss.xml"
+CW_LISTS = {"alert": "Conflict Risk Alerts", "resolution": "Resolution Opportunities", "deteriorated": "Deteriorated Situations", "improved": "Improved Situations"}
+CW_THEATRE = {   # CrisisWatch entry slugs -> theatre
+    "ukraine": r"ukraine|russia|belarus|moldova", "europe_east": r"poland|baltic|lithuania|latvia|estonia|finland",
+    "iran": r"iran|iraq", "yemen": r"yemen|saudi|red-sea|gulf", "israel": r"israel|palestin|lebanon|syria|jordan",
+    "taiwan": r"taiwan", "scs": r"south-china-sea|philippines", "korea": r"korea", "southasia": r"india|pakistan|kashmir",
+    "libya": r"libya", "sudan": r"sudan", "drc": r"congo", "venezuela": r"venezuela|colombia|guyana|cuba",
+}
+MONTHS_EN = {m: i + 1 for i, m in enumerate(("january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"))}
+
+
+def parse_crisiswatch(rss):
+    """Crisis Group RSS -> [(alert month 'YYYY-MM-01', list name, entry slug)] for each monthly CrisisWatch issue in the feed. An issue titled
+    'September Trends and October Alerts 2026' is filed under October 2026: its alerts look ahead to that month."""
+    out = []
+    for item in re.findall(r"<item>.*?</item>", rss, re.S):
+        m = re.search(r"<title>\s*(\w+) Trends and (\w+) Alerts (\d{4})\s*</title>", item)
+        if not m or m.group(2).lower() not in MONTHS_EN:
+            continue
+        mon, yr = MONTHS_EN[m.group(2).lower()], int(m.group(3))
+        body = html.unescape(item)
+        for key, head in CW_LISTS.items():
+            k = body.find(head + "</h4>")
+            if k < 0:
+                continue
+            seg = body[k: body.find("</p>", k)]
+            out += [(f"{yr:04d}-{mon:02d}-01", key, slug) for slug in re.findall(r'data-entry-target="([\w-]+)"', seg)]
+    return out
+
+
+def crisiswatch_archive(rows):
+    """Folds each issue's lists into history/cache/crisiswatch.csv (month, list, slug); the feed keeps only its last ten posts."""
+    import store
+    kept = {tuple(r) for r in store.cache_rows("crisiswatch")}
+    kept |= {tuple(r) for r in rows}
+    out = sorted(kept)
+    store.cache_rows_save("crisiswatch", [list(r) for r in out])
+    return out
+
+
+_CW = {}
+
+
+def crisiswatch_series(theatre):
+    """Per CrisisWatch issue: 2 for a conflict-risk alert on a country in the theatre, plus 1 for a deteriorated situation there. -> [(month, score)]"""
+    if "rows" not in _CW:
+        _CW["rows"] = crisiswatch_archive(parse_crisiswatch(S.get(CRISISGROUP_RSS, raw=True, retries=2, wait=5)))
+    pat = re.compile(CW_THEATRE[theatre])
+    months = sorted({r[0] for r in _CW["rows"]})
+    mine = {(r[0], r[1]) for r in _CW["rows"] if pat.search(r[2])}
+    return [(m, 2.0 * ((m, "alert") in mine) + 1.0 * ((m, "deteriorated") in mine)) for m in months]
+
+
 # ---------------------------------------------------------------- Bluesky posts, sampled from the Jetstream firehose
 JETSTREAM = ("jetstream2.us-east.bsky.network", "jetstream1.us-east.bsky.network", "jetstream1.us-west.bsky.network", "jetstream2.us-west.bsky.network")
 BSKY_WAR = re.compile(r"\b(war|military|troops|strikes?|airstrikes?|missiles?|rockets?|drones?|shelling|bomb\w*|attack\w*|invasion|invade\w*|mobili[sz]\w*|"

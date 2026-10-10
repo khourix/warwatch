@@ -532,6 +532,33 @@ class TestOsint(unittest.TestCase):
             store.ROOT, store.BACKFILL = old, oldb
             osint._TZ.clear()
 
+    def test_crisiswatch_from_rss(self):
+        import osint
+        body = ('&lt;h4&gt;Conflict Risk Alerts&lt;/h4&gt; &lt;p&gt; &lt;a data-entry-target="iran"&gt;Iran&lt;/a&gt; &lt;a data-entry-target="saudi-arabia"&gt;Saudi Arabia&lt;/a&gt; &lt;/p&gt;'
+                '&lt;h4&gt;Deteriorated Situations&lt;/h4&gt; &lt;p&gt; &lt;a data-entry-target="yemen"&gt;Yemen&lt;/a&gt; &lt;/p&gt;')
+        rss = (f"<rss><item><title>September Trends and October Alerts 2026</title><description>{body}</description></item>"
+               "<item><title>Inside Sudan's War</title><description>&lt;h4&gt;Conflict Risk Alerts&lt;/h4&gt;&lt;p&gt;&lt;a data-entry-target=\"sudan\"&gt;&lt;/p&gt;</description></item></rss>")
+        rows = osint.parse_crisiswatch(rss)
+        self.assertEqual(rows, [("2026-10-01", "alert", "iran"), ("2026-10-01", "alert", "saudi-arabia"), ("2026-10-01", "deteriorated", "yemen")])
+        d, old = tempfile.mkdtemp(), store.ROOT
+        store.ROOT = d
+        try:
+            osint._CW["rows"] = osint.crisiswatch_archive(rows)
+            self.assertEqual(osint.crisiswatch_series("yemen"), [("2026-10-01", 3.0)])   # Saudi alert plus Yemen deteriorated
+            self.assertEqual(osint.crisiswatch_series("iran"), [("2026-10-01", 2.0)])
+            self.assertEqual(osint.crisiswatch_series("korea"), [("2026-10-01", 0.0)])
+        finally:
+            store.ROOT = old
+            osint._CW.clear()
+
+    def test_jcg_warning_texts(self):
+        page = ("<html><body><pre>NAVAREA XI NO.26-0454 発表日時：2026年10月10日 03時 TSUNAMI INFORMATION. PACIFIC OCEAN. EARTHQUAKE IN 07-30.0N 080-48.0W."
+                "</pre><pre>NO.26-0430 発表日時：2026年09月28日 11時 KOREA, EAST COAST. GUNNERY EXERCISES 0000Z TO 0900Z DAILY 01 TO 31 OCT "
+                "IN AREA BOUNDED BY 37-40.0N 129-10.0E, 37-40.0N 129-40.0E.</pre></body></html>")
+        out = extras.parse_jcg_texts("JAPANNW", page)
+        self.assertEqual(len(out), 1)                     # the tsunami notice is not a hazard warning
+        self.assertEqual((out[0]["id"], out[0]["issued"], out[0]["lat"]), ("JAPANNW-0430/26", "2026-09-28", 37.67))
+
     def test_oref_mirror_waves(self):
         import osint
         text = ("data,date,time,alertDate,category,category_desc,matrix_id,rid\n"

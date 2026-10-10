@@ -132,6 +132,77 @@ def nga_series(theatre, today=None):
     return out
 
 
+# ---- Japan Coast Guard navigational warnings (NAVAREA XI, which Japan coordinates, and Japan's own warnings) ----
+# The TUHO index refuses GitHub and home connections alike, but the warning list and text CGIs behind navarea11.html answer.
+JCG_CGI = "https://www1.kaiho.mlit.go.jp/TUHO/keiho/cgi/"
+JCG_TYPES = ("NAVAREA11", "JAPANNW")
+JCG_COVERED_FROM = "2026-10-10"   # first fetch: the lists show warnings in force, so ones issued and cancelled before this are missing
+JCG_MSG = re.compile(r"NO\.\s*(\d{2})-(\d{3,4})\s*発表日時：\s*(\d{4})年(\d{1,2})月(\d{1,2})日")
+
+
+def parse_jcg_texts(kind, text):
+    """disp_warnings.cgi page (warnings one after another, each 'NO.26-0454 発表日時：2026年10月10日 03時 <English text>') -> hazard markers
+    [{id, lat, lon, text, issued}] like parse_nga's."""
+    plain = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", text))
+    heads = list(JCG_MSG.finditer(plain))
+    out = []
+    for i, m in enumerate(heads):
+        body = plain[m.end(): heads[i + 1].start() if i + 1 < len(heads) else len(plain)]
+        body = re.sub(r"^\s*\d{1,2}時\s*", "", body)
+        pos = parse_coords(body)
+        if not HAZARD.search(body) or not pos:
+            continue
+        out.append({"id": f"{kind}-{m.group(2)}/{m.group(1)}", "lat": round(pos[0][0], 2), "lon": round(pos[0][1], 2), "text": body.strip()[:160],
+                    "issued": f"{int(m.group(3)):04d}-{int(m.group(4)):02d}-{int(m.group(5)):02d}"})
+    return out
+
+
+def _jcg_post(cgi, data):
+    import urllib.request
+    req = urllib.request.Request(JCG_CGI + cgi, data=urllib.parse.urlencode(data).encode(),
+                                 headers={"User-Agent": C.USER_AGENT, "Content-Type": "application/x-www-form-urlencoded",
+                                          "Referer": "https://www1.kaiho.mlit.go.jp/TUHO/keiho/navarea11.html"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return r.read().decode("utf-8", "replace")
+
+
+def fetch_jcg(today=None):
+    """Every warning in force in both lists (this year's and last year's numbers), with its text. Raises when a list fails."""
+    yr = (today or dt.date.today()).year
+    out = []
+    for kind in JCG_TYPES:
+        tanas = []
+        for y in (yr - 1, yr):
+            tanas += re.findall(r"<tana>(\d+)</tana>", _jcg_post("warnings.cgi", {"YEAR": str(y), "TYPE": kind, "LANG": "JP"}))
+        for i in range(0, len(tanas), 25):
+            out += parse_jcg_texts(kind, _jcg_post("disp_warnings.cgi", {"TYPE": kind, "TANA": ":".join(tanas[i:i + 25]) + ":", "LANG": "JP"}))
+            time.sleep(1)
+    return out
+
+
+def jcg_series(theatre, today=None):
+    """Hazard warnings (firing, missiles, exercises) Japan's Coast Guard issued in the 30 days up to each day inside the theatre box,
+    kept in history/cache/jcg_msgs.csv. -> [(date, count)]"""
+    import store
+    if "jcg" not in _CACHE:
+        _CACHE["jcg"] = fetch_jcg(today)
+        rows = {r[0]: r for r in store.cache_rows("jcg_msgs")}
+        for m in _CACHE["jcg"]:
+            rows[m["id"]] = [m["id"], m["issued"], f"{m['lat']}", f"{m['lon']}"]
+        _CACHE["jcg_rows"] = sorted(rows.values(), key=lambda r: (r[1], r[0]))
+        store.cache_rows_save("jcg_msgs", _CACHE["jcg_rows"])
+    box = C.THEATRE_BOX[theatre]
+    mine = [dt.date.fromisoformat(r[1]) for r in _CACHE["jcg_rows"] if in_box(float(r[2]), float(r[3]), box)]
+    today = today or dt.date.today()
+    d, out = dt.date.fromisoformat(JCG_COVERED_FROM) + dt.timedelta(days=30), []
+    if d > today:
+        raise RuntimeError(f"archive building: first 30-day count on {d.isoformat()} ({len(mine)} warnings kept so far)")
+    while d <= today:
+        out.append((d.isoformat(), float(sum(1 for m in mine if 0 <= (d - m).days <= 30))))
+        d += dt.timedelta(days=1)
+    return out
+
+
 def in_box(lat, lon, box):
     la0, la1, lo0, lo1 = box
     return la0 <= lat <= la1 and lo0 <= lon <= lo1

@@ -597,6 +597,14 @@ for th in C.GNEWS:
         _preforce(th), url=GD, sub="Derived")
 
 
+# ============ Japan Coast Guard warnings: NAVAREA XI (Japan coordinates it) and Japan's own navigational warnings ============
+for th in ("korea", "taiwan", "scs"):
+    add(f"jcg_{th}", f"New firing, missile and exercise warnings, last 30 days, {TH[th]} waters (Japan Coast Guard)", "geospatial", th, "daily", False,
+        "Live-fire, missile and exercise notices broadcast by Japan's Coast Guard for the northwest Pacific, including South Korean firing areas and "
+        "North Korean launch windows; exercises are announced before they happen. Kept from 10 October 2026 and counted from 9 November.",
+        (lambda t=th: extras.jcg_series(t)), url="https://www1.kaiho.mlit.go.jp/TUHO/keiho/navarea11.html", sub="Warnings")
+
+
 # ============ Official UKMTO incident counts (the Royal Navy maritime trade centre feed behind ukmto.org) ============
 for th in ("iran", "yemen"):
     add(f"ukmto_{th}", f"UKMTO incident reports in last 30 days, {TH[th]} waters (official)", "geospatial", th, "daily", False,
@@ -610,6 +618,14 @@ add("tzeva_israel", "Rocket, missile and drone alert waves in Israel, last 7 day
     "Sirens less than 10 minutes apart count as one wave. Reactive, so it confirms escalation, and a run of waves marks a new round. "
     "Tzeva Adom serves only its latest 50 waves; the history before them comes from the open mirror of Home Front Command alerts, back to July 2014.",
     (lambda: __import__("osint").tzeva_series()), url="https://www.tzevaadom.co.il/", sub="Strikes")
+
+# ============ Crisis Group CrisisWatch alerts (read from the Crisis Group RSS feed; the CrisisWatch pages themselves refuse automated readers) ============
+for th in __import__("osint").CW_THEATRE:
+    add(f"crisiswatch_{th}", f"CrisisWatch rating, {TH[th]} region: 2 for a conflict-risk alert, plus 1 for a deteriorated situation (Crisis Group)", "information", th, "monthly", False,
+        "Crisis Group's monthly global tracker, written by its country analysts. A conflict-risk alert is their judgement that a war or a sharp escalation is likely in the coming month. "
+        "Read from the issue posted in Crisis Group's RSS feed and kept from October 2026.",
+        (lambda t=th: __import__("osint").crisiswatch_series(t)), drop=0, url="https://www.crisisgroup.org/crisiswatch", sub="Expert")
+
 
 # ============ Bluesky war talk per theatre (Jetstream firehose sample, five minutes every half hour; news.yml fills the cache) ============
 for th in extras.KEYS:
@@ -645,8 +661,8 @@ for _s in SERIES:
         _s["every"] = 20      # trade and contract data change monthly, after a lag
     elif "FRED_API_KEY" in _s["needs"] or "fetch_market" in _s["fetch"].__code__.co_names:
         _s["every"] = 6       # daily closes
-    elif _id.startswith(("portwatch_", "fcdo_")):
-        _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely
+    elif _id.startswith(("portwatch_", "fcdo_", "crisiswatch_")):
+        _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely, CrisisWatch is monthly
     elif _id.startswith(("ioda_", "ooni_", "ports_", "cfr_", "gas_", "power_", "fx_")):
         _s["every"] = 3
     elif _id.startswith("ais_presence_"):

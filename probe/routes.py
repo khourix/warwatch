@@ -340,8 +340,46 @@ def round6():
     return out
 
 
+def round7():
+    out = {}
+    page = fetch_text("https://www.msa.gov.cn/msacncms_wap/pages/info_warn.jhtml?channelId=9c219298b27f460e995a99401b3ff6af")
+    srcs = re.findall(r"""<script[^>]+src=["']([^"']+)""", page)
+    out["msa scripts"] = srcs
+    for src in srcs:
+        u = urllib.parse.urljoin("https://www.msa.gov.cn/msacncms_wap/pages/", src)
+        try:
+            js = fetch_text(u)
+        except Exception as e:  # noqa: BLE001
+            continue
+        if "selectPageByChannelId" in js or "baseUrl" in js or "article" in js:
+            k = js.find("selectPageByChannelId")
+            out["msa js " + src] = {"around": js[max(0, k - 1500): k + 500] if k >= 0 else "", "base": re.findall(r"(?:baseUrl|BASE|ctx|basePath)\s*[:=]\s*['\"]([^'\"]+)", js)[:5]}
+    page = fetch_text("http://english.customs.gov.cn/statics/report/monthly.html")
+    out["customs years in page"] = len(re.findall(r"Imports and Exports by Country", page))
+    out["customs select"] = re.findall(r"<select.*?</select>", page, re.S)[:2]
+    out["customs year blocks"] = re.findall(r"""id=["'](\w*20\d\d\w*)["']""", page)[:20]
+    row = re.search(r"Imports and Exports by Country.*?</tr>", page, re.S).group(0)
+    url = re.findall(r"href=(http[^ >]+)>", row)[-1]
+    t = fetch_text(url)
+    tab = t[t.find("<table"):]
+    out["customs table head"] = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " | ", tab))[:2500]
+    for c in ("Iran", "Korea, DPR", "Democratic People", "Belarus", "Israel"):
+        k = tab.find(c)
+        out["row " + c] = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " | ", tab[k: k + 900])) if k >= 0 else "absent"
+    return out
+
+
 def main(path):
     res = []
+    if os.environ.get("ROUTES_ROUND") == "7":
+        try:
+            v = round7()
+        except Exception as e:  # noqa: BLE001
+            v = {"error": f"{type(e).__name__}: {e}"[:300]}
+        print(json.dumps(v, ensure_ascii=False)[:800])
+        with open(path, "w") as f:
+            json.dump(v, f, indent=1, ensure_ascii=False)
+        return
     if os.environ.get("ROUTES_ROUND") == "6":
         try:
             v = round6()

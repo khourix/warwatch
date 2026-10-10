@@ -4,7 +4,7 @@ name: assessment-probe
 on:
   push:
     branches: [claude/project-thread-79411m]
-    paths: [probe/assessment_probe.py, probe/check_credentials.py, probe/routes.py, .github/workflows/assessment-probe.yml, warwatch/osint.py]
+    paths: [probe/assessment_probe.py, probe/check_credentials.py, probe/routes.py, .github/workflows/assessment-probe.yml, warwatch/osint.py, warwatch/extras.py]
   workflow_dispatch:
 permissions:
   contents: write
@@ -22,18 +22,17 @@ jobs:
       - name: Other routes to blocked sites; Tzeva Adom and Jetstream live tests
         env:
           COMTRADE_API_KEY: ${{ secrets.COMTRADE_API_KEY }}
-          ROUTES_ROUND: "6"
-        run: python3 probe/routes.py probe/routes6.json
+          ROUTES_ROUND: "7"
+        run: python3 probe/routes.py probe/routes7.json
       - name: Israel alerts back-fill and a live fetch of the new series
-        if: false
         env:
           WARWATCH_LIVE: "1"
           BSKY_HOURS: "3"
         run: |
-          python3 backfill/backfill.py alerts
-          ids=$(python3 -c "import sys; sys.path.insert(0,'warwatch'); import catalog; print(','.join(s['id'] for s in catalog.SERIES if s['id'].startswith(('tzeva_','bsky_'))))")
+          ids=$(python3 -c "import sys; sys.path.insert(0,'warwatch'); import catalog; print(','.join(s['id'] for s in catalog.SERIES if s['id'].startswith(('tzeva_','bsky_','crisiswatch_','jcg_'))))")
           python3 warwatch/run.py --only "$ids" --fetch-only
-          ls -la warwatch/history/cache | grep -E "tzeva|bsky" || true
+          ls -la warwatch/history/cache | grep -E "tzeva|bsky|crisiswatch|jcg" || true
+          head -c 1500 warwatch/history/cache/jcg_msgs.csv || true; cat warwatch/history/cache/crisiswatch.csv || true
       - name: Install Google client libraries
         if: false
         run: python3 -m pip install -q google-cloud-bigquery earthengine-api
