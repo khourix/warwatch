@@ -46,6 +46,8 @@ class T(unittest.TestCase):
         self.assertEqual(L.parse_advisory(nav, strict=True), (4, 0))      # the heading wins over the navigation
         self.assertIsNone(L.parse_advisory("<title>Iraq</title><nav>Level 1: Exercise Normal Precautions</nav>", strict=True))
         self.assertEqual(L.parse_advisory("<title>Iraq</title><nav>Level 1: x</nav>"), (1, 0))
+        self.assertEqual(L.parse_departure("the Department authorized the departure of family members"), 1)
+        self.assertEqual(L.parse_departure("Level 3: Reconsider Travel"), 0)
 
     def test_fill_forward_carry_limit(self):
         out = L.fill_forward([("2024-01-02", 2)], dt.date(2024, 1, 1), dt.date(2024, 1, 8), max_carry=3)

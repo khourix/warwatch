@@ -80,6 +80,10 @@ compute_composite_score(metrics, weights, baseline_window = None):   # None = 1-
 | Shapley values | Exact additive contributions `w * z` | The mean part of the index is additive, so these are its Shapley shares. The imbalance penalty is an extra term. |
 | Percentile thresholds from history | From a calm-world simulation, checked against history | Not enough live history yet. |
 
+## Timing tells (October 2026, assessment phase B)
+
+Each theatre carries two readings. **Standing risk** is the 30-day chance as a multiple of the theatre's usual chance (`p / base`); it is coloured only while the model passes its gates. **Timing tells** are yes-or-no checks over the last 7 days on costly, hard-to-reverse actions that came days before strikes in the cases analysts cite: US departures ordered or authorised, a US advisory raise with UK advice changing the same week, airliners thinning out, tankers parked forward, airspace closures, firing and missile warnings at sea, and strike waves in wars under way. Bases emptying and civil-defence instructions are listed as not watched. The rules are fixed by hand (`warwatch/tells.py`), never set a level and never enter the model. Each carries its record on our own history (`docs/TELLS.md`), and every day's state goes to the hash-chained `forward/tells.csv`, so they are tested on the forward record from day one.
+
 ## References
 
 OECD/JRC (2008) *Handbook on Constructing Composite Indicators*. Mazziotta and Pareto (2016) "On a generalized non-compensatory composite index for measuring socio-economic phenomena", *Social Indicators Research*. Yager (1988) "On ordered weighted averaging aggregation operators", *IEEE Trans. SMC*. Grabisch (1996) "The application of fuzzy integrals in multicriteria decision making", *EJOR*. Nardo et al. (2005) *Tools for Composite Indicators Building*, JRC. Iglewicz and Hoaglin (1993) *How to Detect and Handle Outliers* (modified z-score).

@@ -94,7 +94,7 @@ def _why(t, contrib, res_series):
     return [[lab.get(f, f), c] for f, c in contrib]
 
 
-def theatre_json(t, v, res_series, base=None, change=None):
+def theatre_json(t, v, res_series, base=None, change=None, tells=None):
     doms = {}
     for dom in C.DOMAINS:
         x = v["doms"][dom]
@@ -104,7 +104,9 @@ def theatre_json(t, v, res_series, base=None, change=None):
             "basis": v["basis"], "doms": doms, "score": v["score"], "zc": v["zc"], "index": v["index"], "imb": v["imbalance"],
             "worst": v["worst"], "conf": v["confidence"], "confl": v["conf_label"], "miss": v["missing"], "th": v["th"],
             "p": _r(v.get("p"), 4), "plo": _r(v.get("p_lo"), 4), "phi": _r(v.get("p_hi"), 4), "why": _why(t, v.get("p_why", []), res_series), "aft": bool(v.get("p_aftermath")),
-            "lvc": v.get("level_composite"), "pb": _r(base, 4), "pd": change}
+            "lvc": v.get("level_composite"), "pb": _r(base, 4), "pd": change,
+            "xu": _r(v["p"] / base, 2) if v.get("p") is not None and base else None,      # standing risk: times this theatre's usual
+            "tells": tells or []}
 
 
 def map_json(topo, ex, levels_by_country):
@@ -202,7 +204,8 @@ def build_data(res, generated, demo, ex, topo):
         "generated": generated, "demo": bool(demo),
         "domains": [{"id": k, "name": v, "help": C.GROUP_HELP[k]} for k, v in C.DOMAINS.items()],
         "thresholds": [C.THRESH_WATCH, C.THRESH_SIGNAL], "levels": list(engine.LEVELS),
-        "theatres": {t: theatre_json(t, v, res["series"], ((res.get("model") or {}).get("theatres") or {}).get(t, {}).get("base"), chg.get(t))
+        "theatres": {t: theatre_json(t, v, res["series"], ((res.get("model") or {}).get("theatres") or {}).get(t, {}).get("base"), chg.get(t),
+                                     (res.get("tells") or {}).get(t))
                      for t, v in res["theatres"].items()},
         "order": list(C.THEATRES),
         "regions": regions_json(res["regions"]), "global": res["global"], "weights": res["weights_version"],

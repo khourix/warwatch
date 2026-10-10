@@ -21,6 +21,7 @@ import run  # noqa: E402
 import scoring  # noqa: E402
 import sources as S  # noqa: E402
 import stats  # noqa: E402
+import tells  # noqa: E402
 import store  # noqa: E402
 
 # shaped like the responses read from a GitHub runner on 2026-10-06
@@ -991,6 +992,77 @@ class ArmedShadow(unittest.TestCase):
         self.assertEqual(model.load_events(types=model.ARMED_TYPES) != [], True)
 
 
+
+class TestTells(unittest.TestCase):
+    @staticmethod
+    def days(vals, start=dt.date(2026, 1, 1)):
+        return [((start + dt.timedelta(days=i)).isoformat(), float(v)) for i, v in enumerate(vals)]
+
+    def test_rules(self):
+        p = self.days([0] * 100 + [1] * 3)
+        self.assertTrue(tells.rose(p, p[-1][0]))
+        self.assertFalse(tells.rose(p, p[-5][0]))
+        self.assertFalse(tells.rose(self.days([1] * 103), "2026-04-13"))
+        t = self.days([1] * 100 + [6, 6, 6])
+        self.assertTrue(tells.surge(t, t[-1][0], 3, 4))
+        self.assertFalse(tells.surge(self.days([1] * 100 + [3, 3, 3]), t[-1][0], 3, 4))    # under the floor of 4
+        c = self.days([100] * 60 + [50] * 7)
+        self.assertTrue(tells.slump(c, c[-1][0], 0.6))
+        self.assertFalse(tells.slump(self.days([100] * 60 + [70] * 7), c[-1][0], 0.6))
+        self.assertFalse(tells.slump(self.days([100] * 10 + [50] * 7), "2026-01-17", 0.6))   # too little baseline
+
+    def test_evaluate_marks_seen_unseen_and_unwatched(self):
+        tank = self.days([1] * 100 + [8, 8, 8])
+        today = tank[-1][0]
+        series = [{"id": "adsb_iran_tanker", "points": tank}, {"id": "state_dep_iran", "points": self.days([0] * 103)}]
+        rows = {r["id"]: r for r in tells.evaluate(series, today=today, record={})["iran"]}
+        self.assertTrue(rows["tankers"]["on"])
+        self.assertEqual(rows["tankers"]["date"], today)
+        self.assertEqual(rows["tankers"]["src"], "adsb_iran_tanker")
+        self.assertIs(rows["departure"]["on"], False)
+        self.assertIsNone(rows["airlines"]["on"])          # no airliner series in this test: not watched
+        self.assertIsNone(rows["civil"]["on"])             # no source at all
+        self.assertNotIn("global", tells.evaluate(series, today=today, record={}))
+
+    def test_replay_counts_hits_and_caught_events(self):
+        vals = [1] * 200
+        for i in (120, 121, 160, 161):
+            vals[i] = 9
+        p = self.days(vals)
+        ev = [("iran", (dt.date(2026, 1, 1) + dt.timedelta(days=124)).isoformat()), ("iran", "2026-06-01"), ("israel", "2026-05-03")]
+        r = tells.replay(tells.TELLS[3], "iran", lambda sid: p if sid == "adsb_iran_tanker" else [], ev)
+        self.assertEqual(r["episodes"], 2)
+        self.assertEqual(r["hits"], 1)
+        self.assertEqual(r["events"], 2)
+        self.assertEqual(r["caught"], 1)
+
+    def test_forward_record_once_a_day_and_chained(self):
+        path = os.path.join(tempfile.mkdtemp(), "tells.csv")
+        rows = {"iran": [{"id": "tankers", "on": True, "date": "2026-10-10", "src": "adsb_iran_tanker"},
+                         {"id": "civil", "on": None, "date": None, "src": None}]}
+        self.assertEqual(tells.forward_append(rows, day="2026-10-10", path=path), 1)
+        self.assertEqual(tells.forward_append(rows, day="2026-10-10", path=path), 0)
+        self.assertEqual(tells.forward_append(rows, day="2026-10-11", path=path), 1)
+        import csv as _csv
+        with open(path) as f:
+            got = list(_csv.DictReader(f))
+        self.assertEqual(got[1]["prev_hash"], got[0]["hash"])
+        self.assertEqual(got[1]["hash"], tells._digest(got[0]["hash"], got[1]))
+
+    def test_departures_read_from_the_main_advisory(self):
+        items = [{"Title": "Iraq - Level 4: Do Not Travel", "Category": ["IZ"],
+                  "Summary": "On June 11, 2025, the Department ordered the departure of non-emergency U.S. government personnel"},
+                 {"Title": "Iran - Level 4: Do Not Travel", "Category": ["IR"], "Summary": "Do not travel to Iran."},
+                 {"Title": "Gaza - Level 4: Do Not Travel", "Category": ["IS"], "Summary": "authorized departure"},
+                 {"Title": "Israel - Level 3: Reconsider Travel", "Category": ["IS"], "Summary": "Reconsider travel."}]
+        self.assertEqual(S.state_departures(items, ["IR", "IZ"]), 1.0)
+        self.assertEqual(S.state_departures(items, ["IS"]), 0.0)          # Israel's own advisory, not Gaza's
+
+    def test_departure_series_is_not_scored(self):
+        for s in catalog.SERIES:
+            if s["id"].startswith("state_dep_"):
+                self.assertFalse(s["scored"], s["id"])
+
 if __name__ == "__main__":
     unittest.main()
 
@@ -1036,7 +1108,7 @@ class TestEngine(unittest.TestCase):
                "points": [], "score": {"z": 5.0}, "scored": False}
         self.assertEqual(engine.theatre_items([row], "iran"), [])
         zero = [s["id"] for s in catalog.SERIES if not s["scored"]]
-        self.assertTrue(zero and all(i.startswith(catalog.ZERO_WEIGHT) for i in zero))
+        self.assertTrue(zero and all(i.startswith(catalog.ZERO_WEIGHT + catalog.TELL_ONLY) for i in zero))
         self.assertTrue(any(i.startswith("ooni_") for i in zero))
 
     def test_levels_do_not_depend_on_the_day_s_other_readings(self):

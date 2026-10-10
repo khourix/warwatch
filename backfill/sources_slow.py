@@ -28,6 +28,7 @@ ISO3 = {"UP": "ukr", "BO": "blr", "MD": "mda", "PL": "pol", "LH": "ltu", "LG": "
         "PK": "pak", "LY": "lby", "SU": "sdn", "OD": "ssd", "CG": "cod", "VE": "ven", "CO": "col", "CU": "cub"}
 LEVEL = re.compile(r"Level\s*([1-4])\s*[:\-–]", re.I)
 ORDERED = re.compile(r"ordered\s+(?:the\s+)?departure", re.I)     # "ordered the departure of" is how Kyiv's January 2022 notice read
+DEPART = re.compile(r"(?:ordered|authori[sz]ed)\s+(?:the\s+)?departure", re.I)   # either kind: the timing tell (warwatch/tells.py) counts both
 HEAD = re.compile(r"(?is)<(title|h1)\b[^>]*>(.*?)</\1>")
 CARRY_DAYS = 90       # a page not captured for this long is unknown, not unchanged (most old addresses stop in 2025)
 
@@ -61,6 +62,11 @@ def weekly(snaps):
     return out
 
 
+def parse_departure(html):
+    """1 if the page mentions an ordered or an authorised departure of US government staff or families, else 0."""
+    return 1 if DEPART.search(html or "") else 0
+
+
 def fill_forward(points, start, end, max_carry=None):
     """[(date, value)] changes -> {iso_date: value} for every day from the first observation to `end`,
     or, with max_carry, to at most that many days after each observation."""
@@ -86,7 +92,7 @@ def cmd_state(theatres, start, end):
     for code in codes:
         slug = SLUG[code]
         urls = {f"{BASE}{slug}-travel-advisory.html": False, f"{NEW_BASE}{ISO3[code]}.html": True}   # address -> strict parse
-        if K.load(f"state_od_country_{slug}").get(end.isoformat()) and K.load(f"state_level_{slug}").get(end.isoformat()):
+        if all(K.load(f"state_{k}_{slug}").get(end.isoformat()) for k in ("level", "od_country", "dep_country")):
             continue
         try:
             snaps = sorted((ts, dg, url) for url in urls for ts, dg in cdx(url) if ts[:8] >= start.isoformat().replace("-", ""))
@@ -96,7 +102,7 @@ def cmd_state(theatres, start, end):
         where = {ts: url for ts, _, url in snaps}
         pick = weekly([(ts, dg) for ts, dg, _ in snaps])
         K.log(slug, len(snaps), "daily captures,", len(pick), "to read")
-        lv, od, miss = [], [], 0
+        lv, od, dep, miss = [], [], [], 0
 
         def read(ts):
             try:
@@ -104,7 +110,8 @@ def cmd_state(theatres, start, end):
             except RuntimeError as e:
                 K.log("miss", slug, ts, str(e)[:80])
                 return ts, None
-            return ts, parse_advisory(html, strict=urls[where[ts]])
+            got = parse_advisory(html, strict=urls[where[ts]])
+            return ts, got and got + (parse_departure(html),)
 
         with ThreadPoolExecutor(4) as pool:
             for ts, got in pool.map(read, pick):
@@ -114,10 +121,12 @@ def cmd_state(theatres, start, end):
                 day = f"{ts[:4]}-{ts[4:6]}-{ts[6:8]}"
                 lv.append((day, got[0]))
                 od.append((day, got[1]))
+                dep.append((day, got[2]))
         K.log(slug, "read", len(lv), "missed", miss)
         if lv:
             replace_from(f"state_level_{slug}", fill_forward(lv, start, end, CARRY_DAYS), start)
             replace_from(f"state_od_country_{slug}", fill_forward(od, start, end, CARRY_DAYS), start)
+            replace_from(f"state_dep_country_{slug}", fill_forward(dep, start, end, CARRY_DAYS), start)
     derive_state(theatres)
 
 
@@ -130,8 +139,8 @@ def replace_from(series, rows, start):
 
 
 def derive_state(theatres):
-    """Per-theatre sums over its countries: `state_<th>` (level sum, the live series' definition) and `state_od_<th>`
-    (countries under an ordered departure). Country files are `state_level_<slug>` and `state_od_country_<slug>`,
+    """Per-theatre sums over its countries: `state_<th>` (level sum, the live series' definition), `state_od_<th>`
+    (countries under an ordered departure) and `state_dep_<th>` (an ordered or an authorised one). Country files are `state_level_<slug>` and `state_od_country_<slug>`,
     named apart from the theatre files (the Iran and Ukraine slugs are also theatre names). A theatre with a country
     that has no history gets empty files: a sum over some of its countries is not the live series' quantity, and the
     live series is better left to build its own history than seeded with a lower one (Israel and Venezuela were)."""
@@ -139,14 +148,17 @@ def derive_state(theatres):
         codes = C.STATE_ISO.get(th, [])
         lv = [K.load(f"state_level_{SLUG[c]}") for c in codes]
         od = [K.load(f"state_od_country_{SLUG[c]}") for c in codes]
+        dep = [K.load(f"state_dep_country_{SLUG[c]}") for c in codes]
         if not codes or not all(lv) or not all(od):
             K.log("state", th, "no history: nothing yet for", [SLUG[c] for c, x, y in zip(codes, lv, od) if not (x and y)])
-            K.write_csv(K.path(f"state_{th}"), {})
-            K.write_csv(K.path(f"state_od_{th}"), {})
+            for k in ("state", "state_od", "state_dep"):
+                K.write_csv(K.path(f"{k}_{th}"), {})
             continue
         days_ = sorted(set.intersection(*[set(x) for x in lv]))      # only days when every country has been observed
         K.write_csv(K.path(f"state_{th}"), {d: float(sum(x[d] for x in lv)) for d in days_})
         K.write_csv(K.path(f"state_od_{th}"), {d: float(sum(x.get(d, 0) for x in od)) for d in days_})
+        if all(dep):     # countries read before the departure file existed have none until their next re-read
+            K.write_csv(K.path(f"state_dep_{th}"), {d: float(sum(x.get(d, 0) for x in dep)) for d in days_})
 
 
 # ---------------------------------------------------------------- Taiwan PLA activity (MND daily bulletins)

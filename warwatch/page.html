@@ -157,6 +157,10 @@ header#top{height:52px;flex:none;display:flex;align-items:center;gap:12px;paddin
 .nl time span{display:block;color:var(--mute)}
 .unread{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;margin:0 6px 1px 0}
 .wf{display:grid;grid-template-columns:minmax(0,1fr) 120px 52px;gap:8px;align-items:center;font-size:12.5px;padding:3px 0}
+.tl{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:2px 8px;align-items:baseline;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--line)}
+.tl .mk{font:600 12px var(--mono);color:var(--dim)}.tl.on .mk{color:var(--elevated)}.tl.on .nm{color:var(--ink);font-weight:600}
+.tl .nm{color:var(--mute)}.tl .dt{font:11px var(--mono);color:var(--dim);text-align:right}
+.tl .rc{grid-column:2/4;font-size:11px;color:var(--dim);line-height:1.4}
 .wf>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wf .bar{height:8px;background:var(--panel3);border-radius:3px;position:relative;overflow:hidden}
 .wf .bar i{position:absolute;top:0;bottom:0;border-radius:3px;background:var(--elevated)}
@@ -1226,6 +1230,7 @@ function showHover(key){
   let h = `<div class="top"><h3>${esc(p.region ? r.name : th.name)}</h3>${lvPill(th.level)}</div>`;
   h += `<div class="big"><b style="color:${LEVEL[th.level]}">${esc(l.txt)}</b><small>${leadP() && th.p != null ? `chance in 30 days${p.region && kids ? ', ' + esc(th.name) : ''} · range ${pct(th.plo)} to ${pct(th.phi)}` : 'signal pressure, 0 to 100'}</small></div>`;
   h += `<p>${summaryLine(t)}</p>`;
+  { const tc = tellsCount(t); if (tc.n) h += `<p class="hint" style="margin:-2px 0 6px">Timing tells this week: <b style="color:${tc.on.length ? 'var(--elevated)' : 'var(--ink)'}">${tc.on.length} of ${tc.n}</b>${tc.on.length ? ' · ' + tc.on.map(x => esc(x.n)).join(', ') : ''}</p>`; }
   h += `<div class="sh">What pushes ${esc(th.name)} up ${inf(PM ? 'The signal families that add most to the 30-day chance. A longer bar adds more.' : 'The signal families that add most to the model\'s 30-day chance. The model has not passed its release checks, so this is for reference only. A longer bar adds more.')}</div>${drvBars(t, 3)}`;
   if (kids) h += `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">${leadP() ? '30 days' : 'Pressure'}</span><span class="h r">Change</span>${kids.map(k => `<span>${dot(D.theatres[k].level)} ${esc(thName(k))}</span><b class="num r">${esc(lead(k).txt)}</b><span class="r">${changeTxt(k)}</span>`).join('')}</div>`;
   h += `<div class="row" style="justify-content:space-between;margin-top:6px"><span class="hint">Data coverage ${Math.round((1 - (th.miss || 0)) * 100)}% · confidence ${esc(String(th.confl || '').toLowerCase())}</span><button class="btn pri" data-nav="${target}">Open ${esc(p.region && kids ? r.name : th.name)} ${ic('chev', 's')}</button></div>`;
@@ -1285,6 +1290,8 @@ function steSummary(t){
     if (up.length) out.push(`The ${up.length > 1 ? 'two largest causes are' : 'largest cause is'} ${up.join(' and ')}.`);
   } else out.push(`Signal pressure is <b>${fs(th.score)}</b> of 100. ${MEANING_S[th.level] || ''}`);
   out.push(th.firing.length ? `${th.firing.length} of ${th.scorable} signal groups are unusual: ${th.firing.map(d => GN[d]).join(', ')}.` : 'No signal group is unusual now.');
+  const tc = tellsCount(t);
+  if (tc.n) out.push(tc.on.length ? `Timing tells this week: <b>${tc.on.length} of ${tc.n}</b> (${tc.on.map(x => esc(lc(x.n))).join(', ')}).` : `No timing tell this week (0 of ${tc.n} watched).`);
   if (th.p != null && PM && th.lvc && th.lvc !== th.level) out.push(`On signal pressure alone the level is ${esc(th.lvc)}. Click Pressure to see why the two differ.`);
   if (th.basis === 'lagging only') out.push('<b style="color:var(--elevated)">Only late data is unusual. It shows a build-up that already started. It is not an early warning.</b>');
   if (th.aft) out.push('An event occurred here in the last 30 days. The model was not tested on this condition, so use the value with care.');
@@ -1300,8 +1307,9 @@ function renderPanel(){
   const t = R.id, th = D.theatres[t], m = META[t];
   h += `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}${r ? `<a data-nav="${r.kids.length > 1 ? 'region/' + r.id : r.kids[0]}">${esc(r.name)}</a>${ic('chev', 's')}` : ''}<span>${esc(thName(t))}</span></div><h2>${esc(thName(t))} ${lvPill(th.level)}</h2><p>${steSummary(t)}</p></div>`;
   const cov = Math.round((1 - (th.miss || 0)) * 100);
-  const k1 = th.p != null && !PM ? `<button class="kp" data-pop="kp-p"><small>30-day chance ${inf('The model\'s chance of a qualifying event in the next 30 days. It has not passed its release checks, so it does not set the level and is shown for reference only. Click to see what drives it.')}</small><b style="color:var(--dim)">${pct(th.p)}</b><span>not validated</span></button>`
-    : th.p != null ? `<button class="kp" data-pop="kp-p"><small>30-day chance ${inf('The chance of a qualifying event in the next 30 days. Click to see what drives it.')}</small><b style="color:${LEVEL[th.level]}">${pct(th.p)}</b><span>${pct(th.plo)} to ${pct(th.phi)}</span></button>`
+  const xu = th.xu != null ? `${th.xu.toFixed(1)}×` : pct(th.p);
+  const k1 = th.p != null && !PM ? `<button class="kp" data-pop="kp-p"><small>Standing risk ${inf('The model\'s chance of a qualifying event in the next 30 days, as a multiple of this theatre\'s usual chance. It has not passed its release checks, so it does not set the level and is shown for reference only. Click to see what drives it.')}</small><b style="color:var(--dim)">${xu}<sub>usual</sub></b><span>not validated</span></button>`
+    : th.p != null ? `<button class="kp" data-pop="kp-p"><small>Standing risk ${inf('The chance of a qualifying event in the next 30 days, as a multiple of this theatre\'s usual chance. Click to see what drives it.')}</small><b style="color:${LEVEL[th.level]}">${xu}<sub>usual</sub></b><span>${pct(th.p)} (${pct(th.plo)} to ${pct(th.phi)})</span></button>`
     : `<div class="kp"><small>30-day chance ${inf('The model gives no chance for this view. It covers the 13 theatres only.')}</small><b style="color:var(--dim)">n/a</b><span>no model here</span></div>`;
   h += `<div class="kpis">${k1}
     <button class="kp" data-pop="kp-s"><small>Pressure ${inf('How unusual the signals are, all together, from 0 to 100. 50 is the Watch line and 90 is the Critical line. It is not a chance. Click for details.')}</small><b>${fs(th.score)}<sub>/100</sub></b><span>${th.score == null ? 'no score' : th.score >= 90 ? 'above Critical' : th.score >= 50 ? 'above Watch' : 'below Watch'}</span></button>
@@ -1326,8 +1334,25 @@ function waterfall(t){
   why.forEach(w => { const a = sigm(cum); cum += w[1]; steps.push({n: w[0], d: sigm(cum) - a, a, b: sigm(cum)}); });
   return {base, steps};
 }
+/* Timing tells: rule-based yes/no checks on costly, hard-to-reverse actions over the last 7 days (tells.py). They never set
+   the level; each carries its record on our history so a reader can weigh it. */
+const tellsOf = t => (D.theatres[t] && D.theatres[t].tells) || [];
+function tellsCount(t){ const w = tellsOf(t).filter(x => x.on != null); return {on: w.filter(x => x.on), n: w.length}; }
+function tellRec(x){
+  const r = x.rec; if (!r) return 'No history to test it on yet.';
+  const ep = r.episodes;
+  return `On our history (${r.first.slice(0, 4)} to ${r.last.slice(0, 4)}): fired ${ep} time${ep === 1 ? '' : 's'}, ${r.hits} followed by an event within 7 days; it came before ${r.caught} of ${r.events} events.${x.note ? ' ' + x.note : ''}`;
+}
+function tellsBody(t){
+  const L = tellsOf(t); if (!L.length) return '';
+  const c = tellsCount(t);
+  let h = `<div class="sh">Timing tells, last 7 days ${inf('Costly, hard-to-reverse actions that came days before strikes in past cases: departures, airlines leaving, tankers parked forward, closures. Each is a fixed rule, yes or no. They do not set the level. Each line gives the rule\'s record on our own history.')}<small>${c.on.length} of ${c.n} seen · rule based</small></div>`;
+  h += L.map(x => { const sid = x.src && SERIES[x.src] ? x.src : null;
+    return `<div class="tl ${x.on ? 'on' : ''}" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''} title="${esc(x.says)}"><span class="mk">${x.on ? '●' : x.on === false ? '○' : '–'}</span><span class="nm">${esc(x.n)}</span><span class="dt">${x.on ? esc(x.date) : x.on === false ? 'not seen' : 'not watched'}</span><span class="rc">${x.on == null ? esc(x.says) : esc(tellRec(x))}<br>Past case: ${esc(x.cases)}</span></div>`; }).join('');
+  return h + '<div style="height:14px"></div>';
+}
 function driversBody(t){
-  const th = D.theatres[t]; let h = '';
+  const th = D.theatres[t]; let h = tellsBody(t);
   const wf = waterfall(t);
   if (wf) {
     const mx = Math.max(...wf.steps.filter(s => !s.rest).map(s => s.d), .0001);
