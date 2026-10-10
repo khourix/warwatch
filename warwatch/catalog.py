@@ -670,17 +670,19 @@ for th, locs in HAPI_LOC.items():
             "Counts of armed clashes, strikes and attacks on civilians coded by ACLED. Reactive, so it confirms escalation. Open HDX HAPI feed, about two months behind.",
             (lambda l=locs: S.fetch_hapi_events(l, ("political_violence", "civilian_targeting"))), drop=0, url="https://hapi.humdata.org/", sub="Conflict events")
 
+# The full download takes about ten minutes, so news.yml fetches it every 6 hours and the build only reads the cache
+# (no 'every' cadence below: the build re-reading the cache would re-stamp it and the slow job would never refetch).
 for th, box in C.BOXES.items():
     add(f"ucdp_deaths_{th}", f"Deaths in organised violence per month, {TH[th]} region (UCDP)", "geospatial", th, "monthly", True,
         "Uppsala's event-by-event conflict dataset: best-estimate deaths from battles, one-sided attacks and non-state clashes inside the theatre box. Reactive, so it confirms escalation. Runs two to three months behind and is revised.",
-        (lambda b=box: S.fetch_ucdp(b, _key("UCDP_TOKEN"))), drop=0, needs=["UCDP_TOKEN"], url="https://ucdp.uu.se/", sub="Conflict events")
+        _slow(f"ucdp_deaths_{th}", lambda b=box: S.fetch_ucdp(b, _key("UCDP_TOKEN"))), drop=0, needs=["UCDP_TOKEN"], url="https://ucdp.uu.se/", sub="Conflict events")
 
 # ============ How often each source is worth fetching (hours between full fetches) ============
 # Slow-moving sources are re-read from their cache in between, so the page can rebuild every 30 minutes
 # for the live layers without hammering rate-limited APIs.
 for _s in SERIES:
     _id = _s["id"]
-    if _id.startswith(("us_", "eu_", "dod_", "acled_", "ucdp_", "gacc_")) and _s["kind"] == "monthly":
+    if _id.startswith(("us_", "eu_", "dod_", "acled_", "gacc_")) and _s["kind"] == "monthly":
         _s["every"] = 20      # trade and contract data change monthly, after a lag
     elif "FRED_API_KEY" in _s["needs"] or "fetch_market" in _s["fetch"].__code__.co_names:
         _s["every"] = 6       # daily closes

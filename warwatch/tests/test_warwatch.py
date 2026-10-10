@@ -119,6 +119,13 @@ class TestParsers(unittest.TestCase):
                 ["2", "FRANCE", "9", "2026-06"], ["3", "UKRAINE", "7", "2026-07"]]
         self.assertEqual(S.parse_census(rows, ["UKRAINE"]), [("2026-06", 5.0), ("2026-07", 7.0)])
 
+    def test_ucdp_months_fill_zeros_across_the_dataset(self):
+        ev = [{"latitude": 50, "longitude": 30, "date_start": "2026-01-03", "best": 4},
+              {"latitude": 10, "longitude": 10, "date_start": "2026-03-09", "best": 2}]
+        self.assertEqual(S.ucdp_months(ev, (44, 53, 22, 41)), [("2026-01", 4.0), ("2026-02", 0.0), ("2026-03", 0.0)])
+        self.assertEqual(S.ucdp_months(ev, (20, 26, 118, 123)), [("2026-01", 0.0), ("2026-02", 0.0), ("2026-03", 0.0)])
+        self.assertEqual(S.ucdp_months([], (20, 26, 118, 123)), [])
+
     def test_ucdp_sums_deaths_inside_box(self):
         ev = [{"latitude": 50, "longitude": 30, "date_start": "2026-03-04 00:00:00.000", "best": 3},
               {"latitude": 50.5, "longitude": 31, "date_start": "2026-03-20 00:00:00.000", "best": 2},
