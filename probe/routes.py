@@ -313,8 +313,44 @@ def customs_more():
     return out
 
 
+def round6():
+    out = {}
+    cgi = "https://www1.kaiho.mlit.go.jp/TUHO/keiho/cgi/"
+    x = post(cgi + "warnings.cgi", {"YEAR": "2026", "TYPE": "JAPANNW", "LANG": "JP"})
+    out["japannw list"] = {"bytes": len(x), "titles": re.findall(r"<title>(.*?)</title>", x)[:60]}
+    x = post(cgi + "warnings.cgi", {"YEAR": "2026", "TYPE": "NAVAREA11", "LANG": "JP"})
+    out["navarea11 titles"] = list(zip(re.findall(r"<categoly>(.*?)</categoly>", x), re.findall(r"<title>(.*?)</title>", x)))[:120]
+    tanas = re.findall(r"<tana>(.*?)</tana>", x)
+    for lang in ("JP", "EN"):
+        try:
+            t = post(cgi + "disp_warnings.cgi", {"TYPE": "NAVAREA11", "TANA": ":".join(tanas[:3]) + ":", "LANG": lang})
+            out["text " + lang] = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", t))[:2500]
+        except Exception as e:  # noqa: BLE001
+            out["text " + lang] = str(e)[:200]
+    for yr in ("2025",):
+        x = post(cgi + "warnings.cgi", {"YEAR": yr, "TYPE": "NAVAREA11", "LANG": "JP"})
+        out["navarea11 " + yr] = len(re.findall("<Member>", x))
+    try:
+        t = fetch_text("https://www.msa.gov.cn/msacncms_wap/pages/info_warn.jhtml?channelId=9c219298b27f460e995a99401b3ff6af")
+        out["msa warn page"] = {"bytes": len(t), "ajax": re.findall(r"""(?:url|\$\.(?:post|get|ajax))\s*[:(]\s*["']([^"']+)""", t)[:20],
+                                "text": re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", re.sub(r"<script.*?</script>", "", t, flags=re.S)))[:2500],
+                                "scripts": re.findall(r"<script[^>]*>(.*?)</script>", t, re.S)[-3:]}
+    except Exception as e:  # noqa: BLE001
+        out["msa warn page"] = str(e)[:200]
+    return out
+
+
 def main(path):
     res = []
+    if os.environ.get("ROUTES_ROUND") == "6":
+        try:
+            v = round6()
+        except Exception as e:  # noqa: BLE001
+            v = {"error": f"{type(e).__name__}: {e}"[:300]}
+        print(json.dumps(v, ensure_ascii=False)[:800])
+        with open(path, "w") as f:
+            json.dump(v, f, indent=1, ensure_ascii=False)
+        return
     if os.environ.get("ROUTES_ROUND") == "5":
         for name, fn in (("jcg cgi", jcg_cgi), ("msa more", msa_more), ("customs more", customs_more)):
             try:
