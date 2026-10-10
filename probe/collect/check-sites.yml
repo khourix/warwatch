@@ -10,14 +10,15 @@ permissions:
 jobs:
   check:
     runs-on: [self-hosted, home]
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python tools
         run: |
           python3 -m venv .venv
           .venv/bin/pip install -q --upgrade pip
-          .venv/bin/pip install -q curl_cffi zendriver
+          .venv/bin/pip install -q curl_cffi camoufox cloakbrowser
+          .venv/bin/python -m camoufox fetch
       - name: Check sites
         run: |
           mkdir -p results

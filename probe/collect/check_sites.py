@@ -1,10 +1,10 @@
 """Check which blocked sites open from the home runner, and with which method.
 
-Tries plain urllib, then curl_cffi with a Chrome TLS fingerprint, then a real
-Chrome window driven by zendriver (in a virtual display). Records the first
-method that returns real content, not a challenge or block page.
+Runs every site through four methods and records each result, so the stealth
+browsers can be compared: plain urllib, curl_cffi with a Chrome TLS fingerprint,
+Camoufox (stealth Firefox) and CloakBrowser (stealth Chromium, free tier), both
+in a virtual display. "ok" means real content, not a challenge or block page.
 """
-import asyncio
 import json
 import sys
 import time
@@ -47,31 +47,37 @@ def try_curl_cffi(url):
     return r.status_code, r.text[:400_000]
 
 
-async def _browser(url):
-    import zendriver as zd
-    browser = await zd.start(headless=False)
+def try_camoufox(url):
+    from camoufox.sync_api import Camoufox
+    with Camoufox(headless="virtual", humanize=True) as browser:
+        page = browser.new_page()
+        resp = page.goto(url, timeout=60_000, wait_until="domcontentloaded")
+        page.wait_for_timeout(8_000)
+        return (resp.status if resp else 200), page.content()
+
+
+def try_cloakbrowser(url):
+    # CloakBrowser's wrapper returns a Playwright browser; check the call against
+    # its README if the API has changed.
+    from cloakbrowser import launch
+    browser = launch(headless=False)
     try:
-        page = await browser.get(url)
-        await asyncio.sleep(10)
-        html = await page.get_content()
+        page = browser.new_page()
+        resp = page.goto(url, timeout=60_000, wait_until="domcontentloaded")
+        page.wait_for_timeout(8_000)
+        return (resp.status if resp else 200), page.content()
     finally:
-        stop = browser.stop()
-        if asyncio.iscoroutine(stop):
-            await stop
-    return 200, html
+        browser.close()
 
 
-def try_browser(url):
-    return asyncio.run(_browser(url))
-
-
-METHODS = [("urllib", try_urllib), ("curl_cffi", try_curl_cffi), ("zendriver", try_browser)]
+METHODS = [("urllib", try_urllib), ("curl_cffi", try_curl_cffi),
+           ("camoufox", try_camoufox), ("cloakbrowser", try_cloakbrowser)]
 
 
 def main(out):
     results = []
     for name, url in SITES:
-        row = {"name": name, "url": url, "attempts": [], "works_with": None}
+        row = {"name": name, "url": url, "attempts": [], "works_with": []}
         for label, fn in METHODS:
             t0 = time.time()
             try:
@@ -84,9 +90,8 @@ def main(out):
                 row["attempts"].append({"method": label, "error": f"{type(e).__name__}: {e}"[:300],
                                         "secs": round(time.time() - t0, 1)})
             if ok:
-                row["works_with"] = label
-                break
-        print(f"{name}: {row['works_with'] or 'blocked by all three'}", flush=True)
+                row["works_with"].append(label)
+        print(f"{name}: {', '.join(row['works_with']) or 'blocked by all four'}", flush=True)
         results.append(row)
     with open(out, "w") as f:
         json.dump(results, f, indent=1, ensure_ascii=False)
