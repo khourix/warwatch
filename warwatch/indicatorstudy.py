@@ -34,9 +34,9 @@ CALM_STEP = 30          # calm windows end every 30 days, so they do not overlap
 
 
 def events():
-    a = pd.read_csv(os.path.join(DATA, "events.csv")).assign(added=False)
-    b = pd.read_csv(os.path.join(DATA, "events_added.csv")).assign(added=True)
-    e = pd.concat([a, b], ignore_index=True)
+    e = pd.read_csv(os.path.join(DATA, "events.csv"), keep_default_na=False)      # all 161; the 83 added later are also in events_added.csv
+    b = pd.read_csv(os.path.join(DATA, "events_added.csv"), keep_default_na=False)
+    e["added"] = pd.MultiIndex.from_frame(e[["date", "theatre", "description"]]).isin(pd.MultiIndex.from_frame(b[["date", "theatre", "description"]]))
     e["date"] = pd.to_datetime(e.date).dt.date
     e = e.sort_values(["theatre", "date"])
     allev = e.groupby("theatre").date.apply(list).to_dict()

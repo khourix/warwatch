@@ -44,12 +44,12 @@ GDELT_ROOTS = {"threat": ("13",), "posture": ("15",), "preforce": ("13", "15")}
 
 # ------------------------------------------------------------------ events
 def read_events(extended):
-    ev = pd.read_csv(os.path.join(V.DATA, "events.csv"), parse_dates=["date"])
-    ev["added"] = False
-    if extended:
-        ad = pd.read_csv(ADDED, parse_dates=["date"])
-        ad["added"] = True
-        ev = pd.concat([ev, ad[[c for c in ad.columns if c in ev.columns]]], ignore_index=True)
+    """events.csv holds all 161 since October 2026; `added` marks the 83 also in events_added.csv, and extended=False keeps the other 78."""
+    ev = pd.read_csv(os.path.join(V.DATA, "events.csv"), parse_dates=["date"], keep_default_na=False)
+    ad = pd.read_csv(ADDED, parse_dates=["date"], keep_default_na=False)
+    ev["added"] = pd.MultiIndex.from_frame(ev[["date", "theatre", "description"]]).isin(pd.MultiIndex.from_frame(ad[["date", "theatre", "description"]]))
+    if not extended:
+        ev = ev[~ev["added"]]
     return ev.sort_values(["date", "theatre"]).reset_index(drop=True)
 
 

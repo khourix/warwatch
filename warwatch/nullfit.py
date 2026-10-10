@@ -49,7 +49,7 @@ def main():
     pooled = np.concatenate([rng.choice(a, 2000) for a in per_series])
     q = np.quantile(pooled, np.linspace(0, 1, NQ))
     out = {"built": dt.date.today().isoformat(), "series": len(per_series), "from": FROM.isoformat(),
-           "calm": "no event in the theatre within 30 days either side (events.csv and events_added.csv); global series every day",
+           "calm": "no event in the theatre within 30 days either side (events.csv); global series every day",
            "share_ge2": round(float((pooled >= 2).mean()), 4), "share_ge3": round(float((pooled >= 3).mean()), 4),
            "quantiles": [round(float(x), 4) for x in q]}
     json.dump(out, open(OUT, "w"), separators=(",", ":"))
