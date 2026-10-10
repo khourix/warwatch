@@ -10,3 +10,4 @@ jobs:
         env:
           FAA_CLIENT_ID: ${{ secrets.FAA_CLIENT_ID }}
           FAA_CLIENT_SECRET: ${{ secrets.FAA_CLIENT_SECRET }}
+          UCDP_TOKEN: ${{ secrets.UCDP_TOKEN }}
