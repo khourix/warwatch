@@ -1,0 +1,588 @@
+[
+ {
+  "name": "jcg www1 root",
+  "url": "https://www1.kaiho.mlit.go.jp/",
+  "result": {
+   "bytes": 18917,
+   "links": [
+    [
+     "https://www1.kaiho.mlit.go.jp/TUHO/tuho2.html",
+     "航行警報・水路通報"
+    ],
+    [
+     "https://www1.kaiho.mlit.go.jp/TUHO/keiho/navarea11.html",
+     "航行警報"
+    ],
+    [
+     "https://www1.kaiho.mlit.go.jp/TUHO/tuho/nm.html",
+     "水路通報"
+    ],
+    [
+     "https://www1.kaiho.mlit.go.jp/TUHO/keiho/navarea11.html",
+     "航行警報"
+    ],
+    [
+     "https://www1.kaiho.mlit.go.jp/TUHO/tuho/nm.html",
+     "水路通報"
+    ]
+   ],
+   "endpoints": []
+  }
+ },
+ {
+  "name": "jcg main",
+  "url": "https://www.kaiho.mlit.go.jp/",
+  "result": {
+   "bytes": 80374,
+   "links": [
+    [
+     "https://www.kaiho.mlit.go.jp/safety/safety-navigation/post-3.html",
+     "海上交通ルール・各種手続"
+    ],
+    [
+     "http://www1.kaiho.mlit.go.jp/TUHO/keiho/navarea11.html",
+     "航行警報"
+    ],
+    [
+     "http://www1.kaiho.mlit.go.jp/TUHO/tuho/nm.html",
+     "水路通報"
+    ],
+    [
+     "https://www.kaiho.mlit.go.jp/safety/safety-navigation/post-3.html",
+     "海上交通ルール・各種手続 など"
+    ],
+    [
+     "https://www1.kaiho.mlit.go.jp/TUHO/tuho/nm.html",
+     "水路通報・航行警報"
+    ]
+   ],
+   "endpoints": []
+  }
+ },
+ {
+  "name": "msa home",
+  "url": "https://www.msa.gov.cn/",
+  "result": {
+   "bytes": 66823,
+   "links": [
+    [
+     "https://www.msa.gov.cn/24a774dd377c4548aa0b144c9e0d78b0.jhtml",
+     "海图改正通告"
+    ],
+    [
+     "https://xkpt.mot.gov.cn/xzxk/web/hcp/hcp_index.jsp",
+     "点击进入政务服务“好差评”系统"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/6d3defac411d44b8a50f2b42721de2b7.html",
+     "海事创新成果集中亮相第十八届国际交通技术与设备展览会"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/97f8d313beb642db95cfb7b9f6e11ffc.html",
+     "第15次中新海事局长会谈在山东青岛举行"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/1474a017aa0b41c491c188b120d7f405.html",
+     "2026年“我们一起去看海”全媒体宣传活动大连启动"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2025/c8a649a810dc45718381444f19705f1e.html",
+     "2026年全国海事工作会议召开"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2025/109f5403a3a84a1582ab09c7914b987c.html",
+     "中国-东盟干线集装箱船舶交通组织一体化交流研讨会在宁波召开"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/377e3abb70834966b0c235649ed92d36.html",
+     "部海事局召开2026年10月份月度工作例会   10-09"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/205b8fcadbe540d4ba84e73dbbf7edbf.html",
+     "交通运输部海事局组团参加国际海道测量组织全球航行警告服务分委会第18次会议取得良好成效   09-25"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/bac9117039d74196adacfcfb8b8c4560.html",
+     "2026年度直属海事系统网络和数据安全竞赛圆满落幕   09-22"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/054ea564147a41deae0e871aa8d4e94e.html",
+     "锚定强国使命 坚守航企安全 | 首届航运公司安全管理体系审核技能竞赛在深圳圆满落幕   09-14"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/aa9c31da61b64af392cb29e76a312c0a.html",
+     "中国海事局组团参加第22届亚洲地区海岸警备机构高官会高级别会议   09-11"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/6d3defac411d44b8a50f2b42721de2b7.html",
+     "海事创新成果集中亮相第十八届国际交通技术与设备展览会   09-03"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/c94d690da531475cb19c69d6f57e6c95.html",
+     "部海事局召开2026年9月份月度工作例会   09-01"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2017/15cc40f7be0b412bbbeed1a19006f221.html",
+     ""
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/63a64bf1c2084f12994061b3bf752b4e.html",
+     "交通运输部 应急管理部关于加强内河交通安全工作的意见         2026-07-03"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/3baf1d633f4c4ee09048c3f50219a8bb.html",
+     "交通运输部海事局关于征求《船舶预防机电设备故障工作指引（征求意见稿）》意见的通知   2026-10-09"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/a6261b9350164ea2b6a050eb91c4650e.html",
+     "中华人民共和国海事局关于同意广州航海学院等单位船员培训业务申请的通知   2026-10-01"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/1dfa4534d74f49aeabefd4fe6c091351.html",
+     "交通运输部海事局关于公开征求《船舶智能监控系统安装和检验指南（征求意见稿）》意见的通知   2026-09-30"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/2b395f98adc0418ca2e9bf10f776d387.html",
+     "中华人民共和国海事局关于发布《甲醇燃料内河加注趸船技术与检验指南》的通告   2026-09-28"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/cd64209119cb47ce998ee897a812f2a3.html",
+     "交通运输部海事局关于征求《船舶检验机构认可与管理实施细则（征求意见稿）》意见的通知   2026-09-23"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/e215288351204e5897104fd12596a529.html",
+     "中华人民共和国海事局关于对《船舶检修检测服务管理办法(征求意见稿)》等文件征求意见的通知   2026-09-23"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/6713cfcb998443dab96bb1a4b3ed0c13.html",
+     "现行有效海事规范性文件目录   生效日期：2026-03-23 -->"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/7e66b4c90ede4b79866a95f57f8fe96f.html",
+     "外国在华验船公司业务范围   2026-09-23"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/62042e13cd3f47fca36e75ba3211f07b.html",
+     "交通运输部海事局关于核定新疆维吾尔自治区船舶检验整体业务范围的函   2026-07-03"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/645ec213544a493fab7b6a11dc24cadd.html",
+     "交通运输部海事局关于核定福建省渔业船舶检验整体业务范围的批复   2026-07-03"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/b9f638fb0f494a4cbfff5aee97122ad4.html",
+     "交通运输部海事局关于重庆市船舶检验业务范围的批复   2026-07-01"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/2391632b987c4f3189811fa3bd6dabd1.html",
+     "交通运输部海事局关于云南省地方海事局船舶检验机构资质的批复   2026-07-01"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/b020fd08195b460391cda95ca8ae5ff7.html",
+     "交通运输部海事局关于核定江苏省渔业船舶检验整体业务范围的批复   2026-02-28"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2024/839771814c5b455ab15d227ad71a90c9.html",
+     "持有多套载重线证书中国籍国际航行船舶名录（持续更新）   2024-06-30"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2024/37078a425832471aa54524f564ed7967.html",
+     "中国籍国际航行船舶等效免除清单（持续更新）         2024-01-01"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/d4d70e83f28445a89dfbc385c227e666.html",
+     "中华人民共和国海事局关于发布《甲醇燃料内河加注趸船技术与检验指南》的通告   2026-09-28"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/e3d946beecd34b65bd4f1b785870a791.html",
+     "中华人民共和国海事局关于发布《国际航行海船法定检验技术规则（2026年修改通报）》 的公告   2026-09-16"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/28ea77eb61984345aafd8874f728852e.html",
+     "中华人民共和国海事局关于发布《液化石油气燃料动力船舶技术与检验暂行规则（2026）》的公告   2026-08-10"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/a3777c1709ae4185bd28c00a6e0c00f4.html",
+     "中华人民共和国海事局关于发布《国内航行海船法定检验技术规则（2026年修改通报）》的公告   2026-07-13"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/89bc37471c6b437db0340e1dbe313c98.html",
+     "中华人民共和国海事局关于发布《内河小型船舶技术规则（2026年修改通报）》的公告   2026-06-17"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/9e20ca603ea34ef3a9e2a1a5feaf0855.html",
+     "交通运输部海事局关于发布《新能源清洁能源动力船舶适用内河船舶技术规范条款实施指南》的通知   2026-03-27"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/fd298ccb563946c5aacfe49b98cda2b2.html",
+     "交通运输部所属事业单位2026年度第四批统一公开招聘拟聘用人员公示（第三次）   2026-07-07"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/67076c42cd83426fb3c3c8ec6473b7ae.html",
+     "交通运输部所属事业单位2026年度第四批统一公开招聘拟聘用人员公示（第二次）   2026-06-17"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/35e974f7ca58479da58f08ff837e5b52.html",
+     "交通运输部所属事业单位2026年度第四批统一公开招聘拟聘用人员公示（第一次）   2026-06-01"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/ce2ef938ea6d4d8cafb14ac3b277b7e8.html",
+     "交通运输部东海航海保障中心2026年度公开招聘应届博士研究生公告   2026-05-25"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/be2368cd225241f29bd802a2e31cac6b.html",
+     "交通运输部系统2026年度拟录用公务员公示公告   2026-05-23"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/7287c61d527f477fb41c870add4bbb32.html",
+     "交通运输部系统2026年度考试录用公务员面试公告   2026-03-12"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/181d72c0746c43d5b962b7df34efe92d.html",
+     "交通运输部所属事业单位2026年度第四批统一公开招聘公告   2026-01-22"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/0e526a212c764c0a95afdd99b0114771.html",
+     "2026年8月我要办事统计数据公示   2026-09-22"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/6f01f2c1e81a4e01aaa53a70e2184baf.html",
+     "2026年7月我要办事统计数据公示   2026-08-04"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/133df76537f742d8bca1052fb65126bc.html",
+     "2026年6月我要办事统计数据公示   2026-07-03"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/35769d5fc6334b2482b4dadb135784e9.html",
+     "2026年5月我要办事统计数据公示   2026-06-18"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/46edca9a75964042ba826b174afbd088.html",
+     "2026年4月我要办事统计数据公示   2026-05-09"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/60692c264bcc4d63b36162a95f787f4f.html",
+     "2026年3月我要办事统计数据公示   2026-04-03"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/3b09d2167e304265bf81005fafd20d87.html",
+     "2026年2月我要办事统计数据公示   2026-03-16"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/5560d3ea84a24067bc8f78dbf94121cf.html",
+     "交通运输部海事局本级2025年度部门决算   2026-08-31"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/63b42f714ebc4b05b237839258d3e753.html",
+     "交通运输部海事局2025年度部门决算   2026-08-12"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/1dbb2176dc9842eca7c3168a17b95b76.html",
+     "交通运输部海事局本级2026年度部门预算   2026-05-06"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/fcecbb08bfc5401b8e08697934daacfe.html",
+     "交通运输部海事局2026年度部门预算   2026-04-27"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2025/e92ae6bfac6a4262adeccbe6ca7454f9.html",
+     "交通运输部海事局本级2024年度部门决算   2025-08-25"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2025/b5c5b58bd53a4833940be73e8a2187e6.html",
+     "交通运输部海事局2024年度部门决算   2025-08-15"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2025/45cd96ee5dcb4bc9ac260037d70eee43.html",
+     "交通运输部海事局本级2025年度部门预算   2025-04-30"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/ea020c0cf3e241848758c372afa5e864.html",
+     "交通运输部海事局国内海洋渔船技术规范编制项目中标公告   2026-09-07"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/ac0473a47d5a4c4b9cdf3c4bdf3a5305.html",
+     "交通运输部海事局关于《内河客运水域应急力量配置指南》项目比选结果公告   2026-07-10"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/4093a90d5d8041e390e31de45dd1d90b.html",
+     "交通运输部海事局关于内河客运水域力量配置指南项目比选公告   2026-06-29"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/794e24b2754144f1af1d450fa38ebf20.html",
+     "交通运输部海事局制定年度船舶排放清单项目比选结果公告   2026-06-25"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/a5cbbd4d22ae4f55b44846e4d0449715.html",
+     "交通运输部海事局关于船舶技术规范制修订项目比选结果公告   2026-06-24"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/e378503d511b4efb834398148f3eaa6c.html",
+     "交通运输部海事局关于《澜沧江-湄公河商船检验技术规则》协同研究项目比选结果公告   2026-06-17"
+    ],
+    [
+     "https://www.msa.gov.cn/html/cnmsa/xxgk/article/2026/c87bf316f0bf409ba073370693c55c06.html",
+     "2026年海事统建信息系统网络安全测评服务项目比选结果公告   2026-06-15"
+    ],
+    [
+     "https://www.msa.gov.cn/24a774dd377c4548aa0b144c9e0d78b0.jhtml",
+     "海图改正通告"
+    ]
+   ],
+   "endpoints": [
+    "https://xkpt.mot.gov.cn/xzxk/web/hcp/hcp_index.jsp"
+   ]
+  }
+ },
+ {
+  "name": "customs monthly",
+  "url": "http://english.customs.gov.cn/statics/report/monthly.html",
+  "result": {
+   "bytes": 34183,
+   "links": [
+    [
+     "http://english.customs.gov.cn/Organizational/html/OrganizationalFunctions.html",
+     "• Organizational Functions"
+    ],
+    [
+     "http://english.customs.gov.cn/about/annualreports",
+     "• Annual Reports"
+    ],
+    [
+     "http://english.customs.gov.cn/Reform/html/index.html",
+     "Customs Reform"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/preliminary.html",
+     "Statistics"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/preliminary.html",
+     "• Preliminary Release"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/trade.html",
+     "• Trade Indices"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/monthly.html",
+     "• Monthly Bulletin"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/preliminary.html",
+     "Statistics"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/preliminary.html",
+     "Preliminary Release"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/trade.html",
+     "Trade Indices"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/monthly.html",
+     "Monthly Bulletin"
+    ],
+    [
+     "http://english.customs.gov.cn/statement.html",
+     "STATEMENT"
+    ]
+   ],
+   "endpoints": []
+  }
+ },
+ {
+  "name": "customs preliminary",
+  "url": "http://english.customs.gov.cn/statics/report/preliminary.html",
+  "result": {
+   "bytes": 26809,
+   "links": [
+    [
+     "http://english.customs.gov.cn/Organizational/html/OrganizationalFunctions.html",
+     "• Organizational Functions"
+    ],
+    [
+     "http://english.customs.gov.cn/about/annualreports",
+     "• Annual Reports"
+    ],
+    [
+     "http://english.customs.gov.cn/Reform/html/index.html",
+     "Customs Reform"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/preliminary.html",
+     "Statistics"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/preliminary.html",
+     "• Preliminary Release"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/trade.html",
+     "• Trade Indices"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/monthly.html",
+     "• Monthly Bulletin"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/preliminary.html",
+     "Statistics"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/preliminary.html",
+     "Preliminary Release"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/trade.html",
+     "Trade Indices"
+    ],
+    [
+     "http://english.customs.gov.cn/statics/report/monthly.html",
+     "Monthly Bulletin"
+    ],
+    [
+     "http://english.customs.gov.cn/statement.html",
+     "STATEMENT"
+    ]
+   ],
+   "endpoints": []
+  }
+ },
+ {
+  "name": "crisis group rss",
+  "url": "https://www.crisisgroup.org/rss.xml",
+  "result": {
+   "bytes": 782746,
+   "items": 10,
+   "first": [
+    [
+     "On Our Radar",
+     "https://www.crisisgroup.org/sco/global/our-radar",
+     ""
+    ],
+    [
+     "Five Energy Market Factors That Could Tip the Scales in the Middle East War",
+     "https://www.crisisgroup.org/cmt/united-states/united-states-iran-israelpalestine/five-energy-market-factors-could-tip-scales-middle-east-war",
+     ""
+    ],
+    [
+     "Inside Sudan’s War",
+     "https://www.crisisgroup.org/pod/africa/sudan/inside-sudans-war",
+     ""
+    ],
+    [
+     "September Trends and October Alerts 2026",
+     "https://www.crisisgroup.org/crisiswatch/september-trends-and-october-alerts-2026",
+     ""
+    ],
+    [
+     "The U.S.-led Anti-ISIS Coalition is Leaving Iraq: What Happens Next?",
+     "https://www.crisisgroup.org/cmt/middle-east-north-africa/iraq-united-states/us-led-anti-isis-coalition-leaving-iraq-what-happens-next",
+     ""
+    ],
+    [
+     "Back to War in Ethiopia?",
+     "https://www.crisisgroup.org/pod/africa/ethiopia/back-war-ethiopia-0",
+     ""
+    ],
+    [
+     "How the War is Changing the Geography of Iran’s Influence",
+     "https://www.crisisgroup.org/opd/middle-east-north-africa/iran/how-war-changing-geography-irans-influence",
+     ""
+    ],
+    [
+     "South Sudan’s President Jettisons Unity Government and Hardens Grip on Power",
+     "https://www.crisisgroup.org/anb/africa/south-sudan/south-sudans-president-jettisons-unity-government-and-hardens-grip-power",
+     ""
+    ],
+    [
+     "The New Forever War",
+     "https://www.crisisgroup.org/opd/middle-east-north-africa/iran-united-states/new-forever-war",
+     ""
+    ],
+    [
+     "Updates from the UN General Assembly 2026",
+     "https://www.crisisgroup.org/sco/global/updates-un-general-assembly-2026",
+     ""
+    ]
+   ],
+   "crisiswatch": [
+    [
+     "September Trends and October Alerts 2026",
+     "https://www.crisisgroup.org/crisiswatch/september-trends-and-october-alerts-2026",
+     ""
+    ]
+   ]
+  }
+ },
+ {
+  "name": "crisis group rss short",
+  "url": "https://www.crisisgroup.org/rss",
+  "result": {
+   "bytes": 8141,
+   "items": 10,
+   "first": [
+    [
+     "On Our Radar",
+     "https://www.crisisgroup.org/sco/global/our-radar",
+     ""
+    ],
+    [
+     "Five Energy Market Factors That Could Tip the Scales in the Middle East War",
+     "https://www.crisisgroup.org/cmt/united-states/united-states-iran-israelpalestine/five-energy-market-factors-could-tip-scales-middle-east-war",
+     ""
+    ],
+    [
+     "Inside Sudan’s War",
+     "https://www.crisisgroup.org/pod/africa/sudan/inside-sudans-war",
+     ""
+    ],
+    [
+     "September Trends and October Alerts 2026",
+     "https://www.crisisgroup.org/crisiswatch/september-trends-and-october-alerts-2026",
+     ""
+    ],
+    [
+     "The U.S.-led Anti-ISIS Coalition is Leaving Iraq: What Happens Next?",
+     "https://www.crisisgroup.org/cmt/middle-east-north-africa/iraq-united-states/us-led-anti-isis-coalition-leaving-iraq-what-happens-next",
+     ""
+    ],
+    [
+     "التحالف الذي تقوده الولايات المتحدة ضد تنظيم الدولة الإسلامية يغادر العراق: ماذا بعد؟",
+     "https://www.crisisgroup.org/ar/cmt/middle-east-north-africa/iraq-united-states/us-led-anti-isis-coalition-leaving-iraq-what-happens-next",
+     ""
+    ],
+    [
+     "Back to War in Ethiopia?",
+     "https://www.crisisgroup.org/pod/africa/ethiopia/back-war-ethiopia-0",
+     ""
+    ],
+    [
+     "How the War is Changing the Geography of Iran’s Influence",
+     "https://www.crisisgroup.org/opd/middle-east-north-africa/iran/how-war-changing-geography-irans-influence",
+     ""
+    ],
+    [
+     "South Sudan’s President Jettisons Unity Government and Hardens Grip on Power",
+     "https://www.crisisgroup.org/anb/africa/south-sudan/south-sudans-president-jettisons-unity-government-and-hardens-grip-power",
+     ""
+    ],
+    [
+     "The New Forever War",
+     "https://www.crisisgroup.org/opd/middle-east-north-africa/iran-united-states/new-forever-war",
+     ""
+    ]
+   ],
+   "crisiswatch": [
+    [
+     "September Trends and October Alerts 2026",
+     "https://www.crisisgroup.org/crisiswatch/september-trends-and-october-alerts-2026",
+     ""
+    ]
+   ]
+  }
+ }
+]
