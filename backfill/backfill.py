@@ -92,8 +92,11 @@ def cmd_msa():
             K.log("page", page, "of", pages, "back to", oldest, len(rows), "military")
         page += 1
         time.sleep(0.3)
-    first = dt.date.fromisoformat(oldest) + dt.timedelta(days=30)
+    # The list reaches back to 2015, but bureaus joined it through 2020 (Yellow Sea from February, South China Sea from June): every theatre
+    # starts on 1 July 2020, once all three post there, or a month after its own first military warning if that is later.
     for th in extras.MSA_THEATRE:
+        own = [dt.date.fromisoformat(r[1]) for r in rows.values() if r[1] and extras.msa_theatre(r[3]) == th]
+        first = max(dt.date(2020, 7, 1), min(own) + dt.timedelta(days=30)) if own else K.YDAY
         K.log("msa", th, K.save(f"msa_{th}", extras.msa_counts(list(rows.values()), th, first, K.YDAY)), "days from", first)
 
 

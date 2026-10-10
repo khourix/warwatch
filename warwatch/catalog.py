@@ -609,7 +609,7 @@ for th in ("korea", "taiwan", "scs"):
 for th, where in (("taiwan", "East China Sea and Taiwan Strait"), ("scs", "South China Sea and Gulf of Tonkin"), ("korea", "Yellow Sea and Bohai")):
     add(f"msa_{th}", f"China's military navigational warnings, last 30 days, {TH[th]} waters (China MSA)", "geospatial", th, "daily", False,
         f"Closures China's Maritime Safety Administration posts for military exercises, live fire and missile tests ({where}). "
-        "Counts routine and live-fire closures; the PLA's largest drills around Taiwan (2022, 2023, 2024) were announced through Xinhua instead, so this tracks the tempo around them.",
+        "Counts routine and live-fire closures; the PLA's largest drills around Taiwan (2022, 2023, 2024) were announced through Xinhua instead, so this tracks the tempo around them. History from July 2020, when all three seas post to the list.",
         (lambda t=th: extras.msa_series(t)), url="https://www.msa.gov.cn/msacncms_wap/pages/info_warn.jhtml?channelId=9c219298b27f460e995a99401b3ff6af", sub="Warnings")
 
 
