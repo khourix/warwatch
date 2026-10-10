@@ -59,10 +59,10 @@ def classes(obj):
 
 
 def monthly_cols(cat02):
-    """{code: month} for the 'N月_数量1' columns."""
+    """{code: month} for the 'N月_数量2' columns (数量1 is blank for vehicles; 数量2 is the count in units)."""
     out = {}
     for code, name in cat02.items():
-        m = re.match(r"^(\d{1,2})月_数量1$", name)
+        m = re.match(r"^(\d{1,2})月_数量2$", name)
         if m:
             out[code] = int(m.group(1))
     return out
@@ -119,6 +119,10 @@ def fetch_table(key, sid):
     out = {}
     for (a, kind), series in per.items():
         out.setdefault((area_of[a], kind), {}).update(series)
+    # A table lists all 12 months of its year; months not yet published read 0. Keep up to the last month with any exports at all.
+    last = max((m for series in out.values() for m, v in series.items() if v > 0), default=None)
+    if last:
+        out = {k: {m: v for m, v in series.items() if m <= last} for k, series in out.items()}
     return out
 
 
