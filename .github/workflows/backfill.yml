@@ -60,7 +60,8 @@ jobs:
           A=""; [ -n "$START" ] && A="$A --start $START"; [ -n "$END" ] && A="$A --end $END"
           if [ "$SRC" = senkaku ] || [ "$SRC" = all ]; then { sudo apt-get update -q >/dev/null && sudo apt-get install -y -q poppler-utils >/dev/null; } || echo "::warning::poppler-utils not installed"; fi
           for s in fred nga pla wiki forecasts metaculus senkaku alerts msa; do
-            if [ "$SRC" = all ] || [ "$SRC" = "$s" ]; then python3 backfill/backfill.py $s $A || echo "::warning::$s failed"; fi
+            # msa reads every page of China's warning list (about an hour), so it runs only when asked for by name
+            if { [ "$SRC" = all ] && [ "$s" != msa ]; } || [ "$SRC" = "$s" ]; then python3 backfill/backfill.py $s $A || echo "::warning::$s failed"; fi
           done
       - uses: ./.github/actions/commit-backfill
         if: always()

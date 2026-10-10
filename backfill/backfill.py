@@ -91,7 +91,7 @@ def cmd_msa():
         if page % 50 == 0:
             K.log("page", page, "of", pages, "back to", oldest, len(rows), "military")
         page += 1
-        time.sleep(0.7)
+        time.sleep(0.3)
     first = dt.date.fromisoformat(oldest) + dt.timedelta(days=30)
     for th in extras.MSA_THEATRE:
         K.log("msa", th, K.save(f"msa_{th}", extras.msa_counts(list(rows.values()), th, first, K.YDAY)), "days from", first)
