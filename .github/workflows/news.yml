@@ -1,5 +1,5 @@
 name: news
-# Headline counts (Google News RSS), GDELT daily event files, extended a few days per run; a Bluesky sample (one minute every half hour).
+# Headline counts (Google News RSS), GDELT daily event files, extended a few days per run; a Bluesky sample (five minutes every half hour).
 # First run: dispatch with max_requests=150 to backfill about 150 days for each theatre.
 on:
   schedule:

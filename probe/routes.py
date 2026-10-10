@@ -202,8 +202,68 @@ def oref_csv_ends():
     return out
 
 
+def fetch_text(url, enc="utf-8"):
+    import urllib.request
+    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": P.UA, "Accept-Language": "en-US,en;q=0.8"}), timeout=60) as r:
+        return r.read(5_000_000).decode(enc, "replace")
+
+
+def crisiswatch_lists():
+    import html as H
+    text = H.unescape(fetch_text("https://www.crisisgroup.org/rss.xml"))
+    m = re.search(r"<item>\s*<title>([^<]*Trends and [^<]*Alerts[^<]*)</title>.*?</item>", text, re.S)
+    body = m.group(0)
+    out = {"title": m.group(1), "bytes": len(body)}
+    for head in ("Conflict Risk Alerts", "Resolution Opportunities", "Deteriorated Situations", "Improved Situations"):
+        k = body.find(head + "</h4>")
+        if k < 0:
+            out[head] = "not found"
+            continue
+        seg = body[k: k + 6000]
+        seg = seg[: seg.find("</h4>", len(head) + 6) if seg.find("</h4>", len(head) + 6) > 0 else 6000]
+        out[head] = [re.sub(r"\s+", " ", x).strip() for x in re.findall(r"<a[^>]*>(.*?)</a>", seg, re.S)][:40]
+        out[head + " raw"] = re.sub(r"\s+", " ", seg)[:700]
+    return out
+
+
+def jcg_scripts():
+    out = {}
+    for f in ("warnings.js", "AjaxLib.js"):
+        t = fetch_text("https://www1.kaiho.mlit.go.jp/TUHO/keiho/js/" + f, "shift_jis")
+        out[f] = {"bytes": len(t), "cgi": sorted(set(re.findall(r"[\w/.-]*\.cgi[^\"' ]*", t)))[:30], "text": t[:5000]}
+    return out
+
+
+def customs_country_table():
+    page = fetch_text("http://english.customs.gov.cn/statics/report/monthly.html")
+    row = re.search(r"Imports and Exports by Country.*?</tr>", page, re.S).group(0)
+    links = re.findall(r"href=(http[^ >]+)>\s*(\w+)\.", row)
+    url, mon = links[-1]
+    t = fetch_text(url)
+    plain = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " | ", t))
+    rus = plain.find("Russia")
+    return {"months": [m for _, m in links], "latest": url, "bytes": len(t), "head": plain[:1500], "russia": plain[max(0, rus - 300): rus + 600],
+            "links_in_page": re.findall(r"href=[\"']?([^\"' >]+\.(?:xls|xlsx|pdf|csv))", t)[:10]}
+
+
+def round4():
+    out = []
+    for name, fn in (("crisiswatch lists", crisiswatch_lists), ("jcg scripts", jcg_scripts), ("customs by country", customs_country_table)):
+        try:
+            v = fn()
+        except Exception as e:  # noqa: BLE001
+            v = {"error": f"{type(e).__name__}: {e}"[:300]}
+        out.append({"name": name, "result": v})
+        print(name, json.dumps(v, ensure_ascii=False)[:500], flush=True)
+    return out
+
+
 def main(path):
     res = []
+    if os.environ.get("ROUTES_ROUND") == "4":
+        with open(path, "w") as f:
+            json.dump(round4(), f, indent=1, ensure_ascii=False)
+        return
     if os.environ.get("ROUTES_ROUND") == "3":
         for name, url, pat in EXCERPTS:
             try:

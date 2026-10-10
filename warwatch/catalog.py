@@ -607,10 +607,11 @@ for th in ("iran", "yemen"):
 # ============ Israel's rocket, missile and drone sirens (Tzeva Adom, which mirrors Home Front Command alerts) ============
 add("tzeva_israel", "Rocket, missile and drone alert waves in Israel, last 7 days (Tzeva Adom)", "geospatial", "israel", "daily", False,
     "Each wave is one attack that set off Home Front Command sirens: rockets from Gaza or Lebanon, missiles from Iran or Yemen, hostile drones. "
-    "Reactive, so it confirms escalation, and a wave of waves marks a new round. Tzeva Adom serves its latest waves only, so the archive starts on 10 October 2026.",
+    "Sirens less than 10 minutes apart count as one wave. Reactive, so it confirms escalation, and a run of waves marks a new round. "
+    "Tzeva Adom serves only its latest 50 waves; the history before them comes from the open mirror of Home Front Command alerts, back to July 2014.",
     (lambda: __import__("osint").tzeva_series()), url="https://www.tzevaadom.co.il/", sub="Strikes")
 
-# ============ Bluesky war talk per theatre (Jetstream firehose sample, one minute every half hour; news.yml fills the cache) ============
+# ============ Bluesky war talk per theatre (Jetstream firehose sample, five minutes every half hour; news.yml fills the cache) ============
 for th in extras.KEYS:
     add(f"bsky_{th}", f"Bluesky posts about war naming {TH[th]}, per 10,000 English posts", "information", th, "daily", False,
         "Share of English Bluesky posts that name the theatre and use war words (strike, missiles, troops, evacuation). A share, so the network's growth "

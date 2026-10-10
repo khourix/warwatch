@@ -12,6 +12,7 @@
     python3 backfill/backfill.py gdeltwide [--start D --end D] # wider GDELT event types and dyads per theatre
     python3 backfill/backfill.py metaculus                     # Metaculus community forecasts on military questions (token)
     python3 backfill/backfill.py senkaku                       # Japan Coast Guard Senkaku vessel counts (monthly PDFs, text kept)
+    python3 backfill/backfill.py alerts                        # Israel's attack waves since 2014, from the Home Front Command history mirror
     python3 backfill/backfill.py state THEATRE[,THEATRE...] [--start D --end D]
     python3 backfill/backfill.py merge       # fold ADS-B quarter shards into data/
     python3 backfill/backfill.py coverage
@@ -51,6 +52,20 @@ def cmd_coverage():
     out += [f"| {s} | {n} | {a} | {b} | {z:.0%} |" for s, n, a, b, z in rows]
     open(os.path.join(K.HERE, "COVERAGE.md"), "w").write("\n".join(out) + "\n")
     print("\n".join(out))
+
+
+def cmd_alerts():
+    """tzeva_israel: attack waves in the last 7 days, from the open mirror of Home Front Command alerts (one CSV, about 65 MB)."""
+    import urllib.request
+    sys.path.insert(0, os.path.join(os.path.dirname(K.HERE), "warwatch"))
+    import osint
+    with urllib.request.urlopen(urllib.request.Request(osint.OREF_MIRROR, headers={"User-Agent": "warwatch-backfill"}), timeout=300) as r:
+        text = r.read().decode("utf-8")
+    waves = osint.alert_waves(osint.parse_oref_csv(text))
+    if not waves:
+        sys.exit("no alerts parsed from the mirror")
+    pts = osint.weekly_waves(waves, waves[0].date() + dt.timedelta(days=7), waves[-1].date())
+    K.log("alerts:", len(waves), "waves", waves[0].date(), "to", waves[-1].date(), "->", K.save("tzeva_israel", pts), "days")
 
 
 def cmd_merge():
@@ -121,6 +136,8 @@ def main():
     elif a.cmd == "state":
         import sources_slow as L
         L.cmd_state(a.arg.split(","), a.start, a.end)
+    elif a.cmd == "alerts":
+        cmd_alerts()
     elif a.cmd == "merge":
         cmd_merge()
     elif a.cmd == "coverage":

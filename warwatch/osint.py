@@ -401,21 +401,65 @@ def tzeva_archive(rows):
     return out
 
 
+def alert_waves(times, gap=10):
+    """Alert times (datetimes) -> the start of each attack wave: sirens less than `gap` minutes apart belong to one wave."""
+    out, last = [], None
+    for t in sorted(times):
+        if last is None or (t - last).total_seconds() > gap * 60:
+            out.append(t)
+        last = t
+    return out
+
+
+def weekly_waves(waves, first, today, days=7):
+    """Waves in the `days` up to each day from `first` -> [(date, count)]."""
+    ds = [w.date() for w in waves]
+    out, d = [], first
+    while d <= today:
+        out.append((d.isoformat(), float(sum(1 for w in ds if 0 <= (d - w).days < days))))
+        d += dt.timedelta(days=1)
+    return out
+
+
+OREF_MIRROR = "https://raw.githubusercontent.com/dleshem/israel-alerts-data/main/israel-alerts.csv"   # Home Front Command history since July 2014 (Apache 2.0)
+OREF_HOSTILE = ("ירי רקטות וטילים", "חדירת כלי טיס עוין", "חדירת מחבלים")   # rockets and missiles, hostile aircraft, infiltration
+
+
+def parse_oref_csv(text):
+    """The Home Front Command history mirror (one row per alert message: data, date, time, alertDate, category, category_desc, ...)
+    -> alert times of real attacks. Drills, all-clears and early-warning notices are left out."""
+    import csv
+    import io
+    try:
+        from zoneinfo import ZoneInfo
+        il = ZoneInfo("Asia/Jerusalem")
+    except Exception:   # no time-zone database: winter time, an hour off in summer
+        il = dt.timezone(dt.timedelta(hours=2))
+    out = []
+    for r in csv.DictReader(io.StringIO(text)):
+        desc = r.get("category_desc") or ""
+        if desc not in OREF_HOSTILE:
+            continue
+        try:
+            out.append(dt.datetime.fromisoformat(r["alertDate"][:16]).replace(tzinfo=il).astimezone(dt.timezone.utc))
+        except (KeyError, ValueError):
+            continue
+    return out
+
+
 def tzeva_series(days=7, today=None):
-    """Attack waves that set off sirens in Israel in the `days` up to each day. The feed holds only its latest waves, so the series starts
-    `days` after the oldest archived one and never counts a window it does not fully cover. -> [(date, count)]"""
+    """Attack waves that set off sirens in Israel in the `days` up to each day. The feed holds only its latest waves, so the live part
+    starts `days` after the oldest archived one; days before that come from the Home Front Command history mirror (backfill.py alerts),
+    counted the same way. -> [(date, count)]"""
+    import store
     if "all" not in _TZ:
         _TZ["all"] = S.get(TZEVA_API, headers={"Accept": "application/json", "Referer": "https://www.tzevaadom.co.il/"}, retries=2, wait=3)
     rows = tzeva_archive(parse_tzeva(_TZ["all"]))
     if not rows:
-        return []
+        return store.backfill("tzeva_israel")
+    waves = alert_waves(dt.datetime.fromisoformat(r[1]).replace(tzinfo=dt.timezone.utc) for r in rows)
     today = today or dt.datetime.now(dt.timezone.utc).date()
-    waves = [dt.date.fromisoformat(r[1][:10]) for r in rows]
-    out, d = [], waves[0] + dt.timedelta(days=days)
-    while d <= today:
-        out.append((d.isoformat(), float(sum(1 for w in waves if 0 <= (d - w).days < days))))
-        d += dt.timedelta(days=1)
-    return out
+    return store.seed("tzeva_israel", weekly_waves(waves, waves[0].date() + dt.timedelta(days=days), today, days))
 
 
 def ukmto_recent(theatre, days=30, today=None):
@@ -468,7 +512,7 @@ def bsky_tally(posts):
     return n, hits
 
 
-def jetstream_window(start_us, seconds=60, host=JETSTREAM[0], wall=90):
+def jetstream_window(start_us, seconds=60, host=JETSTREAM[0], wall=120):
     """New posts in the `seconds` after start_us (microseconds), replayed from Jetstream's buffer of the last day or so. -> [(text, langs)]"""
     ctx = ssl.create_default_context()
     sock = ctx.wrap_socket(socket.create_connection((host, 443), timeout=20), server_hostname=host)
@@ -526,8 +570,8 @@ def jetstream_window(start_us, seconds=60, host=JETSTREAM[0], wall=90):
 _BS = {}
 
 
-def bsky_sample(hours=None, step_min=30, seconds=60, budget=900, now=None):
-    """Samples one minute of posts every half hour over the last `hours` (env BSKY_HOURS, default 7), skipping windows already in
+def bsky_sample(hours=None, step_min=30, seconds=300, budget=900, now=None):
+    """Samples five minutes of posts every half hour over the last `hours` (env BSKY_HOURS, default 7), skipping windows already in
     history/cache/bsky_windows.csv (start, English posts, 'theatre:hits ...'). Jetstream keeps about a day, so a 6-hourly job misses nothing.
     -> all archived rows."""
     import store

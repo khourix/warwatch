@@ -515,8 +515,8 @@ class TestOsint(unittest.TestCase):
         rows = osint.parse_tzeva(groups)
         self.assertEqual([r[0] for r in rows], ["3", "0"])
         self.assertEqual(rows[0][2:], ["0|5", "3"])
-        d, old = tempfile.mkdtemp(), store.ROOT
-        store.ROOT = d
+        d, old, oldb = tempfile.mkdtemp(), store.ROOT, store.BACKFILL
+        store.ROOT = store.BACKFILL = d
         try:
             osint._TZ["all"] = groups
             out = dict(osint.tzeva_series(today=dt.date(2026, 10, 10)))
@@ -524,9 +524,28 @@ class TestOsint(unittest.TestCase):
             self.assertEqual((out["2026-10-08"], out["2026-10-09"]), (0.0, 1.0))
             osint._TZ["all"] = groups[:1]                              # the feed drops old waves; the archive keeps them
             self.assertEqual(min(dict(osint.tzeva_series(today=dt.date(2026, 10, 10)))), "2026-10-08")
+            with open(os.path.join(d, "tzeva_israel.csv"), "w") as f:      # the Home Front Command mirror fills the days before
+                f.write("2026-10-07,4\n2026-10-08,9\n")
+            out = osint.tzeva_series(today=dt.date(2026, 10, 10))
+            self.assertEqual(out[:2], [("2026-10-07", 4.0), ("2026-10-08", 0.0)])
         finally:
-            store.ROOT = old
+            store.ROOT, store.BACKFILL = old, oldb
             osint._TZ.clear()
+
+    def test_oref_mirror_waves(self):
+        import osint
+        text = ("data,date,time,alertDate,category,category_desc,matrix_id,rid\n"
+                "A,24.07.2014,17:05:26,2014-07-24T17:05:00,1,ירי רקטות וטילים,1,1\n"
+                "B,24.07.2014,17:09:00,2014-07-24T17:09:00,1,ירי רקטות וטילים,1,2\n"
+                "B,24.07.2014,17:12:00,2014-07-24T17:12:00,13,האירוע הסתיים,10,3\n"
+                "C,24.07.2014,19:00:00,2014-07-24T19:00:00,2,חדירת כלי טיס עוין,2,4\n"
+                "C,25.07.2014,10:00:00,2014-07-25T10:00:00,3,רעידת אדמה,3,5\n")
+        t = osint.parse_oref_csv(text)
+        self.assertEqual(len(t), 3)
+        self.assertEqual(t[0].strftime("%H:%M"), "14:05")                  # Israel summer time is UTC+3
+        w = osint.alert_waves(t)
+        self.assertEqual(len(w), 2)                                         # 17:05 and 17:09 are one wave
+        self.assertEqual(osint.weekly_waves(w, dt.date(2014, 7, 24), dt.date(2014, 7, 31))[-2:], [("2014-07-30", 2.0), ("2014-07-31", 0.0)])
 
     def test_bsky_rate_per_theatre(self):
         import osint
