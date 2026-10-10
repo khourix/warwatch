@@ -1,0 +1,304 @@
+{
+ "msa list": {
+  "keys": [
+   "endRow",
+   "hasNextPage",
+   "hasPreviousPage",
+   "isFirstPage",
+   "isLastPage",
+   "list",
+   "navigateFirstPage",
+   "navigateLastPage",
+   "navigatePages",
+   "navigatepageNums",
+   "nextPage",
+   "pageNum",
+   "pageSize",
+   "pages",
+   "prePage",
+   "size",
+   "startRow",
+   "total"
+  ],
+  "total": 56422,
+  "pages": 1881,
+  "n": 30,
+  "items": [
+   [
+    "9cb05b6e0920404da7613d7585ff5e5c",
+    "STAR LADY轮航经虾峙门外深水航槽—浙航警921/26",
+    "2026-10-10 19:00"
+   ],
+   [
+    "403fac4f3c0449e3bb008ef79f2dc6bb",
+    "LNG船GRAND COSMOS轮进港—浙航警920/26",
+    "2026-10-10 19:00"
+   ],
+   [
+    "908eeb210dee498d88cacd5c45e767e6",
+    "关于连申线灌河至响水船闸远调站段疏浚施工实施交通管制的航行通告",
+    "2026-10-10 18:30"
+   ],
+   [
+    "2b9c32a2737640f8b23d27b4a6139251",
+    "拖带作业—粤航警726/26",
+    "2026-10-10 17:49"
+   ],
+   [
+    "41fccc729e604a1ba6fa7a3af69fd5fe",
+    "军事训练—琼航警196/26",
+    "2026-10-10 17:40"
+   ],
+   [
+    "b2e13bdb07bd86c9",
+    "MILITARY EXERCISES—HN188/26",
+    "2026-10-10 17:40"
+   ],
+   [
+    "2921eca7984e4e33923c526fe5306256",
+    "拖带作业-金杰拖607拖带强申2—鲁航警886/26",
+    "2026-10-10 17:38"
+   ],
+   [
+    "cbe8fcd4c80fd270",
+    "JINJIETUO607 TOWING QIANGSHEN2—SD810/26",
+    "2026-10-10 17:38"
+   ],
+   [
+    "19dfe004f6d1c84b",
+    "TRIAL VOYAGE-AKRANES—SD809/26",
+    "2026-10-10 17:38"
+   ],
+   [
+    "bf2709f1fc7b4ff183be021ee42bbde4",
+    "试航作业-AKRANES—鲁航警885/26",
+    "2026-10-10 17:38"
+   ],
+   [
+    "3439ed1969df4113bb89fb50e75ef1e2",
+    "航标动态-渤中29-4油田29-1区块I期S1号灯浮停止发光—鲁航警884/26",
+    "2026-10-10 17:38"
+   ],
+   [
+    "616cd010b543394c",
+    "LIGHT BUOY-BZ29-429-1S1# LIGHT BUOY UNLIT—SD808/26",
+    "2026-10-10 17:38"
+   ],
+   [
+    "3a5cfc774afe45798eaa5bbfc9ce9f4e",
+    "军事活动-渤海—鲁航警883/26",
+    "2026-10-10 17:37"
+   ],
+   [
+    "8b0a204467c87ac0",
+    "MILITARY ACTIVITY-BOHAI SEA—SD807/26",
+    "2026-10-10 17:37"
+   ],
+   [
+    "1f112bf1a5554e0daf78166ae6b4dca6",
+    "LNG加注作业—沪航警804/26",
+    "2026-10-10 17:35"
+   ],
+   [
+    "a51b18d1342e43e7ba8a440db086dd18",
+    "LNG船舶—沪航警803/26",
+    "2026-10-10 17:35"
+   ],
+   [
+    "ed63a9c81ec8414fa84098f36f27d6bc",
+    "装载大件船舶—沪航警802/26",
+    "2026-10-10 17:35"
+   ],
+   [
+    "78611e4fc1084e2db70d3541c3ef91f5",
+    "拖带作业—沪航警801/26",
+    "2026-10-10 17:35"
+   ],
+   [
+    "82a282911ff2486289426aed487e3f75",
+    "军事训练—琼航警195/26",
+    "2026-10-10 17:29"
+   ],
+   [
+    "d3be62eec8258f4e",
+    "MILITARY EXERCISES—HN187/26",
+    "2026-10-10 17:29"
+   ],
+   [
+    "50f7c1c4a61b4376",
+    "“KYPROS ISLAND”SEA TRIAL—ZJ370/26",
+    "2026-10-10 17:28"
+   ],
+   [
+    "66a144dd1b354839889282159ea5d1db",
+    "“KYPROS ISLAND”轮试航—浙航警919/26",
+    "2026-10-10 17:28"
+   ],
+   [
+    "ae0af9b021a64697a75be1344471cd48",
+    "“MSC LICIA X”轮试航—浙航警918/26",
+    "2026-10-10 17:28"
+   ],
+   [
+    "af58effcd5200c12",
+    "“MSC LICIA X”SEA TRIAL—ZJ369/26",
+    "2026-10-10 17:28"
+   ],
+   [
+    "1f03c816a3ad444caccd359448ca9e29",
+    "“TRIUMPH”轮试航—浙航警917/26",
+    "2026-10-10 17:28"
+   ],
+   [
+    "4ae8e404f0bebade",
+    "“TRIUMPH”SEA TRIAL—ZJ368/26",
+    "2026-10-10 17:28"
+   ],
+   [
+    "a479671e9ea849669cd59ba294de3646",
+    "岳阳海事局关于“中源航工011”轮拖带作业的航行警告—岳航警13/26",
+    "2026-10-10 17:24"
+   ],
+   [
+    "1c7745dd26454a4fa8d16a9892e329ad",
+    "泊位改造施工—鲁航警882/26",
+    "2026-10-10 17:00"
+   ],
+   [
+    "ef9815c32ca140289919380af701c79f",
+    "“嘉跃明珠”轮试航—浙航警916/26",
+    "2026-10-10 16:56"
+   ],
+   [
+    "0e9264cd81a04684adbc81620ef137db",
+    "“诺德天空”轮试航—浙航警915/26",
+    "2026-10-10 16:56"
+   ]
+  ],
+  "item keys": [
+   "articleAbstract",
+   "articleAuthor",
+   "articleCreateTime",
+   "articleDocNo",
+   "articleExtItemList",
+   "articleFocusPic",
+   "articleFocusPicUrl",
+   "articleId",
+   "articleIndexNo",
+   "articleIsAutoRel",
+   "articleIsFocus",
+   "articleIsHasTitlePic",
+   "articleIsOutLink",
+   "articleIsRecommend",
+   "articleOrderDate",
+   "articleOrigin",
+   "articleOriginUrl",
+   "articleOutLinkTarget",
+   "articleOutLinkUrl",
+   "articlePublishExpireTime",
+   "articlePublishTime",
+   "articleShortTitle",
+   "articleStatus",
+   "articleText",
+   "articleText1",
+   "articleText1OfVo",
+   "articleText2",
+   "articleText2OfVo",
+   "articleText3",
+   "articleText3OfVo",
+   "articleTextMask",
+   "articleTextOfVo",
+   "articleTitle",
+   "articleTitlePic",
+   "articleTitlePicFileName",
+   "articleTitlePicFilePath",
+   "articleTitlePicUrl",
+   "articleTopExpireTime",
+   "articleTopLevel",
+   "articleViewDay",
+   "auditStatus",
+   "canDoProcess",
+   "channelArticle",
+   "channelId",
+   "channelRank",
+   "cmsArticleAttachmentList",
+   "cmsArticlePicList",
+   "cmsArticleText",
+   "cmsArticleVideoList",
+   "createDeptId",
+   "createUserId",
+   "createUserName",
+   "currentProcessActiveActivity",
+   "extMap",
+   "focusImg",
+   "focusPic",
+   "isOutLink",
+   "isTop",
+   "modelId",
+   "processInstanceId",
+   "processIsEnd",
+   "publishDateBetween",
+   "relArticleList",
+   "taskId",
+   "title",
+   "titleImg",
+   "titlePic",
+   "updateDeptId",
+   "updateTime",
+   "updateUserId",
+   "updateUserName",
+   "url"
+  ]
+ },
+ "/getArticle.jhtml?articleId=9cb05b6e0920404da7613d7585ff5e5c": "HTTP Error 404: Not Found",
+ "da7613d7585ff5e5c&channelId=9c219298b27f460e995a99401b3ff6af": " 中华人民共和国海事局 - 错误页 ",
+ "cn/html/xxgk/hxaq/hxjg/9cb05b6e0920404da7613d7585ff5e5c.html": "HTTP Error 404: Not Found",
+ "customs Global.js": "﻿$(function () {\r\n    $('#formFTS').submit(function(e) {\r\n        var keywords = $('#iptFTS').val();\r\n        if (keywords === '') {\r\n            alert('Please input your keywords.');\r\n            e.preventDefault();\r\n        }\r\n    });\r\n\r\n    $(\"#iptbtn\").click(function() {\r\n        $('#formFTS').submit();\r\n    });\r\n\r\n    var zoom = 10, max_zoom = 15, min_zoom = 10, oriWidth = $(document).width();\r\n    \r\n\r\n    $('#rszSmall').click(function () {\r\n        if (zoom == min_zoom) {\r\n            return;\r\n        }\r\n        zoom -= 1;\r\n        var newWidth = oriWidth * zoom / 10;\r\n        if ('transform' in document.body.style) {\r\n            $('body').css('transform-origin', 'top left');\r\n            $('body').css('transform', 'scale(' + zoom / 10 + ')');\r\n        } else {\r\n            $('body').css('zoom', zoom / 10);\r\n        }\r\n        $('body').width(newWidth);\r\n        var offset = ($(document).width() - oriWidth) / 2;\r\n        $(document).scrollLeft(0).scrollLeft(offset);\r\n    });\r\n\r\n    $('#rszLarge').click(function () {\r\n        if (zoom == max_zoom) {\r\n            return;\r\n        }\r\n        zoom += 1;\r\n        var newWidth = oriWidth * zoom / 10;\r\n        if ('transform' in document.body.style) {\r\n            $('body').css('transform-origin', 'top left');\r\n            $('body').css('transform', 'scale(' + zoom / 10 + ')');\r\n        } else {\r\n            $('body').css('zoom', zoom / 10);\r\n        }\r\n        $('body').width(newWidth);\r\n        var offset = ($(document).wid",
+ "jcg parsed": {
+  "n": 71,
+  "sample": [
+   {
+    "id": "NAVAREA11-0430/26",
+    "lat": 28.25,
+    "lon": 146.5,
+    "text": "NORTH PACIFIC, NANPO SHOTO. GUNNERY. 2300Z TO 0900Z COMMENCING DAILY 30 SEP TO 30 OCT. AREA BOUNDED BY 28-15.25N 146-29.78E 25-25.27N 147-37.78E 25-00.27N 145-3",
+    "issued": "2026-09-26"
+   },
+   {
+    "id": "JAPANNW-3998/26",
+    "lat": 41.72,
+    "lon": 141.49,
+    "text": "恵山岬東南東、 射撃、10月15日(予備16日)0800-2400、 41-43.0N 141-29.4Eを中心とする半径5海里の円内。",
+    "issued": "2026-10-10"
+   },
+   {
+    "id": "JAPANNW-3997/26",
+    "lat": 19.24,
+    "lon": 84.89,
+    "text": "★ インド東岸、射撃、 10月11日-15日毎日0130Z-1430Z、 19-14.6N 084-53.7Eを中心とする半径41海里の円のうち 100-180度の扇形海面。",
+    "issued": "2026-10-10"
+   },
+   {
+    "id": "JAPANNW-3993/26",
+    "lat": 34.33,
+    "lon": 124.5,
+    "text": "★ 朝鮮半島南岸、済州島北西、 射撃、10月12日-17日毎日2300Z-翌日0900Z、 34-20.00N 124-30.00E 34-20.00N 125-49.88E 33-45.00N 125-49.88E 33-45.00N 124-30.00E で囲まれる海面。",
+    "issued": "2026-10-09"
+   },
+   {
+    "id": "JAPANNW-3992/26",
+    "lat": 32.98,
+    "lon": 125.82,
+    "text": "★ 朝鮮半島南岸、済州島南西、 射撃、10月11日2300Z-翌日1000Z、13日、14日毎日0100Z- 1000Z、15日、16日毎日0100Z-0800Z、32-59N 125-49E を中心とする半径5海里の円内。",
+    "issued": "2026-10-09"
+   },
+   {
+    "id": "JAPANNW-3991/26",
+    "lat": 36.02,
+    "lon": 129.82,
+    "text": "★ 朝鮮半島東岸、 射撃、10月12日-16日毎日0000Z-0830Z、 36-01N 129-49E 36-01N 130-19E 35-46N 130-12E 35-49N 129-47Eで囲まれる海面。",
+    "issued": "2026-10-09"
+   }
+  ]
+ }
+}
