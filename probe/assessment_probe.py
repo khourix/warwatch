@@ -14,6 +14,10 @@ import urllib.request
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
 GFW = os.environ.get("GFW_TOKEN", "")
 
+DETAIL = {   # name -> how many characters of body to keep (default 300)
+    "zenodo": 6000, "releases": 4000,
+}
+
 PROBES = [
     # air
     ("adsb.lol 2023 history repo", "https://api.github.com/repos/adsblol/globe_history_2023/releases?per_page=3", {}),
@@ -75,6 +79,12 @@ PROBES = [
     ("Poland border waits", "https://granica.gov.pl/index_wait.php?p=b&v=en", {}),
     ("OFAC SDN advanced XML head", "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN.CSV", {}),
     ("Polymarket gamma", "https://gamma-api.polymarket.com/markets?limit=1", {}),
+    # second pass: details for claims in the findings
+    ("adsb.lol 2023 oldest releases", "https://api.github.com/repos/adsblol/globe_history_2023/releases?per_page=100&page=3", {"keep": "releases"}),
+    ("Zenodo OpenSky flight list titles", "https://zenodo.org/api/records?q=opensky%20flight%20list%20covid&size=5", {"keep": "zenodo"}),
+    ("Smartraveller export retry", "https://www.smartraveller.gov.au/destinations-export", {}),
+    ("UK Find a Tender (www host)", "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?limit=1", {}),
+    ("Bluesky Jetstream info", "https://jetstream2.us-east.bsky.network/", {}),
 ]
 
 
@@ -90,7 +100,7 @@ def fetch(url, opts):
         with urllib.request.urlopen(req, timeout=40, context=ssl.create_default_context()) as r:
             body = r.read(400_000)
             return {"status": r.status, "type": r.headers.get("Content-Type", ""), "bytes": len(body),
-                    "secs": round(time.time() - t0, 1), "snippet": body[:300].decode("utf-8", "replace")}
+                    "secs": round(time.time() - t0, 1), "snippet": body[:DETAIL.get(opts.get("keep"), 300)].decode("utf-8", "replace")}
     except urllib.error.HTTPError as e:
         body = e.read(2000)
         return {"status": e.code, "type": e.headers.get("Content-Type", ""), "bytes": len(body),
