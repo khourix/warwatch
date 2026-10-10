@@ -536,6 +536,7 @@ CW_LISTS = {"alert": "Conflict Risk Alerts", "resolution": "Resolution Opportuni
 CW_THEATRE = {   # CrisisWatch entry slugs -> theatre
     "ukraine": r"ukraine|russia|belarus|moldova", "europe_east": r"poland|baltic|lithuania|latvia|estonia|finland",
     "iran": r"iran|iraq", "yemen": r"yemen|saudi|red-sea|gulf", "israel": r"israel|palestin|lebanon|syria|jordan",
+    "iraq": r"iraq", "gulf": r"saudi|gulf|bahrain|qatar|emirates|kuwait|oman",
     "taiwan": r"taiwan", "scs": r"south-china-sea|philippines", "korea": r"korea", "southasia": r"india|pakistan|kashmir",
     "libya": r"libya", "sudan": r"sudan", "drc": r"congo", "venezuela": r"venezuela|colombia|guyana|cuba",
 }

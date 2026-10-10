@@ -226,9 +226,10 @@ def fetch_portwatch(name_fragment, days=900):
 
 
 def fetch_portwatch_ports(iso3, names=(), field="portcalls", days=300):
-    """Daily vessel calls summed over the named ports of one country (all its ports if no name). IMF PortWatch, keyless."""
+    """Daily vessel calls summed over the named ports of one country, or of several (iso3 a tuple), all their ports if no name. IMF PortWatch, keyless."""
     since = (dt.date.today() - dt.timedelta(days=days)).isoformat()
-    where = f"ISO3 = '{iso3}' AND date >= DATE '{since}'"
+    isos = (iso3,) if isinstance(iso3, str) else tuple(iso3)
+    where = "ISO3 IN (" + ", ".join(f"'{i}'" for i in isos) + f") AND date >= DATE '{since}'"
     if names:
         where += " AND (" + " OR ".join(f"portname LIKE '%{n}%'" for n in names) + ")"
     by, offset = {}, 0

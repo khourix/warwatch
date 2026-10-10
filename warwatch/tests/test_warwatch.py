@@ -825,6 +825,10 @@ class TestModel(unittest.TestCase):
             res = model.apply(res, events=[], today=dt.date(2026, 10, 1), m=_toy_model(active))
             self.assertEqual(res["model"]["active"], active)
             for t in model.TH:
+                if active and t in C.SUBTHEATRES:      # the model passed, the sub-theatre has not: no chance shown, level unchanged
+                    self.assertNotIn("p", res["theatres"][t])
+                    self.assertEqual(res["theatres"][t]["level"], before[t])
+                    continue
                 self.assertIn("p", res["theatres"][t])
                 if not active:
                     self.assertEqual(res["theatres"][t]["level"], before[t])
@@ -850,12 +854,72 @@ class TestModel(unittest.TestCase):
         with gzip.open(p, "rt") as f:
             self.assertEqual(f.read().splitlines()[-1].split(",")[0], (dt.date.fromisoformat(last) + dt.timedelta(days=2)).isoformat())
 
+    def test_gdelt_back_fill_of_added_countries_resumes_and_merges_once(self):
+        import backfill
+        import gzip
+        d = tempfile.mkdtemp()
+        hist = os.path.join(d, "h.csv.gz")
+        with gzip.open(hist, "wt", newline="") as f:
+            f.write("2024-01-01,IR,13,1\n2024-01-01,IR,all,9\n2024-01-02,IR,13,2\n2024-01-02,IR,all,8\n")
+        calls = []
+
+        def day(dd, ccs):
+            calls.append((dd, tuple(sorted(ccs))))
+            if dd == dt.date(2024, 1, 2):
+                raise RuntimeError("not published")
+            return {("IZ", "all"): 5, ("IZ", "18"): 1}
+
+        n = backfill.gdelt_add(["IZ", "SA"], dt.date(2024, 1, 1), dt.date(2024, 1, 3), shard_dir=d, day_fn=day)
+        self.assertEqual(n, 2)                                              # the unpublished day is skipped
+        self.assertEqual(backfill.gdelt_add(["IZ", "SA"], dt.date(2024, 1, 1), dt.date(2024, 1, 3), shard_dir=d, day_fn=day), 0)
+        self.assertEqual([c[0] for c in calls].count(dt.date(2024, 1, 1)), 1)   # a day in the shard is not read again
+        self.assertEqual(backfill.gdelt_merge(path=hist, shard_dir=d), 10)  # 2024-01-01 only: 2 countries x 5 roots; 01-03 is past the file's end
+        self.assertEqual(backfill.gdelt_merge(path=hist, shard_dir=d), 0)
+        self.assertEqual(backfill.missing_codes(hist), sorted({c for v in C.GDELT_CC.values() for c in v} - {"IR", "IZ", "SA"}))
+        with gzip.open(hist, "rt") as f:
+            rows = [ln.split(",") for ln in f.read().splitlines()]
+        self.assertIn(["2024-01-01", "IZ", "18", "1"], rows)
+        self.assertIn(["2024-01-01", "SA", "all", "0"], rows)
+        self.assertEqual(rows, sorted(rows, key=lambda r: (r[0], r[1], backfill.ROOT_ORDER[r[2]])))
+
     def test_global_probability_is_chance_of_any(self):
         m = _toy_model()
         per = {t: {"p": 0.1} for t in model.TH}
         g = model.global_view(m, per)
-        self.assertAlmostEqual(g["p_any"], 1 - 0.9 ** len(model.TH))
-        self.assertAlmostEqual(g["p_market_moving"], 1 - 0.97 ** len(model.TH))
+        n = len(model.TH) - len(C.SUBTHEATRES)      # a sub-theatre's events are its parents' too, so it is not counted again
+        self.assertAlmostEqual(g["p_any"], 1 - 0.9 ** n)
+        self.assertAlmostEqual(g["p_market_moving"], 1 - 0.97 ** n)
+
+    def test_validated_sub_theatre_shows_its_chance(self):
+        m = _toy_model(True)
+        m["sub"] = {"iraq": {"active": True}, "gulf": {"active": False}}
+        res = model.apply(run.evaluate(demo.scenario("calm")), events=[], today=dt.date(2026, 10, 1), m=m)
+        self.assertIn("p", res["theatres"]["iraq"])
+        self.assertNotIn("p", res["theatres"]["gulf"])
+        self.assertIn("gulf", res["model"]["theatres"])          # still predicted and logged to the forward record
+        mid = next(r for r in res["regions"] if r["id"] == "mideast")
+        self.assertIn("gulf", mid["kids"])
+        self.assertNotEqual(mid.get("lead"), "gulf")             # a held sub-theatre sits out of the roll-up
+
+    def test_sub_theatre_reads_its_parents_evidence(self):
+        def row(sid, th, z):
+            return {"id": sid, "theatre": th, "direction": "up", "scored": True, "score": {"z": z}}
+        series = [row("gdelt_threat_gulf", "gulf", 1.0), row("gdelt_threat_iran", "iran", 3.0), row("gdelt_threat_yemen", "yemen", 2.0),
+                  row("gdelt_threat_israel", "israel", 4.5), row("brent", "iran", 2.5), row("gold", "global", 1.5)]
+        ev = model.evidence(series, "gulf")
+        self.assertEqual(ev["gdelt_threat"], 3.0)      # the stronger of its own and its parents' (Iran, Yemen); not Israel's
+        self.assertEqual(ev["brent"], 2.5)
+        self.assertEqual(model.evidence(series, "iran")["gdelt_threat"], 3.0)     # a parent does not read the sub-theatre
+
+    def test_events_in_a_sub_theatre_count_for_both(self):
+        ev = model.load_events()
+        self.assertIn(("gulf", dt.date(2025, 6, 23)), ev)      # Al Udeid
+        self.assertIn(("iran", dt.date(2025, 6, 23)), ev)
+        import csv
+        with open(os.path.join(model.DATA, "events.csv"), newline="") as f:
+            rows = list(csv.DictReader(f))
+        self.assertTrue(all(r["site_theatre"] in ("", *C.SUBTHEATRES) for r in rows))
+        self.assertEqual(len(ev), len(rows) + sum(1 for r in rows if r["site_theatre"]))
 
     def test_market_probability_filters_converts_and_blends(self):
         end = (dt.date.today() + dt.timedelta(days=90)).isoformat()
@@ -950,6 +1014,46 @@ class TestValidate(unittest.TestCase):
         self.assertFalse(excl[m & (d == "2024-04-01").values].any())
         self.assertEqual(y[~m].sum(), 0)
         self.assertTrue(unk[(d > "2024-03-31").values].all())          # labels need 30 days of events file beyond them
+
+    def test_sub_theatre_panel_reads_its_parents_and_keeps_theatres_unchanged(self):
+        import pandas as pd
+        z = {dt.date(2024, 1, 2): 3.0}
+        H = {"gdelt_threat_iran": {"theatre": "iran", "domain": "information", "direction": "up", "lag": False, "z": z},
+             "gdelt_threat_iraq": {"theatre": "iraq", "domain": "information", "direction": "up", "lag": False, "z": {dt.date(2024, 1, 2): 1.0, dt.date(2024, 1, 3): 2.0}}}
+        P0, _ = validate.panel(H, end=pd.Timestamp("2024-01-05"))
+        P1, _ = validate.panel(H, end=pd.Timestamp("2024-01-05"), subs=True)
+        self.assertNotIn("iraq", set(P0["theatre"]))
+        core = P1[P1["theatre"].isin(validate.TH)].reset_index(drop=True)
+        pd.testing.assert_frame_equal(core, P0)          # the theatres' rows do not change
+        iq = P1[P1["theatre"] == "iraq"].set_index("date")["gdelt_threat"]
+        self.assertEqual(iq["2024-01-02"], 3.0)          # Iran's 3 beats Iraq's own 1
+        self.assertEqual(iq["2024-01-03"], 2.0)          # Iraq's own where Iran has nothing
+
+    def test_sub_theatre_events_label_both_and_offset_pools(self):
+        import numpy as np
+        import pandas as pd
+        ev = validate.read_events()
+        self.assertEqual(int((~ev["dup"]).sum()), len(pd.read_csv(os.path.join(validate.DATA, "events.csv"))))
+        udeid = ev[ev["date"] == "2025-06-23"]
+        self.assertEqual(sorted(udeid["theatre"]), ["gulf", "iran"])
+        days = pd.date_range("2024-01-01", "2024-12-31", freq="D")
+        ths = ["iran", "israel", "yemen", "iraq"]
+        P = pd.DataFrame({"date": list(days) * len(ths), "theatre": np.repeat(ths, len(days))})
+        T = validate.offsets(P)
+        r = (P["theatre"] == "iraq").values
+        cols = validate.ALL
+        self.assertTrue(np.allclose(T[r][:, [cols.index(x) for x in ("iran", "israel", "yemen")]], 1 / 3))
+        self.assertTrue((T[r][:, cols.index("iraq")] == 1).all())
+        X = np.hstack([np.ones((len(P), 1)), T, np.zeros((len(P), 3))])
+        theta = np.zeros(X.shape[1])
+        theta[0] = -3.0
+        for y_rate, sign in ((0.0, -1), (0.5, 1)):
+            y = np.where(r, (np.arange(len(P)) % 2 == 0) * (y_rate > 0), 0).astype(int)
+            u = validate.sub_theta(X, y, theta, P, np.ones(len(P), bool))[1 + cols.index("iraq")]
+            self.assertEqual(np.sign(u), sign)                  # no events: below the pooled offset; frequent ones: above it
+            self.assertLess(abs(u), 10)                         # the ridge keeps it finite even with no events
+        b, _ = validate.base_rates(P, np.where(P["theatre"] == "iran", 1, 0), np.ones(len(P), bool))
+        self.assertGreater(b["iraq"], 0.2)                      # pulled toward the Middle East theatres' rate, not the global one
 
     def test_auc_and_shrink(self):
         import numpy as np

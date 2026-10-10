@@ -35,6 +35,20 @@
      "geospatial": 0.25,
      "information": 0.2
     },
+    "iraq": {
+     "logistics": 0.15,
+     "financial": 0.1,
+     "behavioral": 0.25,
+     "geospatial": 0.3,
+     "information": 0.2
+    },
+    "gulf": {
+     "logistics": 0.2,
+     "financial": 0.25,
+     "behavioral": 0.15,
+     "geospatial": 0.25,
+     "information": 0.15
+    },
     "yemen": {
      "logistics": 0.3,
      "financial": 0.1,
@@ -117,6 +131,8 @@
     "ukraine": "Land war with heavy visible logistics and sensor coverage: geospatial and logistics lead; markets already price it in.",
     "europe_east": "NATO eastern flank: airspace, GNSS jamming and troop/air movements are the earliest observable signs.",
     "iran": "Oil and shipping risk transmit fast to markets; aviation and GNSS activity show posture.",
+    "iraq": "Militia rocket and drone campaigns against US sites: embassy drawdowns, airspace and aircraft movements show first; Iraq has no market of its own to watch.",
+    "gulf": "Strikes on oil sites, bases and LNG plants: Gulf equities and port calls price it, air defence and airspace show it.",
     "yemen": "Red Sea war is a shipping story: transits and vessel presence (logistics, geospatial) matter most.",
     "israel": "Dense airspace, advisory and news flow; strong information and geospatial signals.",
     "taiwan": "Brief's example: information 0.30, geospatial 0.25, logistics 0.20, financial 0.15, human 0.10.",
