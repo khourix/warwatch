@@ -1,0 +1,72 @@
+[
+ {
+  "name": "crisiswatch lists",
+  "result": {
+   "title": "September Trends and October Alerts 2026",
+   "bytes": 174296,
+   "Conflict Risk Alerts": [
+    "Afghanistan",
+    "Eritrea",
+    "Ethiopia",
+    "Iran",
+    "Pakistan",
+    "Saudi Arabia",
+    "Yemen"
+   ],
+   "Conflict Risk Alerts raw": "Conflict Risk Alerts</h4> <p class=\"[ u-mar-b0 u-mar-t15 ] [ u-fs13 u-lh15 u-fwl u-c-white:link ]\"> <a class=\"js-scrollTo\" href=\"#afghanistan\" data-entry-target=\"afghanistan\">Afghanistan</a> <a class=\"js-scrollTo\" href=\"#eritrea\" data-entry-target=\"eritrea\">Eritrea</a> <a class=\"js-scrollTo\" href=\"#ethiopia\" data-entry-target=\"ethiopia\">Ethiopia</a> <a class=\"js-scrollTo\" href=\"#iran\" data-entry-target=\"iran\">Iran</a> <a class=\"js-scrollTo\" href=\"#pakistan\" data-entry-target=\"pakistan\">Pakistan</a> <a class=\"js-scrollTo\" href=\"#saudi-arabia\" data-entry-target=\"saudi-arabia\">Saudi Arabia</a> <a class=\"js-scrollTo\" href=\"#yemen\" data-entry-target=\"yemen\">Yemen</a> </p> </div> </section> <secti",
+   "Resolution Opportunities": "not found",
+   "Deteriorated Situations": [
+    "Afghanistan",
+    "Ethiopia",
+    "Pakistan",
+    "Saudi Arabia",
+    "Yemen",
+    "<span class=\"o-icon\"><svg><use xlink:href=\"#share\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" /></svg></span> <span class=\"o-label [ u-dif u-fs13 u-franklin u-fwn u-ttu u-black ]\">Share</span>",
+    "<span class=\"o-icon\"><svg><use xlink:href=\"#facebook\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" /></svg></span> <span class=\"[ u-pos-relative u-top-3neg ] [ u-franklin u-fs13 u-ttu ]\">Facebook</span>",
+    "<span class=\"o-icon\"><svg><use xlink:href=\"#twitter\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" /></svg></span> <span class=\"[ u-pos-relative u-top-3neg ] [ u-franklin u-fs13 u-ttu ]\">Twitter</span>",
+    "<span class=\"o-icon\"><svg><use xlink:href=\"#mail\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" /></svg></span> <span class=\"[ u-pos-relative u-top-3neg ] [ u-franklin u-fs13 u-ttu ]\">Email</span>",
+    "<span class=\"o-icon\"><svg><use xlink:href=\"#file\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" /></svg></span> <span class=\"o-label [ u-dif u-fs13 u-franklin u-fwn u-ttu u-black ]\">Print and Download PDF options</span>"
+   ],
+   "Deteriorated Situations raw": "Deteriorated Situations</h4> <p class=\"[ u-mar-b0 u-mar-t15 ] [ u-fs13 u-lh15 u-fwl u-c-white:link ]\"> <a class=\"js-scrollTo\" href=\"#afghanistan\" data-entry-target=\"afghanistan\">Afghanistan</a> <a class=\"js-scrollTo\" href=\"#ethiopia\" data-entry-target=\"ethiopia\">Ethiopia</a> <a class=\"js-scrollTo\" href=\"#pakistan\" data-entry-target=\"pakistan\">Pakistan</a> <a class=\"js-scrollTo\" href=\"#saudi-arabia\" data-entry-target=\"saudi-arabia\">Saudi Arabia</a> <a class=\"js-scrollTo\" href=\"#yemen\" data-entry-target=\"yemen\">Yemen</a> </p> </div> </section> </div> </div> <div class=\"c-toolbar js-toolbar\" data-id=\"1\"> <div class=\"c-toolbar__container\"> <ul class=\"o-list\"> <li class=\"[ u-pr u-width-100 ]\"> <a",
+   "Improved Situations": "not found"
+  }
+ },
+ {
+  "name": "jcg scripts",
+  "result": {
+   "warnings.js": {
+    "bytes": 3800,
+    "cgi": [
+     "/warnings.cgi",
+     "disp_warnings.cgi?TYPE="
+    ],
+    "text": "var showall = false;\nfunction onSubmit( obj_form) {\n    form = document.forms[ 'DISP'];\n\n    var msg = \"\";\n    if( showall) {\n        // 蜈ｨ縺ｦ陦ｨ遉ｺ\n        $(\"input[type='checkbox']\", $(obj_form)).each( function(){\n            msg += $(this).val() + \":\";\n        });\n    } else {\n        // 驕ｸ謚槭＠縺滓ュ蝣ｱ繧定｡ｨ遉ｺ\n        $(\"input[type='checkbox']:checked\", $(obj_form)).each( function(){\n            msg += $(this).val() + \":\";\n        });\n    }\n    if( msg == \"\") {\n        alert( none_seleced_warnnig);\n    }\n    else {\n        form.TYPE.value=type;\n        form.TANA.value=msg;\n        form.LANG.value=lang;\n        form.submit( );\n    }\n}\n\n// 譖ｴ譁ｰ繝懊ち繝ｳ\nfunction update( year) {\n    var table = document.getElementById( \"tb_keiho_\" + year);\n    while( table.rows[\"length\"] > 1) {\n        table.deleteRow( table.rows[\"length\"] - 1);\n    }\n\n    var msg = \"YEAR=\" + year + \"&TYPE=\" + type + \"&LANG=\" + lang;\n    var url = \"https://\" + cgihost + cgidir + \"/warnings.cgi\";\n\n    var xhr = XMLHttpRequestCreate();\n    xhr.open(\"POST\", url, true);\n    xhr.setRequestHeader(\"Content-Type\",\n        \"application/x-www-form-urlencoded; charset:UTF-8\");\n    xhr.send( msg);\n\n\txhr.onreadystatechange = function( )\n    {\n        if( xhr.readyState == 4) {\n            var xml = xhr.responseXML;\n            var member = xml.getElementsByTagName('Member');\n            if( member.length == 0) {\n                document.getElementById(\"tb_keiho_\" + year).style.visibility = \"hidden\";\n                document.getElementById(\"ALLMAP_\" + year).style.visibility = \"hidden\";\n                document.getElementById(\"CHKDATA_\" + year).style.visibility = \"hidden\";\n                document.getElementById(\"NOMSG_\" + year).style.display = \"block\";\n            }\n            else {\n                document.getElementById(\"tb_keiho_\" + year).style.visibility = \"visible\";\n                document.getElementById(\"ALLMAP_\" + year).style.visibility = \"visible\";\n                document.getElementById(\"CHKDATA_\" + year).style.visibility = \"visible\";\n                document.getElementById(\"NOMSG_\" + year).style.display = \"none\";\n                for( var i = 0; i < member.length; i++) {\n                    var tana = member[ i].getElementsByTagName('tana')[ 0].firstChild.nodeValue;\n                    var num = member[ i].getElementsByTagName('number')[ 0].firstChild.nodeValue;\n                    var categoly = member[ i].getElementsByTagName('categoly')[ 0].firstChild.nodeValue;\n                    var title = member[ i].getElementsByTagName('title')[ 0].firstChild.nodeValue;\n                    var visual = member[ i].getElementsByTagName('visual')[ 0].firstChild.nodeValue;\n\n                    var idx = table.rows[\"length\"];\n                    var insObj = table.insertRow( idx);\n                    cell = insObj.insertCell( 0);\n                    cell.innerHTML = \"<input type=\\\"checkbox\\\" value=\\\"\" + tana + \"\\\" name=\\\"SELECT_HONBUN\\\"></td>\";\n                    cell = insObj.insertCell( 1);\n                    cell.innerHTML = num;\n                    cell = insObj.insertCell( 2);\n                    cell.innerHTML = categoly;\n                    cell = insObj.insertCell( 3);\n                    cell.align = \"left\";\n                    cell.innerHTML = \"<a href=\\\"\" + cgidir + \"disp_warnings.cgi?TYPE=\" + type + \"&TANA=\" + tana + \"&LANG=\" + lang + \"\\\" target=\\\"_blank\\\">\" + title + \"</a>\";\n                    cell = insObj.insertCell( 4);\n                    cell.setAttribute(\"class\",\"grayBtn\");\n\t\t\t\t\tif( visual == 1) {\n\t                    cell.innerHTML = \"<a href=\\\"\" + visualpage + \"?type=\" + vtype + \"&tana=\" + tana + \"\\\" target=\\\"visual\\\">\" + visual_label + \"</a></td>\";\n\t\t\t\t}\n\t\t\t\telse {\n                    cell.innerHTML = \"&nbsp;\";\n\t\t\t\t}\n                }\n            }\n        }\n    }\n}\n"
+   },
+   "AjaxLib.js": {
+    "bytes": 1819,
+    "cgi": [],
+    "text": "var xmlHttp;\n\n// ------------------------------------------------------------\n// XMLHttpRequest 繧ｪ繝悶ず繧ｧ繧ｯ繝医ｒ菴懈�舌☆繧矩未謨ｰ\n// ------------------------------------------------------------\nfunction XMLHttpRequestCreate(){\n\ttry{\n\t\treturn new XMLHttpRequest();\n\t}catch(e){}\n\ttry{\n\t\treturn new ActiveXObject('MSXML2.XMLHTTP.6.0');\n\t}catch(e){}\n\ttry{\n\t\treturn new ActiveXObject('MSXML2.XMLHTTP.3.0');\n\t}catch(e){}\n\ttry{\n\t\treturn new ActiveXObject('MSXML2.XMLHTTP');\n\t}catch(e){}\n\n\treturn null;\n}\n\nfunction getXmlHttpObject(cbFunc)\n{\n    var XMLhttpObject = null;\n    try{\n        XMLhttpObject = new XMLHttpRequest();\n     }catch(e){\n        try{\n             XMLhttpObject = new ActiveXObject(\"Msxml2.XMLHTTP\");\n         }catch(e){\n            try{\n                 XMLhttpObject = new ActiveXObject(\"Microsoft.XMLHTTP\");\n             }catch(e){\n                 return null;\n            }\n        }\n    }\n\n    if (XMLhttpObject) XMLhttpObject.onreadystatechange = cbFunc;\n    return XMLhttpObject;\n}\n\nfunction xmlHttp_Post(xmlhttp, url, message)\n{\n    if(xmlhttp == null) {\n        window.alert(\"Cant use XMLHttpRequest.\");\n    }\n\n    xmlhttp.open(\"POST\", url, true);\n    xmlhttp.setRequestHeader(\"Content-Type\", \"application/x-www-form-urlencoded; charset:UTF-8\");\n\n    xmlhttp.send( message);\n}\n\nfunction XmlHttpSendMessage( message, sendurl, handler)\n{\n    var requestURL = sendurl;\n\n    xmlHttp = getXmlHttpObject( handler);\n    xmlHttp_Post( xmlHttp, sendurl, message);\n}\n\nfunction XmlHttpGetReadyStatus( )\n{\n    return( xmlHttp.readyState);\n}\n\nfunction XmlHttpGetStatus( )\n{\n    return( xmlHttp.status);\n}\n\nfunction XmlHttpGetStatusText( )\n{\n    return( xmlHttp.statusText);\n}\n\nfunction XmlHttpGetResponse( )\n{\n    return( xmlHttp.responseText);\n}\n\nfunction XmlHttpGetResponseXML( )\n{\n    return( xmlHttp.responseXML);\n}\n"
+   }
+  }
+ },
+ {
+  "name": "customs by country",
+  "result": {
+   "months": [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug"
+   ],
+   "latest": "http://english.customs.gov.cn/Statics/7b4caeff-8088-492d-8663-b737e22af7bf.html",
+   "bytes": 222675,
+   "head": " | | | | | （2）Imports and Exports by Country （Region） of Origin/Destination,8.2026 | | | | | | | | | | | window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'UA-98223577-4'); | | | | | | Home | | | | | 中文站 | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | About GACC | | | | | | • Mission | | | | | | • The Minister | | | | | | • Principal Officials | | | | | | • Organizational Functions | | | | | | • Organizational Structure | | | | | | • Rank Regime | | | | | | • Annual Reports | | | | | | | | | Legislation | | | | | | • Laws &amp; Regulations | | | | | | • Customs Decrees | | | | | | • Customs Announcements | | | | | | | | | Newsroom | | | | | | • News | | | | | | • Special Features | | | | | | | | | Customs Reform | | | | Service Center | | | | | | • Service Guide | | | | | | • General Formalities | | | | | | • Clearance Status | | | | | | • Service Navigation | | | | | | • LDCs'Certification of Origin | | | | | | | | | Statistics | | | | | | • Preliminary Release | | | | | | • Trade Indices | | | | | | • Monthly Bulletin | | | | | | • Quarterly Release | | | | | | • Release Calendar | | | | | | • Explainatory Notes | | | | | | • Coverage of Major Imports &amp; Exports | | | | | | • Interactive Tables | | | | | | | | | | | | | | （2）Imports and Exports by Country （Region） of Origin/Destination,8.2026 | | | | | 2026/09/18 | | | | | | | | （2）Imports and Exports by Co",
+   "russia": ",933&nbsp; | | | | 176,822&nbsp; | | | | 1,435,214&nbsp; | | | | 32.7 | | | | 31.4 | | | | 38.2 | | | | | | | Moldova | | | | | 68,514&nbsp; | | | | 512,673&nbsp; | | | | 47,256&nbsp; | | | | 420,060&nbsp; | | | | 21,257&nbsp; | | | | 92,614&nbsp; | | | | 51.9 | | | | 68.7 | | | | 4.6 | | | | | | | Russia | | | | | 25,603,151&nbsp; | | | | 185,047,800&nbsp; | | | | 11,851,101&nbsp; | | | | 84,675,063&nbsp; | | | | 13,752,050&nbsp; | | | | 100,372,737&nbsp; | | | | 28.4 | | | | 30.7 | | | | 26.5 | | | | | | | Ukraine | | | | | 718,799&nbsp; | | | | 5,716,070&nbsp; | | | | 587,326&nbsp; | | | | 4,133,478&nbsp; | | | | 131,472&nbsp; | | | | 1,582,592&nbsp; | | | | 18.7 | | | | 35.1 | | | | -10.0 | | | | | | | Slovenia&nbsp; | | | | | 667,898&nbsp; | | | | 6,052,672&nbsp; | | | | 618,503&nbsp; | | | | 5,489,459&nbsp; | | | | 49,395&nbsp; | | | | 563,213&nbsp; | | | | 18.9 | | | | 18.0 | | | ",
+   "links_in_page": []
+  }
+ }
+]
