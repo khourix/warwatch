@@ -12,7 +12,7 @@ on:
         required: false
         default: "all"
       only:
-        description: "history: comma-separated catalogue ids whose long history backtest.py fetch reads (blank = the sub-theatres')"
+        description: "history: comma-separated catalogue ids whose long history backtest.py fetch reads (blank = the sub-theatres'); state: one theatre group, e.g. iraq,gulf (blank = all)"
         required: false
         default: ""
       start:
@@ -152,7 +152,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Back-fill advisories via Wayback
+        env:
+          ONLY: ${{ github.event.inputs.only }}
         run: |
+          if [ "$SRC" = state ] && [ -n "$ONLY" ] && [ "$ONLY" != "${{ matrix.group }}" ]; then echo "not asked for"; exit 0; fi
           A=""; [ -n "$START" ] && A="$A --start $START"; [ -n "$END" ] && A="$A --end $END"
           python3 backfill/backfill.py state "${{ matrix.group }}" $A
       - uses: ./.github/actions/commit-backfill
