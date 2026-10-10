@@ -146,8 +146,82 @@ def links(name, url, pat):
     return {"bytes": len(raw), "links": found[:150], "endpoints": scripts}
 
 
+EXCERPTS = [   # round 3: text around the words that mark the data, plus scripts and links
+    ("jcg navarea11", "https://www1.kaiho.mlit.go.jp/TUHO/keiho/navarea11.html", r"NAVAREA|ミサイル|ロケット|射撃|訓練|warning|\.html|\.txt|\.pdf"),
+    ("jcg tuho2", "https://www1.kaiho.mlit.go.jp/TUHO/tuho2.html", r"航行警報|NAVAREA|\.html"),
+    ("msa home text", "https://www.msa.gov.cn/", r"航行警告|航行通告|警告|jhtml"),
+    ("customs preliminary text", "http://english.customs.gov.cn/statics/report/preliminary.html", r"2026|Statics|\.js|ajax|url"),
+    ("customs monthly text", "http://english.customs.gov.cn/statics/report/monthly.html", r"2026|Statics|\.js|ajax|url"),
+    ("crisiswatch rss item", "https://www.crisisgroup.org/rss.xml", r"Deteriorat|Conflict Risk|Resolution Opportunit|Improved Situation|CrisisWatch"),
+]
+
+
+def excerpts(url, pat, n=40, width=220):
+    import urllib.request
+    req = urllib.request.Request(url, headers={"User-Agent": P.UA, "Accept-Language": "en-US,en;q=0.8"})
+    with urllib.request.urlopen(req, timeout=40) as r:
+        raw, final = r.read(3_000_000), r.geturl()
+    text = raw.decode("utf-8", "replace")
+    if text.count("\ufffd") > 50:
+        text = raw.decode("gb18030", "replace") if "msa" in url or "customs" in url else raw.decode("shift_jis", "replace")
+    out, last = [], -10_000
+    for m in re.finditer(pat, text, re.I):
+        if m.start() - last < width:
+            continue
+        last = m.start()
+        out.append(re.sub(r"\s+", " ", text[max(0, m.start() - width // 2): m.start() + width]))
+        if len(out) >= n:
+            break
+    scripts = re.findall(r"""<script[^>]+src=["']([^"']+)""", text, re.I)[:30]
+    return {"bytes": len(raw), "final_url": final, "hits": out, "scripts": scripts}
+
+
+def tzeva_ids():
+    import sources as S
+    out = {}
+    for i in (1, 100, 1000, 3000, 5000, 6000, 6500, 7500):
+        try:
+            g = S.get(f"https://api.tzevaadom.co.il/alerts-history/id/{i}", retries=1)
+            out[i] = dt.datetime.fromtimestamp(min(a["time"] for a in g["alerts"]), dt.timezone.utc).isoformat()[:16] if g.get("alerts") else "no alerts"
+        except Exception as e:  # noqa: BLE001
+            out[i] = str(e)[:80]
+        time.sleep(1)
+    return out
+
+
+def oref_csv_ends():
+    import urllib.request
+    url = "https://raw.githubusercontent.com/dleshem/israel-alerts-data/main/israel-alerts.csv"
+    out = {}
+    for name, rng in (("head", "bytes=0-1500"), ("tail", "bytes=-1500")):
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"Range": rng, "User-Agent": P.UA}), timeout=40) as r:
+            out[name] = r.read().decode("utf-8", "replace")
+    readme = urllib.request.urlopen("https://raw.githubusercontent.com/dleshem/israel-alerts-data/main/README.md", timeout=40).read().decode()
+    lic = urllib.request.urlopen("https://raw.githubusercontent.com/dleshem/israel-alerts-data/main/LICENSE", timeout=40).read(300).decode()
+    out.update(readme=readme, license=lic)
+    return out
+
+
 def main(path):
     res = []
+    if os.environ.get("ROUTES_ROUND") == "3":
+        for name, url, pat in EXCERPTS:
+            try:
+                v = excerpts(url, pat)
+            except Exception as e:  # noqa: BLE001
+                v = {"error": str(e)[:300]}
+            res.append({"name": name, "url": url, "result": v})
+            print(name, json.dumps(v, ensure_ascii=False)[:300], flush=True)
+        for name, fn in (("tzeva ids", tzeva_ids), ("oref csv", oref_csv_ends)):
+            try:
+                v = fn()
+            except Exception as e:  # noqa: BLE001
+                v = {"error": str(e)[:300]}
+            res.append({"name": name, "result": v})
+            print(name, json.dumps(v, ensure_ascii=False)[:300], flush=True)
+        with open(path, "w") as f:
+            json.dump(res, f, indent=1, ensure_ascii=False)
+        return
     if os.environ.get("ROUTES_ROUND") == "2":
         for name, url, pat in PAGES:
             try:
