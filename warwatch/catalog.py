@@ -20,13 +20,29 @@ DOD = 4   # USAspending: current month plus the 3-month DoD publication delay
 TH = {t: v["name"] for t, v in C.THEATRES.items()}
 
 
+# The noise floor each family is scored with (stats.noise_floor): small counts and small shares, where a
+# near-empty history otherwise reads one aircraft or a tenth of a percent as a maximal change.
+SCALE = (("adsb_", "count"), ("package_", "count"), ("civil_", "count"), ("firms_", "count"), ("gdelt_", "count"),
+         ("news_", "count"), ("ports_", "count"), ("portwatch_", "count"), ("fcdo_", "count"),
+         ("nga_", "window"), ("notam_", "window"), ("msa_", "window"), ("jcg_", "window"), ("ukmto_", "window"),
+         ("czib_", "window"), ("tzeva_", "window"), ("uaair_", "window"),
+         ("gpsjam_", ("share", 1.0)), ("gnss_", ("share", 1.0)),        # percent
+         ("gdeltshare_", ("share", 10.0)),                               # per 1,000 events
+         ("ooni_", ("share", 0.01)))                                     # a fraction
+
+
+def scale_for(sid):
+    return next((v for k, v in SCALE if sid.startswith(k)), None)
+
+
 def add(id, label, domain, theatre, kind, lag, why, fetch, direction="up", needs=(), drop=None, url="", sub=""):
     """drop: newest months discarded before scoring because still incomplete
     (default 1 for monthly series)."""
     if drop is None:
         drop = 1 if kind == "monthly" else 0
     SERIES.append(dict(id=id, label=label, domain=domain, theatre=theatre, kind=kind, lag=lag, why=why,
-                       fetch=fetch, direction=direction, needs=list(needs), drop=drop, url=url, sub=sub, every=None, scored=True))
+                       fetch=fetch, direction=direction, needs=list(needs), drop=drop, url=url, sub=sub, every=None, scored=True,
+                       scale=scale_for(id) if kind == "daily" else None))
 
 
 def _slow(sid, fn):
@@ -363,9 +379,11 @@ for th, slugs in C.FCDO.items():
 def _state(theatre):
     def go():
         v = S.state_levels(S.fetch_state(), C.STATE_ISO[theatre])
-        sid = f"state_{theatre}"
-        store.append(sid, v)
-        return store.seed(sid, store.daily(sid))   # backfill/data holds the weekly Wayback captures back to 2018
+        # Live readings from October 2026 on (one level per country) go to their own file: the earlier ones summed every
+        # item filed under a code (Gaza and the West Bank on top of Israel, Saint Kitts and Nevis under North Korea's code).
+        live = f"state_main_{theatre}"
+        store.append(live, v)
+        return store.seed(f"state_{theatre}", store.daily(live))   # backfill/data holds the weekly Wayback captures back to 2018
     return go
 
 

@@ -270,16 +270,38 @@ def fetch_fcdo(slugs):
     return sorted(tot.items())
 
 
-def state_levels(items, iso_list):
-    """Sum of US advisory levels for the countries (Title 'X - Level 3: ...')."""
-    tot = 0
+def _norm_country(t):
+    t = re.sub(r"[^a-z ]", " ", t.lower()).split()
+    return " ".join(w for w in t if w != "the")
+
+
+def state_country_level(items, code, name=None):
+    """The level of one country's main advisory (Title 'X - Level 3: ...'), or None when the feed has none.
+    Several items under one code: the one titled with the country's name; failing that, the highest."""
+    got = []
     for it in items:
-        if set(it.get("Category", [])) & set(iso_list):
-            try:
-                tot += int(it["Title"].split("Level ")[1][0])
-            except (IndexError, ValueError):
-                pass
-    return float(tot)
+        if code not in it.get("Category", []):
+            continue
+        title = it.get("Title", "")
+        try:
+            lv = int(title.split("Level ")[1][0])
+        except (IndexError, ValueError):
+            continue
+        got.append((_norm_country(title.split(" - ")[0]), lv))
+    if not got:
+        return None
+    if name:
+        named = [lv for t, lv in got if t == _norm_country(name)]
+        if named:
+            return named[0]
+    return max(lv for _, lv in got)
+
+
+def state_levels(items, iso_list, names=None):
+    """Sum over the countries of each one's main US advisory level: the same quantity the archived country pages
+    give for the history (backfill/sources_slow.py), so the live series continues it without a step."""
+    names = names if names is not None else C.STATE_NAME
+    return float(sum(state_country_level(items, c, names.get(c)) or 0 for c in iso_list))
 
 
 _STATE = {}

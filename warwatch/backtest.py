@@ -152,7 +152,7 @@ def snapshot(series, d, keep=250):
         cut = bisect.bisect_right(s["avail"], o)
         pts = s["all"][max(0, cut - keep):cut]
         r = {k: s[k] for k in ("id", "theatre", "domain", "direction", "lag", "kind", "scored")}
-        r.update(points=pts, score=stats.score_series(pts, s["kind"], transform=s.get("transform")), old=stats.legacy_score_series(pts, s["kind"]))
+        r.update(points=pts, score=stats.score_series(pts, s["kind"], transform=s.get("transform"), scale=s.get("scale")), old=stats.legacy_score_series(pts, s["kind"]))
         rows.append(r)
     return rows
 

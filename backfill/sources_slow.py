@@ -16,16 +16,30 @@ BASE = "https://travel.state.gov/content/travel/en/traveladvisories/traveladviso
 SLUG = {   # FIPS code used by config.STATE_ISO -> advisory page slug
     "UP": "ukraine", "BO": "belarus", "MD": "moldova", "PL": "poland", "LH": "lithuania", "LG": "latvia", "EN": "estonia", "FI": "finland",
     "IR": "iran", "IZ": "iraq", "YM": "yemen", "SA": "saudi-arabia", "MU": "oman", "DJ": "djibouti",
-    "IS": "israel-the-west-bank-and-gaza", "LE": "lebanon", "JO": "jordan", "EG": "egypt", "TW": "taiwan", "RP": "philippines", "VM": "vietnam",
+    "IS": "israel-west-bank-and-gaza", "LE": "lebanon", "JO": "jordan", "EG": "egypt", "TW": "taiwan", "RP": "philippines", "VM": "vietnam",
     "KS": "south-korea", "KN": "north-korea", "IN": "india", "PK": "pakistan", "LY": "libya", "SU": "sudan", "OD": "south-sudan",
     "CG": "democratic-republic-of-the-congo", "VE": "venezuela", "CO": "colombia", "CU": "cuba"}
+# From 2025 most pages moved to destination.<ISO3>.html (the old addresses now answer 403), so the archive's
+# copies of the old pages stop there. Both addresses are read.
+NEW_BASE = "https://travel.state.gov/content/tsg_aem/us/en/home/international-travel/travel-advisories/destination."
+ISO3 = {"UP": "ukr", "BO": "blr", "MD": "mda", "PL": "pol", "LH": "ltu", "LG": "lva", "EN": "est", "FI": "fin",
+        "IR": "irn", "IZ": "irq", "YM": "yem", "SA": "sau", "MU": "omn", "DJ": "dji", "IS": "isr", "LE": "lbn",
+        "JO": "jor", "EG": "egy", "TW": "twn", "RP": "phl", "VM": "vnm", "KS": "kor", "KN": "prk", "IN": "ind",
+        "PK": "pak", "LY": "lby", "SU": "sdn", "OD": "ssd", "CG": "cod", "VE": "ven", "CO": "col", "CU": "cub"}
 LEVEL = re.compile(r"Level\s*([1-4])\s*[:\-–]", re.I)
-ORDERED = re.compile(r"ordered\s+departure", re.I)
+ORDERED = re.compile(r"ordered\s+(?:the\s+)?departure", re.I)     # "ordered the departure of" is how Kyiv's January 2022 notice read
+HEAD = re.compile(r"(?is)<(title|h1)\b[^>]*>(.*?)</\1>")
+CARRY_DAYS = 90       # a page not captured for this long is unknown, not unchanged (most old addresses stop in 2025)
 
 
-def parse_advisory(html):
-    """Advisory page -> (level 1-4, 1 if the text mentions an ordered departure of US government staff) or None."""
-    m = LEVEL.search(html or "")
+def parse_advisory(html, strict=False):
+    """Advisory page -> (level 1-4, 1 if the text mentions an ordered departure of US government staff) or None.
+    The level is read from the page title or heading when they carry it, else from the first level in the page;
+    strict (the redesigned pages, whose navigation may list every level): only from the title or heading."""
+    html = html or ""
+    m = next((m for h in HEAD.finditer(html) for m in [LEVEL.search(unescape(h.group(2)))] if m), None)
+    if m is None and not strict:
+        m = LEVEL.search(html)
     if not m:
         return None
     return int(m.group(1)), 1 if ORDERED.search(html) else 0
@@ -47,15 +61,16 @@ def weekly(snaps):
     return out
 
 
-def fill_forward(points, start, end):
-    """[(date, value)] changes -> {iso_date: value} for every day from the first observation to `end`."""
+def fill_forward(points, start, end, max_carry=None):
+    """[(date, value)] changes -> {iso_date: value} for every day from the first observation to `end`,
+    or, with max_carry, to at most that many days after each observation."""
     pts = sorted(points)
-    out, i, cur = {}, 0, None
+    out, i, cur, seen = {}, 0, None, None
     for d in K.days(max(start, dt.date.fromisoformat(pts[0][0])) if pts else end, end):
         while i < len(pts) and pts[i][0] <= d.isoformat():
-            cur = pts[i][1]
+            cur, seen = pts[i][1], dt.date.fromisoformat(pts[i][0])
             i += 1
-        if cur is not None:
+        if cur is not None and (max_carry is None or (d - seen).days <= max_carry):
             out[d.isoformat()] = cur
     return out
 
@@ -70,25 +85,26 @@ def cmd_state(theatres, start, end):
     codes = sorted({c for t in theatres for c in C.STATE_ISO.get(t, [])})
     for code in codes:
         slug = SLUG[code]
-        url = f"{BASE}{slug}-travel-advisory.html"
-        if K.load(f"state_level_{slug}") and K.load(f"state_level_{slug}").get(end.isoformat()):
+        urls = {f"{BASE}{slug}-travel-advisory.html": False, f"{NEW_BASE}{ISO3[code]}.html": True}   # address -> strict parse
+        if K.load(f"state_od_country_{slug}").get(end.isoformat()) and K.load(f"state_level_{slug}").get(end.isoformat()):
             continue
         try:
-            snaps = [s for s in cdx(url) if s[0][:8] >= start.isoformat().replace("-", "")]
+            snaps = sorted((ts, dg, url) for url in urls for ts, dg in cdx(url) if ts[:8] >= start.isoformat().replace("-", ""))
         except RuntimeError as e:
             K.log("cdx failed", slug, str(e)[:100])       # leave this country for the rerun, keep going with the others
             continue
-        pick = weekly(snaps)
+        where = {ts: url for ts, _, url in snaps}
+        pick = weekly([(ts, dg) for ts, dg, _ in snaps])
         K.log(slug, len(snaps), "daily captures,", len(pick), "to read")
         lv, od, miss = [], [], 0
 
         def read(ts):
             try:
-                html = K.get(f"https://web.archive.org/web/{ts}id_/{url}", raw=True, timeout=120, retries=3, wait=10).decode("utf-8", "replace")
+                html = K.get(f"https://web.archive.org/web/{ts}id_/{where[ts]}", raw=True, timeout=120, retries=3, wait=10).decode("utf-8", "replace")
             except RuntimeError as e:
                 K.log("miss", slug, ts, str(e)[:80])
                 return ts, None
-            return ts, parse_advisory(html)
+            return ts, parse_advisory(html, strict=urls[where[ts]])
 
         with ThreadPoolExecutor(4) as pool:
             for ts, got in pool.map(read, pick):
@@ -100,22 +116,37 @@ def cmd_state(theatres, start, end):
                 od.append((day, got[1]))
         K.log(slug, "read", len(lv), "missed", miss)
         if lv:
-            K.save(f"state_level_{slug}", fill_forward(lv, start, end))
-            K.save(f"state_od_{slug}", fill_forward(od, start, end))
+            replace_from(f"state_level_{slug}", fill_forward(lv, start, end, CARRY_DAYS), start)
+            replace_from(f"state_od_country_{slug}", fill_forward(od, start, end, CARRY_DAYS), start)
     derive_state(theatres)
 
 
+def replace_from(series, rows, start):
+    """Keep the file's days before `start` and replace the rest with `rows`: a re-read drops what an older
+    parser or a longer carry left in the range, where K.save would keep it."""
+    cur = {d: v for d, v in K.load(series).items() if d < start.isoformat()}
+    cur.update(rows)
+    K.write_csv(K.path(series), cur)
+
+
 def derive_state(theatres):
-    """Per-theatre sums over its countries: `state_<th>` (level sum, the live series' definition) and `state_od_<th>` (countries under an ordered departure)."""
+    """Per-theatre sums over its countries: `state_<th>` (level sum, the live series' definition) and `state_od_<th>`
+    (countries under an ordered departure). Country files are `state_level_<slug>` and `state_od_country_<slug>`,
+    named apart from the theatre files (the Iran and Ukraine slugs are also theatre names). A theatre with a country
+    that has no history gets empty files: a sum over some of its countries is not the live series' quantity, and the
+    live series is better left to build its own history than seeded with a lower one (Israel and Venezuela were)."""
     for th in theatres:
-        lv = [K.load(f"state_level_{SLUG[c]}") for c in C.STATE_ISO.get(th, [])]
-        od = [K.load(f"state_od_{SLUG[c]}") for c in C.STATE_ISO.get(th, [])]
-        lv = [x for x in lv if x]
-        if not lv:
+        codes = C.STATE_ISO.get(th, [])
+        lv = [K.load(f"state_level_{SLUG[c]}") for c in codes]
+        od = [K.load(f"state_od_country_{SLUG[c]}") for c in codes]
+        if not codes or not all(lv) or not all(od):
+            K.log("state", th, "no history: nothing yet for", [SLUG[c] for c, x, y in zip(codes, lv, od) if not (x and y)])
+            K.write_csv(K.path(f"state_{th}"), {})
+            K.write_csv(K.path(f"state_od_{th}"), {})
             continue
         days_ = sorted(set.intersection(*[set(x) for x in lv]))      # only days when every country has been observed
-        K.save(f"state_{th}", {d: sum(x[d] for x in lv) for d in days_})
-        K.save(f"state_od_{th}", {d: sum(x.get(d, 0) for x in od if x) for d in days_})
+        K.write_csv(K.path(f"state_{th}"), {d: float(sum(x[d] for x in lv)) for d in days_})
+        K.write_csv(K.path(f"state_od_{th}"), {d: float(sum(x.get(d, 0) for x in od)) for d in days_})
 
 
 # ---------------------------------------------------------------- Taiwan PLA activity (MND daily bulletins)

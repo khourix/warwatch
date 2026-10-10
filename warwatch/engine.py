@@ -311,7 +311,7 @@ def compute_composite_score(metrics, weights, baseline_window=None):
     -> {"level", "score", "zc", "index", "imbalance", "worst", "confidence", "domains", "audit"}"""
     series = []
     for name, m in metrics.items():
-        sc = stats.score_series(m["points"], m.get("kind", "daily"), baseline_window, m.get("transform"))
+        sc = stats.score_series(m["points"], m.get("kind", "daily"), baseline_window, m.get("transform"), m.get("scale"))
         series.append({"id": name, "theatre": "x", "domain": m["domain"], "direction": m.get("direction", "up"), "lag": m.get("lag", False),
                        "kind": m.get("kind", "daily"), "points": m["points"], "score": sc})
     res, audit = theatre_composite(series, "x", weights)

@@ -626,19 +626,21 @@ const dot = l => `<span class="dot" style="--c:${LEVEL[l]}"></span>`;
 $('#zhome').innerHTML = ic('home', 's');
 
 /* ------------------------------------------------------------ numbers that lead */
-/* The 30-day chance leads wherever the model gives one; signal pressure (the older 0-100 composite) is one click away.
-   Settings can switch the lead number back to signal pressure. */
+/* The 30-day chance leads wherever the model gives one and the model passed its release checks; signal pressure
+   (the 0-100 composite) is one click away. While the model runs in shadow mode the levels come from signal pressure,
+   so signal pressure leads too, and the chance is shown grey as not validated. Settings can switch the lead number. */
 const hasP = t => D.theatres[t] && D.theatres[t].p != null;
+const leadP = () => pref.lead === 'p' && !!PM;
 function lead(t){
   const th = D.theatres[t];
-  if (pref.lead === 'p' && th.p != null) return {txt: pct(th.p), v: th.p, unit: '30 days'};
+  if (leadP() && th.p != null) return {txt: pct(th.p), v: th.p, unit: '30 days'};
   return {txt: fs(th.score), v: th.score == null ? -1 : th.score / 1000, unit: '/100'};
 }
 function regionTop(r){ return r.kids.slice().sort((a, b) => RANKL[D.theatres[b].level] - RANKL[D.theatres[a].level] || lead(b).v - lead(a).v)[0]; }
 function regionLevel(r){ return D.theatres[regionTop(r)].level; }
 const RANK = THEATRES.slice().sort((a, b) => RANKL[D.theatres[b].level] - RANKL[D.theatres[a].level] || lead(b).v - lead(a).v);
 function changeTxt(t, cls){
-  const c = D.theatres[t].pd; if (!c || pref.lead !== 'p') return `<span class="num" style="color:var(--dim)" data-tip="No earlier day in the forecast record yet">–</span>`;
+  const c = D.theatres[t].pd; if (!c || !leadP()) return `<span class="num" style="color:var(--dim)" data-tip="No earlier day in the forecast record yet">–</span>`;
   const [d, n] = c, up = d > 0.0005, dn = d < -0.0005;
   return `<span class="num ${up ? 'up' : dn ? 'dn' : ''} ${cls || ''}" ${up || dn ? '' : 'style="color:var(--dim)"'} data-tip="Change in the 30-day chance over ${n} day${n === 1 ? '' : 's'}, in percentage points">${up ? '▲' : dn ? '▼' : ''}${Math.abs(100 * d).toFixed(1)}</span>`;
 }
@@ -718,11 +720,11 @@ function renderSB(){
   const item = (v, icon, label, extra) => `<button class="ni ${R.v === v ? 'on' : ''}" data-nav="${v}" data-sbtip="${esc(label)}">${ic(icon)}<span class="tx">${label}</span>${extra || ''}</button>`;
   let h = `<div class="brand" data-nav="overview" title="WarWatch"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="#5ad1f0" stroke-width="1.4" opacity=".55"/><circle cx="12" cy="12" r="5" fill="none" stroke="#5ad1f0" stroke-width="1.4" opacity=".8"/><path d="M12 12L19 5" stroke="#5ad1f0" stroke-width="1.6" stroke-linecap="round"/><circle cx="16.6" cy="8.6" r="1.8" fill="#7ef0c0"/></svg><b>WAR<span>WATCH</span></b></div><nav id="sbnav">`;
   h += item('overview', 'globe', 'World overview');
-  h += `<div class="grp">${pref.lead === 'p' && PM ? 'Theatres · 30-day chance' : 'Theatres · signal pressure'}</div>`;
+  h += `<div class="grp">${leadP() ? 'Theatres · 30-day chance' : 'Theatres · signal pressure'}</div>`;
   REG.forEach(r => {
     const top = regionTop(r), lv = regionLevel(r), isOpen = cur === r, multi = r.kids.length > 1;
     const target = multi ? 'region/' + r.id : r.kids[0];
-    h += `<button class="ni ${isOpen ? 'on' : ''}" data-nav="${target}" data-sbtip="${esc(r.name)} · ${esc(lead(top).txt)}${pref.lead === 'p' && hasP(top) ? ' in 30 days' : ''} · ${esc(lv)}"><span class="code" style="--c:${LEVEL[lv]}">${CODE[r.id] || esc(r.name.slice(0, 3).toUpperCase())}</span><span class="tx">${esc(r.name)}</span><span class="sc">${esc(lead(top).txt)}</span></button>`;
+    h += `<button class="ni ${isOpen ? 'on' : ''}" data-nav="${target}" data-sbtip="${esc(r.name)} · ${esc(lead(top).txt)}${leadP() && hasP(top) ? ' in 30 days' : ''} · ${esc(lv)}"><span class="code" style="--c:${LEVEL[lv]}">${CODE[r.id] || esc(r.name.slice(0, 3).toUpperCase())}</span><span class="tx">${esc(r.name)}</span><span class="sc">${esc(lead(top).txt)}</span></button>`;
     if (isOpen && multi && open) h += `<div class="kids">` + r.kids.map(k => `<button class="ni ${R.id === k ? 'on' : ''}" data-nav="${k}">${dot(D.theatres[k].level)}<span class="tx">${esc(D.theatres[k].name)}</span><span class="sc">${esc(lead(k).txt)}</span></button>`).join('') + `</div>`;
   });
   const g = D.theatres.global;
@@ -1222,10 +1224,10 @@ function showHover(key){
   const t = p.th, th = D.theatres[t], r = p.region || regOf[t], kids = r && r.kids.length > 1 ? r.kids : null, l = lead(t);
   const target = p.region && kids ? 'region/' + r.id : t;
   let h = `<div class="top"><h3>${esc(p.region ? r.name : th.name)}</h3>${lvPill(th.level)}</div>`;
-  h += `<div class="big"><b style="color:${LEVEL[th.level]}">${esc(l.txt)}</b><small>${pref.lead === 'p' && th.p != null ? `chance in 30 days${p.region && kids ? ', ' + esc(th.name) : ''} · range ${pct(th.plo)} to ${pct(th.phi)}` : 'signal pressure, 0 to 100'}</small></div>`;
+  h += `<div class="big"><b style="color:${LEVEL[th.level]}">${esc(l.txt)}</b><small>${leadP() && th.p != null ? `chance in 30 days${p.region && kids ? ', ' + esc(th.name) : ''} · range ${pct(th.plo)} to ${pct(th.phi)}` : 'signal pressure, 0 to 100'}</small></div>`;
   h += `<p>${summaryLine(t)}</p>`;
-  h += `<div class="sh">What pushes ${esc(th.name)} up ${inf('The signal families that add most to the 30-day chance. A longer bar adds more.')}</div>${drvBars(t, 3)}`;
-  if (kids) h += `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">${pref.lead === 'p' ? '30 days' : 'Pressure'}</span><span class="h r">Change</span>${kids.map(k => `<span>${dot(D.theatres[k].level)} ${esc(thName(k))}</span><b class="num r">${esc(lead(k).txt)}</b><span class="r">${changeTxt(k)}</span>`).join('')}</div>`;
+  h += `<div class="sh">What pushes ${esc(th.name)} up ${inf(PM ? 'The signal families that add most to the 30-day chance. A longer bar adds more.' : 'The signal families that add most to the model\'s 30-day chance. The model has not passed its release checks, so this is for reference only. A longer bar adds more.')}</div>${drvBars(t, 3)}`;
+  if (kids) h += `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">${leadP() ? '30 days' : 'Pressure'}</span><span class="h r">Change</span>${kids.map(k => `<span>${dot(D.theatres[k].level)} ${esc(thName(k))}</span><b class="num r">${esc(lead(k).txt)}</b><span class="r">${changeTxt(k)}</span>`).join('')}</div>`;
   h += `<div class="row" style="justify-content:space-between;margin-top:6px"><span class="hint">Data coverage ${Math.round((1 - (th.miss || 0)) * 100)}% · confidence ${esc(String(th.confl || '').toLowerCase())}</span><button class="btn pri" data-nav="${target}">Open ${esc(p.region && kids ? r.name : th.name)} ${ic('chev', 's')}</button></div>`;
   const c = $('#hcard'); c.innerHTML = h; c.style.display = 'block';
   const [cw, ch] = clientSize(), w = c.offsetWidth, hh = c.offsetHeight, b = p.box;
@@ -1249,8 +1251,8 @@ function renderDock(){
   const mks = D.markets.slice().sort((a, b) => (b.vol || 0) - (a.vol || 0));
   const top = Math.max(0.12, ...THEATRES.map(t => D.theatres[t].p || 0));
   const tog = `<button class="dtog" data-dock="1" aria-label="${min ? 'Show the panels' : 'Hide the panels'}" data-tip="${min ? 'Show the panels' : 'Hide the panels'}">${ic(min ? 'chevu' : 'chevd', 's')}</button>`;
-  d.innerHTML = `<div class="dk"><div class="dh">Theatres, highest first ${inf(pref.lead === 'p' ? 'The chance of a qualifying event in the next 30 days, from the fitted model. Change is in percentage points over the last 7 days.' : 'Signal pressure, 0 to 100. 50 is the Watch line and 90 is the Critical line.')}<small>${pref.lead === 'p' ? '30 days · change' : 'pressure'}</small>${tog}</div><div class="dc">${RANK.map(t => { const th = D.theatres[t], l = lead(t);
-      return `<div class="tr" data-th="${t}"><span class="n">${dot(th.level)}${esc(th.name)}<em>${esc(regOf[t] ? regOf[t].name : '')}</em></span><b class="num" style="text-align:right;color:${LEVEL[th.level]}">${esc(l.txt)}</b><span style="text-align:right;font-size:11.5px">${changeTxt(t)}</span><span class="bar6"><i style="width:${Math.min(100, (pref.lead === 'p' && th.p != null ? th.p / top : (th.score || 0) / 100) * 100)}%;background:${LEVEL[th.level]}"></i></span></div>`; }).join('')}</div></div>
+  d.innerHTML = `<div class="dk"><div class="dh">Theatres, highest first ${inf(leadP() ? 'The chance of a qualifying event in the next 30 days, from the fitted model. Change is in percentage points over the last 7 days.' : 'Signal pressure, 0 to 100. 50 is the Watch line and 90 is the Critical line.')}<small>${leadP() ? '30 days · change' : 'pressure'}</small>${tog}</div><div class="dc">${RANK.map(t => { const th = D.theatres[t], l = lead(t);
+      return `<div class="tr" data-th="${t}"><span class="n">${dot(th.level)}${esc(th.name)}<em>${esc(regOf[t] ? regOf[t].name : '')}</em></span><b class="num" style="text-align:right;color:${LEVEL[th.level]}">${esc(l.txt)}</b><span style="text-align:right;font-size:11.5px">${changeTxt(t)}</span><span class="bar6"><i style="width:${Math.min(100, (leadP() && th.p != null ? th.p / top : (th.score || 0) / 100) * 100)}%;background:${LEVEL[th.level]}"></i></span></div>`; }).join('')}</div></div>
     <div class="dk"><div class="dh">Biggest movers ${inf('Signals furthest from their own normal level, in standard deviations (SD). 2 SD or more is unusual.')}<small>SD from normal</small>${tog}</div><div class="dc">${movers.map(s => `<div class="mv" data-id="${esc(s.id)}"><span class="n">${esc(shortL(s.l))}<small>${esc(thName(s.t))} · ${GN[s.d]}</small></span><span>${spark(s.pts && s.pts.slice(-30), zcol(s.z), 54, 18)}</span><span class="sdv" style="color:${zcol(s.z)}">${fmtz(s.z)}</span></div>`).join('') || '<div class="empty">No signal has a score yet.</div>'}</div></div>
     <div class="dk"><div class="dh">Prediction markets ${inf('What traders with money at stake think. Shown for context. Not part of the score.')}<small>odds now</small>${tog}</div><div class="dc">${mks.map(m => `<div class="mv" data-mi="${D.markets.indexOf(m)}"><span class="n">${esc(m.q)}<small>${esc(m.src)} · ${m.theatre ? esc(thName(m.theatre)) : 'Global'}${m.end ? ' · ends ' + esc(m.end) : ''}</small></span><span>${spark(m.h, '#58a6ff', 54, 18)}</span><span class="sdv">${Math.round(m.p * 100)}%</span></div>`).join('') || '<div class="empty">No open war or military markets were found.</div>'}${D.pizza && D.pizza[0] != null ? `<div class="hint" style="padding:6px 6px 0">Pentagon pizza index: <b style="color:var(--ink)">${Math.round(D.pizza[0])}</b>/100, ${D.pizza[1]} active spike${D.pizza[1] === 1 ? '' : 's'}. A weak signal.</div>` : ''}</div></div>`;
   d.classList.add('on'); d.classList.toggle('min', min);
@@ -1276,14 +1278,14 @@ D.order.forEach(t => {
 });
 function steSummary(t){
   const th = D.theatres[t], out = [];
-  if (th.p != null) {
+  if (th.p != null && PM) {
     out.push(`The chance of a qualifying event here in the next 30 days is <b>${pct(th.p)}</b>.`);
     out.push({Normal: `This is below the Watch line of ${pct(BANDS[0])}.`, Watch: 'This is up to two times the usual theatre level.', Elevated: 'This is two to five times the usual theatre level.', Critical: `This is ${pct(BANDS[2])} or more.`}[th.level] || '');
     const up = (th.why || []).slice(0, 2).map(w => esc(lc(shortL(w[0]))));
     if (up.length) out.push(`The ${up.length > 1 ? 'two largest causes are' : 'largest cause is'} ${up.join(' and ')}.`);
   } else out.push(`Signal pressure is <b>${fs(th.score)}</b> of 100. ${MEANING_S[th.level] || ''}`);
   out.push(th.firing.length ? `${th.firing.length} of ${th.scorable} signal groups are unusual: ${th.firing.map(d => GN[d]).join(', ')}.` : 'No signal group is unusual now.');
-  if (th.p != null && th.lvc && th.lvc !== th.level) out.push(`On signal pressure alone the level is ${esc(th.lvc)}. Click Pressure to see why the two differ.`);
+  if (th.p != null && PM && th.lvc && th.lvc !== th.level) out.push(`On signal pressure alone the level is ${esc(th.lvc)}. Click Pressure to see why the two differ.`);
   if (th.basis === 'lagging only') out.push('<b style="color:var(--elevated)">Only late data is unusual. It shows a build-up that already started. It is not an early warning.</b>');
   if (th.aft) out.push('An event occurred here in the last 30 days. The model was not tested on this condition, so use the value with care.');
   return out.filter(Boolean).join(' ');
@@ -1298,7 +1300,8 @@ function renderPanel(){
   const t = R.id, th = D.theatres[t], m = META[t];
   h += `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}${r ? `<a data-nav="${r.kids.length > 1 ? 'region/' + r.id : r.kids[0]}">${esc(r.name)}</a>${ic('chev', 's')}` : ''}<span>${esc(thName(t))}</span></div><h2>${esc(thName(t))} ${lvPill(th.level)}</h2><p>${steSummary(t)}</p></div>`;
   const cov = Math.round((1 - (th.miss || 0)) * 100);
-  const k1 = th.p != null ? `<button class="kp" data-pop="kp-p"><small>30-day chance ${inf('The chance of a qualifying event in the next 30 days. Click to see what drives it.')}</small><b style="color:${LEVEL[th.level]}">${pct(th.p)}</b><span>${pct(th.plo)} to ${pct(th.phi)}</span></button>`
+  const k1 = th.p != null && !PM ? `<button class="kp" data-pop="kp-p"><small>30-day chance ${inf('The model\'s chance of a qualifying event in the next 30 days. It has not passed its release checks, so it does not set the level and is shown for reference only. Click to see what drives it.')}</small><b style="color:var(--dim)">${pct(th.p)}</b><span>not validated</span></button>`
+    : th.p != null ? `<button class="kp" data-pop="kp-p"><small>30-day chance ${inf('The chance of a qualifying event in the next 30 days. Click to see what drives it.')}</small><b style="color:${LEVEL[th.level]}">${pct(th.p)}</b><span>${pct(th.plo)} to ${pct(th.phi)}</span></button>`
     : `<div class="kp"><small>30-day chance ${inf('The model gives no chance for this view. It covers the 13 theatres only.')}</small><b style="color:var(--dim)">n/a</b><span>no model here</span></div>`;
   h += `<div class="kpis">${k1}
     <button class="kp" data-pop="kp-s"><small>Pressure ${inf('How unusual the signals are, all together, from 0 to 100. 50 is the Watch line and 90 is the Critical line. It is not a chance. Click for details.')}</small><b>${fs(th.score)}<sub>/100</sub></b><span>${th.score == null ? 'no score' : th.score >= 90 ? 'above Critical' : th.score >= 50 ? 'above Watch' : 'below Watch'}</span></button>
@@ -1328,7 +1331,7 @@ function driversBody(t){
   const wf = waterfall(t);
   if (wf) {
     const mx = Math.max(...wf.steps.filter(s => !s.rest).map(s => s.d), .0001);
-    h += `<div class="sh">What moves the chance ${inf('Each bar shows how many percentage points one signal family adds to the 30-day chance. Click a row to see the signal.')}<small>points added</small></div>`;
+    h += `<div class="sh">What moves the chance ${inf('Each bar shows how many percentage points one signal family adds to the 30-day chance. Click a row to see the signal.')}<small>${PM ? 'points added' : 'model not validated'}</small></div>`;
     h += wf.steps.filter(s => !s.rest).map(s => { const sid = familySeries(t, s.n); return `<div class="wf" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''}><span title="${esc(s.n)}">${esc(shortL(s.n))}</span><span class="bar"><i style="width:${Math.max(2, s.d / mx * 100)}%;background:var(--accent)"></i></span><b style="color:var(--mute)">${ppt(s.d)}</b></div>`; }).join('') || '<p class="hint">No signal family pushes the chance up now.</p>';
     h += `<p class="hint" style="margin:6px 0 0">The chance starts from the long-run rate here, ${pct(wf.base)}. Click "30-day chance" above for every step.</p>`;
   } else if (th.why && th.why.length) h += `<div class="sh">What moves the chance</div>` + drvBars(t, 6);
@@ -1391,8 +1394,8 @@ function aboutBody(t){
 }
 function regionBody(r){
   const kids = r.kids.slice().sort((a, b) => lead(b).v - lead(a).v), top = kids[0], lv = regionLevel(r);
-  let h = `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}<span>${esc(r.name)}</span></div><h2>${esc(r.name)} ${lvPill(lv)}</h2><p>${hasP(top) && pref.lead === 'p' ? `${esc(thName(top))} has the highest chance in this region: <b>${pct(D.theatres[top].p)}</b> in the next 30 days.` : `${esc(thName(top))} has the highest signal pressure in this region: <b>${fs(D.theatres[top].score)}</b>.`} The region level is the highest level of its ${r.kids.length} theatres. Open a tab for the details of one theatre.</p></div><div class="pbody">`;
-  h += `<table class="cmp"><thead><tr><th class="c1">Theatre</th><th class="r cn">${pref.lead === 'p' ? '30 days' : 'Pressure'}</th><th class="r cn">Change</th><th>Main cause</th><th class="r cv" data-tip="Share of signals with a score now">Coverage</th></tr></thead><tbody>` +
+  let h = `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}<span>${esc(r.name)}</span></div><h2>${esc(r.name)} ${lvPill(lv)}</h2><p>${hasP(top) && leadP() ? `${esc(thName(top))} has the highest chance in this region: <b>${pct(D.theatres[top].p)}</b> in the next 30 days.` : `${esc(thName(top))} has the highest signal pressure in this region: <b>${fs(D.theatres[top].score)}</b>.`} The region level is the highest level of its ${r.kids.length} theatres. Open a tab for the details of one theatre.</p></div><div class="pbody">`;
+  h += `<table class="cmp"><thead><tr><th class="c1">Theatre</th><th class="r cn">${leadP() ? '30 days' : 'Pressure'}</th><th class="r cn">Change</th><th>Main cause</th><th class="r cv" data-tip="Share of signals with a score now">Coverage</th></tr></thead><tbody>` +
     kids.map(k => { const th = D.theatres[k]; return `<tr data-go="${k}"><td>${dot(th.level)} <b style="font-weight:600">${esc(thName(k))}</b></td><td class="r num" style="color:${LEVEL[th.level]};font-weight:600">${esc(lead(k).txt)}</td><td class="r">${changeTxt(k)}</td><td class="cause" title="${esc(th.why && th.why[0] ? th.why[0][0] : '')}">${esc(th.why && th.why[0] ? shortL(th.why[0][0]) : '–')}</td><td class="r num">${Math.round((1 - (th.miss || 0)) * 100)}%</td></tr>`; }).join('') + `</tbody></table>`;
   h += `<div class="sh" style="margin-top:16px">Signal groups across the region ${inf('Distance from normal in standard deviations (SD). 2 SD or more is unusual.')}<small>SD from normal</small></div><table class="cmp"><thead><tr><th>Group</th>${kids.map(k => `<th class="r">${esc(thName(k))}</th>`).join('')}</tr></thead><tbody>` +
     D.domains.map(d => `<tr><td data-tip="${esc(d.help)}">${GN[d.id]}</td>${kids.map(k => { const z = D.theatres[k].doms[d.id].z; return `<td class="r num" style="color:${zcol(z)};background:color-mix(in oklab,${zcol(z)} ${z == null ? 0 : Math.min(32, Math.max(0, z) * 10)}%,transparent)">${fmtz(z)}</td>`; }).join('')}</tr>`).join('') + `</tbody></table>`;
@@ -1658,7 +1661,7 @@ function renderSignals(first){
   if (!rows.length) body = `<tr><td colspan="${cols}" class="empty">No signal matches. <a data-sfreset="1">Clear all filters</a>.</td></tr>`;
   else if (SF.group === 'none') body = rows.map(tr).join('');
   else order.forEach(g => { const list = groups[g], closed = SF.closed.includes(g), mx = Math.max(...list.map(s => s.z ?? -99));
-    body += `<tr class="g" data-grp="${esc(g)}"><td colspan="${cols}">${ic(closed ? 'chev' : 'chevd', 's')} ${esc(groupName(g))}<small>${list.length} signal${list.length === 1 ? '' : 's'}${mx > -99 ? ' · highest ' + fmtz(mx) + ' SD' : ''}${SF.group === 'th' && hasP(g) ? ' · 30-day chance ' + pct(D.theatres[g].p) : ''}</small></td></tr>`;
+    body += `<tr class="g" data-grp="${esc(g)}"><td colspan="${cols}">${ic(closed ? 'chev' : 'chevd', 's')} ${esc(groupName(g))}<small>${list.length} signal${list.length === 1 ? '' : 's'}${mx > -99 ? ' · highest ' + fmtz(mx) + ' SD' : ''}${SF.group === 'th' && hasP(g) && PM ? ' · 30-day chance ' + pct(D.theatres[g].p) : ''}</small></td></tr>`;
     if (!closed) body += list.map(tr).join(''); });
   const sel = SF.sel && SERIES[SF.sel];
   P.innerHTML = `<div class="toolbar"><label class="inp" style="flex:0 1 300px;min-width:170px">${ic('search', 's')}<input id="sq" type="search" placeholder="Search name, source or theatre" value="${esc(SF.q)}" aria-label="Search signals"></label>
@@ -1761,7 +1764,7 @@ function renderSettings(){
   if (sub === 'display') {
     const seg = (k, opts, cur) => `<span class="seg">${opts.map(([v, n]) => `<button class="${String(cur) === String(v) ? 'on' : ''}" data-set="${k}" data-v="${v}">${n}</button>`).join('')}</span>`;
     const row = (n, ctl, hint) => `<div class="setrow"><span>${n}</span>${ctl}<span class="hint">${hint}</span></div>`;
-    body = `<div class="setscroll">${row('Main number', seg('lead', [['p', '30-day chance'], ['score', 'Signal pressure']], pref.lead), 'The number on the map, in the sidebar and in lists.')}
+    body = `<div class="setscroll">${row('Main number', seg('lead', [['p', '30-day chance'], ['score', 'Signal pressure']], pref.lead), PM ? 'The number on the map, in the sidebar and in lists.' : 'The number on the map, in the sidebar and in lists. The 30-day chance leads only once the model passes its release checks; until then signal pressure leads.')}
       ${row('Map label size', seg('lbl', [[0.9, 'Small'], [1, 'Medium'], [1.25, 'Large']], pref.lbl), 'Country, city and ship names on the map.')}
       ${row('Time window', seg('win', [[24, '24 h'], [48, '48 h'], [168, '7 days']], pref.win), 'Fires and maritime incidents on the map.')}
       ${row('Motion', seg('rm', [['0', 'On'], ['1', 'Reduced']], document.body.classList.contains('rm') ? '1' : '0'), 'Pulses and map animation.')}
