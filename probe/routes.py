@@ -258,8 +258,74 @@ def round4():
     return out
 
 
+def post(url, data, enc="utf-8"):
+    import urllib.request
+    req = urllib.request.Request(url, data=urllib.parse.urlencode(data).encode(), headers={"User-Agent": P.UA, "Content-Type": "application/x-www-form-urlencoded",
+                                                                                          "Referer": "https://www1.kaiho.mlit.go.jp/TUHO/keiho/navarea11.html"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return r.read(3_000_000).decode(enc, "replace")
+
+
+def jcg_cgi():
+    out = {}
+    cgi = "https://www1.kaiho.mlit.go.jp/TUHO/keiho/cgi/"
+    for lang in ("EN", "JP"):
+        try:
+            x = post(cgi + "warnings.cgi", {"YEAR": "2026", "TYPE": "NAVAREA11", "LANG": lang})
+            out["list " + lang] = {"bytes": len(x), "head": x[:2500]}
+        except Exception as e:  # noqa: BLE001
+            out["list " + lang] = str(e)[:200]
+    tanas = re.findall(r"<tana>(.*?)</tana>", out.get("list EN", {}).get("head", "") if isinstance(out.get("list EN"), dict) else "")
+    if tanas:
+        try:
+            t = post(cgi + "disp_warnings.cgi", {"TYPE": "NAVAREA11", "TANA": ":".join(tanas[:5]) + ":", "LANG": "EN"})
+            out["text"] = {"bytes": len(t), "plain": re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", t))[:3000]}
+        except Exception as e:  # noqa: BLE001
+            out["text"] = str(e)[:200]
+    for page in ("navtex.html", "japan_nw.html", "local_nw.html", "backnumber.html"):
+        try:
+            t = fetch_text("https://www1.kaiho.mlit.go.jp/TUHO/keiho/" + page, "shift_jis")
+            out[page] = re.findall(r"var (?:type|vtype|cgidir) = \"([^\"]*)\"", t) + [len(t)]
+        except Exception as e:  # noqa: BLE001
+            out[page] = str(e)[:120]
+    return out
+
+
+def msa_more():
+    out = {}
+    for name, url in (("wap", "https://www.msa.gov.cn/msacncms_wap/index.jhtml"),
+                      ("cdx outter", cdx("www.msa.gov.cn/page/outter*", limit=200)),
+                      ("cdx wap", cdx("www.msa.gov.cn/msacncms_wap*", limit=200)),
+                      ("cdx hxjg", cdx("msa.gov.cn", limit=200, matchType="domain", filter="original:.*(hxjg|hxtg|navigat|warning|jinggao).*"))):
+        try:
+            t = fetch_text(url)
+            hits = [re.sub(r"\s+", " ", t[max(0, m.start() - 150): m.start() + 200]) for m in re.finditer("航行警告|航行通告|航警", t)][:15]
+            out[name] = {"bytes": len(t), "hits": hits, "head": t[:3000] if "cdx" in name else ""}
+        except Exception as e:  # noqa: BLE001
+            out[name] = str(e)[:200]
+    return out
+
+
+def customs_more():
+    out = {}
+    js = fetch_text("http://english.customs.gov.cn/Scripts/statistic.js")
+    out["statistic.js"] = js[:4000]
+    return out
+
+
 def main(path):
     res = []
+    if os.environ.get("ROUTES_ROUND") == "5":
+        for name, fn in (("jcg cgi", jcg_cgi), ("msa more", msa_more), ("customs more", customs_more)):
+            try:
+                v = fn()
+            except Exception as e:  # noqa: BLE001
+                v = {"error": f"{type(e).__name__}: {e}"[:300]}
+            res.append({"name": name, "result": v})
+            print(name, json.dumps(v, ensure_ascii=False)[:500], flush=True)
+        with open(path, "w") as f:
+            json.dump(res, f, indent=1, ensure_ascii=False)
+        return
     if os.environ.get("ROUTES_ROUND") == "4":
         with open(path, "w") as f:
             json.dump(round4(), f, indent=1, ensure_ascii=False)
