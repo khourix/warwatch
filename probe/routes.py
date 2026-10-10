@@ -384,8 +384,52 @@ def round8():
     return out
 
 
+def round9():
+    import urllib.request
+    out = {}
+    api = "https://www.msa.gov.cn/msacncms_wap/cmsarticle/selectPageByChannelId.jhtml"
+    hdr = {"User-Agent": P.UA, "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With": "XMLHttpRequest",
+           "Referer": "https://www.msa.gov.cn/msacncms_wap/pages/info_warn.jhtml?channelId=9c219298b27f460e995a99401b3ff6af"}
+    try:
+        req = urllib.request.Request(api, data=urllib.parse.urlencode({"channelId": "9c219298b27f460e995a99401b3ff6af", "pageNum": 1, "count": 30}).encode(), headers=hdr)
+        with urllib.request.urlopen(req, timeout=60) as r:
+            d = json.loads(r.read().decode("utf-8"))
+        lst = d.get("list") or []
+        out["msa list"] = {"keys": sorted(d)[:20], "total": d.get("total"), "pages": d.get("pages"), "n": len(lst),
+                           "items": [[x.get("articleId"), x.get("articleTitle"), x.get("articlePublishTime")] for x in lst[:30]],
+                           "item keys": sorted(lst[0]) if lst else []}
+        if lst:
+            a = lst[0]
+            for u in (f"https://www.msa.gov.cn/msacncms_wap/cmsarticle/getArticle.jhtml?articleId={a['articleId']}",
+                      f"https://www.msa.gov.cn/msacncms_wap/pages/content.jhtml?articleId={a['articleId']}&channelId=9c219298b27f460e995a99401b3ff6af",
+                      f"https://www.msa.gov.cn/html/xxgk/hxaq/hxjg/{a['articleId']}.html"):
+                try:
+                    t = fetch_text(u)
+                    out[u[-60:]] = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", re.sub(r"<script.*?</script>", "", t, flags=re.S)))[:2000]
+                except Exception as e:  # noqa: BLE001
+                    out[u[-60:]] = str(e)[:150]
+    except Exception as e:  # noqa: BLE001
+        out["msa list"] = f"{type(e).__name__}: {e}"[:300]
+    js = fetch_text("http://english.customs.gov.cn/Scripts/Global.js")
+    k = js.find("monthlysel")
+    out["customs Global.js"] = js[max(0, k - 800): k + 1500] if k >= 0 else js[:1500]
+    import extras
+    try:
+        ms = extras.fetch_jcg()
+        out["jcg parsed"] = {"n": len(ms), "sample": ms[:6]}
+    except Exception as e:  # noqa: BLE001
+        out["jcg parsed"] = str(e)[:200]
+    return out
+
+
 def main(path):
     res = []
+    if os.environ.get("ROUTES_ROUND") == "9":
+        v = round9()
+        print(json.dumps(v, ensure_ascii=False)[:800])
+        with open(path, "w") as f:
+            json.dump(v, f, indent=1, ensure_ascii=False)
+        return
     if os.environ.get("ROUTES_ROUND") == "8":
         v = round8()
         print(json.dumps(v, ensure_ascii=False)[:800])

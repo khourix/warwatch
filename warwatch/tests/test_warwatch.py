@@ -555,9 +555,15 @@ class TestOsint(unittest.TestCase):
         page = ("<html><body><pre>NAVAREA XI NO.26-0454 発表日時：2026年10月10日 03時 TSUNAMI INFORMATION. PACIFIC OCEAN. EARTHQUAKE IN 07-30.0N 080-48.0W."
                 "</pre><pre>NO.26-0430 発表日時：2026年09月28日 11時 KOREA, EAST COAST. GUNNERY EXERCISES 0000Z TO 0900Z DAILY 01 TO 31 OCT "
                 "IN AREA BOUNDED BY 37-40.0N 129-10.0E, 37-40.0N 129-40.0E.</pre></body></html>")
-        out = extras.parse_jcg_texts("JAPANNW", page)
+        out = extras.parse_jcg_texts("NAVAREA11", page)
         self.assertEqual(len(out), 1)                     # the tsunami notice is not a hazard warning
-        self.assertEqual((out[0]["id"], out[0]["issued"], out[0]["lat"]), ("JAPANNW-0430/26", "2026-09-28", 37.67))
+        self.assertEqual((out[0]["id"], out[0]["issued"], out[0]["lat"]), ("NAVAREA11-0430/26", "2026-09-28", 37.67))
+        jp = (" 日本航行警報 番号：26-3998 発表日時：2026年10月10日 20時 恵山岬東南東、 射撃、１０月１５日（予備１６日）０８００−２４００、 "
+              "４１−４３．０Ｎ １４１−２９．４Ｅを中心とする半径５海里の円内。 番号：26-3996 発表日時：2026年10月10日 03時 津波情報、 太平洋、０７．５Ｎ ０８０．８Ｗ。"
+              " 番号：26-3993 発表日時：2026年10月09日 20時 ★ 朝鮮半島南岸、済州島北西、 射撃、３４−２０−３０Ｎ １２４−３０−００Ｅ で囲まれる海面。")
+        out = extras.parse_jcg_texts("JAPANNW", jp)
+        self.assertEqual([(o["id"], o["issued"], o["lat"], o["lon"]) for o in out],
+                         [("JAPANNW-3998/26", "2026-10-10", 41.72, 141.49), ("JAPANNW-3993/26", "2026-10-09", 34.34, 124.5)])
 
     def test_oref_mirror_waves(self):
         import osint

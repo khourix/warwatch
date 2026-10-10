@@ -22,8 +22,8 @@ jobs:
       - name: Other routes to blocked sites; Tzeva Adom and Jetstream live tests
         env:
           COMTRADE_API_KEY: ${{ secrets.COMTRADE_API_KEY }}
-          ROUTES_ROUND: "8"
-        run: python3 probe/routes.py probe/routes8.json
+          ROUTES_ROUND: "9"
+        run: python3 probe/routes.py probe/routes9.json
       - name: Israel alerts back-fill and a live fetch of the new series
         if: false
         env:

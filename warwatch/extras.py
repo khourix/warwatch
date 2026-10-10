@@ -137,20 +137,26 @@ def nga_series(theatre, today=None):
 JCG_CGI = "https://www1.kaiho.mlit.go.jp/TUHO/keiho/cgi/"
 JCG_TYPES = ("NAVAREA11", "JAPANNW")
 JCG_COVERED_FROM = "2026-10-10"   # first fetch: the lists show warnings in force, so ones issued and cancelled before this are missing
-JCG_MSG = re.compile(r"NO\.\s*(\d{2})-(\d{3,4})\s*発表日時：\s*(\d{4})年(\d{1,2})月(\d{1,2})日")
+JCG_MSG = re.compile(r"(?:NO\.|番号:)\s*(\d{2})-(\d{3,4})\s*発表日時:\s*(\d{4})年(\d{1,2})月(\d{1,2})日")   # after NFKC folding
+JCG_HAZARD = re.compile(r"射撃|ミサイル|ロケット|訓練|爆撃|演習|機雷")   # Japanese-language warnings: firing, missile, rocket, exercise, bombing, mines
+DMS = re.compile(r"(\d{1,3})-(\d{2})-(\d{2}(?:\.\d+)?)([NSEW])")
 
 
 def parse_jcg_texts(kind, text):
-    """disp_warnings.cgi page (warnings one after another, each 'NO.26-0454 発表日時：2026年10月10日 03時 <English text>') -> hazard markers
+    """disp_warnings.cgi page (warnings one after another, each 'NO.26-0454 発表日時：2026年10月10日 03時 <English text>', or for Japan's own
+    warnings '番号：26-3998 発表日時：... <Japanese text with full-width digits>') -> hazard markers
     [{id, lat, lon, text, issued}] like parse_nga's."""
-    plain = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", text))
+    import unicodedata
+    plain = unicodedata.normalize("NFKC", re.sub(r"<[^>]+>", " ", text)).replace("\u2212", "-").replace("\u2010", "-")
+    plain = re.sub(r"\s+", " ", plain)
+    plain = DMS.sub(lambda m: f"{m.group(1)}-{int(m.group(2)) + float(m.group(3)) / 60:05.2f}{m.group(4)}", plain)   # 34-20-00N -> 34-20.00N
     heads = list(JCG_MSG.finditer(plain))
     out = []
     for i, m in enumerate(heads):
         body = plain[m.end(): heads[i + 1].start() if i + 1 < len(heads) else len(plain)]
         body = re.sub(r"^\s*\d{1,2}時\s*", "", body)
         pos = parse_coords(body)
-        if not HAZARD.search(body) or not pos:
+        if not (HAZARD.search(body) or JCG_HAZARD.search(body)) or not pos:
             continue
         out.append({"id": f"{kind}-{m.group(2)}/{m.group(1)}", "lat": round(pos[0][0], 2), "lon": round(pos[0][1], 2), "text": body.strip()[:160],
                     "issued": f"{int(m.group(3)):04d}-{int(m.group(4)):02d}-{int(m.group(5)):02d}"})
