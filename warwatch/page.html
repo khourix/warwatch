@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="WarWatch">
 <meta name="color-scheme" content="dark">
 <meta name="darkreader-lock">
 <title>WarWatch: war early-warning dashboard</title>
@@ -458,23 +462,117 @@ table.st td:last-child{text-align:right;font-weight:600}
 @media(max-height:820px){:root{--dh:176px}.thd{padding:10px 16px 8px}.thd p{margin-top:6px;font-size:12.5px}.kpis{padding-bottom:10px}}
 @media(max-height:740px){:root{--dh:150px}.kstrip .ks{padding:7px 10px}.ks b{font-size:19px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-@media(max-width:900px){
-  body{overflow:auto}
+#mbar,#scrim,#mhint{display:none}
+/* Phone layout: below 900 px wide, or a phone held sideways. Nothing in this block can match a laptop window,
+   and the script checks the same query (phone()) before it changes any behaviour. */
+@media(max-width:900px),(max-height:500px) and (pointer:coarse){
+  :root{--bb:calc(58px + env(safe-area-inset-bottom,0px))}
+  body{overflow:auto;padding-bottom:var(--bb)}
   #app{display:block;height:auto}
-  #sb,#sb.open{width:100%;flex-direction:row}
-  #sb .brand{border-bottom:0}
-  #sbnav{flex-direction:row;overflow-x:auto;padding:4px}
-  #sb .grp,#sb .kids,#sb .sbf,#sb .sc{display:none}
-  header#top{flex-wrap:wrap;height:auto;padding:8px 10px}
-  #search{width:100%}
-  main{display:block}
-  #mapwrap{height:60vh}
-  #panel{width:auto;border-left:0}
-  #dock.on{position:static;grid-template-columns:1fr;padding:10px}
   .page{overflow:visible}
-  .intel,.intel.sel,.set{grid-template-columns:1fr}
+  /* bottom tab bar replaces the sidebar */
+  #sb{display:none}
+  #mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;height:var(--bb);padding:0 max(4px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(4px,env(safe-area-inset-left,0px));background:var(--panel);border-top:1px solid var(--line)}
+  #mbar button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:var(--mute);position:relative}
+  #mbar button.on{color:var(--accent)}
+  #mbar .alarm{position:absolute;top:8px;left:calc(50% + 6px);width:7px;height:7px;border-radius:50%;background:var(--critical)}
+  /* one-row top bar that stays at the top */
+  header#top{position:sticky;top:0;height:52px;padding:0 max(8px,env(safe-area-inset-right,0px)) 0 max(12px,env(safe-area-inset-left,0px));gap:8px}
+  .ttl{flex:1;max-width:none}
+  .ttl small,.demo,#top>.sp{display:none}
+  .gti{height:44px;padding:0 8px;gap:6px}
+  .gti small,.gti .us,.gti>svg{display:none}
+  .gti b{font-size:15px}
+  .iconbtn{width:44px;height:44px}
+  #search{width:44px;height:44px}
+  #search .ic{left:15px;top:15px;z-index:1;pointer-events:none}
+  #search input{width:44px;height:44px;padding:0;color:transparent;font-size:16px;cursor:pointer}
+  #search input::placeholder{color:transparent}
+  #search kbd{display:none}
+  #search:focus-within{position:absolute;left:8px;right:8px;top:4px;width:auto;z-index:50}
+  #search:focus-within input{width:100%;padding:0 12px 0 38px;color:var(--ink)}
+  #search:focus-within input::placeholder{color:var(--dim)}
+  #results{position:fixed;left:8px;right:8px;top:54px;width:auto;max-height:calc(100svh - 62px - var(--bb))}
+  #results .r{min-height:44px}
+  /* map, then the ranked list under it */
+  main{display:block}
+  #mapwrap{height:48svh;min-height:280px}
+  #map{touch-action:pan-y}
+  #mhint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:12;background:rgba(10,11,13,.88);border:1px solid var(--line2);border-radius:10px;padding:10px 14px;font-size:14px;pointer-events:none;white-space:nowrap}
+  #mhint.on{display:block}
+  .rail{left:10px;top:10px}
+  .zoom{right:10px;bottom:10px}
+  .rail button,.zoom button{width:44px;height:44px}
+  #dock.on{position:static;display:grid;grid-template-columns:1fr;gap:10px;padding:10px 10px 14px}
+  #dock .dk{height:auto}
+  #dock .dc{overflow:visible}
+  #dock .tr,#dock .mv{min-height:44px;font-size:14px}
+  #panel{width:auto;border-left:0;border-top:1px solid var(--line)}
+  #card{position:fixed;left:0;right:0;top:auto;bottom:var(--bb);width:auto;max-height:60svh;border-radius:16px 16px 0 0;z-index:45}
+  #card .x{width:44px;height:44px;right:4px;top:2px}
+  /* pop-ups slide up from the bottom */
+  #scrim.on{display:block;position:fixed;inset:0;z-index:58;background:rgba(0,0,0,.55)}
+  #pop.sheet{left:0;right:0;top:auto;bottom:0;width:auto!important;max-height:82svh;border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom,0px);z-index:60}
+  #pop.sheet:before{content:"";flex:none;width:40px;height:4px;border-radius:2px;background:var(--line2);margin:8px auto 0}
+  #pop .nl,#pop .lrow,.mth{min-height:48px}
+  #pop .tabsm button{min-height:44px}
+  .mth{display:flex;align-items:center;gap:10px;width:100%;padding:0 16px;border-top:1px solid var(--line);font-size:14px;text-align:left}
+  .mth .sc{margin-left:auto;font:600 14px var(--mono)}
+  .mth.kid{min-height:44px;padding-left:36px;font-size:13.5px;color:var(--mute)}
+  /* theatre page */
+  .rtabs,.stabs{overflow-x:auto;scrollbar-width:none;position:sticky;top:52px;z-index:6;background:var(--panel)}
+  .rtabs~.stabs{top:96px}
+  .rtabs button,.stabs button{min-height:44px;flex:none}
+  .thd p{font-size:14px}
+  .drv span,.drow{white-space:normal}
+  .sig{min-height:52px}
+  .sig .t{font-size:13.5px}
+  .cmp td.cause,.cmp th:has(+ .cv){display:none}
+  /* signals and data health: cards instead of wide tables */
+  .intel,.intel.sel,.set{display:block}
+  .intel .facets{display:none;border:0;padding:0 0 10px}
+  .intel.mf .facets{display:block}
+  .facets label{min-height:44px}
+  .toolbar .inp{flex:1 1 100%!important;width:auto!important;height:44px}
+  .toolbar .chip{height:36px}
+  #pg-signals .tbl,.setb .tbl{overflow:visible}
+  #pg-signals table.t,#pg-signals tbody,.setb table.t,.setb tbody{display:block;width:100%}
+  #pg-signals thead,.setb thead{display:none}
+  #stbl tr[data-row],.setb tbody tr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:10px 12px;border-bottom:1px solid #202328}
+  #stbl tr[data-row] td,.setb tbody td{border:0;padding:0;width:auto!important;max-width:none!important}
+  #stbl td.n,.setb td.n{flex:1 1 100%;font-size:14px;white-space:normal}
+  #stbl td.n small{display:block;margin:2px 0 0}
+  #stbl tr[data-row] td:last-child{margin-left:auto}
+  .setb tbody td{white-space:normal}
+  #pg-signals tr.g,#pg-signals tr.more{display:block}
+  #pg-signals tr.g td{display:block;position:sticky;top:52px;padding:10px 12px}
+  tr.more td{display:block;padding:6px 12px 12px;border:0}
+  .setnav{flex-direction:row;overflow-x:auto;scrollbar-width:none;margin-bottom:10px}
+  .setnav button{flex:none;min-height:44px}
+  .setrow{grid-template-columns:1fr}
   .kstrip,.hs,.mk5{grid-template-columns:repeat(2,1fr)}
   .two{grid-template-columns:1fr}
+  /* detail view fills the screen */
+  #modal{padding:0}
+  #modal .box{border-radius:0;height:100%;padding:14px 16px 24px}
+  #modal .x{width:44px;height:44px;right:6px;top:4px}
+  /* thumb-sized controls, readable text, no zoom-on-focus */
+  .btn{min-height:40px}
+  .seg button{min-height:40px}
+  .info{position:relative}
+  .info:after{content:"";position:absolute;inset:-14px}
+  .inp input,.inp select,.tool input{font-size:16px}
+  .sh,.grp,.lgrp,.hint,.crumb,.ty,.chip b,.wt,.drow,.kp small,.kp>span,.ks small,.ks span,.mini .h,.cmp th,table.t th,.tr .n em,.mv .n small,.sig .s,.stabs b,.rtabs button small,.dom .nm small,.al small,.al time,.mk2 small,.nl small,.nl time,.lrow small,.rampl,.dk .dh small{font-size:12px}
+}
+@media(max-width:480px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .kp>span{white-space:normal}
+}
+/* phone held sideways: shorter bar, the map fills the rest of the height */
+@media(max-height:500px) and (pointer:coarse) and (orientation:landscape){
+  :root{--bb:calc(44px + env(safe-area-inset-bottom,0px))}
+  #mbar button span:not(.alarm){display:none}
+  #mapwrap{height:calc(100svh - 52px - var(--bb));min-height:0}
 }
 </style>
 </head>
@@ -514,6 +612,7 @@ table.st td:last-child{text-align:right;font-weight:600}
     <div id="card"></div>
     <div id="dock"></div>
     <div id="hcard"></div>
+    <div id="mhint">Use two fingers to move the map</div>
   </div>
   <aside id="panel"></aside>
 </main>
@@ -522,7 +621,8 @@ table.st td:last-child{text-align:right;font-weight:600}
 <section class="page" id="pg-settings"></section>
 </div></div>
 <div id="tip"></div><div id="sbtip"></div>
-<div id="pop" role="dialog"></div>
+<div id="scrim"></div><div id="pop" role="dialog"></div>
+<nav id="mbar" aria-label="Main"></nav>
 <div id="modal"><div class="box" id="mbox"></div></div>
 <script id="data" type="application/json">__DATA__</script>
 <script>
@@ -619,6 +719,10 @@ const ICON = {
   health:'<path d="M3 12h4l3-7 4 14 3-7h4"/>', book:'<path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM4 5v16"/>', gap:'<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>',
   eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', ext:'<path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/>'
 };
+/* The phone layout (bottom tab bar, sheets, touch gestures) uses the same query as the phone block in the CSS.
+   Every phone-only behaviour checks phone() first, so laptops keep the code paths they have today. */
+const PHONEQ = matchMedia('(max-width: 900px), (max-height: 500px) and (pointer: coarse)'), phone = () => PHONEQ.matches;
+const TOUCHQ = matchMedia('(hover: none)');
 const ic = (n, c) => `<svg class="ic ${c || ''}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
 const inf = t => `<i class="info" data-tip="${esc(t)}">i</i>`;
 const lvPill = l => `<span class="lv" style="--c:${LEVEL[l]}">${esc(String(l).toUpperCase())}</span>`;
@@ -699,7 +803,7 @@ function wideView(){ return R.v === 'overview' || (R.v === 'theatre' && R.id ===
 function HL(){ return R.v === 'region' ? REGBY[R.id].kids : R.v === 'theatre' && R.id !== 'global' ? [R.id] : []; }
 function render(first){
   closePop(); closeCard(); hideHover(); tipHide();
-  renderSB(); renderTop();
+  placeDock(); renderSB(); renderTop(); renderMBar();
   const map = isMapView();
   $('#main').style.display = map ? '' : 'none';
   ['signals', 'activity', 'settings'].forEach(p => $('#pg-' + p).classList.toggle('on', R.v === p));
@@ -710,6 +814,24 @@ function render(first){
   } else if (R.v === 'signals') renderSignals();
   else if (R.v === 'activity') renderActivity();
   else renderSettings();
+}
+
+/* ------------------------------------------------------------ phone: bottom tab bar and theatre list */
+function renderMBar(){
+  const b = $('#mbar'); if (!phone()) { b.innerHTML = ''; return; }
+  const on = v => (v === 'th' ? R.v === 'region' || R.v === 'theatre' : R.v === v) ? 'on' : '';
+  const bad = D.series.some(s => s.st === 'error' || s.stale) || D.errors.length;
+  b.innerHTML = [['overview', 'globe', 'Overview'], ['th', 'zones', 'Theatres'], ['signals', 'table', 'Signals'], ['activity', 'radar', 'Activity'], ['settings', 'cog', 'Settings']]
+    .map(([v, i, l]) => `<button class="${on(v)}" ${v === 'th' ? 'data-pop="th"' : `data-nav="${v}"`} aria-label="${l}">${ic(i)}<span>${l}</span>${v === 'settings' && bad ? '<span class="alarm" aria-label="Data problems"></span>' : ''}</button>`).join('');
+}
+$('#mbar').addEventListener('click', e => { const n = e.target.closest('[data-nav]'); if (n) nav(n.dataset.nav); });
+function popTheatres(){
+  const row = (k, cls) => `<button class="mth ${cls}" data-nav="${k}">${dot(D.theatres[k].level)}<span>${esc(thName(k))}</span><span class="sc">${esc(lead(k).txt)}</span></button>`;
+  return `<div class="ph"><h4>Theatres</h4><small>${pref.lead === 'p' && THEATRES.some(hasP) ? '30-day chance' : 'signal pressure'}</small></div><div class="pb" style="padding:0">` +
+    REG.map(r => { const top = regionTop(r), lv = regionLevel(r);
+      if (r.kids.length < 2) return row(r.kids[0], '');
+      return `<button class="mth" data-nav="region/${r.id}">${dot(lv)}<span>${esc(r.name)}</span><span class="sc" style="color:${LEVEL[lv]}">${esc(lead(top).txt)}</span></button>` + r.kids.map(k => row(k, 'kid')).join(''); }).join('') +
+    (D.theatres.global ? row('global', '') : '') + `</div>`;
 }
 
 /* ------------------------------------------------------------ sidebar */
@@ -788,7 +910,7 @@ function popBell(){
 
 /* ------------------------------------------------------------ pop-ups and tooltips */
 let POP = null;
-const POPS = {gti: [popGTI, 'below', 440], bell: [popBell, 'below-right', 430], layers: [popLayers, 'right', 310], legend: [popLegend, 'right', 300], time: [popTime, 'right', 280], text: [popText, 'right', 250],
+const POPS = {gti: [popGTI, 'below', 440], bell: [popBell, 'below-right', 430], th: [popTheatres, 'below', 360], layers: [popLayers, 'right', 310], legend: [popLegend, 'right', 300], time: [popTime, 'right', 280], text: [popText, 'right', 250],
   'kp-p': [() => popChance(R.id), 'below', 450], 'kp-s': [() => popPressure(R.id), 'below', 420], 'kp-g': [() => popGroups(R.id), 'below', 400], 'kp-c': [() => popCoverage(R.id), 'below', 380]};
 function openPop(key, anchor){
   const P = POPS[key]; if (!P) return;
@@ -798,7 +920,10 @@ function openPop(key, anchor){
   POP = {key, anchor}; anchor.classList.add('on'); placePop();
 }
 function placePop(){
-  if (!POP) return; const p = $('#pop'), r = POP.anchor.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight, mode = POPS[POP.key][1];
+  if (!POP) return;
+  const sheet = phone(); $('#pop').classList.toggle('sheet', sheet); $('#scrim').classList.toggle('on', sheet);
+  if (sheet) { $('#pop').style.left = $('#pop').style.top = ''; return; }
+  const p = $('#pop'), r = POP.anchor.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight, mode = POPS[POP.key][1];
   let x, y;
   if (mode === 'right') { x = r.right + 10; y = r.top; }
   else if (mode === 'below-right') { x = r.right - w; y = r.bottom + 8; }
@@ -807,7 +932,7 @@ function placePop(){
   p.style.left = x + 'px'; p.style.top = y + 'px';
 }
 function refreshPop(){ if (!POP) return; const st = $('#pop .pb') ? $('#pop .pb').scrollTop : 0; $('#pop').innerHTML = POPS[POP.key][0](); placePop(); const pb = $('#pop .pb'); if (pb) pb.scrollTop = st; }
-function closePop(){ if (!POP) return; POP.anchor.classList.remove('on'); POP = null; $('#pop').classList.remove('on'); }
+function closePop(){ if (!POP) return; POP.anchor.classList.remove('on'); POP = null; $('#pop').classList.remove('on'); $('#scrim').classList.remove('on'); }
 document.addEventListener('click', e => {
   const p = e.target.closest('[data-pop]'); if (p) { openPop(p.dataset.pop, p); return; }
   if (POP && !e.target.closest('#pop')) closePop();
@@ -834,7 +959,10 @@ function tipShow(el, html){
 }
 function tipAt(e, html){ const t = $('#tip'); t.innerHTML = html; t.style.display = 'block'; const w = t.offsetWidth, h = t.offsetHeight; let x = e.clientX + 14, y = e.clientY + 14; if (x + w > innerWidth - 6) x = e.clientX - w - 12; if (y + h > innerHeight - 6) y = e.clientY - h - 12; t.style.left = x + 'px'; t.style.top = y + 'px'; }
 function tipHide(){ $('#tip').style.display = 'none'; }
-document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip]'); if (el) tipShow(el, esc(el.dataset.tip)); });
+let tipT = null;
+document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip]'); if (!el) return; tipShow(el, esc(el.dataset.tip));
+  if (phone() && TOUCHQ.matches) { clearTimeout(tipT); tipT = setTimeout(tipHide, 4000); } });   // a tap leaves no mouseout behind, so on phones the tip closes itself
+addEventListener('scroll', () => { if (phone()) tipHide(); }, {capture: true, passive: true});
 document.addEventListener('mouseout', e => { const el = e.target.closest('[data-tip]'); if (el && !el.contains(e.relatedTarget)) tipHide(); });
 addEventListener('keydown', e => {
   if (e.key === 'Escape') { if ($('#results').style.display === 'block') { hideResults(); return; } if ($('#modal').style.display === 'flex') { closeModal(); return; } if (POP) { closePop(); return; } closeCard(); hideHover(); return; }
@@ -843,6 +971,7 @@ addEventListener('keydown', e => {
   if ($('#modal').style.display === 'flex') { if (e.key === 'ArrowRight') stepModal(1); if (e.key === 'ArrowLeft') stepModal(-1); }
 });
 addEventListener('resize', () => { if (POP) placePop(); });
+if (PHONEQ.addEventListener) PHONEQ.addEventListener('change', () => render()); else PHONEQ.addListener(() => render());   // older iPhones only have addListener
 
 /* ------------------------------------------------------------ map */
 const M = D.map;
@@ -874,7 +1003,8 @@ let scaleEls = [], labs = [];
 
 function mk(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
 function clientSize(){ const r = svg.getBoundingClientRect(); return [Math.max(r.width, 1), Math.max(r.height, 1)]; }
-function dockInset(){ const d = $('#dock'); return R.v === 'overview' && d.classList.contains('on') ? d.offsetHeight + 12 : 0; }
+function dockInset(){ const d = $('#dock'); if (phone()) return 0;   // on phones the panels sit under the map, not over it
+  return R.v === 'overview' && d.classList.contains('on') ? d.offsetHeight + 12 : 0; }
 function layoutLabels(){
   const [cw, ch] = clientSize(); const s = view.w / cw; const taken = [];
   const hit = b => { for (const t of taken) if (b[0] < t[0] + t[2] + 3 && b[0] + b[2] + 3 > t[0] && b[1] < t[1] + t[3] + 2 && b[1] + b[3] + 2 > t[1]) return true; return false; };
@@ -926,6 +1056,10 @@ function fitBox(b, inset){
   return {x: (b[0] + b[2]) / 2 - w / 2 + 6 * s, y: (b[1] + b[3]) / 2 - (eh / 2 + 4) * s, w};
 }
 function viewBoxFor(){
+  if (phone() && R.v === 'overview') {   // a phone is too narrow for the whole globe: frame the band where the theatres are
+    const vs = Object.entries(M.theatres).filter(([k, t]) => k !== 'global' && t.view).map(([, t]) => t.view);
+    if (vs.length) return [Math.min(...vs.map(v => v[0])), Math.min(...vs.map(v => v[1])), Math.max(...vs.map(v => v[2])), Math.max(...vs.map(v => v[3]))];
+  }
   if (wideView()) return M.home || M.theatres.global.view;
   const ks = R.v === 'region' ? REGBY[R.id].kids : [R.id];
   const vs = ks.map(k => M.theatres[k] && M.theatres[k].view).filter(Boolean);
@@ -1085,7 +1219,7 @@ function popText(){
 }
 /* map interaction */
 let drag = null, moved = false;
-svg.addEventListener('pointerdown', e => { if (e.button !== 0) return; drag = {x: e.clientX, y: e.clientY, vx: view.x, vy: view.y}; moved = false; });
+svg.addEventListener('pointerdown', e => { if (e.button !== 0) return; if (e.pointerType === 'touch' && phone()) { touchDown(e); return; } drag = {x: e.clientX, y: e.clientY, vx: view.x, vy: view.y}; moved = false; });
 addEventListener('pointermove', e => {
   if (!drag) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
@@ -1094,6 +1228,46 @@ addEventListener('pointermove', e => {
 });
 addEventListener('pointerup', () => { drag = null; svg.classList.remove('drag'); });
 svg.addEventListener('wheel', e => { e.preventDefault(); if (anim) cancelAnimationFrame(anim); hideHover(); zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY); }, {passive: false});
+/* phones: one finger scrolls the page, two fingers move and pinch the map, a double tap zooms in */
+const TP = new Map(); let pinch = null, tap0 = null, lastTap = null, hintT = null;
+function touchDown(e){
+  TP.set(e.pointerId, [e.clientX, e.clientY]);
+  if (TP.size === 1) { moved = false; tap0 = {x: e.clientX, y: e.clientY}; }
+  if (TP.size === 2) {
+    const [a, b] = [...TP.values()]; pinch = {d: Math.hypot(a[0] - b[0], a[1] - b[1]), m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]};
+    moved = true; tipHide(); hideHover(); if (anim) cancelAnimationFrame(anim); $('#mhint').classList.remove('on');
+  }
+}
+addEventListener('pointermove', e => {
+  if (!TP.has(e.pointerId)) return;
+  TP.set(e.pointerId, [e.clientX, e.clientY]);
+  if (pinch && TP.size === 2) {
+    const [a, b] = [...TP.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]), m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    const [cw] = clientSize(), s = view.w / cw;
+    view.x -= (m[0] - pinch.m[0]) * s; view.y -= (m[1] - pinch.m[1]) * s; clampView(); applyView();
+    if (pinch.d > 0 && d > 0) zoomAt(d / pinch.d, m[0], m[1]);
+    pinch = {d, m};
+  } else if (TP.size === 1 && tap0 && !moved) {   // a sideways swipe with one finger: say how to move the map
+    const dx = e.clientX - tap0.x, dy = e.clientY - tap0.y;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > 2 * Math.abs(dy)) { moved = true; const h = $('#mhint'); h.classList.add('on'); clearTimeout(hintT); hintT = setTimeout(() => h.classList.remove('on'), 1600); }
+  }
+});
+function touchUp(e){
+  if (!TP.has(e.pointerId)) return;
+  TP.delete(e.pointerId); if (TP.size < 2) pinch = null;
+  if (e.type !== 'pointerup' || TP.size || !tap0 || moved || Math.hypot(e.clientX - tap0.x, e.clientY - tap0.y) > 10) return;
+  const now = Date.now();
+  if (lastTap && now - lastTap.t < 300 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) { zoomAt(2, e.clientX, e.clientY); lastTap = null; }
+  else lastTap = {t: now, x: e.clientX, y: e.clientY};
+}
+addEventListener('pointerup', touchUp); addEventListener('pointercancel', touchUp);
+function nearObj(x, y){   // aircraft, ships and fires are a few pixels wide: on phones a tap within 22 px counts
+  let best = null, bd = 22;
+  svg.querySelectorAll('[data-k]').forEach(el => { if (/^(country|city|hub):/.test(el.dataset.k)) return;
+    const r = el.getBoundingClientRect(); if (!r.width) return;
+    const d = Math.hypot(r.left + r.width / 2 - x, r.top + r.height / 2 - y); if (d < bd) { bd = d; best = el; } });
+  return best;
+}
 $('#zin').onclick = () => { const r = svg.getBoundingClientRect(); zoomAt(1.5, r.left + r.width / 2, r.top + r.height / 2); };
 $('#zout').onclick = () => { const r = svg.getBoundingClientRect(); zoomAt(1 / 1.5, r.left + r.width / 2, r.top + r.height / 2); };
 $('#zhome').onclick = () => fitTab(true);
@@ -1122,7 +1296,9 @@ svg.addEventListener('mousemove', e => {
 svg.addEventListener('mouseleave', tipHide);
 svg.addEventListener('click', e => {
   if (moved) { moved = false; return; }
-  const el = e.target.closest('[data-k]'); if (!el) { closeCard(); return; }
+  let el = e.target.closest('[data-k]');
+  if (phone() && TOUCHQ.matches && (!el || /^(country|city):/.test(el.dataset.k))) el = nearObj(e.clientX, e.clientY) || el;
+  if (!el) { closeCard(); return; }
   const [type, i] = el.dataset.k.split(':'); const o = OBJ[type][+i];
   if (type === 'country') { const th = thOfCountry[o.name]; if (th && D.theatres[th] && !(R.v === 'theatre' && R.id === th)) { nav(th); return; } }
   openCard(type, o);
@@ -1233,7 +1409,7 @@ function showHover(key){
   const y = Math.max(8, Math.min(ch - dockInset() - hh - 8, b[1] - 40));
   c.style.left = x + 'px'; c.style.top = Math.max(8, y) + 'px';
 }
-$('#pins').addEventListener('mouseover', e => { const p = e.target.closest('[data-pin]'); if (!p || drag) return; clearTimeout(hoverT); if (hoverKey !== p.dataset.pin) showHover(p.dataset.pin); });
+$('#pins').addEventListener('mouseover', e => { const p = e.target.closest('[data-pin]'); if (!p || drag || (phone() && TOUCHQ.matches)) return; clearTimeout(hoverT); if (hoverKey !== p.dataset.pin) showHover(p.dataset.pin); });
 $('#pins').addEventListener('mouseout', e => { const p = e.target.closest('[data-pin]'); if (!p || (e.relatedTarget && e.relatedTarget.closest && (e.relatedTarget.closest('#hcard') || e.relatedTarget.closest('[data-pin]') === p))) return; clearTimeout(hoverT); hoverT = setTimeout(hideHover, 260); });
 $('#hcard').addEventListener('mouseover', () => clearTimeout(hoverT));
 $('#hcard').addEventListener('mouseleave', () => { hoverT = setTimeout(hideHover, 260); });
@@ -1241,6 +1417,12 @@ $('#hcard').addEventListener('click', e => { const n = e.target.closest('[data-n
 $('#pins').addEventListener('click', e => { const p = e.target.closest('[data-pin]'); if (!p) return; const [k, id] = p.dataset.pin.split(':'); nav(k === 'r' ? (REGBY[id].kids.length > 1 ? 'region/' + id : REGBY[id].kids[0]) : id); });
 
 /* ------------------------------------------------------------ overview dock */
+const DOCKHOME = $('#dock').parentNode;
+function placeDock(){   // phones show the panels under the map, outside the map box
+  const d = $('#dock');
+  if (phone()) { if (d.parentNode !== $('#main')) $('#main').insertBefore(d, $('#panel')); }
+  else if (d.parentNode !== DOCKHOME) DOCKHOME.insertBefore(d, $('#hcard'));
+}
 function renderDock(){
   const d = $('#dock');
   if (R.v !== 'overview') { d.classList.remove('on'); d.innerHTML = ''; return; }
@@ -1600,6 +1782,9 @@ function openModal(id, list){
 }
 function stepModal(d){ if (!modalList.length) return; const i = (modalList.indexOf(modalId) + d + modalList.length) % modalList.length; openModal(modalList[i]); }
 function closeModal(){ $('#modal').style.display = 'none'; tipHide(); }
+let sw0 = null;   // phones: swipe sideways for the next or previous signal, like the arrow keys
+$('#modal').addEventListener('touchstart', e => { sw0 = phone() && e.touches.length === 1 && !e.target.closest('.cwrap') ? [e.touches[0].clientX, e.touches[0].clientY] : null; }, {passive: true});
+$('#modal').addEventListener('touchend', e => { if (!sw0) return; const t = e.changedTouches[0], dx = t.clientX - sw0[0], dy = t.clientY - sw0[1]; sw0 = null; if (Math.abs(dx) > 70 && Math.abs(dy) < 50) stepModal(dx < 0 ? 1 : -1); });
 function openMarket(i){
   const m = D.markets[i]; if (!m) return; closePop(); hideHover();
   const hh = m.h || [];
@@ -1623,7 +1808,7 @@ $('#modal').addEventListener('click', e => {
 
 /* ------------------------------------------------------------ signals page */
 const STN = {ok: 'Has a score', collecting: 'Collecting history', awaiting_key: 'Needs a key', error: 'Failed'};
-let SF = {q: '', quick: '', group: 'th', sk: 'z', sd: -1, st: [], dom: [], th: [], spd: [], sel: null, closed: []};
+let SF = {q: '', quick: '', group: 'th', sk: 'z', sd: -1, st: [], dom: [], th: [], spd: [], sel: null, closed: [], mf: false, more: []};
 function sfFromQs(qs){ const p = new URLSearchParams(qs || ''); SF.q = p.get('q') || ''; SF.th = p.get('th') ? p.get('th').split(',') : []; SF.dom = p.get('g') ? p.get('g').split(',') : []; SF.st = p.get('st') ? p.get('st').split(',') : []; SF.quick = p.get('quick') || ''; if (p.get('by')) SF.group = p.get('by'); }
 function sfToHash(){ const p = new URLSearchParams(); if (SF.q) p.set('q', SF.q); if (SF.th.length) p.set('th', SF.th.join(',')); if (SF.dom.length) p.set('g', SF.dom.join(',')); if (SF.st.length) p.set('st', SF.st.join(',')); if (SF.quick) p.set('quick', SF.quick); if (SF.group !== 'th') p.set('by', SF.group); const s = p.toString(); history.replaceState(null, '', '#signals' + (s ? '?' + s : '')); }
 const today = (D.generated || '').slice(0, 10);
@@ -1654,19 +1839,21 @@ function renderSignals(first){
   const showTh = SF.group !== 'th', cols = (showTh ? 6 : 5) - (SF.sel ? 2 : 0);
   const hd = (k, n, al, c) => `<th data-sort="${k}" class="${SF.sk === k ? 'on' : ''} ${c || ''}" ${al ? 'style="text-align:right"' : ''}>${n}${SF.sk === k ? (SF.sd < 0 ? ' ▼' : ' ▲') : ''}</th>`;
   const tr = s => `<tr data-row="${esc(s.id)}" class="${SF.sel === s.id ? 'sel' : ''}"><td class="n">${esc(s.l)}<small>${esc([s.s, s.lag ? 'confirms' : 'leads'].filter(Boolean).join(' · '))}</small>${s.stale ? ' <span class="ty" style="color:var(--watch)">stale</span>' : ''}</td>${showTh ? `<td class="w">${esc(thName(s.t))}</td>` : ''}<td class="hsel">${GN[s.d]}</td><td class="num" style="color:var(--mute)" title="${esc(s.last || '')}">${esc(s.last ? (s.last.length > 7 ? s.last.slice(5) : s.last) : '–')}</td><td class="hsel">${spark(s.pts && s.pts.slice(-30), s.z == null ? '#6b7a8a' : zcol(s.z), 60, 18)}</td><td><div class="sdb">${s.z != null ? `<u><i style="width:${Math.min(100, Math.max(0, s.z) / 5 * 100)}%;background:${zcol(s.z)}"></i></u>` : ''}<b class="num" style="color:${s.z == null ? 'var(--dim)' : zcol(s.z)}">${sigVal(s)}</b></div></td></tr>`;
+  const cap = (list, g, n) => !phone() || list.length <= n || SF.more.includes(g) ? list.map(tr).join('')   // phones show the first rows of each group
+    : list.slice(0, n).map(tr).join('') + `<tr class="more"><td colspan="${cols}"><button class="btn" data-more="${esc(g)}">Show all ${list.length}</button></td></tr>`;
   let body = '';
   if (!rows.length) body = `<tr><td colspan="${cols}" class="empty">No signal matches. <a data-sfreset="1">Clear all filters</a>.</td></tr>`;
-  else if (SF.group === 'none') body = rows.map(tr).join('');
+  else if (SF.group === 'none') body = cap(rows, '', 30);
   else order.forEach(g => { const list = groups[g], closed = SF.closed.includes(g), mx = Math.max(...list.map(s => s.z ?? -99));
     body += `<tr class="g" data-grp="${esc(g)}"><td colspan="${cols}">${ic(closed ? 'chev' : 'chevd', 's')} ${esc(groupName(g))}<small>${list.length} signal${list.length === 1 ? '' : 's'}${mx > -99 ? ' · highest ' + fmtz(mx) + ' SD' : ''}${SF.group === 'th' && hasP(g) ? ' · 30-day chance ' + pct(D.theatres[g].p) : ''}</small></td></tr>`;
-    if (!closed) body += list.map(tr).join(''); });
+    if (!closed) body += cap(list, g, 5); });
   const sel = SF.sel && SERIES[SF.sel];
   P.innerHTML = `<div class="toolbar"><label class="inp" style="flex:0 1 300px;min-width:170px">${ic('search', 's')}<input id="sq" type="search" placeholder="Search name, source or theatre" value="${esc(SF.q)}" aria-label="Search signals"></label>
       ${[['an', 'Unusual', D.series.filter(isAn).length, 'Signals at 2 SD or more from their normal level'], ['lead', 'Leads only', D.series.filter(s => !s.lag).length, 'Fast data that can move before events'], ['today', 'Changed today', D.series.filter(s => s.last === today).length, 'Signals with a new value today']].map(([k, n, c, tip]) => `<button class="chip ${SF.quick === k ? 'on' : ''}" data-quick="${k}" data-tip="${tip}">${n}<b>${c}</b></button>`).join('')}
       ${SF.q || SF.quick || SF.st.length || SF.dom.length || SF.th.length || SF.spd.length ? `<button class="chip" data-sfreset="1">${ic('x', 's')} Clear all</button>` : ''}
       <span class="sp"></span><span class="hint">${rows.length} of ${D.series.length} signals</span>
-      <label class="inp">${ic('group', 's')} Group by <select id="sgroup">${[['th', 'Theatre'], ['dom', 'Signal group'], ['src', 'Source'], ['st', 'Status'], ['none', 'No grouping']].map(([v, n]) => `<option value="${v}" ${SF.group === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>
-    <div class="intel ${sel ? 'sel' : ''}">
+      <label class="inp">${ic('group', 's')} Group by <select id="sgroup">${[['th', 'Theatre'], ['dom', 'Signal group'], ['src', 'Source'], ['st', 'Status'], ['none', 'No grouping']].map(([v, n]) => `<option value="${v}" ${SF.group === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>${phone() ? sfPhoneTools() : ''}</div>
+    <div class="intel ${sel ? 'sel' : ''}${phone() && SF.mf ? ' mf' : ''}">
       <div class="facets">${facet('Status', 'st', [['ok', 'Has a score'], ['collecting', 'Collecting history'], ['awaiting_key', 'Needs a key'], ['error', 'Failed']])}
         ${facet('Signal group', 'dom', D.domains.map(d => [d.id, GN[d.id]]))}
         ${facet('Theatre', 'th', D.order.map(t => [t, thName(t)]))}
@@ -1674,6 +1861,11 @@ function renderSignals(first){
       <div class="tbl" id="stbl"><table class="t"><thead><tr>${hd('l', 'Signal')}${showTh ? hd('t', 'Theatre') : ''}${hd('d', 'Group', 0, 'hsel')}${hd('last', 'Last')}<th class="hsel tr">Trend</th>${hd('z', 'SD', 1)}</tr></thead><tbody>${body}</tbody></table></div>
       ${sel ? drawer(sel) : ''}</div>`;
   sfToHash();
+}
+function sfPhoneTools(){   // phones hide the column headers and the filter column: sorting and filters move here
+  const n = SF.st.length + SF.dom.length + SF.th.length + SF.spd.length;
+  return `<label class="inp">Sort by <select id="ssort">${[['z:-1', 'Largest SD first'], ['l:1', 'Name, A to Z'], ['last:-1', 'Newest value'], ['d:1', 'Signal group']].map(([v, l]) => `<option value="${v}" ${SF.sk + ':' + SF.sd === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    <button class="chip ${SF.mf ? 'on' : ''}" data-mf="1">Filters${n ? `<b>${n}</b>` : ''}</button>`;
 }
 function drawer(s){
   const vals = (s.pts || []).map(p => p[1]), last = vals.length ? vals[vals.length - 1] : null;
@@ -1688,7 +1880,10 @@ $('#pg-signals').addEventListener('click', e => {
   const t = e.target;
   const so = t.closest('th[data-sort]'); if (so) { const k = so.dataset.sort; if (SF.sk === k) SF.sd = -SF.sd; else { SF.sk = k; SF.sd = k === 'z' || k === 'last' ? -1 : 1; } renderSignals(false); return; }
   const g = t.closest('tr.g'); if (g) { const k = g.dataset.grp; SF.closed = SF.closed.includes(k) ? SF.closed.filter(x => x !== k) : SF.closed.concat(k); renderSignals(false); return; }
-  const rw = t.closest('tr[data-row]'); if (rw) { SF.sel = SF.sel === rw.dataset.row ? null : rw.dataset.row; const st = $('#stbl').scrollTop; renderSignals(false); $('#stbl').scrollTop = st; return; }
+  if (t.closest('[data-mf]')) { SF.mf = !SF.mf; renderSignals(false); return; }
+  const mo = t.closest('[data-more]'); if (mo) { SF.more = SF.more.concat(mo.dataset.more); renderSignals(false); return; }
+  const rw = t.closest('tr[data-row]'); if (rw && phone()) { openModal(rw.dataset.row, Array.from($$('#stbl tr[data-row]')).map(r => r.dataset.row)); return; }
+  if (rw) { SF.sel = SF.sel === rw.dataset.row ? null : rw.dataset.row; const st = $('#stbl').scrollTop; renderSignals(false); $('#stbl').scrollTop = st; return; }
   const q = t.closest('[data-quick]'); if (q) { SF.quick = SF.quick === q.dataset.quick ? '' : q.dataset.quick; renderSignals(false); return; }
   if (t.closest('[data-sfreset]')) { SF = Object.assign(SF, {q: '', quick: '', st: [], dom: [], th: [], spd: []}); renderSignals(false); return; }
   const fc = t.closest('[data-fclear]'); if (fc) { e.preventDefault(); SF[fc.dataset.fclear] = []; renderSignals(false); return; }
@@ -1698,7 +1893,8 @@ $('#pg-signals').addEventListener('click', e => {
 });
 $('#pg-signals').addEventListener('change', e => {
   const f = e.target.closest('[data-f]'); if (f) { const k = f.dataset.f; SF[k] = f.checked ? SF[k].concat(f.value) : SF[k].filter(v => v !== f.value); renderSignals(false); return; }
-  if (e.target.id === 'sgroup') { SF.group = e.target.value; SF.closed = []; renderSignals(false); }
+  if (e.target.id === 'sgroup') { SF.group = e.target.value; SF.closed = []; SF.more = []; renderSignals(false); }
+  if (e.target.id === 'ssort') { const [k, d] = e.target.value.split(':'); SF.sk = k; SF.sd = +d; renderSignals(false); }
 });
 $('#pg-signals').addEventListener('input', e => { if (e.target.id === 'sq') { SF.q = e.target.value; const pos = e.target.selectionStart; renderSignals(false); const q = $('#sq'); q.focus(); q.setSelectionRange(pos, pos); } });
 
@@ -1740,7 +1936,7 @@ function renderActivity(){
 $('#pg-activity').addEventListener('click', e => { const n = e.target.closest('[data-nav]'); if (n) nav(n.dataset.nav); });
 
 /* ------------------------------------------------------------ settings */
-let HF = {chip: 'all', q: ''};
+let HF = {chip: 'all', q: '', more: false};
 function issues(){
   const out = [];
   D.series.forEach(s => {
@@ -1774,7 +1970,7 @@ function renderSettings(){
     const col = {error: 'var(--critical)', stale: 'var(--watch)', awaiting_key: 'var(--elevated)', collecting: 'var(--mute)'};
     body = `<div class="hs">${ks('Have a score', st.ok || 0, 'of ' + D.series.length + ' signals', 'var(--normal)')}${ks('Collecting history', st.collecting || 0, 'they get a score later', 'var(--watch)')}${ks('Need a key', st.awaiting_key || 0, keys.length + ' free key' + (keys.length === 1 ? '' : 's') + ' missing', st.awaiting_key ? 'var(--elevated)' : null)}${ks('Failed this run', (st.error || 0) + (D.errors || []).length, 'the next run tries again', st.error || (D.errors || []).length ? 'var(--critical)' : null)}${ks('Stale copy', cnt.stale || 0, 'last good copy shown', cnt.stale ? 'var(--watch)' : null)}</div>
       <div class="toolbar" style="margin:0">${[['all', 'All issues', iss.length], ['error', 'Failed', cnt.error || 0], ['stale', 'Stale', cnt.stale || 0], ['awaiting_key', 'Need a key', cnt.awaiting_key || 0], ['collecting', 'Collecting', cnt.collecting || 0]].map(([k, n, c]) => `<button class="chip ${HF.chip === k ? 'on' : ''}" data-hchip="${k}">${n}<b>${c}</b></button>`).join('')}<span class="sp"></span><label class="inp" style="width:240px">${ic('search', 's')}<input id="hq" type="search" placeholder="Filter issues" value="${esc(HF.q)}" aria-label="Filter issues"></label></div>
-      <div class="tbl" style="flex:1"><table class="t"><thead><tr><th>Signal</th><th>Theatre</th><th>Issue</th><th>Detail</th><th>What to do</th></tr></thead><tbody>${list.map(i => `<tr ${i.s ? `data-open="${esc(i.s.id)}"` : ''}><td class="n">${i.s ? esc(i.s.l) + (i.s.s ? `<small>${esc(i.s.s)}</small>` : '') : 'Map layer'}</td><td>${i.s ? esc(thName(i.s.t)) : '–'}</td><td><span class="ty" style="color:${col[i.k]}">${esc(i.iss)}</span></td><td style="white-space:normal;color:var(--mute);max-width:280px">${esc(i.det)}</td><td style="white-space:normal;color:var(--mute);max-width:300px">${esc(i.fix)}</td></tr>`).join('') || `<tr><td colspan="5" class="empty">No issue matches.</td></tr>`}</tbody></table></div>`;
+      <div class="tbl" style="flex:1"><table class="t"><thead><tr><th>Signal</th><th>Theatre</th><th>Issue</th><th>Detail</th><th>What to do</th></tr></thead><tbody>${(phone() && !HF.more ? list.slice(0, 30) : list).map(i => `<tr ${i.s ? `data-open="${esc(i.s.id)}"` : ''}><td class="n">${i.s ? esc(i.s.l) + (i.s.s ? `<small>${esc(i.s.s)}</small>` : '') : 'Map layer'}</td><td>${i.s ? esc(thName(i.s.t)) : '–'}</td><td><span class="ty" style="color:${col[i.k]}">${esc(i.iss)}</span></td><td style="white-space:normal;color:var(--mute);max-width:280px">${esc(i.det)}</td><td style="white-space:normal;color:var(--mute);max-width:300px">${esc(i.fix)}</td></tr>`).join('') || `<tr><td colspan="5" class="empty">No issue matches.</td></tr>`}</tbody></table></div>${phone() && !HF.more && list.length > 30 ? `<button class="btn" data-hmore="1" style="margin-top:10px">Show all ${list.length}</button>` : ''}`;
   } else if (sub === 'sources') {
     body = `<div class="tbl" style="flex:1"><table class="t"><thead><tr><th>Source</th><th>How often</th><th>Why that is enough, and the free limit</th></tr></thead><tbody>${(D.updates || []).map(u => `<tr style="cursor:default"><td class="n"><b style="font-weight:600">${esc(u.s)}</b></td><td>${esc(u.e)}</td><td style="white-space:normal;color:var(--mute)">${esc(u.l)}</td></tr>`).join('')}</tbody></table></div>`;
   } else if (sub === 'method') {
@@ -1797,6 +1993,7 @@ function renderSettings(){
 $('#pg-settings').addEventListener('click', e => {
   const n = e.target.closest('[data-nav]'); if (n) { nav(n.dataset.nav); return; }
   const c = e.target.closest('[data-hchip]'); if (c) { HF.chip = c.dataset.hchip; renderSettings(); return; }
+  if (e.target.closest('[data-hmore]')) { HF.more = true; renderSettings(); return; }
   const o = e.target.closest('[data-open]'); if (o) { openModal(o.dataset.open, []); return; }
   const s = e.target.closest('[data-set]'); if (!s) return;
   const k = s.dataset.set, v = s.dataset.v;
