@@ -951,16 +951,19 @@ def parse_ucdp(events, box):
 
 
 def ucdp_events(token, start="2018-01-01"):
-    """Annual release plus the newest monthly candidate release for the months after it ends."""
+    """Annual release plus every monthly candidate release for the months after it ends."""
     ev = _ucdp_pages(UCDP_YEARLY, token, start)
     last = max((str(e["date_start"])[:10] for e in ev), default=start)
-    for n in range(14, 0, -1):
+    seen = {e.get("id") for e in ev}
+    for n in range(1, 15):   # each candidate release (26.0.1, 26.0.2, ...) carries its own slice of months, not a running total
         try:
             more = _ucdp_pages(f"26.0.{n}", token, last)
         except Exception:
             continue
-        ev += [e for e in more if str(e["date_start"])[:10] > last]
-        break
+        for e in more:
+            if str(e["date_start"])[:10] > last and e.get("id") not in seen:
+                seen.add(e.get("id"))
+                ev.append(e)
     return ev
 
 
