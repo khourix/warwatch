@@ -1,0 +1,32 @@
+{
+ "msa scripts": [
+  "/assets/msacncms_wap/js/jquery.js",
+  "/hmccms/js/hmccms-front.js?20261010",
+  "/assets/msacncms_wap/js/init.js",
+  "/assets/msacncms_wap/js/wapUtil.js",
+  "//gov.govwza.cn/dist/aria.js?appid=3a99fe8c9a6730505625c00f963ea7c0"
+ ],
+ "msa js /hmccms/js/hmccms-front.js?20261010": {
+  "around": "",
+  "base": []
+ },
+ "msa js /assets/msacncms_wap/js/wapUtil.js": {
+  "around": "\"use strict\";\nvar wapUtils = {\n    /**\n     * 文章相关\n     */\n    article: {\n        // 通过栏目ID查询焦点文章列表\n        selectFocusListByChannelId: base + \"/msacncms_wap/cmsarticle/selectFocusListByChannelId.jhtml\",\n        // 通过栏目ID查询文章列表\n        selectPageByChannelId: base + \"/msacncms_wap/cmsarticle/selectPageByChannelId.jhtml\",\n        // 按指定栏目的文章来源查询文章分页列表\n        selectPageByOrigin: base + \"/msacncms_wap/cmsarticle/selectPageByOrigin.jhtml\"\n    },\n    /**\n     * 栏目相关\n     */\n    channel: {\n        selectListByParentId: base + \"/msacncms_wap/cmschannel/selectListByParentId.jhtml\",\n        selectById: base + \"/msacncms_wap/cmschannel/selectById.jhtml\"\n    },\n    /**\n     * 天气预报接口\n     */\n    weather: {\n\n    },\n    /**\n     * 请求方法\n    ",
+  "base": []
+ },
+ "msa js //gov.govwza.cn/dist/aria.js?appid=3a99fe8c9a6730505625c00f963ea7c0": {
+  "around": "",
+  "base": []
+ },
+ "customs years in page": 1,
+ "customs select": [
+  "<select id=\"monthlysel\">\r\n\t\t\t\t\t\t    <option value=\"2026\">2026</option>\r\n                            <option value=\"2025\">2025</option>\r\n                            <option value=\"2024\">2024</option>\r\n                            <option value=\"2023\">2023</option>\r\n                            <option value=\"2022\">2022</option>\r\n                            <option value=\"2021\">2021</option>\r\n                            <option value=\"2020\">2020</option>\r\n                            <option value=\"2019\">2019</option>\r\n                            <option value=\"2018\">2018</option>\r\n                        </select>"
+ ],
+ "customs year blocks": [],
+ "customs table head": " | | | | | | （2）Imports and Exports by Country （Region） of Origin/Destination,8.2026 | | | | | | | | Unit:US$1,000 | | | | | | | | Country （Region） | | | | | | Total | | | | | | Exports | | | | | | Imports | | | | | | Percentage Change | | | | | | | | 8 | | | | | | 1to8 | | | | | | 8 | | | | | | 1to8 | | | | | | 8 | | | | | | 1to8 | | | | | | Total | | | | | | Exports | | | | | | Imports | | | | | | | | TOTAL | | | | | 683,796,720&nbsp; | | | | 5,042,171,576&nbsp; | | | | 401,440,957&nbsp; | | | | 2,923,838,648&nbsp; | | | | 282,355,763&nbsp; | | | | 2,118,332,928&nbsp; | | | | 22.4 | | | | 19.3 | | | | 27.0 | | | | | | | Asia: | | | | | 374,794,426&nbsp; | | | | 2,686,695,404&nbsp; | | | | 209,658,726&nbsp; | | | | 1,518,011,275&nbsp; | | | | 165,135,699&nbsp; | | | | 1,168,684,129&nbsp; | | | | 25.9 | | | | 23.4 | | | | 29.3 | | | | | | | Afghanistan&nbsp; | | | | | 230,449&nbsp; | | | | 1,345,939&nbsp; | | | | 222,371&nbsp; | | | | 1,265,271&nbsp; | | | | 8,078&nbsp; | | | | 80,668&nbsp; | | | | 8.8 | | | | 3.6 | | | | 415.0 | | | | | | | Bahrain | | | | | 167,237&nbsp; | | | | 1,039,664&nbsp; | | | | 166,367&nbsp; | | | | 820,467&nbsp; | | | | 869&nbsp; | | | | 219,197&nbsp; | | | | -6.0 | | | | -18.1 | | | | 110.1 | | | | | | | Bangladesh | | | | | 2,080,552&nbsp; | | | | 16,904,106&nbsp; | | | | 1,958,664&nbsp; | | | | 15,971,818&nbsp; | | | | 121,888&nbsp; | | | | 932,288&nbsp; | | | | 8.8 | | | | 8.6 | | | | 12.0 | | | | | | | Bhutan | | | | | 14,450&nbsp; | | | | 135,746&nbsp; | | | | 14,450&nbsp; | | | | 135,740&nbsp; | | | | 0&nbsp; | | | | 6&nbsp; | | | | 17.3 | | | | 17.3 | | | | 7.3 | | | | | | | Brunei | | | | | 299,894&nbsp; | | | | 1,941,789&nbsp; | | | | 40,643&nbsp; | | | | 351,951&nbsp; | | | | 259,251&nbsp; | | | | 1,589,838&nbsp; | | | | 1.2 | | | | -32.5 | | | | 13.8 | | | | | | | Myanmar&nbsp; | | | | | 1,604,772&nbsp; | | | | 14,655,058&nbsp; | | | | 888,783&nbsp; | | | | 8,052,237&nbsp; | | | | 715,988&nbsp; | | | | 6,602,821&nbsp; | | | | 25.3 | | | | 16.3 | | | | 38.5 | | | | | | | Cambodia | | | | | 1,918,863&nbsp; | | | | 16,689,936&nbsp; | | | | 1,639,160&nbsp; | | | | 14,675,201&nbsp; | | | | 279,703&nbsp; | | | | 2,014,735&nbsp; | | | | 14.7 | | | | 13.9 | | | | 20.8 | | | | | | | Cyprus | | | | | 239,427&nbsp; | | | | 1,851,600&nbsp; | | | | 235,682&nbsp; | | | | 1,828,509&nbsp; | | | | 3,745&nbsp; | | | | 23,091&nbsp; | | | | 94.9 | | | | 96.8 | | | | 9.5 | | | | | | | Democratic People's Republic of Korea | | | | | 237,8",
+ "row Iran": "Iran | | | | | 412,374&nbsp; | | | | 2,994,185&nbsp; | | | | 330,330&nbsp; | | | | 2,248,668&nbsp; | | | | 82,045&nbsp; | | | | 745,517&nbsp; | | | | -56.2 | | | | -51.1 | | | | -66.6 | | | | | | | Iraq | | | | | 2,005,194&nbsp; | | <td align=\"right\" cla",
+ "row Korea, DPR": "absent",
+ "row Democratic People": "Democratic People's Republic of Korea | | | | | 237,878&nbsp; | | | | 1,973,931&nbsp; | | | | 182,853&nbsp; | | | | 1,550,580&nbsp; | | | | 55,025&nbsp; | | | | 423,352&nbsp; | | | | 20.0 | | | | 13.4 | | | | 52.1 | | | | | | | Hong Kong, China | | | | | 50,108,033&nbs",
+ "row Belarus": "Belarus | | | | | 998,058&nbsp; | | | | 7,272,148&nbsp; | | | | 821,236&nbsp; | | | | 5,836,933&nbsp; | | | | 176,822&nbsp; | | | | 1,435,214&nbsp; | | | | 32.7 | | | | 31.4 | | | | 38.2 | | | | | | | Moldova | | | | | 68,514&nbsp; | | <td align=\"right\" ",
+ "row Israel": "Israel | | | | | 2,851,009&nbsp; | | | | 22,751,190&nbsp; | | | | 1,535,081&nbsp; | | | | 11,627,746&nbsp; | | | | 1,315,928&nbsp; | | | | 11,123,443&nbsp; | | | | 5.3 | | | | 6.6 | | | | 4.0 | | | | | | | Japan | | | | | 30,778,952&nbsp; | | <td align=\""
+}
