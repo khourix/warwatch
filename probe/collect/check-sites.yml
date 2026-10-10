@@ -1,0 +1,30 @@
+name: check-sites
+# Runs only on the laptop runner (labels self-hosted + home). This repo must stay
+# private: a self-hosted runner executes whatever a workflow in the repo asks.
+on:
+  workflow_dispatch:
+  push:
+    paths: [check_sites.py, .github/workflows/check-sites.yml]
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: [self-hosted, home]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python tools
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install -q --upgrade pip
+          .venv/bin/pip install -q curl_cffi zendriver
+      - name: Check sites
+        run: |
+          mkdir -p results
+          xvfb-run -a .venv/bin/python check_sites.py results/sites.json
+      - name: Commit results
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add results/sites.json
+          git diff --cached --quiet || (git commit -m "check-sites: $(date -u +%FT%H:%MZ)" && git push -q)
