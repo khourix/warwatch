@@ -26,12 +26,14 @@ DATA = os.path.join(L.ROOT, "backfill", "data")
 OUT = os.path.join(L.ROOT, "docs", "TRADELAB.md")
 COUNTRIES = ["sudan", "libya", "yemen", "drc"]
 HUBS = ["uae", "jordan", "turkey"]
+GULF = ["uae", "jordan", "turkey", "saudi", "kuwait", "bahrain", "qatar", "oman"]
 LAG = 8
+ELAG = 2        # Japan Customs publishes about six weeks after the month; counted as 2 whole months
 
 
-def monthly(country):
+def monthly(country, src="trade"):
     tot = defaultdict(float)
-    for f in glob.glob(os.path.join(DATA, f"trade_*_*_{country}.csv")):
+    for f in glob.glob(os.path.join(DATA, f"{src}_*_*_{country}.csv")):
         for r in csv.reader(open(f)):
             if r:
                 tot[r[0][:7]] += float(r[1])
@@ -132,6 +134,13 @@ def run():
     supplied = {th: hz for th in COUNTRIES}
     res["hubs"] = evaluate(supplied, ev)
     res["hubs_lag"] = evaluate(supplied, ev, lag=LAG)
+    # Second data source, same rule: Japan Customs (e-Stat), Japan only, about six weeks late. Run once, after the Comtrade result above.
+    ez = {c: zseries(monthly(c, "estat")) for c in COUNTRIES}
+    res["estat"] = evaluate(ez, ev)
+    res["estat_lag"] = evaluate(ez, ev, lag=ELAG)
+    gz = zseries({k: sum(monthly(h, "estat").get(k, 0.0) for h in GULF) for k in set().union(*[monthly(h, "estat") for h in GULF])})
+    gsup = {th: gz for th in COUNTRIES}
+    res["estat_gulf_lag"] = evaluate(gsup, ev, lag=ELAG)
     detail = []
     for th, z in zs.items():
         for e, desc, t in L.onsets(ev.get(th, [])):
@@ -145,11 +154,15 @@ def write(res, detail, zs):
           "Written by `warwatch/tradelab.py`. Rule and cut fixed on 2026-10-09 before any result was seen (see the module docstring). Nothing here changes the live score.", "",
           "Feature: monthly Japan and Thailand exports of pickups and large SUVs (Land Cruiser and Hilux sources) to the country, from UN Comtrade. "
           "A surge is the latest 3 months at least 2 standard deviations above the same measure over the 24 months that ended a year earlier. "
-          "Hit: a surge in the 12 months before a buildup onset.", "",
+          "Hit: a surge in the 12 months before a buildup onset. The Japan Customs rows use the same rule on Japan's own monthly figures "
+          "(`backfill/estat.py`), about six weeks late, with the same four countries and events.", "",
           "| Test | Onsets scored | Hits | Hit rate | False-alarm rate | Lift | p | Countries hit |", "|---|---:|---:|---:|---:|---:|---:|---:|"]
     names = {"main": "Pre-registered: Sudan, Libya, Yemen, DRC", "lag": f"Same, with the {LAG}-month publication lag (what could be seen in time)",
              "hubs": "Exploratory: UAE + Jordan + Turkey, against the same four theatres' events",
-             "hubs_lag": f"Exploratory: hubs with the {LAG}-month lag"}
+             "hubs_lag": f"Exploratory: hubs with the {LAG}-month lag",
+             "estat": "Japan Customs (e-Stat), Japan only: Sudan, Libya, Yemen, DRC",
+             "estat_lag": f"Same, with the {ELAG}-month publication lag (what could be seen in time)",
+             "estat_gulf_lag": f"Exploratory: UAE, Jordan, Turkey + Saudi, Kuwait, Bahrain, Qatar, Oman, {ELAG}-month lag"}
     for k, r in res.items():
         lift = f"{r['lift']:.1f}x" if r["lift"] != float("inf") else "inf"
         L_.append(f"| {names[k]} | {r['n']} | {r['hits']} | {r['hit']:.0%} | {r['fa']:.0%} | {lift} | {r['p']:.3f} | {r['countries']} |")

@@ -103,3 +103,13 @@ class TradeParse(unittest.TestCase):
         got = trade.monthly(rows)
         self.assertEqual(got["pickup"], {"2023-01-01": 144.0, "2023-02-01": 15.0})     # the transport-mode split line is ignored
         self.assertEqual(got["suv"], {"2023-01-01": 5.0})
+
+
+class EstatParse(unittest.TestCase):
+    def test_month_columns_and_rows_sum_the_nine_digit_lines(self):
+        import estat
+        self.assertEqual(estat.monthly_cols({"150": "1月_数量1", "160": "1月_数量2", "190": "2月_数量2", "120": "合計_数量2"}), {"160": 1, "190": 2})
+        rows = [{"@cat01": "870323915", "@cat02": "150", "@area": "50507", "@time": "2026000000", "$": "12"},
+                {"@cat01": "870323919", "@cat02": "150", "@area": "50507", "@time": "2026000000", "$": "3"}]
+        out = estat.rows_to_monthly(rows, {"870323915": "suv", "870323919": "suv"}, {"150": 1}, lambda t: int(str(t)[:4]))
+        self.assertEqual(out, {("50507", "suv"): {"2026-01-01": 15.0}})
