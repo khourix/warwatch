@@ -4,7 +4,7 @@ name: assessment-probe
 on:
   push:
     branches: [claude/project-thread-79411m]
-    paths: [probe/assessment_probe.py, probe/check_credentials.py, .github/workflows/assessment-probe.yml]
+    paths: [probe/assessment_probe.py, probe/check_credentials.py, probe/routes.py, .github/workflows/assessment-probe.yml]
   workflow_dispatch:
 permissions:
   contents: write
@@ -19,9 +19,15 @@ jobs:
         env:
           GFW_TOKEN: ${{ secrets.GFW_TOKEN }}
         run: python3 probe/assessment_probe.py probe/results.json
+      - name: Other routes to blocked sites; Tzeva Adom and Jetstream live tests
+        env:
+          COMTRADE_API_KEY: ${{ secrets.COMTRADE_API_KEY }}
+        run: python3 probe/routes.py probe/routes.json
       - name: Install Google client libraries
+        if: false
         run: python3 -m pip install -q google-cloud-bigquery earthengine-api
       - name: Check new account credentials
+        if: false
         env:
           CDSE_CLIENT_ID: ${{ secrets.CDSE_CLIENT_ID }}
           CDSE_CLIENT_SECRET: ${{ secrets.CDSE_CLIENT_SECRET }}
@@ -48,5 +54,5 @@ jobs:
         run: |
           git config user.name "warwatch-bot"
           git config user.email "warwatch-bot@users.noreply.github.com"
-          git add probe/results.json probe/credentials.json
+          git add probe/results.json probe/credentials.json probe/routes.json
           git diff --cached --quiet || (git commit -m "probe: results $(date -u +%FT%H:%MZ)" && git push -q)

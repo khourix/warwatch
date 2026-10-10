@@ -370,6 +370,54 @@ def ukmto_series(theatre, days=30, today=None):
     return out
 
 
+TZEVA_API = "https://api.tzevaadom.co.il/alerts-history"   # Tzeva Adom's mirror of Home Front Command alerts; oref.org.il itself refuses non-Israeli addresses
+TZEVA_HOSTILE = {0: "rockets and missiles", 2: "infiltration", 5: "hostile aircraft"}   # 1 hazmat, 3 earthquake, 4 tsunami: not attacks
+
+
+def parse_tzeva(groups):
+    """Tzeva Adom history (alert groups, each a list of {time, cities, threat, isDrill}) -> [[id, utc time, threats, cities]] for groups
+    with at least one real hostile alert. A group is one attack wave: a salvo sets off sirens in many towns within a few minutes."""
+    out = []
+    for g in groups or []:
+        al = [a for a in g.get("alerts") or [] if not a.get("isDrill") and a.get("threat") in TZEVA_HOSTILE and a.get("time")]
+        if not al:
+            continue
+        t = dt.datetime.fromtimestamp(min(a["time"] for a in al), dt.timezone.utc).strftime("%Y-%m-%dT%H:%M")
+        out.append([str(g.get("id")), t, "|".join(sorted({str(a["threat"]) for a in al})), str(len({c for a in al for c in a.get("cities") or []}))])
+    return out
+
+
+_TZ = {}
+
+
+def tzeva_archive(rows):
+    """Folds the feed's attack waves into history/cache/tzeva_alerts.csv, which keeps what the feed later drops. -> all rows, oldest first."""
+    import store
+    kept = {r[0]: r for r in store.cache_rows("tzeva_alerts")}
+    for r in rows:
+        kept[r[0]] = r
+    out = sorted(kept.values(), key=lambda r: (r[1], r[0]))
+    store.cache_rows_save("tzeva_alerts", out)
+    return out
+
+
+def tzeva_series(days=7, today=None):
+    """Attack waves that set off sirens in Israel in the `days` up to each day. The feed holds only its latest waves, so the series starts
+    `days` after the oldest archived one and never counts a window it does not fully cover. -> [(date, count)]"""
+    if "all" not in _TZ:
+        _TZ["all"] = S.get(TZEVA_API, headers={"Accept": "application/json", "Referer": "https://www.tzevaadom.co.il/"}, retries=2, wait=3)
+    rows = tzeva_archive(parse_tzeva(_TZ["all"]))
+    if not rows:
+        return []
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    waves = [dt.date.fromisoformat(r[1][:10]) for r in rows]
+    out, d = [], waves[0] + dt.timedelta(days=days)
+    while d <= today:
+        out.append((d.isoformat(), float(sum(1 for w in waves if 0 <= (d - w).days < days))))
+        d += dt.timedelta(days=1)
+    return out
+
+
 def ukmto_recent(theatre, days=30, today=None):
     """Official UKMTO incidents in the last `days` inside a theatre box."""
     return float(sum(1 for x in parse_ukmto(ukmto_all(), today, days) if x["th"] == theatre))
@@ -395,6 +443,134 @@ def fetch_incidents():
                 out.append(x)
     out.sort(key=lambda x: x["d"], reverse=True)
     return out[:80]
+
+
+# ---------------------------------------------------------------- Bluesky posts, sampled from the Jetstream firehose
+JETSTREAM = ("jetstream2.us-east.bsky.network", "jetstream1.us-east.bsky.network", "jetstream1.us-west.bsky.network", "jetstream2.us-west.bsky.network")
+BSKY_WAR = re.compile(r"\b(war|military|troops|strikes?|airstrikes?|missiles?|rockets?|drones?|shelling|bomb\w*|attack\w*|invasion|invade\w*|mobili[sz]\w*|"
+                      r"evacuat\w*|sirens?|air raid|warships?|navy|blockade|escalat\w*|ceasefire|nuclear|explosions?|offensive)\b", re.I)
+
+
+def bsky_tally(posts):
+    """[(text, langs)] -> (English posts, {theatre: English posts that name the theatre and use war vocabulary})."""
+    import extras
+    pats = {t: re.compile(r"\b(?:" + p + ")", re.I) for t, p in extras.KEYS.items()}
+    n, hits = 0, {}
+    for text, langs in posts:
+        if "en" not in (langs or ()):
+            continue
+        n += 1
+        if not BSKY_WAR.search(text or ""):
+            continue
+        for t, pat in pats.items():
+            if pat.search(text):
+                hits[t] = hits.get(t, 0) + 1
+    return n, hits
+
+
+def jetstream_window(start_us, seconds=60, host=JETSTREAM[0], wall=90):
+    """New posts in the `seconds` after start_us (microseconds), replayed from Jetstream's buffer of the last day or so. -> [(text, langs)]"""
+    ctx = ssl.create_default_context()
+    sock = ctx.wrap_socket(socket.create_connection((host, 443), timeout=20), server_hostname=host)
+    path = f"/subscribe?wantedCollections=app.bsky.feed.post&cursor={int(start_us)}"
+    k = base64.b64encode(os.urandom(16)).decode()
+    sock.sendall(f"GET {path} HTTP/1.1\r\nHost: {host}\r\nUser-Agent: {C.USER_AGENT}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                 f"Sec-WebSocket-Key: {k}\r\nSec-WebSocket-Version: 13\r\n\r\n".encode())
+    buf = b""
+    while b"\r\n\r\n" not in buf:
+        d = sock.recv(4096)
+        if not d:
+            raise RuntimeError("jetstream closed the connection")
+        buf += d
+    head, buf = buf.split(b"\r\n\r\n", 1)
+    if b" 101 " not in head.split(b"\r\n")[0]:
+        raise RuntimeError("jetstream refused the connection: " + head.split(b"\r\n")[0].decode("latin-1")[:80])
+    end, out, t0 = start_us + seconds * 1_000_000, [], time.time()
+    sock.settimeout(10)
+    try:
+        while time.time() - t0 < wall:
+            try:
+                d = sock.recv(262144)
+            except socket.timeout:
+                continue
+            if not d:
+                break
+            buf += d
+            while True:
+                fr = ws_read(buf)
+                if not fr:
+                    break
+                op, pl, buf = fr
+                if op == 9:
+                    sock.sendall(ws_frame(pl, 10))
+                    continue
+                if op == 8:
+                    return out
+                if op != 1:
+                    continue
+                try:
+                    ev = json.loads(pl)
+                except ValueError:
+                    continue
+                if ev.get("time_us", 0) >= end:
+                    return out
+                c = ev.get("commit") or {}
+                if ev.get("kind") == "commit" and c.get("operation") == "create":
+                    r = c.get("record") or {}
+                    out.append((r.get("text") or "", r.get("langs") or ()))
+    finally:
+        sock.close()
+    raise RuntimeError(f"jetstream window not finished in {wall}s ({len(out)} posts)")
+
+
+_BS = {}
+
+
+def bsky_sample(hours=None, step_min=30, seconds=60, budget=900, now=None):
+    """Samples one minute of posts every half hour over the last `hours` (env BSKY_HOURS, default 7), skipping windows already in
+    history/cache/bsky_windows.csv (start, English posts, 'theatre:hits ...'). Jetstream keeps about a day, so a 6-hourly job misses nothing.
+    -> all archived rows."""
+    import store
+    if "rows" in _BS:
+        return _BS["rows"]
+    hours = float(hours or os.environ.get("BSKY_HOURS") or 7)
+    kept = {r[0]: r for r in store.cache_rows("bsky_windows")}
+    now = now or dt.datetime.now(dt.timezone.utc)
+    t = now.replace(minute=(now.minute // step_min) * step_min, second=0, microsecond=0) - dt.timedelta(minutes=step_min)
+    starts = []
+    while t >= now - dt.timedelta(hours=hours):
+        starts.append(t)
+        t -= dt.timedelta(minutes=step_min)
+    t0, errs = time.time(), []
+    for st in starts:
+        key = st.strftime("%Y-%m-%dT%H:%M")
+        if key in kept or time.time() - t0 > budget:
+            continue
+        for host in JETSTREAM:
+            try:
+                n, hits = bsky_tally(jetstream_window(int(st.timestamp() * 1_000_000), seconds, host))
+            except Exception as e:
+                errs.append(f"{host}: {e}"[:120])
+                continue
+            if n:
+                kept[key] = [key, str(n), " ".join(f"{k}:{v}" for k, v in sorted(hits.items()))]
+            break
+    out = sorted(kept.values())
+    if not out:
+        raise RuntimeError("no Bluesky sample: " + "; ".join(errs[:3]))
+    store.cache_rows_save("bsky_windows", out)
+    _BS["rows"] = out
+    return out
+
+
+def bsky_series(theatre, min_posts=10000):
+    """War-vocabulary posts naming the theatre per 10,000 English Bluesky posts, per UTC day with at least `min_posts` sampled -> [(date, rate)]."""
+    by = {}
+    for key, n, hits in bsky_sample():
+        tot = by.setdefault(key[:10], [0, 0])
+        tot[0] += int(n)
+        tot[1] += sum(int(v) for k, v in (h.split(":") for h in hits.split()) if k == theatre)
+    return [(d, 1e4 * h / n) for d, (n, h) in sorted(by.items()) if n >= min_posts]
 
 
 # ---------------------------------------------------------------- NASA FIRMS thermal detections

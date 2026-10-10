@@ -505,6 +505,41 @@ class TestOsint(unittest.TestCase):
             store.ROOT = old
             osint._UK.clear()
 
+    def test_tzeva_counts_hostile_waves_inside_covered_windows(self):
+        import osint
+        day = lambda d, h=12: int(dt.datetime(2026, 10, d, h, tzinfo=dt.timezone.utc).timestamp())
+        groups = [{"id": 3, "alerts": [{"time": day(9), "cities": ["A", "B"], "threat": 0, "isDrill": False}, {"time": day(9, 13), "cities": ["B", "C"], "threat": 5, "isDrill": False}]},
+                  {"id": 2, "alerts": [{"time": day(5), "cities": ["A"], "threat": 3, "isDrill": False}]},     # earthquake: not an attack
+                  {"id": 1, "alerts": [{"time": day(2), "cities": ["A"], "threat": 0, "isDrill": True}]},      # drill
+                  {"id": 0, "alerts": [{"time": day(1), "cities": ["D"], "threat": 0, "isDrill": False}]}]
+        rows = osint.parse_tzeva(groups)
+        self.assertEqual([r[0] for r in rows], ["3", "0"])
+        self.assertEqual(rows[0][2:], ["0|5", "3"])
+        d, old = tempfile.mkdtemp(), store.ROOT
+        store.ROOT = d
+        try:
+            osint._TZ["all"] = groups
+            out = dict(osint.tzeva_series(today=dt.date(2026, 10, 10)))
+            self.assertEqual(min(out), "2026-10-08")                  # a full week after the oldest wave
+            self.assertEqual((out["2026-10-08"], out["2026-10-09"]), (0.0, 1.0))
+            osint._TZ["all"] = groups[:1]                              # the feed drops old waves; the archive keeps them
+            self.assertEqual(min(dict(osint.tzeva_series(today=dt.date(2026, 10, 10)))), "2026-10-08")
+        finally:
+            store.ROOT = old
+            osint._TZ.clear()
+
+    def test_bsky_rate_per_theatre(self):
+        import osint
+        n, hits = osint.bsky_tally([("Missiles hit Kharkiv, Ukraine says", ["en"]), ("Ukraine is lovely in spring", ["en"]),
+                                    ("Iran war talk", ["fa"]), ("Israeli strikes in Lebanon", ["en", "ar"]), ("no langs", None)])
+        self.assertEqual((n, hits), (3, {"ukraine": 1, "israel": 1}))
+        osint._BS["rows"] = [["2026-10-09T00:00", "8000", "ukraine:4 iran:1"], ["2026-10-09T00:30", "4000", "ukraine:2"], ["2026-10-10T00:00", "500", "ukraine:5"]]
+        try:
+            self.assertEqual(osint.bsky_series("ukraine"), [("2026-10-09", 5.0)])   # 6 per 12,000; the thin day is left out
+            self.assertEqual(osint.bsky_series("iran"), [("2026-10-09", 1e4 / 12000)])
+        finally:
+            osint._BS.clear()
+
     def test_seed_uses_archive_only_before_the_live_series_starts(self):
         d = tempfile.mkdtemp()
         with open(os.path.join(d, "demo_series.csv"), "w") as f:

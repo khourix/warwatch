@@ -604,6 +604,20 @@ for th in ("iran", "yemen"):
         (lambda t=th: __import__("osint").ukmto_series(t)), url="https://www.ukmto.org/recent-incidents", sub="Sea")
 
 
+# ============ Israel's rocket, missile and drone sirens (Tzeva Adom, which mirrors Home Front Command alerts) ============
+add("tzeva_israel", "Rocket, missile and drone alert waves in Israel, last 7 days (Tzeva Adom)", "geospatial", "israel", "daily", False,
+    "Each wave is one attack that set off Home Front Command sirens: rockets from Gaza or Lebanon, missiles from Iran or Yemen, hostile drones. "
+    "Reactive, so it confirms escalation, and a wave of waves marks a new round. Tzeva Adom serves its latest waves only, so the archive starts on 10 October 2026.",
+    (lambda: __import__("osint").tzeva_series()), url="https://www.tzevaadom.co.il/", sub="Strikes")
+
+# ============ Bluesky war talk per theatre (Jetstream firehose sample, one minute every half hour; news.yml fills the cache) ============
+for th in extras.KEYS:
+    add(f"bsky_{th}", f"Bluesky posts about war naming {TH[th]}, per 10,000 English posts", "information", th, "daily", False,
+        "Share of English Bluesky posts that name the theatre and use war words (strike, missiles, troops, evacuation). A share, so the network's growth "
+        "does not move it. Social talk spikes with the news, so it mostly confirms; a rise before the headlines is the signal worth watching.",
+        _slow(f"bsky_{th}", (lambda t=th: __import__("osint").bsky_series(t))), url="https://docs.bsky.app/blog/jetstream", sub="Social")
+
+
 # ============ ACLED conflict-event counts via HDX HAPI (the open route to ACLED data; ~2 months behind) ============
 HAPI_LOC = {"ukraine": ("UKR",), "europe_east": ("POL", "LTU", "LVA", "EST"), "iran": ("IRN",), "yemen": ("YEM",), "israel": ("ISR", "PSE", "LBN"),
             "scs": ("PHL",), "southasia": ("IND", "PAK"), "libya": ("LBY",), "sudan": ("SDN", "SSD"), "drc": ("COD",), "venezuela": ("VEN", "COL")}
