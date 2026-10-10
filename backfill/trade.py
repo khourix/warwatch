@@ -19,7 +19,8 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 API = "https://comtradeapi.un.org/data/v1/get/C/M/HS"
 ORIGINS = {"jpn": 392, "tha": 764}
 DESTS = {"sudan": 729, "libya": 434, "yemen": 887, "drc": 180, "iraq": 368, "chad": 148, "syria": 760, "somalia": 706,
-         "uae": 784, "jordan": 400, "turkey": 792}
+         "uae": 784, "jordan": 400, "turkey": 792,
+         "saudi": 682, "kuwait": 414, "bahrain": 48, "qatar": 634, "oman": 512}     # the Gulf states (the UAE is above)
 PICKUP4, PICKUP6 = "8704", ["870421", "870422", "870431", "870432"]      # pickups and light trucks
 SUV6 = ["870323", "870324", "870332", "870333"]                            # large petrol and diesel cars (Land Cruiser class)
 CODES = ",".join([PICKUP4] + PICKUP6 + SUV6)
