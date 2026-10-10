@@ -84,7 +84,7 @@ BOXES = {   # lat_min, lat_max, lon_min, lon_max for military ADS-B counts and h
 THEATRE_BOX = BOXES
 FIRS = {   # flight information regions queried in the FAA NOTAM service for each theatre
     "ukraine": ["UKBV", "UKLV", "UKOV", "UKDV", "UKXX"], "europe_east": ["EPWW", "EVRR", "EYVL", "EETT", "UMMV"],
-    "iran": ["OIIX"], "yemen": ["OYSC"], "israel": ["LLLL", "OLBB", "OSTT", "ORBB"], "taiwan": ["RCAA"],
+    "iran": ["OIIX", "ORBB"], "yemen": ["OYSC"], "israel": ["LLLL", "OLBB", "OSTT"], "taiwan": ["RCAA"],   # Baghdad sits with Iran, which also carries Iraq's advisories
     "scs": ["RPHI", "VHHK"], "korea": ["RKRR", "ZKKP"], "southasia": ["OPKR", "OPLR", "VIDF", "VABF"],
     "libya": ["HLLL"], "sudan": ["HSSS"], "drc": ["FZZA"], "venezuela": ["SVZM"],
 }
@@ -127,6 +127,15 @@ STATE_ISO = {"ukraine": ["UP", "BO", "MD"],
              "israel": ["IS", "LE", "JO", "EG"],   # FIPS codes, as the feed uses
              "taiwan": ["TW"], "scs": ["RP", "VM"], "korea": ["KS", "KN"], "southasia": ["IN", "PK"],
              "libya": ["LY"], "sudan": ["SU", "OD"], "drc": ["CG"], "venezuela": ["VE", "CO", "CU"]}
+# The country each code's main advisory is titled with. The feed files more than one item under some codes
+# (Israel, the West Bank and Gaza all under IS) and mixes in ISO codes (Saint Kitts and Nevis also files under KN),
+# while the archived pages the history is rebuilt from carry one level per country.
+STATE_NAME = {"UP": "Ukraine", "BO": "Belarus", "MD": "Moldova", "PL": "Poland", "LH": "Lithuania", "LG": "Latvia",
+              "EN": "Estonia", "FI": "Finland", "IR": "Iran", "IZ": "Iraq", "YM": "Yemen", "SA": "Saudi Arabia",
+              "MU": "Oman", "DJ": "Djibouti", "IS": "Israel", "LE": "Lebanon", "JO": "Jordan", "EG": "Egypt",
+              "TW": "Taiwan", "RP": "Philippines", "VM": "Vietnam", "KS": "South Korea", "KN": "North Korea",
+              "IN": "India", "PK": "Pakistan", "LY": "Libya", "SU": "Sudan", "OD": "South Sudan",
+              "CG": "Democratic Republic of the Congo", "VE": "Venezuela", "CO": "Colombia", "CU": "Cuba"}
 GDELT_CC = {   # FIPS country codes whose events count toward a theatre
     "ukraine": ["UP", "BO", "MD"],
     "europe_east": ["PL", "LH", "LG", "EN", "FI", "RO"],

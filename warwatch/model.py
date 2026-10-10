@@ -69,6 +69,9 @@ def sigmoid(x):
 _FAM = re.compile("_(" + "|".join(TH) + ")$")
 
 
+WORLD = "world_tempo"     # the contributions of every global family, summed
+
+
 def family(sid):
     return _FAM.sub("", sid)
 
@@ -121,6 +124,9 @@ def predict(m, series, theatre, events, today):
     bs = sorted(min(cap, shrink(sigmoid(_logit_raw(b, theatre, hist, ev)), base, m["gamma"], m["phi"])) for b in m.get("boot", []))
     lo, hi = (bs[int(0.05 * (len(bs) - 1))], bs[int(math.ceil(0.95 * (len(bs) - 1)))]) if bs else (p, p)
     contrib = [(f, round(w * ev[f] / EVIDENCE_MAX * m["gamma"], 3)) for f, w in th["w"].items() if ev.get(f) and w * ev[f] > 0]
+    glob = {family(s["id"]) for s in series if s["theatre"] == "global"}
+    world = round(sum(c for f, c in contrib if f in glob), 3)     # the global families add the same to every theatre: one line
+    contrib = [(f, c) for f, c in contrib if f not in glob] + ([(WORLD, world)] if world > 0 else [])
     contrib.sort(key=lambda kv: -kv[1])
     hist_c = round(m["gamma"] * sum(c * h for c, h in zip(th["hist"], hist)), 3)
     last = max((d for t, d in events if t == theatre and d < today), default=None)

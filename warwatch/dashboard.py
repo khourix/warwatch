@@ -75,7 +75,7 @@ def series_json(s):
         d["method"] = sc["method"]
         if "base_med" in sc:
             d["base"] = {"med": round(sc["base_med"], 3), "sd": round(sc["base_sd"], 3), "n": sc["base_n"]}
-        raw = stats.history_z(pts, kind, ZH_N)
+        raw = stats.history_z(pts, kind, ZH_N, scale=None if s.get("transform") else s.get("scale"))
         d["zh"] = _directed_pts(raw, s["direction"])
     return d
 
@@ -87,7 +87,7 @@ def _r(x, n):
 def _why(t, contrib, res_series):
     """Family contributions to the 30-day log-odds, labelled with the family's series name in this theatre."""
     import model
-    lab = {}
+    lab = {model.WORLD: "World tempo (markets, defence orders and tenders: the same for every theatre)"}
     for s in res_series:
         if s["theatre"] in (t, "global"):
             lab.setdefault(model.family(s["id"]), s["label"])

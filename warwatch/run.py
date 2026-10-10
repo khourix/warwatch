@@ -90,7 +90,7 @@ def score(series):
     for s in series:
         if s["status"] != "ok":
             continue
-        s["score"] = stats.score_series(s["points"], s["kind"], transform=s.get("transform"))
+        s["score"] = stats.score_series(s["points"], s["kind"], transform=s.get("transform"), scale=s.get("scale"))
         if s["score"] is None:
             s["status"] = "collecting"
     return series

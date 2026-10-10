@@ -137,7 +137,25 @@ def calendar_fill(points, days, end=None):
     return vals, obs, filled
 
 
-def score_series(points, kind, base_days=None, transform=None):
+def noise_floor(scale, med):
+    """Smallest spread a baseline is allowed to claim, in the series' own units, so a near-empty or
+    near-flat history cannot turn one aircraft or a tenth of a percent into a maximal reading.
+    scale: None (no floor), "count" (a count per day, scored as a 7-day mean: Poisson sd of that mean,
+    with at least one event a week as the volume), "window" (a count over a trailing window, such as
+    warnings in the last 30 days: Poisson sd of the count, at least one), or ("share", one_point)
+    (a share whose one percentage point is `one_point` in the series' units)."""
+    if scale is None:
+        return 0.0
+    if scale == "count":
+        return math.sqrt(max(med, 1.0) / 7)
+    if scale == "window":
+        return math.sqrt(max(med, 1.0))
+    if isinstance(scale, (tuple, list)) and scale[0] == "share":
+        return float(scale[1])
+    raise ValueError(f"unknown scale {scale!r}")
+
+
+def score_series(points, kind, base_days=None, transform=None, scale=None):
     """-> dict(z, z_raw, method, value, label, miss, filled, ...) for the newest point, or None.
 
     z is the modified z (winsorized at +-5; z_raw keeps the unclamped value for the audit log).
@@ -145,7 +163,8 @@ def score_series(points, kind, base_days=None, transform=None):
     daily: the latest 7-day mean against the 7-day means of the year before the newest 30 days (gaps <=2 days
     carried forward, longer gaps left missing; needs YEAR_MIN such means and 4 of the last 7 days). Series with
     less history than that, and any call with an explicit base_days, use the plain trailing window of base_days
-    days (needs half of those baseline means). transform: see transformed()."""
+    days (needs half of those baseline means). transform: see transformed(). scale: see noise_floor()
+    (daily series only; ignored with a transform, whose values are % changes)."""
     if transform:
         r = score_series(transformed(points, kind, transform), kind, base_days)
         if r:
@@ -159,17 +178,18 @@ def score_series(points, kind, base_days=None, transform=None):
         return None if r is None else {"z": r[0], "z_raw": r[1], "method": "seasonal-adjusted, modified z", "value": points[-1][1],
                                        "label": points[-1][0], "miss": 0.0, "filled": 0}
     if base_days is None:
-        r = len(points) >= YEAR_MIN and _score_daily(points, YEAR_DAYS + 7 + GUARD_DAYS, GUARD_DAYS, YEAR_MIN, "vs prior year (latest 30 days left out), modified z")
+        r = len(points) >= YEAR_MIN and _score_daily(points, YEAR_DAYS + 7 + GUARD_DAYS, GUARD_DAYS, YEAR_MIN, "vs prior year (latest 30 days left out), modified z", scale)
         if r:
             return r
         base_days = BASE_DAYS
     if len(points) < base_days // 2 + 7:
         return None
-    return _score_daily(points, base_days + 7, 0, base_days // 2, "vs prior 90 days, modified z" if base_days == BASE_DAYS else f"vs prior {base_days} days, modified z")
+    return _score_daily(points, base_days + 7, 0, base_days // 2, "vs prior 90 days, modified z" if base_days == BASE_DAYS else f"vs prior {base_days} days, modified z", scale)
 
 
-def _score_daily(points, n_win, guard, min_roll, method):
-    """Latest 7-day mean against the 7-day means that ended between 6 and n_win-1-guard days before the window's end."""
+def _score_daily(points, n_win, guard, min_roll, method, scale=None):
+    """Latest 7-day mean against the 7-day means that ended between 6 and n_win-1-guard days before the window's end.
+    When the baseline's spread is below the series' noise floor, the floor is the spread."""
     vals, obs, filled = calendar_fill(points, n_win)
     last7 = [v for v in vals[-7:] if v is not None]
     if len(last7) < 4:
@@ -188,6 +208,11 @@ def _score_daily(points, n_win, guard, min_roll, method):
     med = statistics.median(roll)
     mad = statistics.median(abs(x - med) for x in roll)
     sd = mad / 0.6745 if mad else statistics.fmean(abs(x - med) for x in roll) * 1.2533
+    floor = noise_floor(scale, med)
+    if floor > sd:
+        raw = (recent - med) / floor
+        r = (max(-WINSOR, min(WINSOR, raw)), raw)
+        sd, method = floor, method + ", noise floor"
     return {"z": r[0], "z_raw": r[1], "method": method, "value": recent, "label": points[-1][0],
             "base_med": med, "base_sd": sd, "base_n": len(roll), "miss": round(1 - (obs + filled) / n_win, 3), "filled": filled}
 
@@ -200,12 +225,12 @@ def ewma(values, alpha=0.3):
     return out
 
 
-def history_z(points, kind, n, transform=None):
+def history_z(points, kind, n, transform=None, scale=None):
     """[(label, z)] for the last n points, each scored as if it were the newest (what the dashboard
     would have shown that day). Points that cannot be scored yet are skipped."""
     out = []
     for i in range(max(0, len(points) - n), len(points)):
-        r = score_series(points[:i + 1], kind, transform=transform)
+        r = score_series(points[:i + 1], kind, transform=transform, scale=scale)
         if r is not None:
             out.append((points[i][0], round(r["z"], 2)))
     return out

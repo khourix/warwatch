@@ -57,6 +57,33 @@ class TestStats(unittest.TestCase):
         self.assertGreater(stats.score_series(demo.monthly(1, 1.5), "monthly")["z"], 4)
         self.assertGreater(stats.score_series(demo.daily(1, 1.0), "daily")["z"], 4)
 
+    def test_noise_floor_on_small_counts_and_shares(self):
+        """One aircraft a week over an empty year, or a tenth of a percent over a near-flat share, read as maximal
+        without a floor; with one they are small. A real surge still reaches the cap."""
+        day = lambda i: (dt.date(2025, 1, 1) + dt.timedelta(days=i)).isoformat()
+        empty = [(day(i), 0.0) for i in range(420)]
+        one = empty[:-7] + [(day(413 + i), 1.0 if i == 0 else 0.0) for i in range(7)]
+        self.assertEqual(stats.score_series(one, "daily")["z"], 5.0)
+        r = stats.score_series(one, "daily", scale="count")
+        self.assertLess(r["z"], 1)
+        self.assertIn("noise floor", r["method"])
+        surge = empty[:-7] + [(day(413 + i), 3.0) for i in range(7)]
+        self.assertEqual(stats.score_series(surge, "daily", scale="count")["z"], 5.0)
+        share = [(day(i), 0.036 + 0.01 * (i % 3)) for i in range(413)] + [(day(413 + i), 0.12) for i in range(7)]
+        self.assertGreater(stats.score_series(share, "daily")["z"], 3)
+        self.assertLess(stats.score_series(share, "daily", scale=("share", 1.0))["z"], 0.2)
+        self.assertEqual(stats.noise_floor("window", 16), 4.0)
+        self.assertEqual(stats.noise_floor(None, 16), 0.0)
+        big = [(day(i), 1000.0 + (i * 37 % 101) * 3) for i in range(420)]
+        self.assertEqual(stats.score_series(big, "daily", scale="count"), stats.score_series(big, "daily"))   # no effect at volume
+
+    def test_every_daily_count_family_has_a_floor(self):
+        for s in catalog.SERIES:
+            if s["kind"] == "daily" and s["id"].startswith(("adsb_", "package_", "gpsjam_", "notam_", "nga_", "tzeva_")):
+                self.assertIsNotNone(s["scale"], s["id"])
+            if s["kind"] == "monthly":
+                self.assertIsNone(s["scale"], s["id"])
+
     def test_short_series_unscored(self):
         self.assertIsNone(stats.score_series([("a", 1)] * 10, "monthly"))
         self.assertIsNone(stats.score_series([("a", 1)] * 30, "daily"))
@@ -197,6 +224,24 @@ class TestParsers(unittest.TestCase):
                  {"Title": "Iran - Level 4: Do Not Travel", "Category": ["IR"]},
                  {"Title": "France - Level 2: x", "Category": ["FR"]}]
         self.assertEqual(S.state_levels(items, ["IS", "IR"]), 7.0)
+
+    def test_state_levels_one_per_country_like_the_history(self):
+        """The feed as it was on 10 Oct 2026: three items under IS and Saint Kitts and Nevis under KN. The live sum
+        must read one level per country, as the archived pages do, or the series steps where live takes over."""
+        items = [{"Title": "Israel - Level 3: Reconsider Travel - Level 3: Reconsider Travel", "Category": ["IS"]},
+                 {"Title": "West Bank - Level 3: Reconsider Travel", "Category": ["IS"]},
+                 {"Title": "Gaza - Level 4: Do Not Travel", "Category": ["IS"]},
+                 {"Title": "Lebanon - Level 4: Do Not Travel", "Category": ["LE"]},
+                 {"Title": "Jordan - Level 3: Reconsider Travel", "Category": ["JO"]},
+                 {"Title": "Egypt - Level 2: Exercise Increased Caution", "Category": ["EG"]},
+                 {"Title": "Saint Kitts and Nevis - Level 1: Exercise Normal Precautions", "Category": ["KN"]},
+                 {"Title": "North Korea - Level 4: Do Not Travel", "Category": ["KN"]},
+                 {"Title": "South Korea - Level 1: Exercise Normal Precautions", "Category": ["KS"]}]
+        self.assertEqual(S.state_levels(items, C.STATE_ISO["israel"]), 12.0)
+        self.assertEqual(S.state_levels(items, C.STATE_ISO["korea"]), 5.0)
+        self.assertEqual(S.state_country_level(items, "IS", None), 4)     # no name to go by: the highest
+        self.assertIsNone(S.state_country_level(items, "VE", "Venezuela"))
+        self.assertEqual(set(C.STATE_NAME), {c for v in C.STATE_ISO.values() for c in v})
 
     def test_adsb_box_and_airlift(self):
         p = {"ac": [{"lat": 50, "lon": 30, "t": "C17"}, {"lat": 50, "lon": 31, "t": "H60"},
@@ -768,7 +813,7 @@ class TestModel(unittest.TestCase):
         hot = model.predict(m, [{"id": "brent", "theatre": "global", "direction": "up", "score": {"z": 5.0}}], "iran", [], dt.date(2026, 10, 1))
         self.assertLess(quiet["p"], hot["p"])
         self.assertLessEqual(hot["p"], m["p_cap"])
-        self.assertEqual(hot["contrib"][0][0], "brent")
+        self.assertEqual(hot["contrib"][0][0], model.WORLD)      # global families are one line: the same for every theatre
         self.assertLessEqual(hot["lo"], hot["p"])
         self.assertGreaterEqual(hot["hi"], hot["p"])
 

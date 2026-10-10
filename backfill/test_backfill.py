@@ -40,6 +40,47 @@ class T(unittest.TestCase):
         self.assertEqual(L.parse_advisory("Taiwan - Level 1: Exercise Normal Precautions"), (1, 0))
         self.assertEqual(L.parse_advisory("Level 4: Do Not Travel. The Department ordered departure of family members"), (4, 1))
         self.assertIsNone(L.parse_advisory("nothing"))
+        kyiv = "<p>Level 4: Do Not Travel</p><p>On January 23, the Department of State ordered the departure of eligible family members</p>"
+        self.assertEqual(L.parse_advisory(kyiv), (4, 1))
+        nav = "<title>Iraq - Level 4: Do Not Travel</title><nav>Level 1: Exercise Normal Precautions</nav>"
+        self.assertEqual(L.parse_advisory(nav, strict=True), (4, 0))      # the heading wins over the navigation
+        self.assertIsNone(L.parse_advisory("<title>Iraq</title><nav>Level 1: Exercise Normal Precautions</nav>", strict=True))
+        self.assertEqual(L.parse_advisory("<title>Iraq</title><nav>Level 1: x</nav>"), (1, 0))
+
+    def test_fill_forward_carry_limit(self):
+        out = L.fill_forward([("2024-01-02", 2)], dt.date(2024, 1, 1), dt.date(2024, 1, 8), max_carry=3)
+        self.assertEqual(sorted(out), ["2024-01-02", "2024-01-03", "2024-01-04", "2024-01-05"])
+
+    def test_country_and_theatre_files_are_named_apart(self):
+        """The Iran and Ukraine slugs are also theatre names: the per-country ordered-departure file must not be
+        the theatre total, or deriving the totals overwrites a country (and a second derive double counts)."""
+        theatres = set(C.STATE_ISO)
+        for code, slug in L.SLUG.items():
+            self.assertNotIn(f"od_country_{slug}", {f"od_{t}" for t in theatres})
+        self.assertIn("ukraine", theatres)
+        self.assertEqual(L.SLUG["UP"], "ukraine")
+        self.assertEqual(set(L.ISO3), set(L.SLUG))
+
+    def test_derive_state_needs_every_country(self):
+        import tempfile
+        old = K.DATA
+        K.DATA = tempfile.mkdtemp()
+        try:
+            K.write_csv(K.path("state_israel"), {"2026-01-01": 10.0})      # an older sum without Israel itself
+            K.write_csv(K.path("state_level_lebanon"), {"2026-01-01": 4.0})
+            K.write_csv(K.path("state_od_country_lebanon"), {"2026-01-01": 0.0})
+            L.derive_state(["israel"])
+            self.assertEqual(K.load("state_israel"), {})        # Israel, Jordan and Egypt have no history: no sum
+            for slug, lv in (("israel-west-bank-and-gaza", 3.0), ("jordan", 3.0), ("egypt", 2.0)):
+                K.write_csv(K.path(f"state_level_{slug}"), {"2026-01-01": lv})
+                K.write_csv(K.path(f"state_od_country_{slug}"), {"2026-01-01": 1.0 if slug == "jordan" else 0.0})
+            L.derive_state(["israel"])
+            self.assertEqual(K.load("state_israel"), {"2026-01-01": 12.0})
+            self.assertEqual(K.load("state_od_israel"), {"2026-01-01": 1.0})
+            L.replace_from("state_level_jordan", {"2026-01-02": 2.0}, dt.date(2026, 1, 1))
+            self.assertEqual(K.load("state_level_jordan"), {"2026-01-02": 2.0})
+        finally:
+            K.DATA = old
 
     def test_weekly_skips_unchanged(self):
         s = [("20240101000000", "a"), ("20240103000000", "b"), ("20240110000000", "b"), ("20240117000000", "c")]
