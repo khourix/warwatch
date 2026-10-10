@@ -212,12 +212,25 @@ def jcg_series(theatre, today=None):
 
 # ---- China MSA navigational warnings (航行警告), read from the MSA mobile site's list API ----
 # msa.gov.cn/page/outter/weather.jsp refuses GitHub and home connections alike; the mobile site's article API answers from GitHub and lists
-# every warning all bureaus issue, newest first, with a title naming the activity and the bureau ('军事训练—琼航警196/26').
+# every warning all bureaus issue since late 2015, newest first, with a title naming the activity and usually the sea or the bureau
+# ('军事训练—琼航警196/26', '渤海北部军事演习'). The PLA's largest drills around Taiwan were announced by Xinhua rather than in this list.
 MSA_API = "https://www.msa.gov.cn/msacncms_wap/cmsarticle/selectPageByChannelId.jhtml"
 MSA_CHANNEL = "9c219298b27f460e995a99401b3ff6af"
-MSA_MIL = re.compile(r"军事|实弹|射击|演习|打靶|导弹|火箭")   # military, live fire, firing, exercise, target practice, missile, rocket
-MSA_BUREAU = re.compile(r"([\u4e00-\u9fff]{1,2})航警\s*\d+\s*/\s*\d+")
-MSA_THEATRE = {"taiwan": "闽浙沪", "scs": "琼粤桂深", "korea": "鲁辽冀津"}   # issuing bureaus: Taiwan Strait and East China Sea, South China Sea, Yellow Sea and Bohai
+MSA_MIL = re.compile(r"军事|实弹|射击|演习|打靶|导弹|火箭|武器")   # military, live fire, firing, exercise, target practice, missile, rocket, weapons
+MSA_OFF = re.compile(r"取消|结束|解除|终止")   # cancelled, ended, lifted: not a new closure
+MSA_BUREAU = re.compile(r"([\u4e00-\u9fff]{1,2})航警")   # 琼航警196/26, 【琼航警102】, 云航警2022（0074）, 鲁航警0409
+MSA_SEA = [("korea", "渤海|黄海|莱州|辽东"), ("taiwan", "东海|台湾|平潭|闽|浪岗|舟山"), ("scs", "南海|北部湾|珠江口|琼州|海南|西沙|南沙|湛江|汕尾")]   # sea named in the title
+MSA_THEATRE = {"taiwan": "闽浙沪", "scs": "琼粤桂深海", "korea": "鲁辽冀津云连苏"}   # else the issuing bureau (海 = Guangxi Beihai, 云 = Lianyungang)
+
+
+def msa_theatre(title):
+    """Theatre of a warning title: the sea it names, else its issuing bureau, else ''."""
+    for th, pat in MSA_SEA:
+        if re.search(pat, title):
+            return th
+    m = MSA_BUREAU.findall(title)
+    b = m[-1][-1] if m else ""   # the last match: '演习航警——津航警159/22' is Tianjin's
+    return next((th for th, bs in MSA_THEATRE.items() if b and b in bs), "")
 
 
 def parse_msa(items):
@@ -225,10 +238,10 @@ def parse_msa(items):
     out = []
     for x in items or []:
         t = (x.get("articleTitle") or "").strip()
-        m = MSA_BUREAU.search(t)
-        if not m or not MSA_MIL.search(t):
+        if not MSA_MIL.search(t) or MSA_OFF.search(t) or not re.search(r"[\u4e00-\u9fff]", t):
             continue
-        out.append([str(x.get("articleId")), str(x.get("articlePublishTime") or "")[:10], m.group(1)[-1], t[:60]])
+        m = MSA_BUREAU.findall(t)
+        out.append([str(x.get("articleId")), str(x.get("articlePublishTime") or "")[:10], m[-1][-1] if m else "", t[:60]])
     return out
 
 
@@ -272,7 +285,7 @@ def msa_update(max_pages=10):
 
 def msa_counts(rows, theatre, first, today, days=30):
     """Military warnings from the theatre's bureaus issued in the `days` up to each day from `first`. -> [(date, count)]"""
-    mine = [dt.date.fromisoformat(r[1]) for r in rows if r[2] in MSA_THEATRE[theatre] and r[1]]
+    mine = [dt.date.fromisoformat(r[1]) for r in rows if r[1] and msa_theatre(r[3]) == theatre]
     out, d = [], first
     while d <= today:
         out.append((d.isoformat(), float(sum(1 for m in mine if 0 <= (d - m).days < days))))

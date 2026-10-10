@@ -571,8 +571,13 @@ class TestOsint(unittest.TestCase):
                  {"articleId": "c", "articleTitle": "军事活动-渤海—鲁航警883/26", "articlePublishTime": "2026-10-09 17:37"},
                  {"articleId": "d", "articleTitle": "拖带作业—粤航警726/26", "articlePublishTime": "2026-10-10 17:49"},
                  {"articleId": "e", "articleTitle": "实弹射击—闽航警0512/26", "articlePublishTime": "2026-09-01 08:00"}]
+        items += [{"articleId": "f", "articleTitle": "渤海北部军事演习", "articlePublishTime": "2026-10-10 08:00"},
+                  {"articleId": "g", "articleTitle": "军事训练取消--桂航警58/23", "articlePublishTime": "2026-10-10 08:00"},
+                  {"articleId": "h", "articleTitle": "东海实弹射击  浙航警659/22", "articlePublishTime": "2026-09-02 08:00"}]
         rows = extras.parse_msa(items)
-        self.assertEqual([r[:3] for r in rows], [["a", "2026-10-10", "琼"], ["c", "2026-10-09", "鲁"], ["e", "2026-09-01", "闽"]])
+        self.assertEqual([r[:3] for r in rows], [["a", "2026-10-10", "琼"], ["c", "2026-10-09", "鲁"], ["e", "2026-09-01", "闽"], ["f", "2026-10-10", ""], ["h", "2026-09-02", "浙"]])
+        self.assertEqual([extras.msa_theatre(r[3]) for r in rows], ["scs", "korea", "taiwan", "korea", "taiwan"])
+        rows = rows[:3]
         out = dict(extras.msa_counts(rows, "taiwan", dt.date(2026, 9, 1), dt.date(2026, 10, 1)))
         self.assertEqual((out["2026-09-01"], out["2026-09-30"], out["2026-10-01"]), (1.0, 1.0, 0.0))
         self.assertEqual(extras.msa_counts(rows, "korea", dt.date(2026, 10, 10), dt.date(2026, 10, 10)), [("2026-10-10", 1.0)])

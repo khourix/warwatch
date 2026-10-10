@@ -20,12 +20,12 @@ jobs:
           GFW_TOKEN: ${{ secrets.GFW_TOKEN }}
         run: python3 probe/assessment_probe.py probe/results.json
       - name: Other routes to blocked sites; Tzeva Adom and Jetstream live tests
+        if: false
         env:
           COMTRADE_API_KEY: ${{ secrets.COMTRADE_API_KEY }}
-          ROUTES_ROUND: "11"
+          ROUTES_ROUND: "99"
         run: python3 probe/routes.py probe/routes11.json
       - name: China MSA back-fill and a live fetch of the new series
-        if: false
         env:
           WARWATCH_LIVE: "1"
           BSKY_HOURS: "3"
