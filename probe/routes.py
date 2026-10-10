@@ -112,8 +112,53 @@ def comtrade_china():
     return out
 
 
+PAGES = [   # pages that open from GitHub: list their links to find the warning and statistics pages behind them
+    ("jcg www1 root", "https://www1.kaiho.mlit.go.jp/", r"TUHO|keiho|navarea|NAV|航行|警報|nav"),
+    ("jcg main", "https://www.kaiho.mlit.go.jp/", r"TUHO|keiho|navarea|航行|警報|nav"),
+    ("msa home", "https://www.msa.gov.cn/", r"航行|警告|通告|channel|article|\.do|\.jsp"),
+    ("customs monthly", "http://english.customs.gov.cn/statics/report/monthly.html", r"Statics|statics|report|\.html"),
+    ("customs preliminary", "http://english.customs.gov.cn/statics/report/preliminary.html", r"Statics|statics|report|\.html"),
+    ("crisis group rss", "https://www.crisisgroup.org/rss.xml", None),
+    ("crisis group rss short", "https://www.crisisgroup.org/rss", None),
+]
+
+
+def links(name, url, pat):
+    import urllib.request
+    req = urllib.request.Request(url, headers={"User-Agent": P.UA, "Accept-Language": "en-US,en;q=0.8"})
+    with urllib.request.urlopen(req, timeout=40) as r:
+        raw = r.read(3_000_000)
+    for enc in ("utf-8", "gb18030", "shift_jis"):
+        try:
+            text = raw.decode(enc)
+            break
+        except UnicodeDecodeError:
+            continue
+    if pat is None:   # an RSS feed: titles, links and dates
+        items = re.findall(r"<item>.*?<title>(.*?)</title>.*?<link>(.*?)</link>.*?(?:<pubDate>(.*?)</pubDate>)?", text, re.S)
+        return {"bytes": len(raw), "items": len(items), "first": items[:25], "crisiswatch": [i for i in items if re.search("crisiswatch", i[0] + i[1], re.I)][:25]}
+    found = []
+    for href, label in re.findall(r"""<a[^>]+href=["']([^"'#]+)["'][^>]*>(.*?)</a>""", text, re.S | re.I):
+        label = re.sub(r"<[^>]+>|\s+", " ", label).strip()[:60]
+        if re.search(pat, href + " " + label):
+            found.append([urllib.parse.urljoin(url, href), label])
+    scripts = [m for m in re.findall(r"""["']([^"']*\.(?:do|jsp|json)[^"']*)["']""", text)][:60]
+    return {"bytes": len(raw), "links": found[:150], "endpoints": scripts}
+
+
 def main(path):
     res = []
+    if os.environ.get("ROUTES_ROUND") == "2":
+        for name, url, pat in PAGES:
+            try:
+                v = links(name, url, pat)
+            except Exception as e:  # noqa: BLE001
+                v = {"error": str(e)[:300]}
+            res.append({"name": name, "url": url, "result": v})
+            print(name, json.dumps(v, ensure_ascii=False)[:400], flush=True)
+        with open(path, "w") as f:
+            json.dump(res, f, indent=1, ensure_ascii=False)
+        return
     for name, url, opts in ROUTES:
         r = P.fetch(url, opts)
         res.append(dict(r, name=name, url=url))
