@@ -429,8 +429,31 @@ def round10():
     return {"after select": page[k - 200: k + 1500] if k > 0 else "", "inline scripts": [x[:1500] for x in scripts][:4]}
 
 
+def round11():
+    import extras
+    out = {}
+    for page in (396, 398, 400, 402, 404, 335, 337, 600):
+        try:
+            items, pages = extras.fetch_msa_page(page)
+        except Exception as e:  # noqa: BLE001
+            out[page] = str(e)[:100]
+            continue
+        ts = [(str(x.get("articlePublishTime"))[:10], x.get("articleTitle") or "") for x in items]
+        out[page] = {"pages": pages, "span": [ts[-1][0], ts[0][0]] if ts else [],
+                     "military": [t for t in ts if re.search("军|演|射|台湾|实弹|导弹|火箭|禁航|危险", t[1])][:60],
+                     "parsed": [r[2] + " " + r[3] for r in extras.parse_msa(items)][:30], "sample": ts[:8]}
+        time.sleep(1)
+    return out
+
+
 def main(path):
     res = []
+    if os.environ.get("ROUTES_ROUND") == "11":
+        v = round11()
+        print(json.dumps(v, ensure_ascii=False)[:800])
+        with open(path, "w") as f:
+            json.dump(v, f, indent=1, ensure_ascii=False)
+        return
     if os.environ.get("ROUTES_ROUND") == "10":
         v = round10()
         print(json.dumps(v, ensure_ascii=False)[:800])
