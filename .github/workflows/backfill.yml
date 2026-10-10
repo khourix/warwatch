@@ -8,9 +8,13 @@ on:
   workflow_dispatch:
     inputs:
       source:
-        description: "all | fred | nga | pla | wiki | forecasts | metaculus | senkaku | alerts | msa | gdeltwide | state | firms | gfw | adsb"
+        description: "all | fred | nga | pla | wiki | forecasts | metaculus | senkaku | alerts | msa | gdeltwide | gdeltadd | history | state | firms | gfw | adsb"
         required: false
         default: "all"
+      only:
+        description: "history: comma-separated catalogue ids whose long history backtest.py fetch reads (blank = the sub-theatres'); state: one theatre group, e.g. iraq,gulf (blank = all)"
+        required: false
+        default: ""
       start:
         description: "first day (blank = each source's own default)"
         required: false
@@ -81,6 +85,57 @@ jobs:
         run: python3 backfill/backfill.py gdeltwide --start ${{ matrix.year }}-01-01 --end ${{ matrix.year }}-12-31
       - uses: ./.github/actions/commit-backfill
         if: always()
+  gdeltadd:
+    needs: plan
+    # GDELT counts for countries added to config.GDELT_CC after the history file was built (Iraq and the Gulf states):
+    # one year of daily files per job into backfill/data/gdelt_add/, then folded into the history file; only when asked for by name
+    if: needs.plan.outputs.src == 'gdeltadd'
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        year: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Back-fill the added countries
+        run: python3 warwatch/backfill.py gdelt-add "" ${{ matrix.year }}-01-01 ${{ matrix.year }}-12-31
+      - uses: ./.github/actions/commit-backfill
+        if: always()
+  gdeltadd-merge:
+    needs: [plan, gdeltadd]
+    if: always() && !cancelled() && needs.plan.outputs.src == 'gdeltadd'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git pull -q --rebase origin "$GITHUB_REF_NAME" || true
+          python3 warwatch/backfill.py gdelt-merge
+      - uses: ./.github/actions/commit-backfill
+        with:
+          paths: backtest/history/gdelt_country_day.csv.gz
+  history:
+    needs: plan
+    # long histories (backtest/history) of catalogue series added after the last backtest fetch; blank `only` = the sub-theatres'
+    if: needs.plan.outputs.src == 'history'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch long histories
+        env:
+          ONLY: ${{ github.event.inputs.only }}
+          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+        run: |
+          ids="$ONLY"
+          [ -n "$ids" ] || ids=$(python3 -c "import sys; sys.path.insert(0,'warwatch'); import catalog, config as C; print(','.join(s['id'] for s in catalog.SERIES if s['theatre'] in C.SUBTHEATRES))")
+          python3 warwatch/backtest.py fetch "$ids"
+      - uses: ./.github/actions/commit-backfill
+        with:
+          paths: backtest/history
   state:
     needs: plan
     env:
@@ -93,11 +148,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: ["ukraine,europe_east", "iran,yemen", "israel,drc", "taiwan,scs,korea", "southasia,libya,sudan", "venezuela"]
+        group: ["ukraine,europe_east", "iran,yemen", "israel,drc", "taiwan,scs,korea", "southasia,libya,sudan", "venezuela", "iraq,gulf"]
     steps:
       - uses: actions/checkout@v4
       - name: Back-fill advisories via Wayback
+        env:
+          ONLY: ${{ github.event.inputs.only }}
         run: |
+          if [ "$SRC" = state ] && [ -n "$ONLY" ] && [ "$ONLY" != "${{ matrix.group }}" ]; then echo "not asked for"; exit 0; fi
           A=""; [ -n "$START" ] && A="$A --start $START"; [ -n "$END" ] && A="$A --end $END"
           python3 backfill/backfill.py state "${{ matrix.group }}" $A
       - uses: ./.github/actions/commit-backfill

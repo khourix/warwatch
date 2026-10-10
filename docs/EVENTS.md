@@ -18,7 +18,7 @@ Not events: diplomacy, sanctions, leadership changes without fighting, territory
 
 ## Fields
 
-`date` (the first day it qualified), `theatre`, `type`, `surprise_or_buildup` (`buildup` if there were public signs in the preceding 30 days, else `surprise`), `description`, `market_moving` (Brent, gold or a local asset moved 2.5 standard deviations or more around the date; `largest_mover` and `move_sd` record which and how much), `source`.
+`date` (the first day it qualified), `theatre`, `site_theatre` (when the event happened in Iraq or the Gulf states, that sub-theatre, `iraq` or `gulf`; it then labels the sub-theatre as well as `theatre`, whose labels do not change), `type`, `surprise_or_buildup` (`buildup` if there were public signs in the preceding 30 days, else `surprise`), `description`, `market_moving` (Brent, gold or a local asset moved 2.5 standard deviations or more around the date; `largest_mover` and `move_sd` record which and how much), `source`.
 
 ## Adding an event
 

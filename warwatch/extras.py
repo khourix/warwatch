@@ -427,6 +427,8 @@ KEYS = {   # theatre -> words that tie a market to it
     "sudan": r"Sudan|\bRSF\b|Khartoum",
     "drc": r"Congo|\bM23\b|Goma|Kinshasa",
     "venezuela": r"Venezuela|Maduro|Caracas|Cuba|Guyana|Colombia|Panama",
+    "iraq": r"\bIraq|Baghdad|Erbil|Kataib",       # after Iran: a market naming both stays with Iran
+    "gulf": r"Saudi|Riyadh|Aramco|\bUAE\b|Emirat|Abu Dhabi|Dubai|Qatar|Doha|Bahrain|Kuwait|\bOman\b",
 }
 
 

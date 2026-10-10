@@ -45,13 +45,17 @@ FORWARD_ARMED = os.path.join(ROOT, "forward", "log_armed.csv")
 
 
 def load_events(path=None, types=None):
+    """[(theatre, date)]. An event that happened in a sub-theatre (site_theatre) is listed for it as well as for its theatre."""
     out = []
     try:
         with open(path or os.path.join(DATA, "events.csv"), newline="") as f:
             for r in csv.DictReader(f):
                 if types and r.get("type") not in types:
                     continue
-                out.append((r["theatre"], dt.date.fromisoformat(r["date"])))
+                d = dt.date.fromisoformat(r["date"])
+                out.append((r["theatre"], d))
+                if r.get("site_theatre"):
+                    out.append((r["site_theatre"], d))
     except OSError:
         pass
     return out
@@ -77,10 +81,11 @@ def family(sid):
 
 
 def evidence(series, theatre):
-    """{family: evidence 0..5} from this theatre's scored series and the global ones."""
+    """{family: evidence 0..5} from this theatre's scored series and the global ones; a sub-theatre also reads its parents'."""
     out = {}
+    mine = {theatre, "global", *C.SUBTHEATRES.get(theatre, {}).get("parents", [])}
     for s in series:
-        if not s.get("score") or not s.get("scored", True) or s["theatre"] not in (theatre, "global"):
+        if not s.get("score") or not s.get("scored", True) or s["theatre"] not in mine:
             continue
         z = s["score"]["z"]
         e = {"up": z, "down": -z}.get(s["direction"], abs(z))
@@ -118,7 +123,7 @@ def predict(m, series, theatre, events, today):
     hist = history(events, theatre, today)
     th = m["theta"]
     z = _logit_raw(th, theatre, hist, ev)
-    base = m["base"][theatre]
+    base = m["base"].get(theatre, m["pooled_base"])     # a theatre the model file predates starts at the pooled rate until the next refit
     cap = m.get("p_cap", 0.95)
     p = min(cap, shrink(sigmoid(z), base, m["gamma"], m["phi"]))
     bs = sorted(min(cap, shrink(sigmoid(_logit_raw(b, theatre, hist, ev)), base, m["gamma"], m["phi"])) for b in m.get("boot", []))
@@ -160,6 +165,7 @@ def blend(p, p_mkt):
 def global_view(m, per):
     """P(an event in at least one theatre) = 1 - prod(1 - p): an upper bound, theatres being positively correlated.
     Level: the odds against the climatological value, cut where the theatre bands cut the pooled base rate."""
+    per = {t: v for t, v in per.items() if t not in C.SUBTHEATRES}    # their events are their parents' too: counted once
     p_any = 1 - math.prod(1 - v["p"] for v in per.values())
     p_mm = 1 - math.prod(1 - v["p"] * m["mm_share"].get(t, 0.0) for t, v in per.items())
     odds = lambda p: p / (1 - p)
@@ -208,15 +214,21 @@ def apply(res, markets=None, today=None, events=None, m=None, forward_path=None)
     glob = global_view(m, per)
     res["model"] = {"version": m["version"], "fitted": m["fitted"], "active": bool(m.get("active")), "gates": m["gates"], "bands": m["bands"],
                     "theatres": per, "global": glob, "blend_active": bool(m.get("blend_active"))}
+    held = set()
     for t, v in per.items():
         r = res["theatres"][t]
+        if m.get("active") and t in C.SUBTHEATRES and not m.get("sub", {}).get(t, {}).get("active"):
+            held.add(t)          # the model passed but this sub-theatre has not: no chance on the page, its level stays signal pressure
+            continue
         r.update(p=v["p"], p_lo=v["lo"], p_hi=v["hi"], p_why=v["contrib"], p_aftermath=v["aftermath"], level_composite=r["level"])
         if m.get("active"):
             p_head = v["p_blend"] if m.get("blend_active") and v.get("p_blend") is not None else v["p"]
             r["p_alert"] = max(p_head, recent.get(t, 0.0))
             r["level"] = level_of(r["p_alert"], m["bands"])
     if m.get("active"):
-        res["regions"], g = engine.rollup(res["theatres"], C.REGIONS)
+        # a held sub-theatre's level is on the other scale, so it sits out of the region and global roll-up
+        roll = {t: dict(r, score=None) if t in held else r for t, r in res["theatres"].items()}
+        res["regions"], g = engine.rollup(roll, C.REGIONS)
         g["level_composite"] = res["global"]["level"]
         g.update(p_any=glob["p_any"], p_market_moving=glob["p_market_moving"])
         g["level"] = glob["level"]

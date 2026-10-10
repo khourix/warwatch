@@ -16,6 +16,7 @@ BASE = "https://travel.state.gov/content/travel/en/traveladvisories/traveladviso
 SLUG = {   # FIPS code used by config.STATE_ISO -> advisory page slug
     "UP": "ukraine", "BO": "belarus", "MD": "moldova", "PL": "poland", "LH": "lithuania", "LG": "latvia", "EN": "estonia", "FI": "finland",
     "IR": "iran", "IZ": "iraq", "YM": "yemen", "SA": "saudi-arabia", "MU": "oman", "DJ": "djibouti",
+    "AE": "united-arab-emirates", "QA": "qatar", "BA": "bahrain", "KU": "kuwait",
     "IS": "israel-west-bank-and-gaza", "LE": "lebanon", "JO": "jordan", "EG": "egypt", "TW": "taiwan", "RP": "philippines", "VM": "vietnam",
     "KS": "south-korea", "KN": "north-korea", "IN": "india", "PK": "pakistan", "LY": "libya", "SU": "sudan", "OD": "south-sudan",
     "CG": "democratic-republic-of-the-congo", "VE": "venezuela", "CO": "colombia", "CU": "cuba"}
@@ -23,7 +24,7 @@ SLUG = {   # FIPS code used by config.STATE_ISO -> advisory page slug
 # copies of the old pages stop there. Both addresses are read.
 NEW_BASE = "https://travel.state.gov/content/tsg_aem/us/en/home/international-travel/travel-advisories/destination."
 ISO3 = {"UP": "ukr", "BO": "blr", "MD": "mda", "PL": "pol", "LH": "ltu", "LG": "lva", "EN": "est", "FI": "fin",
-        "IR": "irn", "IZ": "irq", "YM": "yem", "SA": "sau", "MU": "omn", "DJ": "dji", "IS": "isr", "LE": "lbn",
+        "IR": "irn", "IZ": "irq", "YM": "yem", "SA": "sau", "MU": "omn", "DJ": "dji", "AE": "are", "QA": "qat", "BA": "bhr", "KU": "kwt", "IS": "isr", "LE": "lbn",
         "JO": "jor", "EG": "egy", "TW": "twn", "RP": "phl", "VM": "vnm", "KS": "kor", "KN": "prk", "IN": "ind",
         "PK": "pak", "LY": "lby", "SU": "sdn", "OD": "ssd", "CG": "cod", "VE": "ven", "CO": "col", "CU": "cub"}
 LEVEL = re.compile(r"Level\s*([1-4])\s*[:\-–]", re.I)

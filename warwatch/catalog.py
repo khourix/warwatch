@@ -173,6 +173,7 @@ for sid, label, why, kw, sub in (
 
 # DoD spending by place of performance: where the money lands moves before the forces do
 POP = {"europe_east": ("POL", "LTU", "LVA", "EST", "ROU"), "israel": ("ISR",), "iran": ("KWT", "QAT", "BHR", "ARE", "SAU", "JOR", "OMN", "IRQ"),
+       "iraq": ("IRQ",), "gulf": ("KWT", "QAT", "BHR", "ARE", "SAU", "OMN"),
        "yemen": ("DJI", "SAU", "OMN"), "ukraine": ("UKR", "MDA", "ROU"),
        "taiwan": ("TWN", "JPN"), "korea": ("KOR",), "scs": ("PHL", "SGP", "THA"), "venezuela": ("COL", "PAN", "HND", "CUB", "GUY")}
 BUILD = ["236220", "237990", "237310", "238910", "236210", "238120"]
@@ -352,6 +353,8 @@ add("brent_libya", "Brent crude, USD (FRED)", "financial", "libya", "daily", Fal
     lambda: S.fetch_fred("DCOILBRENTEU", _key("FRED_API_KEY")), needs=["FRED_API_KEY"], url=FRED + "DCOILBRENTEU", sub="Fuel")
 PORTS = {   # theatre: (ISO3, port-name fragments, label)
     "iran": ("IRN", ("Bandar Abbas",), "Bandar Abbas"),
+    "iraq": ("IRQ", ("Umm Qasr", "Basra"), "Umm Qasr and Basra"),
+    "gulf": (("ARE", "SAU", "QAT"), ("Jebel Ali", "Fujairah", "Ras Tanura", "Ras Laffan", "Hamad"), "Jebel Ali, Fujairah, Ras Tanura, Ras Laffan and Hamad"),
     "israel": ("ISR", ("Haifa", "Ashdod"), "Haifa and Ashdod"),
     "yemen": ("YEM", ("Aden", "Hodeidah"), "Aden and Hodeidah"),
     "taiwan": ("TWN", ("Kaohsiung",), "Kaohsiung"),
@@ -551,6 +554,9 @@ for sid, sym, label, th, why, direction in (
     ("india_equity", "INDA", "India equity ETF (INDA)", "southasia", "Indian equities fall when cross-border escalation is priced.", "down"),
     ("copper_miners", "COPX", "Copper miners ETF (COPX)", "drc", "Copper miners fall or spike on supply risk in Congo and Zambia.", "both"),
     ("latam_equity", "ILF", "Latin America 40 ETF (ILF)", "venezuela", "Regional equities discount Caribbean and Venezuelan escalation.", "down"),
+    ("saudi_equity", "KSA", "Saudi Arabia equity ETF (KSA)", "gulf", "Saudi equities fall when strikes on Gulf oil sites or a wider Iran war are priced.", "down"),
+    ("uae_equity", "UAE", "UAE equity ETF (UAE)", "gulf", "Emirati equities, heavy in Dubai and Abu Dhabi property and banks, fall when the Gulf looks exposed.", "down"),
+    ("qatar_equity", "QAT", "Qatar equity ETF (QAT)", "gulf", "Qatari equities fall when Al Udeid or the LNG plants at Ras Laffan look exposed.", "down"),
 ):
     add(sid, f"{label} (Yahoo Finance)", "financial", th, "daily", False, why, (lambda s=sym: S.fetch_market(s)),
         direction=direction, url=TD, sub="Markets")
@@ -698,6 +704,7 @@ for th in extras.KEYS:
 
 # ============ ACLED conflict-event counts via HDX HAPI (the open route to ACLED data; ~2 months behind) ============
 HAPI_LOC = {"ukraine": ("UKR",), "europe_east": ("POL", "LTU", "LVA", "EST"), "iran": ("IRN",), "yemen": ("YEM",), "israel": ("ISR", "PSE", "LBN"),
+            "iraq": ("IRQ",), "gulf": ("SAU", "ARE", "QAT", "BHR", "KWT", "OMN"),
             "scs": ("PHL",), "southasia": ("IND", "PAK"), "libya": ("LBY",), "sudan": ("SDN", "SSD"), "drc": ("COD",), "venezuela": ("VEN", "COL")}
 for th, locs in HAPI_LOC.items():
     add(f"acled_demo_{th}", f"Demonstrations per month, {TH[th]} region (ACLED via HDX HAPI)", "behavioral", th, "monthly", True,
@@ -747,7 +754,7 @@ for _s in SERIES:
 # 20-34% of calm days when scored on their level (docs/INDICATORSTUDY.md). Scored on their % change (20 trading days,
 # 3 months for monthly series) the same series do so on 2-10%. VIX and power prices mean-revert, so they keep their level.
 CHANGE_SCORED = ("def_", "brent", "gold", "fx_", "tanker_equity", "container_equity", "israel_equity", "poland_equity", "taiwan_equity",
-                 "china_equity", "korea_equity", "india_equity", "latam_equity", "copper", "eu_gas", "wheat", "diesel_nyh", "jet_fuel_gulf")
+                 "china_equity", "korea_equity", "india_equity", "latam_equity", "saudi_equity", "uae_equity", "qatar_equity", "copper", "eu_gas", "wheat", "diesel_nyh", "jet_fuel_gulf")
 for _s in SERIES:
     if _s["domain"] == "financial" and _s["id"].startswith(CHANGE_SCORED):
         _s["transform"] = "chg"

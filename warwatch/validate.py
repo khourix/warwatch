@@ -39,7 +39,9 @@ ROOT = os.path.dirname(HERE)
 DATA = os.path.join(HERE, "data")
 CACHE = os.path.join(ROOT, "backtest", "cache")
 MODEL_PATH = os.path.join(DATA, "model_weights.json")
-TH = [t for t in C.THEATRES if t != "global"]
+SUB = list(C.SUBTHEATRES)     # Iraq and the Gulf states: fitted on top of the theatres, never in their fit or their gates
+TH = [t for t in C.THEATRES if t not in ("global", *SUB)]
+ALL = TH + SUB
 HORIZON, POST = 30, 30        # label window; days after an event left out so an ongoing war is not a success
 START, ZSTART = "2019-01-01", dt.date(2018, 6, 1)
 TEST_YEARS = range(2021, 2027)
@@ -63,10 +65,14 @@ REPORT = "MODEL.md"
 
 # ------------------------------------------------------------------ data
 def read_events():
-    ev = pd.read_csv(os.path.join(DATA, "events.csv"), parse_dates=["date"])
+    """The labels, plus one copy of each event filed under the sub-theatre where it happened (site_theatre, marked dup):
+    the copy labels the sub-theatre, the original still labels its theatre, so the theatres' labels do not change."""
+    ev = pd.read_csv(os.path.join(DATA, "events.csv"), parse_dates=["date"], keep_default_na=False)
     if EVENT_TYPES:
         ev = ev[ev["type"].isin(EVENT_TYPES)].reset_index(drop=True)
-    return ev
+    ev["dup"] = False
+    site = ev[ev["site_theatre"] != ""].assign(theatre=lambda d: d["site_theatre"], dup=True)
+    return pd.concat([ev, site], ignore_index=True)
 
 
 def events_through():
@@ -154,15 +160,17 @@ def zhistory(refresh=False):
 
 def family(sid):
     import re
-    m = re.match(f"^adsb_(?:{'|'.join(TH)})_(\\w+)$", sid)   # one family per aircraft class, pooled across theatres
-    return f"adsb_{m.group(1)}" if m else re.sub(f"_({'|'.join(TH)})$", "", sid)
+    m = re.match(f"^adsb_(?:{'|'.join(ALL)})_(\\w+)$", sid)   # one family per aircraft class, pooled across theatres
+    return f"adsb_{m.group(1)}" if m else re.sub(f"_({'|'.join(ALL)})$", "", sid)
 
 
-def panel(H, end=None):
-    """Theatre-day evidence table: one column per family, evidence = max(0, warning-direction z) clipped at 5, NaN where the feed has no score."""
+def panel(H, end=None, subs=False):
+    """Theatre-day evidence table: one column per family, evidence = max(0, warning-direction z) clipped at 5, NaN where the feed has no score.
+    subs: add the sub-theatres' rows, each family read as the stronger of the sub-theatre's own series and its parents'."""
     end = end or pd.Timestamp(dt.date.today())
     days = pd.date_range(START, end, freq="D")
-    cols = {t: {} for t in TH}
+    ths = ALL if subs else TH
+    cols = {t: {} for t in ALL}
     meta = {}
     for sid, s in H.items():
         f = family(sid)
@@ -170,10 +178,17 @@ def panel(H, end=None):
         z = pd.Series({pd.Timestamp(k): v for k, v in s["z"].items()}).reindex(days)
         e = (z * sgn if sgn else z.abs()).clip(0, 5)
         meta[f] = (s["domain"], bool(s["lag"]))
-        for t in (TH if s["theatre"] == "global" else [s["theatre"]]):
-            cols[t][f] = e.values
+        for t in (ALL if s["theatre"] == "global" else [s["theatre"]]):
+            if t in cols:
+                cols[t][f] = e.values
+    for t in SUB:
+        own = cols[t]
+        cols[t] = {}
+        for f in set(own).union(*(cols[k] for k in C.SUBTHEATRES[t]["parents"])):
+            xs = [c[f] for c in [own] + [cols[k] for k in C.SUBTHEATRES[t]["parents"]] if f in c]
+            cols[t][f] = np.fmax.reduce(xs) if len(xs) > 1 else xs[0]
     frames = []
-    for t in TH:
+    for t in ths:
         df = pd.DataFrame(cols[t], index=days)
         df["theatre"] = t
         frames.append(df)
@@ -193,7 +208,7 @@ def labels(P, ev, through):
     byt = {}
     for k, e in enumerate(evl):
         byt.setdefault(e.theatre, []).append((np.datetime64(e.date), k))
-    for t in TH:
+    for t in ALL:
         m = np.where(th == t)[0]
         d = dates[m]
         for ed, k in byt.get(t, []):
@@ -211,7 +226,7 @@ def history_features(P, ev):
     n = len(P)
     h1, h3, since = np.zeros(n), np.zeros(n), np.full(n, 3650.0)
     th, dates = P["theatre"].values, P["date"].values
-    for t in TH:
+    for t in ALL:
         m = np.where(th == t)[0]
         ed = np.sort(ev.loc[ev["theatre"] == t, "date"].values)
         if not len(ed):
@@ -226,11 +241,22 @@ def history_features(P, ev):
     return np.c_[np.minimum(h1, 3) / 3, np.minimum(h3, 5) / 5, np.log1p(since) / np.log1p(3650)]
 
 
+def offsets(P):
+    """Theatre-offset columns: one per theatre, then (when P has sub-theatre rows) one per sub-theatre. A sub-theatre row
+    also carries 1/n on each of the n theatres it pools toward, so its own offset is a ridge-penalised step from their mean."""
+    subs = bool(np.isin(P["theatre"].values, SUB).any())
+    cols = ALL if subs else TH
+    T = np.array([[t == x for x in cols] for t in P["theatre"].values], float)
+    for k, t in enumerate(P["theatre"].values):
+        for x in C.SUBTHEATRES.get(t, {}).get("pool", []):
+            T[k, cols.index(x)] = 1 / len(C.SUBTHEATRES[t]["pool"])
+    return T
+
+
 def design(P, fams, hist):
-    """Columns: global intercept, 13 theatre offsets, 3 history terms, families (evidence / 5, 0 where missing)."""
-    T = np.array([[t == x for x in TH] for t in P["theatre"].values], float)
+    """Columns: global intercept, theatre offsets (13, plus 2 sub-theatres when present), 3 history terms, families (evidence / 5, 0 where missing)."""
     E = P[fams].fillna(0).values / 5.0
-    return np.hstack([np.ones((len(P), 1)), T, hist, E])
+    return np.hstack([np.ones((len(P), 1)), offsets(P), hist, E])
 
 
 # ------------------------------------------------------------------ model
@@ -238,10 +264,10 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-np.clip(x, -30, 30)))
 
 
-def fit(X, y, lam_w, theta0=None, weight=None):
+def fit(X, y, lam_w, theta0=None, weight=None, nT=None):
     """Penalised logistic regression. Theatre offsets (ridge LAM_T) and history terms (ridge LAM_H) are free; family weights are >= 0 with ridge lam_w."""
     k = X.shape[1]
-    nT, nH = len(TH), 3
+    nT, nH = nT or len(TH), 3
     pen = np.zeros(k)
     pen[1:1 + nT] = LAM_T
     pen[1 + nT:1 + nT + nH] = LAM_H
@@ -264,14 +290,46 @@ def fit(X, y, lam_w, theta0=None, weight=None):
 
 
 def base_rates(P, y, mask):
-    """Each theatre's base rate from the rows in mask, mixed with the pooled rate (BASE_PRIOR pseudo-days)."""
-    g = y[mask].mean()
+    """Each theatre's base rate from the rows in mask, mixed with the pooled rate of the theatres (BASE_PRIOR pseudo-days).
+    A sub-theatre's is mixed with the rate of the theatres it pools toward instead."""
     th = P["theatre"].values
+    core = mask & np.isin(th, TH)
+    g = y[core].mean()
     out = {}
     for t in TH:
         m = mask & (th == t)
         out[t] = (y[m].sum() + BASE_PRIOR * g) / (m.sum() + BASE_PRIOR)
+    for t in SUB:
+        m = mask & (th == t)
+        if m.any():
+            pool = mask & np.isin(th, C.SUBTHEATRES[t]["pool"])
+            out[t] = (y[m].sum() + BASE_PRIOR * y[pool].mean()) / (m.sum() + BASE_PRIOR)
     return out, g
+
+
+def sub_theta(X, y, theta, P, mask, weight=None):
+    """theta with each sub-theatre's offset fitted on its rows in mask, everything else held at the theatres' fit: the family weights and
+    history terms are shared, and the offset is a ridge-penalised (LAM_T) step from the mean offset of the theatres it pools toward."""
+    th = P["theatre"].values
+    out = theta.copy()
+    wt = np.ones(len(y)) if weight is None else weight
+    for t in SUB:
+        r = mask & (th == t)
+        if not r.any():
+            continue
+        j = 1 + ALL.index(t)
+        base = X[r] @ out - X[r, j] * out[j]
+        u = 0.0
+        for _ in range(100):
+            p = sigmoid(base + u)
+            g = np.sum(wt[r] * (p - y[r])) + LAM_T * u
+            h = np.sum(wt[r] * p * (1 - p)) + LAM_T
+            step = max(-1.0, min(1.0, g / h))      # damped: a full Newton step overshoots far from the root
+            u -= step
+            if abs(step) < 1e-8:
+                break
+        out[j] = u
+    return out
 
 
 def logit(p):
@@ -310,15 +368,21 @@ def rolling(P, X, y, lab, lam_w):
     raw = np.full(len(P), np.nan)
     base = np.full(len(P), np.nan)
     th = P["theatre"].values
+    core = np.isin(th, TH)
     for Y in TEST_YEARS:
         cut = np.datetime64(f"{Y}-01-01") - np.timedelta64(EMBARGO, "D")
         tr = lab & (dates < cut)
         te = lab & (yr == Y)
-        theta = fit(X[tr], y[tr], lam_w)
+        theta = sub_theta(X, y, fit(X[tr & core], y[tr & core], lam_w, nT=n_th(P)), P, tr)
         raw[te] = sigmoid(X[te] @ theta)
         b, _ = base_rates(P, y, tr)
-        base[te] = np.array([b[t] for t in th[te]])
+        base[te] = np.array([b.get(t, np.nan) for t in th[te]])
     return raw, base
+
+
+def n_th(P):
+    """Offset columns in the design: the theatres, plus the sub-theatres when P has their rows."""
+    return len(ALL) if np.isin(P["theatre"].values, SUB).any() else len(TH)
 
 
 def fit_shrink(raw, base, y, ok):
@@ -337,9 +401,10 @@ def nested_published(P, raw, base, y, lab):
     yr = P["date"].dt.year.values
     pub = np.full(len(P), np.nan)
     gp = {}
+    core = np.isin(P["theatre"].values, TH)       # the shrink is fitted on the theatres only and applied to the sub-theatres as is
     for Y in TEST_YEARS:
         te = lab & (yr == Y) & ~np.isnan(raw)
-        prev = lab & (yr < Y) & (yr >= TEST_YEARS[0]) & ~np.isnan(raw)
+        prev = lab & core & (yr < Y) & (yr >= TEST_YEARS[0]) & ~np.isnan(raw)
         g, ph = fit_shrink(raw, base, y, prev) if Y >= TEST_YEARS[0] + 2 else (0.6, 0.5)
         gp[Y] = (g, ph)
         pub[te] = shrink(raw[te], base[te], g, ph)
@@ -360,11 +425,11 @@ def cluster_boot_auc(y, p, clusters, B_=500, seed=1):
     return np.percentile(out, [2.5, 97.5])
 
 
-def shifted_control(P, y, p, ok, n=300, seed=2):
+def shifted_control(P, y, p, ok, n=300, seed=2, ths=None):
     """Circularly shift each theatre's probabilities (keeps their autocorrelation, breaks their timing): AUC and Brier skill under no relation."""
     rng = np.random.default_rng(seed)
     th = P["theatre"].values
-    rows = {t: np.where((th == t) & ~np.isnan(p))[0] for t in TH}
+    rows = {t: np.where((th == t) & ~np.isnan(p))[0] for t in (ths or TH)}
     aucs, bss = [], []
     clim = np.nanmean(y[ok])
     for _ in range(n):
@@ -410,45 +475,76 @@ def nsr_table(P, fams, meta, y, lab, eid):
     return pd.DataFrame(rows).sort_values("nsr")
 
 
-def prepare(refresh=False):
+def prepare(refresh=False, subs=False):
+    """subs: add the sub-theatres' rows (the model fit and report). Without them, the theatres' panel and labels exactly as before."""
     H = zhistory(refresh)
     ev = read_events()
+    if not subs:
+        ev = ev[~ev["dup"]].reset_index(drop=True)
     through = events_through()
-    P, meta = panel(H, end=through)
+    P, meta = panel(H, end=through, subs=subs)
     y, excl, unk, eid = labels(P, ev, through)
-    fams = [c for c in P.columns if c in meta and P[c].notna().sum() > 200]
+    core = P["theatre"].isin(TH).values
+    fams = [c for c in P.columns if c in meta and P.loc[core, c].notna().sum() > 200]
     X = design(P, fams, history_features(P, ev))
     lab = ~excl & ~unk
     return P, meta, fams, X, y, lab, eid, ev, through
 
 
+def gates_of(P, y, pub, base, ok, ths):
+    """The three release gates on the rows in ok: Brier skill against the base rate, cluster-bootstrap AUC interval, shuffled-timing control."""
+    clim = brier(y[ok], base[ok])
+    bss = 1 - brier(y[ok], pub[ok]) / clim
+    a = auc(y[ok], pub[ok])
+    clusters = (P["theatre"] + P["date"].dt.year.astype(str)).values[ok]
+    lo, hi = cluster_boot_auc(y[ok], pub[ok], clusters)
+    sa, sb = shifted_control(P, y, pub, ok, ths=ths)
+    p_auc = float((sa >= a).mean())
+    p_bss = float((sb >= bss).mean())
+    g = {"bss": round(bss, 4), "auc": round(a, 3), "auc_lo": round(float(lo), 3), "auc_hi": round(float(hi), 3),
+         "shuffle_p_auc": round(p_auc, 3), "shuffle_p_bss": round(p_bss, 3), "bss_positive": bool(bss > 0), "auc_lo_above_half": bool(lo > 0.5),
+         "beats_shuffled": bool(p_auc < 0.05), "pass": bool(bss > 0 and lo > 0.5 and p_auc < 0.05)}
+    return g, sa
+
+
+def sub_report(P, y, pub, base, ok0, eid):
+    """Per sub-theatre: out-of-sample days, events and the same three gates on its own rows. A sub-theatre's chance is
+    'not validated' until they pass, whatever the theatres' gates say."""
+    th = P["theatre"].values
+    out = {}
+    for t in SUB:
+        ok = ok0 & (th == t) & ~np.isnan(pub)
+        n_ev = len(set(eid[ok & (y == 1)]))
+        if not ok.any() or y[ok].sum() == 0 or y[ok].sum() == ok.sum():
+            out[t] = {"days": int(ok.sum()), "pos": int(y[ok].sum()), "events": n_ev, "gates": None, "pass": False}
+            continue
+        g, _ = gates_of(P, y, pub, base, ok, [t])
+        out[t] = {"days": int(ok.sum()), "pos": int(y[ok].sum()), "events": n_ev, "gates": g, "pass": g["pass"]}
+    return out
+
+
 def run(write):
-    P, meta, fams, X, y, lab, eid, ev, through = prepare()
+    P, meta, fams, X, y, lab, eid, ev, through = prepare(subs=True)
     yr = P["date"].dt.year.values
+    core = P["theatre"].isin(TH).values
     ok0 = lab & (yr >= TEST_YEARS[0])
+    okc = ok0 & core
     sel = {}
     for lam in LAMBDAS:
         raw, base = rolling(P, X, y, lab, lam)
-        ok = ok0 & ~np.isnan(raw)
+        ok = okc & ~np.isnan(raw)
         pub, gp = nested_published(P, raw, base, y, lab)
         sel[lam] = (brier(y[ok], pub[ok]), raw, base, pub, gp)
         print(f"lambda {lam}: OOS Brier {sel[lam][0]:.5f}", flush=True)
     lam = min(sel, key=lambda k: sel[k][0])
     _, raw, base, pub, gp = sel[lam]
-    ok = ok0 & ~np.isnan(pub)
+    ok = okc & ~np.isnan(pub)
     clim = brier(y[ok], base[ok])
-    bss = 1 - brier(y[ok], pub[ok]) / clim
     bss_raw = 1 - brier(y[ok], raw[ok]) / clim
-    a = auc(y[ok], pub[ok])
-    clusters = (P["theatre"] + P["date"].dt.year.astype(str)).values[ok]
-    lo, hi = cluster_boot_auc(y[ok], pub[ok], clusters)
-    sa, sb = shifted_control(P, y, pub, ok)
-    p_auc = float((sa >= a).mean())
-    p_bss = float((sb >= bss).mean())
-    gates = {"bss": round(bss, 4), "auc": round(a, 3), "auc_lo": round(float(lo), 3), "auc_hi": round(float(hi), 3),
-             "shuffle_p_auc": round(p_auc, 3), "shuffle_p_bss": round(p_bss, 3), "bss_positive": bool(bss > 0), "auc_lo_above_half": bool(lo > 0.5),
-             "beats_shuffled": bool(p_auc < 0.05), "pass": bool(bss > 0 and lo > 0.5 and p_auc < 0.05)}
+    gates, sa = gates_of(P, y, pub, base, ok, TH)
     print(json.dumps(gates), flush=True)
+    subs = sub_report(P, y, pub, base, ok0, eid)
+    print(json.dumps({t: (v["events"], v["gates"]) for t, v in subs.items()}), flush=True)
     # bands, per theatre, calibration, events
     pu = pub[ok]
     yy = y[ok]
@@ -468,8 +564,8 @@ def run(write):
     rec10 = recall_at(P, eid, y, pub, ok)
     top = pu >= np.quantile(pu, 0.9)
     lift = yy[top].mean() / yy.mean()
-    nsr = nsr_table(P, fams, meta, y, lab, eid)
-    out = dict(lam=lam, gp=gp, gates=gates, bands=bands, per=per, rec10=rec10, lift=lift, top_rate=yy[top].mean(), base=yy.mean(), n=int(ok.sum()),
+    nsr = nsr_table(P, fams, meta, y, lab & core, eid)
+    out = dict(lam=lam, gp=gp, gates=gates, subs=subs, bands=bands, per=per, rec10=rec10, lift=lift, top_rate=yy[top].mean(), base=yy.mean(), n=int(ok.sum()),
                pos=int(yy.sum()), events=len(set(eid[ok & (y == 1)])), bss_raw=bss_raw, sel={k: v[0] for k, v in sel.items()}, nsr=nsr,
                shuf_auc=(float(np.percentile(sa, 50)), float(np.percentile(sa, 95))), through=through)
     # reliability of published probabilities
@@ -491,7 +587,9 @@ def run(write):
 def final(o):
     """Fit on everything, bootstrap theatre-years for intervals, write the model file."""
     P, fams, X, y, lab, ev = o["P"], o["fams"], o["X"], o["y"], o["lab"], o["ev"]
-    theta = fit(X[lab], y[lab], o["lam"])
+    core = P["theatre"].isin(TH).values
+    nT = n_th(P)
+    theta = sub_theta(X, y, fit(X[lab & core], y[lab & core], o["lam"], nT=nT), P, lab)
     b, g = base_rates(P, y, lab)
     gam, phi = fit_shrink_all(o)
     yrs = P["date"].dt.year.values
@@ -504,28 +602,38 @@ def final(o):
         pick = rng.choice(uc, len(uc))
         cnt = pd.Series(pick).value_counts()
         w = pd.Series(cl).map(cnt).fillna(0).values.astype(float)
-        boots.append(fit(X[lab], y[lab], o["lam"], theta0=theta, weight=w[lab]))
+        c = lab & core
+        boots.append(sub_theta(X, y, fit(X[c], y[c], o["lam"], theta0=theta, weight=w[c], nT=nT), P, lab, weight=w))
     print(f"bootstrap {BOOT} refits in {time.time() - t0:.0f}s", flush=True)
-    nT, nH = len(TH), 3
+    nH = 3
     nz = [i for i in range(len(fams)) if theta[1 + nT + nH + i] > 1e-6 or any(bt[1 + nT + nH + i] > 1e-6 for bt in boots)]
+    cols = ALL[:nT]
+
+    def off(th, t):
+        # a sub-theatre's offset is a step from the mean of the theatres it pools toward: the model file carries the sum
+        pool = C.SUBTHEATRES.get(t, {}).get("pool", [])
+        return th[1 + cols.index(t)] + (sum(th[1 + cols.index(x)] for x in pool) / len(pool) if pool else 0.0)
+
     def pack(th):
-        return {"a0": round(float(th[0]), 5), "delta": {t: round(float(th[1 + k]), 5) for k, t in enumerate(TH)},
+        return {"a0": round(float(th[0]), 5), "delta": {t: round(float(off(th, t)), 5) for t in cols},
                 "hist": [round(float(x), 5) for x in th[1 + nT:1 + nT + nH]],
                 "w": {fams[i]: round(float(th[1 + nT + nH + i]), 5) for i in nz}}
     mm = ev.groupby("theatre")["market_moving"].agg(["sum", "count"])
     anyday = np.zeros(len(P), bool)
-    for t in TH:
+    for t in TH:      # the chance of an event anywhere counts the theatres only: a sub-theatre's events are its parents' too
         m = (P["theatre"].values == t)
         anyday[m] = y[m] == 1
-    byday = pd.Series(anyday & lab).groupby(P["date"].values).max()
-    labday = pd.Series(lab).groupby(P["date"].values).max()
+    byday = pd.Series(anyday & lab & core).groupby(P["date"].values).max()
+    labday = pd.Series(lab & core).groupby(P["date"].values).max()
     p_any = float(byday[labday].mean())
-    pub_max = float(np.nanmax(o["pub"][o["lab"] & ~np.isnan(o["pub"])]))
+    pub_max = float(np.nanmax(o["pub"][o["lab"] & core & ~np.isnan(o["pub"])]))
     model = {"version": "1.0.0", "p_cap": round(min(0.95, math.ceil(max(pub_max, 0.3) / 0.05) * 0.05), 2), "fitted": dt.date.today().isoformat(), "data_through": str(P["date"].max().date()), "events_through": str(o["through"].date()),
-             "n_events": int(len(ev)), "lambda_w": o["lam"], "gamma": gam, "phi": phi, "bands": list(BANDS), "levels": list(LEVELS),
-             "base": {t: round(float(b[t]), 5) for t in TH}, "pooled_base": round(float(g), 5), "p_any_clim": round(p_any, 4),
-             "mm_share": {t: round(float(mm.loc[t, "sum"] / mm.loc[t, "count"]), 3) if t in mm.index else 0.0 for t in TH},
+             "n_events": int((~ev["dup"]).sum()), "lambda_w": o["lam"], "gamma": gam, "phi": phi, "bands": list(BANDS), "levels": list(LEVELS),
+             "base": {t: round(float(b[t]), 5) for t in cols if t in b}, "pooled_base": round(float(g), 5), "p_any_clim": round(p_any, 4),
+             "mm_share": {t: round(float(mm.loc[t, "sum"] / mm.loc[t, "count"]), 3) if t in mm.index else 0.0 for t in cols},
              "theta": pack(theta), "boot": [pack(bt) for bt in boots], "gates": o["gates"], "active": bool(o["gates"]["pass"]),
+             "sub": {t: {"parents": C.SUBTHEATRES[t]["parents"], "events": v["events"], "gates": v["gates"], "active": bool(o["gates"]["pass"] and v["pass"])}
+                     for t, v in o["subs"].items()},
              "validation": {"test_years": [TEST_YEARS[0], TEST_YEARS[-1]], "oos_days": o["n"], "oos_positive_days": o["pos"], "oos_events": o["events"],
                             "bss_raw": round(o["bss_raw"], 4), "top_decile_rate": round(float(o["top_rate"]), 4), "base_rate": round(float(o["base"]), 4)}}
     os.makedirs(DATA, exist_ok=True)
@@ -570,6 +678,17 @@ def write_report(o):
     L += ["", "### By theatre", "", "| Theatre | Positive days | Brier skill | AUC |", "|---|---|---|---|"]
     for t, n, b_, a_ in o["per"]:
         L.append(f"| {C.THEATRES[t]['name']} | {n} | {'n/a' if b_ != b_ else f'{b_:+.3f}'} | {'n/a' if a_ != a_ else f'{a_:.3f}'} |")
+    L += ["", "### Sub-theatres", "",
+          "Iraq and the Gulf states are fitted on top of the theatres, not in their fit: they share its family weights and history terms, read the stronger of their own "
+          "and their parents' evidence in each family, and get their own offset, pulled toward the mean of the Middle East theatres (ridge as for the theatres). "
+          "Their labels are the events that happened there (`site_theatre` in the event list), which still count for the parent too, so they are left out of "
+          "the gates above. Each must pass the same three gates on its own rows before its chance is shown as validated.", "",
+          "| Sub-theatre | Reads also | Test events | Positive days | Brier skill | AUC (95% interval) | Shuffle p | Validated |", "|---|---|---|---|---|---|---|---|"]
+    for t, v in o["subs"].items():
+        g_ = v["gates"]
+        par = ", ".join(C.THEATRES[k]["name"] for k in C.SUBTHEATRES[t]["parents"])
+        L.append(f"| {C.THEATRES[t]['name']} | {par} | {v['events']} | {v['pos']} | " + (f"{g_['bss']:+.3f} | {g_['auc']:.3f} ({g_['auc_lo']:.3f} to {g_['auc_hi']:.3f}) | {g_['shuffle_p_auc']:.3f} | "
+                 if g_ else "n/a | n/a | n/a | ") + ("yes" if v["pass"] and g["pass"] else "no") + " |")
     L += ["", "## Indicator families ranked by noise-to-signal", "",
           "Best threshold per family over all labelled days. NSR is the false-alarm rate divided by the hit rate: below 1 the family fires more often before events than on calm days; 1 or more it is noise. "
           "Families flagged confirming are published late and cannot warn. The model weights below come from the regression, not from this table; this is the plain-language check on them.", "",
