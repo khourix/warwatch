@@ -1,0 +1,286 @@
+[
+ {
+  "name": "jcg navarea11",
+  "url": "https://www1.kaiho.mlit.go.jp/TUHO/keiho/navarea11.html",
+  "result": {
+   "bytes": 16953,
+   "final_url": "https://www1.kaiho.mlit.go.jp/TUHO/keiho/navarea11.html",
+   "hits": [
+    "dge\" /> <meta name=\"GENERATOR\" content=\"JustSystems Homepage Builder Version 17.0.11.0 for Windows\" /> <title>NAVAREA&nbspXI | 航行警報 | 海上保安庁 海洋情報部</title> <link href=\"../../css/jhdmod.css\" type=\"text/css\" rel=\"stylesheet\"> <link href=\"../../css/format.css\" rel=\"stylesheet\" type=\"text/css\" /> <link href=\"../../css/main.css\" rel=\"s",
+    "ascript\"></script> <script src=\"js/jquery.mySlider-3.7.1.js\" type=\"text/javascript\"></script> <script src=\"js/warnings.js\" type=\"text/javascript\"></script> <script src=\"js/AjaxLib.js\" type=\"text/javascript\"></script> <script> var showall = false; var cgihost = \"www1.kaiho.mlit.go.jp\"; var cgidir = \"/TUHO/keiho/cgi/\"; var type ",
+    "t> var showall = false; var cgihost = \"www1.kaiho.mlit.go.jp\"; var cgidir = \"/TUHO/keiho/cgi/\"; var type = \"NAVAREA11\"; var vtype = \"212\"; var visualpage = \"/TUHO/vpage/visualpage.html\"; var lang = \"JP\"; var visual_label = \"ビジュアルページへ\"; var none_seleced_warnnig = \"情報が選択されていません\"; </script> </head> <body style=\"display: block",
+    "されていません\"; </script> </head> <body style=\"display: block;\"> <form name=\"DISP\" action=\"/TUHO/keiho/cgi//disp_warnings.cgi\" method=\"post\" target=\"_blank\"> <input type=\"hidden\" name=\"TYPE\" /> <input type=\"hidden\" name=\"TANA\" /> <input type=\"hidden\" name=\"LANG\" /> </form> <div id=\"container\"> <!--ヘッダ開始--> <header> <section cla",
+    "i><a href=\"https://www.kaiho.mlit.go.jp\">海上保安庁トップ</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/link.html#kanku\">管区海洋情報部</a></li> <li><a href=\"https://www.kaiho.mlit.go.jp/ope/apply/info.html\">申請・届出</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/access.html\">アクセス</a></li> <li><a href=\"https://www1.kaih",
+    "ttps://www1.kaiho.mlit.go.jp/access.html\">アクセス</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/sitemap.html\">サイトマップ</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/jhd-E.html\">English</a></li> </ul> </section> <figure class=\"logo\"><img src=\"https://www1.kaiho.mlit.go.jp/img/kaso-header.jpg\"> <figcaptio",
+    "<a href=\"https://www1.kaiho.mlit.go.jp/\">海洋情報部トップ</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/p1.html\">海洋権益の確保</a></li> <li class=\"now\"><a href=\"https://www1.kaiho.mlit.go.jp/p2.html\">航海の安全</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/p3.html\">防災と環境保全</a></li> <li><a href=\"https://www1.kaih",
+    "f=\"https://www1.kaiho.mlit.go.jp/p3.html\">防災と環境保全</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/p4.html\">海洋立国に向けて</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/p5.html\">組織・体制</a></li> </ul> </nav> </header> <!--バナー、各ページリンク--> <table style=\"margin: 0 auto; margin-top: 15px;\" border=\"0\"> <tr> <td a",
+    "style=\"margin: 0 auto; margin-top: 15px;\" border=\"0\"> <tr> <td align=\"center\"> <a href=\"/TUHO/vpage/visualpage.html\" target=\"visual\"><img src=\"/TUHO/images/bana_04.gif\" /></a> </td> </tr> <tr> <td align=\"center\"> <a href=\"/TUHO/tuho/nm.html\">水路通報</a>&emsp;&emsp; <a href=\"/TUHO/keiho/navarea11.html\">航行警報</a>&emsp;&emsp; <a hre",
+    ">水路通報</a>&emsp;&emsp; <a href=\"/TUHO/keiho/navarea11.html\">航行警報</a>&emsp;&emsp; <a href=\"/TUHO/weekly/weekly.html\">Weekly Summary</a>&emsp;&emsp; <a href=\"../../shoshi/toudai/j_toudai.html\">灯台表（追加表）</a>&emsp;&emsp; <!--2020/12/18 <a href=\"/TUHO/shoshi/tsuiho/photograph.html\">水路誌追補</a> --> </td> </tr> </table> <!--バナー、各ページ",
+    "/a> --> </td> </tr> </table> <!--バナー、各ページリンク終了--> <!--メイン記事開始--> <div id=\"submain\"> <!--標題--> <h1><span>NAVAREA&nbspXI</span></h1> <!--本文開始--> <div class=\"inner\"> <p align=\"center\"> <a href=\"/TUHO/keiho/navarea11.html\">NAVAREA&nbsp;XI</a>&emsp;&emsp; <a href=\"/TUHO/keiho/navtex.html\">NAVTEX</a>&emsp;&emsp; <a href=\"/TU",
+    "sp;XI</a>&emsp;&emsp; <a href=\"/TUHO/keiho/navtex.html\">NAVTEX</a>&emsp;&emsp; <a href=\"/TUHO/keiho/local_nw.html\">地域航行警報</a>&emsp;&emsp; <a href=\"/TUHO/keiho/japan_nw.html\">日本航行警報</a>&emsp;&emsp; <a href=\"#jma\">海上警報・地方海上分布予報情報</a> </p> <!--更新欄--> <div class=\"koumokuList ClearFix subline\"> <!--注意--> <h3>注意</h3> <ul> <li>水路",
+    " <!--更新欄--> <div class=\"koumokuList ClearFix subline\"> <!--バックナンバー--> <div align=\"right\"> <a href=\"backnumber.html\">2016&thinsp;年以前の有効情報</a> </div> <!-- 年のタブ --> <script> $(document).ready(function(){ $('.mySlider').mySlider(); //$(\"div.myslider_parent\") }); </script> <div class=\"mySlider\"> <ul class=\"slideTab ClearFix\"> <l",
+    "終わり--> <!--気象庁リンク--> <h3 id=\"jma\">海上警報・地方海上分布予報情報</h3> <ul> <li><a href=\"https://www.jma.go.jp/bosai/map.html#5/34.5/137/&contents=volcano\" target=\"_blank\">火山現象に関する海上警報（気象庁）</a></li> <li><a href=\"https://www.jma.go.jp/bosai/umimesh/#lat:34.034453/lon:135.000000/zoom:5/colordepth:normal/elements:wind\" target=\"_blank\">地方海上分",
+    "/form_mail.cgi\">こちら</a> まで </address> <section> <a href=\"https://www1.kaiho.mlit.go.jp/copyright.html\">リンク・著作権等について</a>｜ <a href=\"https://www.kaiho.mlit.go.jp/policy/privacy-policy.html\">プライバシーポリシー</a> </section> <time id=\"last_update\"><!-- 更新日は自動で入力されます --></time> <div id=\"copy\">Copyright &copy; "
+   ],
+   "scripts": [
+    "js/jquery-3.7.1.min.js",
+    "js/jquery.mySlider-3.7.1.js",
+    "js/warnings.js",
+    "js/AjaxLib.js"
+   ]
+  }
+ },
+ {
+  "name": "jcg tuho2",
+  "url": "https://www1.kaiho.mlit.go.jp/TUHO/tuho2.html",
+  "result": {
+   "bytes": 6999,
+   "final_url": "https://www1.kaiho.mlit.go.jp/TUHO/tuho2.html",
+   "hits": [
+    "ad> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <title>水路通報・航行警報｜海上保安庁 海洋情報部</title> <script type=\"text/javascript\" src=\"js/time.js\"></script> <link href=\"css/jhdmod.css\" type=\"text/css\" rel=\"stylesheet\"> <link rel=\"alternate stylesheet\" type=\"text/css\" href=\"css/font_l.css\" titl",
+    "i><a href=\"https://www.kaiho.mlit.go.jp\">海上保安庁トップ</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/link.html#kanku\">管区海洋情報部</a></li> <li><a href=\"https://www.kaiho.mlit.go.jp/ope/apply/info.html\">申請・届出</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/access.html\">アクセス</a></li> <li><a href=\"https://www1.kaih",
+    "ttps://www1.kaiho.mlit.go.jp/access.html\">アクセス</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/sitemap.html\">サイトマップ</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/jhd-E.html\">English</a></li> </ul> </section> <figure class=\"logo\"><img src=\"images/kaso-header.jpg\"> <figcaption><a href=\"https://www1.k",
+    "<a href=\"https://www1.kaiho.mlit.go.jp/\">海洋情報部トップ</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/p1.html\">海洋権益の確保</a></li> <li class=\"now\"><a href=\"https://www1.kaiho.mlit.go.jp/p2.html\">航海の安全</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/p3.html\">防災と環境保全</a></li> <li><a href=\"https://www1.kaih",
+    "f=\"https://www1.kaiho.mlit.go.jp/p3.html\">防災と環境保全</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/p4.html\">海洋立国に向けて</a></li> <li><a href=\"https://www1.kaiho.mlit.go.jp/p5.html\">組織・体制</a></li> </ul> </nav> </header> <!--メイン記事開始--> <main class=\"article\"> <h1><span><FONT size=\"5\">水路通報・航行警報</FONT></span><",
+    "header> <!--メイン記事開始--> <main class=\"article\"> <h1><span><FONT size=\"5\">水路通報・航行警報</FONT></span></h1> <!--航行警報--> <article> <figure class=\"photoCaption\"><img src=\"image/keihou.jpg\" alt=\"\" width=\"198\" border=\"0\" /> <figcaption>航行警報</figcaption> </figure> <div class=\"itemArea\"> <h2><a hr",
+    " </figure> <div class=\"itemArea\"> <h2><a href=\"https://www1.kaiho.mlit.go.jp/TUHO/keiho/navarea11.html\">NAVAREA XI航行警報</a></h2> <p> NAVAREA航行警報は、全世界を21の区域に分け、各区域の責任を担う区域調整国が、区域内の情報を収集して必要な情報を提供しているのもので我が国は第11区域(XI)の区域調整国となっています。<br /> NAVAREA XI航行警報は、大洋を航行する船舶の安全のために緊急に通報を必要とする情報を、インマルサ",
+    "しによる放送（略称EGC）で自動受信方式（英語）により提供しています。</p> <h2><a href=\"https://www1.kaiho.mlit.go.jp/TUHO/keiho/navtex.html\">NAVTEX 航行警報</a></h2> <p> NAVTEX航行警報は、世界的に統一された航行警報であり、各国が沿岸海域において、航行の安全のため緊急に必要とする情報を自動受信方式により提供しています。<br /> 我が国では、沿岸域を五つの海域に分割して海域ごとに必要な情報を日本語及び英語により提供しています。</p> <h2><a href=\"https:",
+    "分割して海域ごとに必要な情報を日本語及び英語により提供しています。</p> <h2><a href=\"https://www1.kaiho.mlit.go.jp/TUHO/keiho/japan_nw.html\">日本航行警報</a></h2> 太平洋、インド洋及び周辺諸海域を航行する日本船舶の安全のために緊急に通報を必要とする情報を、インターネットにより日本語で提供しています。なお、日本航行警報は共同通信社が実施しているファクシミリ放送及び各漁業無線局からの無線放送により、随時又は定時に放送されています。<br /> <h2><a href=\"https://www1.kaiho.mlit",
+    "業無線局からの無線放送により、随時又は定時に放送されています。<br /> <h2><a href=\"https://www1.kaiho.mlit.go.jp/TUHO/keiho/local_nw.html\">地域航行警報</a></h2> <p> 日本沿岸の港則法適用港及びその付近海域を航行する船舶の安全のために緊急に通報を必要とする情報を、無線電話により日本語又は英語により提供しています。 </p> </div> </article> <!--水路通報--> <article> <figure class=\"photoCaption\"><img src=\"image/t",
+    " </figure> <div class=\"itemArea\"> <h2><a href=\"https://www1.kaiho.mlit.go.jp/TUHO/tuho/nm.html\">水路通報</a></h2> <p> 水路通報とは、水路図誌を最新のものに維持するための情報並びに船舶交通の安全に必要な航路標識の変更、海上における工事・作業、自衛隊あるいは米軍等が実施する射爆撃訓練等に関する情報を、インターネットにより週１回発行しているものです。 </p> <h2><a href=\"https://www1.kaiho.mlit.go.jp/TUHO/tuho/",
+    "関する情報を、インターネットにより週１回発行しているものです。 </p> <h2><a href=\"https://www1.kaiho.mlit.go.jp/TUHO/tuho/local_nm.html\">管区水路通報</a></h2> <p> 管区水路通報とは、管区海上保安本部の担任水域及びその付近の地域に密着した船舶交通の安全に必要な情報を、インターネットにより提供しているものです。</p> </div> </article> <!--お願い--> <article> <div class=\"itemArea\"> <h2>航海",
+    "/form_mail.cgi\">こちら</a> まで </address> <section> <a href=\"https://www1.kaiho.mlit.go.jp/copyright.html\">リンク・著作権等について</a>｜ <a href=\"https://www.kaiho.mlit.go.jp/policy/privacy-policy.html\">プライバシーポリシー</a> </section> <time id=\"last_update\"><!-- 更新日は自動で入力されます --></time> <div id=\"copy\">Copyright &copy; "
+   ],
+   "scripts": [
+    "js/time.js"
+   ]
+  }
+ },
+ {
+  "name": "msa home text",
+  "url": "https://www.msa.gov.cn/",
+  "result": {
+   "bytes": 66823,
+   "final_url": "https://www.msa.gov.cn/",
+   "hits": [
+    "e|iPod|iPad|BlackBerry/i.test(navigator.userAgent)) { //移动端 location.href = \"/msacncms_wap/index.jhtml\"; } </script> </head> <body> <!-- 头部最上方banner保留 特殊时期用--> <!-- 特殊时期用时 body需添加样式： style=\"background-position: center 114px;\"--> <!-- <div class=\"party-100\" style=\"h",
+    " </ul> <div class=\"head_search_wrap\"> <form action=\"/page/search/index.jhtml\" method=\"get\" target=\"_blank\"> <label for=\"head_search1\"> <input type=\"radio\" name=\"head_search\" id=\"head_search1\" value=\"0\" checked=\"checked\"/> ",
+    "av_subMenu xxgk\"> <li> <a href=\"/9349e8456acc4748a4b5fd1496fdf46b/index.jhtml\" target=\"_blank\"> 法定主动公开内容 </a> </li> <li> <a href=\"/html/cnmsa/xxgk/gkzn/index.html\" target=\"_blank\"> ",
+    " </li> <li> <a href=\"/24a774dd377c4548aa0b144c9e0d78b0.jhtml\" target=\"_blank\" > 海图改正通告 </a> </li> <li> <a href=\"https://www.chart.msa.gov.cn/\" target=\"_bl",
+    " </li> <li> <a href=\"/page/consultation/form.jhtml\" target=\"_blank\"> 网上咨询 </a> </li> <li> <a href=\"/506e7b5822c248779c5bda23c9971b70/index.jhtml",
+    " <span class=\"tit_block\"></span> <a href=\"/a1c5d4ccdb15493cb2fca14c490d6331/index.jhtml\" target=\"_blank\"> 海事要闻 </a> </div> <div class=\"text_list_wrap\"> <ul class=\"common_list_ul\"> ",
+    "73dbbf7edbf.html\" target=\"_blank\"> <span class=\"name\">交通运输部海事局组团参加国际海道测量组织全球航行警告服务分委会第18次会议取得良好成效</span> <span class=\"time\">09-25</span> </a> </li> <li class=\"common_list\"> ",
+    "i class=\"xxgk_nav_list active\"> <a href=\"/0308a18057ab4e0e923620fbed32b5ef/index.jhtml\" target=\"_blank\"> 通知公告 </a> </li> <li class=\"xxgk_nav_list \"> <a href=\"/h",
+    " <li class=\"xxgk_nav_list \"> <a href=\"/f92f8b93a6c8440789f0ed717704ceac/index.jhtml\" target=\"_blank\"> 船舶技术法规 </a> </li> <li class=\"xxgk_nav_list \"> <a href=\"",
+    " <li class=\"xxgk_nav_list \"> <a href=\"/0a6866ccc1dd4af6a9b95c7e7cb8c906/index.jhtml\" target=\"_blank\"> 人事信息 </a> </li> <li class=\"xxgk_nav_list \"> <a href=\"/h",
+    " <li class=\"xxgk_nav_list \"> <a href=\"/94232e693f1745eb91c1fde1cc09ecf5/index.jhtml\" target=\"_blank\"> 招标信息 </a> </li> </ul> <div class=\"xxgk_list_wrap\"> <ul cla",
+    " <script type=\"text/javascript\"> $.post(\"/page/hsfg/queryList.jhtml\", { pageNum: 1, pageSize: 7, sort: \"executeDate\", orderBy: \"desc\"",
+    "tem) { liHtml += '<li class=\"common_list\"><a href=\"/page/hsfg/detail.jhtml?lawId=' + item.id + '\" target=\"_blank\"><span class=\"name\"\">' + item.lawTitle + '</span><span class=\"time\">' + (item.executeDate? '生效日期：'+item.executeDate : '') + '</span></a></li>'; ",
+    " </li> <li> <a href=\"/24a774dd377c4548aa0b144c9e0d78b0.jhtml\" target=\"_blank\"> <div class=\"hxaq_nav_img_wrap\"> <div class=\"table_cell_img_wrap\"> <img src=\"/assets/img/inde",
+    " </li> <li> <a href=\"/page/consultation/form.jhtml\" target=\"_blank\"> 网上咨询 </a> </li> <li> <a href=\"/506e7b5822c248779c5bda23",
+    "> <li> <a href=\"/506e7b5822c248779c5bda23c9971b70/index.jhtml\" target=\"_blank\"> 意见征集·在线调查 </a> </li> <li> <a href=\"/html/cnmsa/HDJL/jzx",
+    " <li class=\"common_list\"> <a href=\"/page/msaComp/index.jhtml\" target=\"_blank\"> <span class=\"name\">违法违规和事故险情多发航运企业公示</span> </a> </li> ",
+    "li class=\"common_list\"> <a href=\"/259ba48013a342debf12deb979f43e6c/index.jhtml\" target=\"_blank\"> <span class=\"name\">涉企行政检查公示专栏</span> </a> </li> <li "
+   ],
+   "scripts": [
+    "/assets/js/jquery.js",
+    "https://cdn.bootcss.com/html5shiv/3.7.3/html5shiv.min.js",
+    "https://cdn.bootcss.com/respond.js/1.4.2/respond.min.js",
+    "/hmccms/js/hmccms-front.js?20261010",
+    "/assets/js/jquery.js",
+    "/assets/js/jquery.cycle.all.js",
+    "/assets/js/bootstrap.min.js",
+    "/assets/plugins/layui/layui.js",
+    "/assets/js/swiper.min.js",
+    "/assets/js/jquery-migrate-1.2.1.min.js",
+    "/assets/js/common.js?v=20260403",
+    "//gov.govwza.cn/dist/aria.js?appid=3a99fe8c9a6730505625c00f963ea7c0"
+   ]
+  }
+ },
+ {
+  "name": "customs preliminary text",
+  "url": "http://english.customs.gov.cn/statics/report/preliminary.html",
+  "result": {
+   "bytes": 26809,
+   "final_url": "http://english.customs.gov.cn/statics/report/preliminary.html",
+   "hits": [
+    "<link href=\"../../Content/CSS/Site.css\" rel=\"stylesheet\" /> <script src=\"../../Scripts/jquery-1.8.2.min.js\"></script> <script src=\"../../Scripts/Global.js\"></script> <!--[if lt IE 7]> <script src=\"/Scripts/ie7.js\"></script> <![endif]--> </head> <body> <div class=\"g-top\"> <div ",
+    " </div> </li> <li class=\"g-nav-itm\"> <a href=\"/statics/report/preliminary.html\" target=\"_blank\">Statistics<img class=\"ab\" src=\"/Images/Image/g-nav-ab.gif\" alt=\"arrow-down\"></a> <div class=\"sub\"> ",
+    " <div class=\"sub\"> <ul> <li><a href=\"/statics/report/preliminary.html\" target=\"_blank\">• Preliminary Release</a> </li> <li class=\"sub-spl\"></li> <li><a href=\"http:/statics",
+    "es</a></li> <li class=\"sub-spl\"></li> <li><a href=\"/statics/report/monthly.html\" target=\"_blank\">• Monthly Bulletin</a></li> <li class=\"sub-spl\"></li> <li><a href=\"/Statistics/Statistics?ColumnId=3\">• Quarterly Rel",
+    "<div class=\"clr\"></div> </div> <div class=\"g-pth\"><a href=\"/\">Home</a> &gt; <a href=\"/statics/report/preliminary.html\">Statistics</a> &gt; <a class=\"g-pth-cur\">Monthly Bulletin</a></div> <div class=\"nr-n-container\"> <div class=\"nr-n-banner\"></div> <div c",
+    "t=\"logo-tiny\" />Statistics</div> <ul> <li class=\"preliactive\"><a href=\"/statics/report/preliminary.html\" target=\"_blank\">Preliminary Release</a></li> <li><a href=\"/statics/report/trade.html\">Trade Indices</a></li> <li><a ",
+    " <li><a href=\"/statics/report/trade.html\">Trade Indices</a></li> <li><a href=\"/statics/report/monthly.html\" target=\"_blank\">Monthly Bulletin</a></li> <li><a href=\"/statistics/Statistics?ColumnId=3\">Quarterly Release</a></li> <li><a href=\"/statistics/Statist",
+    "img src=\"/Images/Image/ico_year.png\"> <span>Year</span><select id=\"preliminarysel\"> <option value=\"2026\">2026</option> <option value=\"2025\">2025</option> <option value=\"2024\">2024</option> <option value=\"2023\">2023</option> ",
+    " China's Total Export & Import Values (in CNY)</td><td><span>Jan.</span><a href=http://english.customs.gov.cn/Statics/d11e30df-faa3-4a4d-9816-bada832cafe8.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/78463b33-7b5e-4e29-aee5-c65e42a69727.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/d90956e5-f66c-46b5",
+    "stoms.gov.cn/Statics/d90956e5-f66c-46b5-80d7-a62e5097a073.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/135af06e-2fd2-4ee9-8f7c-3978077e90a1.html> May.</a><a href=http://english.customs.gov.cn/Statics/142befa2-8638-4657-89d1-40209514b007.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/5c578c33-7560",
+    "stoms.gov.cn/Statics/5c578c33-7560-476b-a6af-9431fb3d41aa.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/074ff4d3-434a-474e-bbfa-4342d0a97c88.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</span></td></tr><tr><td>(1) China's Total Export & Import Values (in USD)</td><td><span>Jan.</span>",
+    " China's Total Export & Import Values (in USD)</td><td><span>Jan.</span><a href=http://english.customs.gov.cn/Statics/01692e74-9069-4562-a742-b382d3634cef.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/d9c40839-ca1e-4726-b570-1e41e043103f.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/83730e94-9e83-470d",
+    "stoms.gov.cn/Statics/83730e94-9e83-470d-ae9e-5c79a84a1a39.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/d7718500-aa23-4590-9996-a31a8827798c.html> May.</a><a href=http://english.customs.gov.cn/Statics/c48f8aa6-f887-4158-b800-2ad8f06ba9e7.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/3dbfd286-7f0c",
+    "stoms.gov.cn/Statics/3dbfd286-7f0c-4f87-b51d-be5870f2936e.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/f8da41eb-f559-4b41-988e-16a0a1869f0e.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</span></td></tr><tr><td>(2) China's Total Export & Import Values by Trade Mode (in CNY)</td><td><sp",
+    " Export & Import Values by Trade Mode (in CNY)</td><td><span>Jan.</span><a href=http://english.customs.gov.cn/Statics/54bbd1e5-c847-431e-989a-2b9bb4959bb9.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/b6cab0c5-2c57-4bc8-bfac-c054a8b926ae.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/7b98f445-00e1-49ae",
+    "stoms.gov.cn/Statics/7b98f445-00e1-49ae-b223-fb0727d45d55.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/7eb3212c-e510-420e-882a-6dbeab497bb2.html> May.</a><a href=http://english.customs.gov.cn/Statics/4c71e30d-6ef3-4bc7-a124-b0c384d848fb.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/c6e790f4-064d",
+    "stoms.gov.cn/Statics/c6e790f4-064d-40ff-a44e-1d8d129d6992.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/84ab7294-487c-4f94-93c3-7c21ec51bb79.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</span></td></tr><tr><td>(2) China's Total Export & Import Values by Trade Mode (in USD)</td><td><sp",
+    " Export & Import Values by Trade Mode (in USD)</td><td><span>Jan.</span><a href=http://english.customs.gov.cn/Statics/2ab1ef1a-bb1f-4056-a243-9d4cc13ef208.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/cbcbc9da-5cc9-4517-af7f-ddb50721e587.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/9c0d6218-d169-4f18",
+    "stoms.gov.cn/Statics/9c0d6218-d169-4f18-9c61-eefa22787a66.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/1a329ca9-6929-4cdc-be44-3d554117d4df.html> May.</a><a href=http://english.customs.gov.cn/Statics/33d18569-67d5-4742-ae2a-5c553976cf1b.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/c9f803ea-661a",
+    "stoms.gov.cn/Statics/c9f803ea-661a-430b-add7-08ab86d36b76.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/34bd3bbb-9de3-4ef2-a990-3d864fcdc64f.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</span></td></tr><tr><td>(3) China's Total Export & Import Values by Trade Mode (in CNY)</td><td><sp",
+    " Export & Import Values by Trade Mode (in CNY)</td><td><span>Jan.</span><a href=http://english.customs.gov.cn/Statics/4f58c418-bd92-44dc-a89f-3c68fd9fd6b1.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/532f8eca-2739-4244-8f80-e78ccdea26bd.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/a9c22dfe-ba1f-4130",
+    "stoms.gov.cn/Statics/a9c22dfe-ba1f-4130-8d70-cd77d3ebc70f.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/0a9bd1a4-d32e-4e67-80fc-0230148c49d5.html> May.</a><a href=http://english.customs.gov.cn/Statics/20821e2e-b8ea-4735-a1b3-fa7773579865.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/c061a670-7006",
+    "stoms.gov.cn/Statics/c061a670-7006-41ca-a33c-6454cdcb6c77.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/2c16c2aa-817c-4135-9cb6-f3de8ee51420.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</span></td></tr><tr><td>(3) China's Total Export & Import Values by Trade Mode (in USD)</td><td><sp",
+    " Export & Import Values by Trade Mode (in USD)</td><td><span>Jan.</span><a href=http://english.customs.gov.cn/Statics/0a7c324d-d923-4a85-b777-7cc0f5121ace.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/40058de2-fd69-4c8a-8e72-e7b369566f1c.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/eb84ec53-5e4f-47a7",
+    "stoms.gov.cn/Statics/eb84ec53-5e4f-47a7-baec-5b4c69be0b39.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/a1859932-7d65-479f-a9bc-812112a1c6ad.html> May.</a><a href=http://english.customs.gov.cn/Statics/6d75aed4-58dd-45cb-9d40-c3eca4aeb0e7.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/1c7aaf2c-60fb",
+    "stoms.gov.cn/Statics/1c7aaf2c-60fb-45e4-88af-5fe125773249.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/614f33af-46c4-42bd-802b-9efb2825d40c.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</span></td></tr><tr><td>(4) China's Total Export & Import Values by Country/Region (in CNY)</td><td",
+    "ort & Import Values by Country/Region (in CNY)</td><td><span>Jan.</span><a href=http://english.customs.gov.cn/Statics/47e53257-a14f-4a19-a17c-b5beea64f822.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/2e61c8a1-17b2-4074-b909-c039ccf8c8fb.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/37b6afd7-37d4-43b4",
+    "stoms.gov.cn/Statics/37b6afd7-37d4-43b4-831d-85e6f7d606a8.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/e6d5a834-73ad-4607-b21e-e9dde542a59f.html> May.</a><a href=http://english.customs.gov.cn/Statics/9d365f1c-5bc6-4cd0-95cd-f4d694547f31.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/dcecd3fb-1782",
+    "stoms.gov.cn/Statics/dcecd3fb-1782-497b-b6f9-e147810d4102.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/3caedfcc-1a71-4848-b567-77751d44ebb8.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</span></td></tr><tr><td>(4) China's Total Export & Import Values by Country/Region (in USD)</td><td",
+    "ort & Import Values by Country/Region (in USD)</td><td><span>Jan.</span><a href=http://english.customs.gov.cn/Statics/0ed684ce-a5d7-45b8-ab53-0f30b3a8c7c1.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/66580503-6688-49b2-bd23-de154e5677d5.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/ad8e96d8-c573-4828",
+    "stoms.gov.cn/Statics/ad8e96d8-c573-4828-9232-25f075935841.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/173efb71-7962-4fb2-a623-615fcc627ec0.html> May.</a><a href=http://english.customs.gov.cn/Statics/c7735b9b-5967-435f-8841-48f490de3869.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/025bd61c-e8d0",
+    "stoms.gov.cn/Statics/025bd61c-e8d0-49c7-8fcc-f1b6f83c3104.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/e10175fb-249b-4b8d-9fe5-b8eb0037f1ad.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</span></td></tr><tr><td>(5) China's Major Exports by Quantity and Value (in CNY)</td><td><span>Jan.",
+    "s Major Exports by Quantity and Value (in CNY)</td><td><span>Jan.</span><a href=http://english.customs.gov.cn/Statics/d9247535-8b0d-4704-b7f2-6cab92d00671.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/c2e12291-4e62-44c2-98a1-080f892c9712.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/9d4ecd9e-340d-4d56",
+    "stoms.gov.cn/Statics/9d4ecd9e-340d-4d56-ac64-f5875efc9d6a.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/f1a0fe1f-c5ad-45c4-98ec-67f9714d7606.html> May.</a><a href=http://english.customs.gov.cn/Statics/0549e67d-b68f-4258-b848-01396e12b49e.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/04b25108-7f3f",
+    "stoms.gov.cn/Statics/04b25108-7f3f-4150-93d7-55f991c12021.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/e2af5479-dfae-4f7e-8847-1c9894719cce.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</span></td></tr><tr><td>(5) China's Major Exports by Quantity and Value (in USD)</td><td><span>Jan.",
+    "s Major Exports by Quantity and Value (in USD)</td><td><span>Jan.</span><a href=http://english.customs.gov.cn/Statics/bd273400-717c-41ab-ac57-8f85a2add7a5.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/e685d609-01eb-470c-804e-08ae239e53a1.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/0556071c-9550-4dd3",
+    "stoms.gov.cn/Statics/0556071c-9550-4dd3-abdf-369ebd986c3c.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/1f00d543-64ef-482d-830f-7eee41a7c576.html> May.</a><a href=http://english.customs.gov.cn/Statics/d0b7e61e-7535-499e-9de5-ffccbfd48bef.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/2ec98fe3-3715",
+    "stoms.gov.cn/Statics/2ec98fe3-3715-4211-b16f-3596872048f6.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/da19d841-89a8-40b8-9f91-9144fe8e884d.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</span></td></tr><tr><td>(6) China's Major Imports by Quantity and Value (in CNY)</td><td><span>Jan.",
+    "s Major Imports by Quantity and Value (in CNY)</td><td><span>Jan.</span><a href=http://english.customs.gov.cn/Statics/04cfaf0d-9828-4890-867e-9ad0cd992721.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/f67824b9-c94c-4952-aa92-9405279bf73a.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/1390956e-3bdf-49c8",
+    "stoms.gov.cn/Statics/1390956e-3bdf-49c8-b227-8b49e214d602.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/82e8443d-f9fd-45c6-82f0-8a02fca8a0c8.html> May.</a><a href=http://english.customs.gov.cn/Statics/1440a39c-d651-4cec-b326-d4e2ab3d0f93.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/5dcf6451-7075"
+   ],
+   "scripts": [
+    "../../Scripts/jquery-1.8.2.min.js",
+    "../../Scripts/Global.js",
+    "/Scripts/ie7.js",
+    "/Scripts/statistic.js"
+   ]
+  }
+ },
+ {
+  "name": "customs monthly text",
+  "url": "http://english.customs.gov.cn/statics/report/monthly.html",
+  "result": {
+   "bytes": 34183,
+   "final_url": "http://english.customs.gov.cn/statics/report/monthly.html",
+   "hits": [
+    "<link href=\"../../Content/CSS/Site.css\" rel=\"stylesheet\" /> <script src=\"../../Scripts/jquery-1.8.2.min.js\"></script> <script src=\"../../Scripts/Global.js\"></script> <!--[if lt IE 7]> <script src=\"/Scripts/ie7.js\"></script> <![endif]--> </head> <body> <div class=\"g-top\"> <div ",
+    " </div> </li> <li class=\"g-nav-itm\"> <a href=\"/statics/report/preliminary.html\" target=\"_blank\">Statistics<img class=\"ab\" src=\"/Images/Image/g-nav-ab.gif\" alt=\"arrow-down\"></a> <div class=\"sub\"> ",
+    " <div class=\"sub\"> <ul> <li><a href=\"/statics/report/preliminary.html\" target=\"_blank\">• Preliminary Release</a> </li> <li class=\"sub-spl\"></li> <li><a href=\"http:/statics",
+    "es</a></li> <li class=\"sub-spl\"></li> <li><a href=\"/statics/report/monthly.html\" target=\"_blank\">• Monthly Bulletin</a></li> <li class=\"sub-spl\"></li> <li><a href=\"/Statistics/Statistics?ColumnId=3\">• Quarterly Rel",
+    "<div class=\"clr\"></div> </div> <div class=\"g-pth\"><a href=\"/\">Home</a> &gt; <a href=\"/statics/report/preliminary.html\">Statistics</a> &gt; <a class=\"g-pth-cur\">Monthly Bulletin</a></div> <div class=\"nr-n-container\"> <div class=\"nr-n-banner\"></div> <div c",
+    "ge/logo-tiny.gif\" alt=\"logo-tiny\" />Statistics</div> <ul> <li><a href=\"/statics/report/preliminary.html\" target=\"_blank\">Preliminary Release</a></li> <li><a href=\"/statics/report/trade.html\">Trade Indices</a></li> <li class=\"preliactive\"><a href=\"/st",
+    " <img src=\"/Images/Image/ico_year.png\"> <span>Year</span><select id=\"monthlysel\"> <option value=\"2026\">2026</option> <option value=\"2025\">2025</option> <option value=\"2024\">2024</option> <option value=\"2023\">2023</option> ",
+    "<tr><td>（1）Summary of Imports and Exports (In USD) A： Annually</td><td><a href=http://english.customs.gov.cn/Statics/fab74f41-a619-4e8f-9946-4fc074fc1d9d.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/fcc432a8-3177-48e0-92f2-018e2809bab6.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/262d9b6b-d660-449b",
+    "stoms.gov.cn/Statics/262d9b6b-d660-449b-bf11-b5a6e1398ab5.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/408bd4b4-5a03-4413-8555-35b1c330cf82.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/be113730-bfa8-4620-8562-dbaab79e1b1b.html> May.</a><a href=http://english.customs.gov.cn/Statics/36feb751-22fb-4421",
+    ".gov.cn/Statics/36feb751-22fb-4421-9fdd-de8d1ea1ae81.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/8e1972b4-59a7-4989-88f4-6ef8ed5487a0.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/d8d2f37c-8624-4035-8efd-b8f6fb5550e8.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</s",
+    "r><tr><td>（1）Summary of Imports and Exports (In USD) B：Monthly</td><td><a href=http://english.customs.gov.cn/Statics/efca7075-d904-4602-91cb-5c124b094ca8.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/474a4ff5-aa64-43de-b3af-9b37236a54c0.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/9a0791b4-5046-4807",
+    "stoms.gov.cn/Statics/9a0791b4-5046-4807-a965-b3833d9a9570.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/8c30446d-22e9-408b-ad47-afa4242e6220.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/3b4d042e-6f8a-4828-ba92-a815e79f224a.html> May.</a><a href=http://english.customs.gov.cn/Statics/a63934b8-a285-4425",
+    ".gov.cn/Statics/a63934b8-a285-4425-bf83-027300353b77.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/ec4779c4-69ac-4c1b-8792-1f2d0f423103.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/d14f71f5-1ac9-431f-b8d7-b7a7a0b58af7.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</s",
+    "2）Imports and Exports by Country （Region） of Origin/Destination</td><td><a href=http://english.customs.gov.cn/Statics/6e9d4074-409f-46a1-883c-3278c5b5b31c.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/2d20fb30-a5ed-4011-8386-0eb433411b88.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/496bf29b-884f-4239",
+    "stoms.gov.cn/Statics/496bf29b-884f-4239-beb5-668eed5942d1.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/f5959c40-1fe5-43f6-b712-f14584e91a55.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/70e4b7f1-620b-4947-9177-4deccb7c1a26.html> May.</a><a href=http://english.customs.gov.cn/Statics/2d569f57-a86e-4d63",
+    ".gov.cn/Statics/2d569f57-a86e-4d63-94fb-d3000b039aa7.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/a9f14377-9e69-4bf4-8a61-1e2f4c2293cd.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/7b4caeff-8088-492d-8663-b737e22af7bf.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</s",
+    "d>（3）Composition of Imports and Exports by Section and Division</td><td><a href=http://english.customs.gov.cn/Statics/d3db1fa4-088d-4b58-98b8-73b730fa8fb2.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/023e8482-04a6-42c3-980a-7e51a1267f3a.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/af87156f-9f31-4e68",
+    "stoms.gov.cn/Statics/af87156f-9f31-4e68-a005-99b6e70bd549.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/5f9c3e5c-a1ec-432c-97b8-14b35e164b94.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/ab4e4d93-5faf-4587-9d0a-e6351bc4ccad.html> May.</a><a href=http://english.customs.gov.cn/Statics/61592026-3036-4482",
+    ".gov.cn/Statics/61592026-3036-4482-8ef4-4ed1f3d924eb.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/b0e7311b-ef20-484d-9211-b495af31944e.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/9c31ea2c-50f7-44ff-bf5b-11609e54ed76.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</s",
+    "></tr><tr><td>（4）Imports and Exports by HS Section and Division</td><td><a href=http://english.customs.gov.cn/Statics/413e41c0-b338-46a2-a0c6-005af3f24a0f.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/1f2b53ff-d69d-4d71-8e24-af16ee99299f.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/247ea4cd-9490-44a0",
+    "stoms.gov.cn/Statics/247ea4cd-9490-44a0-b923-9e674a331122.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/01f6de1f-73b0-4fc0-9330-69d72ebece0c.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/814a1398-37d1-4810-acf1-0e21f6170303.html> May.</a><a href=http://english.customs.gov.cn/Statics/dd62ef25-db42-4e74",
+    ".gov.cn/Statics/dd62ef25-db42-4e74-b7d1-79aa5dea406b.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/ba761d26-b46d-4f7c-9385-482a2a096e02.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/15ce131d-0e4e-42a2-85a6-d30f483247ea.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</s",
+    "span></td></tr><tr><td>（5）Imports and Exports by Customs Regime</td><td><a href=http://english.customs.gov.cn/Statics/3f738170-b02f-4b1c-a599-401a7763ea4c.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/a6adbea8-2037-42f9-a3a1-59760defddf8.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/c8f58143-f3a9-4127",
+    "stoms.gov.cn/Statics/c8f58143-f3a9-4127-990f-6aa319c9edfa.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/c3fb5ad2-bfc3-4c60-9f8e-15b7518f726c.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/de4483be-9c0f-4b18-aa8e-22a108d15c5d.html> May.</a><a href=http://english.customs.gov.cn/Statics/f5ca2c3c-b568-43d1",
+    ".gov.cn/Statics/f5ca2c3c-b568-43d1-a0ae-0d2d325c5978.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/05fc52ea-9566-4bea-b2cd-d9c86163837e.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/46c57624-a765-4a7a-a6b3-f157ca30f001.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</s",
+    "/tr><tr><td>（6）Exports by Type Enterprise and by Customs Regime</td><td><a href=http://english.customs.gov.cn/Statics/1cc275cc-6d37-4b02-8f62-1aa99a24d72f.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/324415d3-2033-4712-a210-1616d87b62b9.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/86ee0f1d-64bd-436f",
+    "stoms.gov.cn/Statics/86ee0f1d-64bd-436f-b038-6fee0671e032.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/33ca29d9-9817-4a9a-a7a9-d7760a3c2758.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/f0252720-5137-4445-859e-e8b0c6e02d39.html> May.</a><a href=http://english.customs.gov.cn/Statics/542ecd46-5732-4ed3",
+    ".gov.cn/Statics/542ecd46-5732-4ed3-a7a2-c56c744669fc.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/a1e58787-c649-40af-8243-92e68787855f.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/5fe458a2-470d-4ddb-8db9-9a6b20131f90.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</s",
+    "/tr><tr><td>（7）Imports by Type Enterprise and by Customs Regime</td><td><a href=http://english.customs.gov.cn/Statics/5d0e60e6-4ada-450b-b3f2-9a634521fa01.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/bb469293-d082-48a9-b6dc-2c4c5599da32.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/2f2aa158-6853-41af",
+    "stoms.gov.cn/Statics/2f2aa158-6853-41af-bd12-7bedb2fb8b22.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/a7e4927c-7a09-4384-97f5-f0fb8158279c.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/b934e0cb-aef2-4285-95fe-60687c8e9316.html> May.</a><a href=http://english.customs.gov.cn/Statics/a3966591-3387-4ffc",
+    ".gov.cn/Statics/a3966591-3387-4ffc-9646-f91dac9f3a69.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/143443ee-718d-44c3-b495-58ad3c16366a.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/13dd5223-6cc6-4982-a17e-731ee7e5cc0f.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</s",
+    "r><td>（8）Imports and Exports by Location of Importers/Exporters</td><td><a href=http://english.customs.gov.cn/Statics/e86f0748-72eb-4d69-9d88-ca0a8765e404.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/ab6b5782-8194-4650-a0db-86c6f0baaeb7.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/999553b6-9463-493e",
+    "stoms.gov.cn/Statics/999553b6-9463-493e-ba57-3a01aa3b2f06.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/979761d9-fba8-4194-93ec-0f4b8a0e471b.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/42503f18-9067-41fc-93b9-1d71ca2347ff.html> May.</a><a href=http://english.customs.gov.cn/Statics/17a9d6eb-d28b-409c",
+    ".gov.cn/Statics/17a9d6eb-d28b-409c-8d18-d98426729c69.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/66d8a239-1ba5-42f1-b36e-da64ce88e860.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/e1eb80c7-475d-4029-a95d-3684ae2832f6.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</s",
+    "Imports and Exports by Location of Domestic Consumers/Producers</td><td><a href=http://english.customs.gov.cn/Statics/ba47191e-1410-4b61-8e3e-b2423afc1a54.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/fb820975-8f8c-4db9-b809-94a74a0f8b24.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/fe2cba26-c239-454f",
+    "stoms.gov.cn/Statics/fe2cba26-c239-454f-9b3a-b15e37d37371.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/2eaedb77-bd7b-476c-a7a6-881bb5eff046.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/ea6e0df4-dcae-4acf-ac02-e712b369c098.html> May.</a><a href=http://english.customs.gov.cn/Statics/8c0da347-619f-4fd1",
+    ".gov.cn/Statics/8c0da347-619f-4fd1-83d0-50de9d5fcac7.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/3d820a2c-013d-4d86-b8e0-5d02f95db122.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/6aceed9d-8e89-45a9-b479-61be2285d35d.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</s",
+    "></td></tr><tr><td>（10）Imports and Exports by Customs Districts</td><td><a href=http://english.customs.gov.cn/Statics/5b079630-adb1-4f26-b933-68c267e317d7.html> Jan.</a><a href=http://english.customs.gov.cn/Statics/6d613e8d-cdc3-43af-8c64-20ae1cb517cb.html> Feb.</a><a href=http://english.customs.gov.cn/Statics/a4b4a254-f15a-4352",
+    "stoms.gov.cn/Statics/a4b4a254-f15a-4352-8b94-38c541128589.html> Mar.</a><a href=http://english.customs.gov.cn/Statics/6be80a12-4dcd-4960-b7e1-fc9181c893c4.html> Apr.</a><a href=http://english.customs.gov.cn/Statics/f40bccce-707e-41f4-9a7c-730374ebaaf2.html> May.</a><a href=http://english.customs.gov.cn/Statics/3afc293c-a43f-4fde",
+    ".gov.cn/Statics/3afc293c-a43f-4fde-b24c-a4b7187e3a42.html> Jun.</a></br><a href=http://english.customs.gov.cn/Statics/8f50f3ec-fe52-471b-89b5-35200be6a550.html> Jul.</a><a href=http://english.customs.gov.cn/Statics/2de7f345-85aa-4197-9abe-a5d46ebe8f50.html> Aug.</a><span>Sep.</span><span>Oct.</span><span>Nov.</span><span>Dec.</s"
+   ],
+   "scripts": [
+    "../../Scripts/jquery-1.8.2.min.js",
+    "../../Scripts/Global.js",
+    "/Scripts/ie7.js",
+    "/Scripts/statistic.js"
+   ]
+  }
+ },
+ {
+  "name": "crisiswatch rss item",
+  "url": "https://www.crisisgroup.org/rss.xml",
+  "result": {
+   "bytes": 782746,
+   "final_url": "https://www.crisisgroup.org/rss.xml",
+   "hits": [
+    "hrieb visited Bamako Monday in the latest sign of rapprochement between Algeria and Mali, whose relations had deteriorated badly in recent years. Crisis Group expert Jean-Hervé Jezequel says the thaw is welcome news for the Malian authorities. Bamako has been struggling to contain an insurgency linked to al-Qaeda, Jamaat Nusrat ",
+    " to de-escalate tensions, including through an agreed-upon oversight mechanism, to prevent the situation from deteriorating further.&lt;br&gt;&lt;br&gt;&lt;a href=\"https://www.crisisgroup.org/latin-america-caribbean/andes/colombia\" target=\"_blank\"&gt;&lt;strong&gt;COLOMBIA&lt;/strong&gt;&lt;/a&gt; &amp;nbsp;Nearly two dozen peop",
+    "d seized the town in March. The fighting comes amid mounting warnings from the UN and aid organisations about deteriorating humanitarian conditions in Jonglei, where both sides stand accused of blocking aid access and displacing hundreds of thousands of civilians through sweeping evacuation orders. Crisis Group expert Daniel Ake",
+    " </item> <item> <title>September Trends and October Alerts 2026</title> <link>https://www.crisisgroup.org/crisiswatch/september-trends-and-october-alerts-2026</link> <description> &lt;span&gt;September Trends and October Alerts 2026&lt;/span&gt; &lt;span&gt;&lt;span&gt;oolofsson&lt;/span&gt;&lt;/span&gt; &lt;span&gt;&lt;",
+    "0a u-tac u-franklin u-pa u-width-100 u-z-500 ]\"&gt; &lt;h1 class=\"u-fs36 u-fs57@m u--black\"&gt; CrisisWatch &lt;/h1&gt; &lt;h3 class=\"u-fs21 u-fs28@m u--black u-mar-t5\"&gt; Tracking Conflict Worldwide &lt;/h3&gt; &lt;a href=\"javascript:;\" class=\"js-mapbox-expand c-mapbox__expand [ ",
+    "ution-circle\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" /&gt;&lt;/svg&gt;&lt;/span&gt; &lt;span&gt;Resolution Opportunity&lt;/span&gt; &lt;/div&gt; &lt;div class=\"u-df u-pad-t5 u-pad-b5\"&gt; &lt;span class=\"is-status o-icon u-mar-r10\"&gt;&lt;svg&gt;&lt;use xlink:href=\"#risk-alert-circle\" xml",
+    " &lt;span class=\"is-status is-status--improved [ u-dib u-mar-r10 ]\"&gt;&lt;/span&gt; &lt;span&gt;Improved Situation&lt;/span&gt; &lt;/div&gt; &lt;div class=\"u-df u-pad-t5 u-pad-b5\"&gt; &lt;span class=\"is-status is-status--deteriorated [ u-dib u-mar-r10 ]\"&gt;&lt;/span&gt; &lt;spa",
+    "&lt;span class=\"is-status is-status--deteriorated [ u-dib u-mar-r10 ]\"&gt;&lt;/span&gt; &lt;span&gt;Deteriorated Situation&lt;/span&gt; &lt;/div&gt; &lt;div class=\"u-df u-pad-t5 u-pad-b5\"&gt; &lt;span class=\"is-status is-status--unchanged [ u-dib u-mar-r10 ]\"&gt;&lt;/span&gt; &lt;sp",
+    " &lt;section class=\"c-mapbox__container js-mapbox [ u-width-100 u-height-100vh u-is-disabled u-z-200 ]\" data-crisiswatch-nid=\"28572\"&gt;&lt;/section&gt; &lt;/div&gt; &lt;div class=\"c-mapbox__footer\"&gt; &lt;div class=\"c-mapbox__toggle-wrapper u-pad-t5 u-pad-b5 u-aifs\"&gt; &lt;button class=\"c-mapbox__toggle-button",
+    "ls=\"mapbox-info-toggle-popup\" data-toggletip-content=\"INFO: This map displays conflicts and crises tracked in CrisisWatch every month. Boundaries shown on the map do not automatically reflect state boundaries, nor do they imply or indicate endorsement by Crisis Group in the case of disputed territories.\"&gt;&lt;span class=\"is-st",
+    "t;/li&gt; &lt;li class=\"o-tooltip__item\"&gt; &lt;a href=\"mailto:?subject=&amp;amp;body=CrisisWatch is our global conflict tracker, an early warning tool designed to help prevent deadly violence. It keeps decision-makers up-to-date with developments in over 70 conflicts and crises every month, identifying t",
+    " identifying trends and alerting them to risks of escalation and opportunities to advance peace. In addition, CrisisWatch monitors over 50 situations (“standby monitoring”) to offer timely information if developments indicate a drift toward violence or instability. Entries dating back to 2003 provide easily searchable conflict h",
+    " &lt;div class=\"c-page-hero__teaser [ u-ptserif u-fsi u-fs18 u-fs21@m u-paragraph-mar ]\"&gt; &lt;p&gt;CrisisWatch is our global conflict tracker, an early warning tool designed to help prevent deadly violence. It keeps decision-makers up-to-date with developments in over 70 &lt;a href=\"https://www.crisisgroup.org/sites/d",
+    " identifying trends and alerting them to risks of escalation and opportunities to advance peace. In addition, CrisisWatch monitors over 50 situations (“&lt;a href=\"https://www.crisisgroup.org/sites/default/files/2026-03/cw-standby-monitoring-countries-17iii26.pdf\" target=\"_blank\"&gt;standby monitoring&lt;/a&gt;”) to offer timely",
+    "t; &lt;div class=\"u-mar-t20\"&gt; &lt;a href=\"https://www.crisisgroup.org/about-crisiswatch\" target=\"_blank\" class=\"[ u-fs18 u-fs21@m u-fsi u-link-black-imp u-wspl ]\" title=\"Learn more about CrisisWatch\"&gt; Learn more about CrisisWatch &lt;span class=\"o-icon u-mar-l10\"&gt;&lt;svg&gt;&",
+    " &lt;li class=\"leaf u-pad-t10 u-pad-b10 u-pad-r20\"&gt; &lt;a href=\"https://www.crisisgroup.org/crisiswatch#overview\"&gt; &lt;img src=\"https://www.crisisgroup.org/sites/default/files/2023-09/Globe_0.svg\"&gt; &lt;span&gt;Global Overview&lt;/span&gt; ",
+    " &lt;li class=\"leaf u-pad-t10 u-pad-b10 u-pad-r20\"&gt; &lt;a href=\"https://www.crisisgroup.org/crisiswatch/database\"&gt; &lt;img src=\"https://www.crisisgroup.org/sites/default/files/2023-09/Search.svg\"&gt; &lt;span&gt;Search Database&lt;/span&gt; ",
+    " &lt;li class=\"leaf u-pad-t10 u-pad-b10 u-pad-r20\"&gt; &lt;a href=\"https://www.crisisgroup.org/crisiswatch/how-use-crisiswatch\"&gt; &lt;img src=\"https://www.crisisgroup.org/sites/default/files/2023-09/Tracker.svg\"&gt; &lt;span&gt;Using CrisisWatch&lt;/span&",
+    " &lt;li class=\"leaf u-pad-t10 u-pad-b10 u-pad-r20\"&gt; &lt;a href=\"https://www.crisisgroup.org/crisiswatch/about-crisiswatch\"&gt; &lt;img src=\"https://www.crisisgroup.org/sites/default/files/2023-09/Info.svg\"&gt; &lt;span&gt;About&lt;/span&gt; &",
+    " &lt;li class=\"leaf u-pad-t10 u-pad-b10 u-pad-r20\"&gt; &lt;a href=\"https://www.crisisgroup.org/crisiswatch/crisiswatch-pdf-archive\"&gt; &lt;img src=\"https://www.crisisgroup.org/sites/default/files/2023-09/PDF.svg\"&gt; &lt;span&gt;PDF Archive&lt;/span&gt; ",
+    "er 2026&lt;/span&gt; &lt;/h3&gt; &lt;div class=\"c-crisiswatch--regional__trend\"&gt; &lt;h4 class=\"[ u-mar-t25 u-fs18 u-fwl u-black ]\"&gt;&lt;svg class=\"u-icon--inline\"&gt;&lt;use xlink:href=\"#risk-alert\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" /&gt;",
+    "icon--inline\"&gt;&lt;use xlink:href=\"#risk-alert\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" /&gt;&lt;/svg&gt;Conflict Risk Alerts&lt;/h4&gt; &lt;p class=\"[ u-mar-b0 u-mar-t15 ] [ u-fs13 u-lh15 u-fwl u-c-white:link ]\"&gt; &lt;a class=\"js-scrollTo\" href=\"#afghanistan\" da",
+    "span&gt;September 2026&lt;/span&gt; &lt;/h3&gt; &lt;div class=\"c-crisiswatch--regional__trend\"&gt; &lt;h4 class=\"[ u-mar-t25 u-fs18 u-fwl u-black ]\"&gt;&lt;svg class=\"u-icon--inline\"&gt;&lt;use xlink:href=\"#deteriorated\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" /&g",
+    "on--inline\"&gt;&lt;use xlink:href=\"#deteriorated\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" /&gt;&lt;/svg&gt;Deteriorated Situations&lt;/h4&gt; &lt;p class=\"[ u-mar-b0 u-mar-t15 ] [ u-fs13 u-lh15 u-fwl u-c-white:link ]\"&gt; &lt;a class=\"js-scrollTo\" href=\"#afghanistan\"",
+    " &lt;li class=\"o-tooltip__item\"&gt; &lt;a href=\"https://www.crisisgroup.org/crisiswatch/september-trends-and-october-alerts-2026\" class=\"o-tooltip__link js-share\" title=\"Facebook\" data-sharer=\"FB\"&gt; &lt;span class=\"o-icon\"&gt;&lt;svg&gt;&lt;use xlink:href=\"#facebook\" xmlns:",
+    " &lt;a href=\"https://twitter.com/intent/tweet?via=crisisgroup&amp;amp;url=https://www.crisisgroup.org/crisiswatch/september-trends-and-october-alerts-2026&amp;amp;text=September Trends and October Alerts 2026\" class=\"o-tooltip__link js-share\" title=\"Twitter\" data-sharer=\"TW\"&gt; &lt;span class=\"o-icon",
+    "erts 2026&amp;amp;body=Read more from September Trends and October Alerts 2026%3A https://www.crisisgroup.org/crisiswatch/september-trends-and-october-alerts-2026\" class=\"o-tooltip__link\" title=\"Email\"&gt; &lt;span class=\"o-icon\"&gt;&lt;svg&gt;&lt;use xlink:href=\"#mail\" xmlns:xlink=\"http://www.w3.org/1999/xli",
+    "u-fs21 u-mar-b40 u-mar-b60@m ]\"&gt; &lt;p&gt;Our monthly conflict tracker identified &lt;strong&gt;five deteriorations&amp;nbsp;&lt;/strong&gt;in September and&lt;strong&gt; seven risks&amp;nbsp;&lt;/strong&gt;in October, together underscoring the prominence of interstate confrontation in the global conflict landscape.&amp",
+    "-jcc u-width-100 u-tac u-pad-20 u-mar-b50 u-bg-gray--primary\"&gt; &lt;a href=\"https://www.crisisgroup.org/crisiswatch/database\" class=\"u-df u-aic u-fwl u-link-black-imp\"&gt; &lt;svg class=\"o-icon u-mar-r10\"&gt;&lt;use xlink:href=\"#search\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" /&gt;&lt;/svg&gt; Search current",
+    "href=\"#search\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" /&gt;&lt;/svg&gt; Search current and previous CrisisWatch latest updates. &lt;/a&gt; &lt;/div&gt; &lt;ul class=\"[ u-df u-jcc u-flexdc u-flexdr@m ] [ u-lsnone u-pad-0 u-mar-0 u-width-100 ]\"&gt; &lt;li class=\"u-pr u-pad-10\"&gt; &lt;a href=\"javasc",
+    "/span&gt; &lt;span class=\"o-label [ u-dif u-fs13 u-franklin u-fwn u-ttu u-black u-pad-l10 ]\"&gt;Share CrisisWatch September 2026&lt;/span&gt; &lt;/a&gt; &lt;ul class=\"o-tooltip o-tooltip--cw [ u-lsnone u-pad-0 u-mar-0 u-bg-gray--primary u-z-1 ] js-tooltip\"&gt; &lt;li class=\"o-tooltip__item\"&gt; ",
+    "https://twitter.com/intent/tweet?via=crisisgroup&amp;amp;url=https://www.crisisgroup.org/rss.xml&amp;amp;text=CrisisWatch September 2026\" class=\"o-tooltip__link js-share\" title=\"Twitter\" data-sharer=\"TW\"&gt; &lt;span class=\"o-icon\"&gt;&lt;svg&gt;&lt;use xlink:href=\"#twitter\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"",
+    "t;/a&gt; &lt;/li&gt; &lt;li class=\"o-tooltip__item\"&gt; &lt;a href=\"mailto:?subject=CrisisWatch September 2026&amp;amp;body=CrisisWatch is our global conflict tracker, an early warning tool designed to help prevent deadly violence. It keeps decision-makers up-to-date with developments in over 70 conflic",
+    " identifying trends and alerting them to risks of escalation and opportunities to advance peace. In addition, CrisisWatch monitors over 50 situations (“standby monitoring”) to offer timely information if developments indicate a drift toward violence or instability. Entries dating back to 2003 provide easily searchable conflict h",
+    "over the next three to six months in support of global conflict prevention efforts.%0D%0A%0D%0ARead more from CrisisWatch September 2026%3A https://www.crisisgroup.org/rss.xml\" class=\"o-tooltip__link\" title=\"Email\"&gt; &lt;span class=\"o-icon\"&gt;&lt;svg&gt;&lt;use xlink:href=\"#mail\" xmlns:xlink=\"http://www.w3.org/199",
+    " &lt;/ul&gt; &lt;/li&gt; &lt;li class=\"u-pad-10\"&gt; &lt;a href=\"https://www.crisisgroup.org/crisiswatch/print?t=Crisiswatch+September+2026&amp;amp;crisiswatch=28572&amp;amp;date=September+2026\" target=\"_blank\" title=\"Print\" class=\"u-df u-aic u-jcc\"&gt; &lt;span class=\"o-icon\"&gt;&lt;svg&gt;&lt;use xlink",
+    "/span&gt; &lt;span class=\"o-label [ u-dif u-fs13 u-franklin u-fwn u-ttu u-black u-pad-l10 ]\"&gt;Print CrisisWatch September 2026&lt;/span&gt; &lt;/a&gt; &lt;/li&gt; &lt;li class=\"u-pad-10\"&gt; &lt;a href=\"https://www.crisisgroup.org/crisiswatch/print?t=Crisiswatch+September+2026&amp;amp;crisiswatch=28",
+    "s32\"&gt;Print &amp; Download Options&lt;/h2&gt; &lt;h4 class=\"[ u-mar-b18 u-fs24 ] document-list--heading\"&gt;CrisisWatch September Trends and October Alerts 2026&lt;/h4&gt; &lt;div class=\"document-list\"&gt; &lt;div class=\"document-list--item [ u-pad-t20 u-pad-b10 ]\"&gt; &lt;div class=\"document-list--title [ u-wb u-p",
+    "0 ]\"&gt; &lt;div class=\"document-list--title [ u-wb u-ptserif u-fs18 ]\"&gt;&lt;p class=\"[ u-mar-0 ]\"&gt;CrisisWatch September 2026 Global Overview&lt;/p&gt;&lt;/div&gt; &lt;div class=\"document-list--action [ u-tal u-tar\\@m ]\"&gt; &lt;p class=\"[ u-fs13 u-mar-0 u-ttu ]\"&gt; &lt;a href=\"/sites/default/",
+    "u-tar\\@m ]\"&gt; &lt;p class=\"[ u-fs13 u-mar-0 u-ttu ]\"&gt; &lt;a href=\"/sites/default/files/crisiswatch/crisiswatch-september-2026-global-overview.pdf\" class=\"js-download\" download&gt; &lt;span class=\"o-icon\"&gt;&lt;svg&gt;&lt;use xlink:href=\"#download\"&gt;&lt;/use&gt;&lt;/svg&gt;&lt;/span&gt;Downlo"
+   ],
+   "scripts": []
+  }
+ },
+ {
+  "name": "tzeva ids",
+  "result": {
+   "1": "2021-05-20T18:00",
+   "100": "2022-08-06T09:23",
+   "1000": "2023-10-18T07:12",
+   "3000": "2024-06-19T18:00",
+   "5000": "2024-11-16T14:40",
+   "6000": "2026-03-09T08:18",
+   "6500": "2026-03-23T08:09",
+   "7500": "2026-05-28T16:17"
+  }
+ },
+ {
+  "name": "oref csv",
+  "result": {
+   "head": "data,date,time,alertDate,category,category_desc,matrix_id,rid\n\"באר שבע 288, באר שבע 289, באר שבע 291\",24.07.2014,17:05:26,2014-07-24T17:05:00,1,ירי רקטות וטילים,1,1\n\"באר שבע 288, אשקלון 256, באר שבע 289, באר שבע 291\",24.07.2014,17:05:35,2014-07-24T17:06:00,1,ירי רקטות וטילים,1,2\n\"אשקלון 256, באר שבע 289, באר שבע 291\",24.07.2014,17:05:59,2014-07-24T17:06:00,1,ירי רקטות וטילים,1,3\n\"באר שבע 289, באר שבע 291\",24.07.2014,17:06:02,2014-07-24T17:06:00,1,ירי רקטות וטילים,1,4\n\"באר שבע 288, באר שבע 289, באר שבע 291\",24.07.2014,17:06:08,2014-07-24T17:06:00,1,ירי רקטות וטילים,1,5\n\"באר שבע 288, באר שבע 291\",24.07.2014,17:06:11,2014-07-24T17:06:00,1,ירי רקטות וטילים,1,6\nבאר שבע 288,24.07.2014,17:06:14,2014-07-24T17:06:00,1,ירי רקטות וטילים,1,7\n\"באר שבע 288, באר שבע 289\",24.07.2014,17:06:15,2014-07-24T17:06:00,1,ירי רקטות וטילים,1,8\nבאר שבע 289,24.07.2014,17:06:49,2014-07-24T17:07:00,1,ירי רקטות וטילים,1,9\nעוטף עזה 230,27.07.2014,09:57:09,2014-07-27T09:57:00,1,ירי רקטות וטילים,1,10\nעוטף עזה 237,27.07.2014,10:55:01,2014-07-27T10:55:00,1,ירי רקטות וטילים,1,11\nעוטף עזה 218,27.07.2014,12:29:40,2014-07-27T12:30:00,1,ירי רקטות וטילים,1,12\n\"עוטף עזה 218, עוטף עזה 217\",27.07.2",
+   "tail": ".2026,00:31:07,2026-09-10T00:31:00,13,האירוע הסתיים,10,706589\nע'ג'ר,10.09.2026,00:31:07,2026-09-10T00:31:00,13,האירוע הסתיים,10,706590\nמנרה,17.09.2026,14:33:36,2026-09-17T14:34:00,2,חדירת כלי טיס עוין,6,706591\nמרגליות,17.09.2026,14:33:36,2026-09-17T14:34:00,2,חדירת כלי טיס עוין,6,706592\nמנרה,17.09.2026,14:33:44,2026-09-17T14:34:00,1,ירי רקטות וטילים,1,706593\nמנרה,17.09.2026,14:43:44,2026-09-17T14:44:00,13,האירוע הסתיים,10,706594\nמרגליות,17.09.2026,14:43:44,2026-09-17T14:44:00,13,האירוע הסתיים,10,706595\nיצהר,19.09.2026,19:25:38,2026-09-19T19:26:00,10,חדירת מחבלים,13,706596\nיצהר,19.09.2026,19:35:21,2026-09-19T19:35:00,13,הוסר החשש לחדירת מחבלים,10,706597\nמלכיה,21.09.2026,15:27:20,2026-09-21T15:27:00,1,ירי רקטות וטילים,1,706598\nמלכיה,21.09.2026,15:32:21,2026-09-21T15:32:00,13,האירוע הסתיים,10,706599\nחוות מגנזי,29.09.2026,03:33:34,2026-09-29T03:34:00,10,חדירת מחבלים,13,706600\nחוות מגנזי,29.09.2026,04:39:41,2026-09-29T04:40:00,13,הוסר החשש לחדירת מחבלים,10,706601\nנחל עוז,29.09.2026,21:35:19,2026-09-29T21:35:00,1,ירי רקטות וטילים,1,706602\nנחל עוז,29.09.2026,21:38:40,2026-09-29T21:39:00,13,האירוע הסתיים,10,706603\nנחל עוז,29.09.2026,21:40:02,2026-09-29T21:40:00,13,האירוע הסתיים,10,706604\n",
+   "readme": "# israel-alerts-data\nHistorical data of Israel's Home Front Command (פיקוד העורף) alerts.\n",
+   "license": "                                 Apache License\n                           Version 2.0, January 2004\n                        http://www.apache.org/licenses/\n\n   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n   1. Definitions.\n\n      \"License\" shall mean the terms and conditions for u"
+  }
+ }
+]
