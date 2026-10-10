@@ -369,8 +369,29 @@ def round7():
     return out
 
 
+def round8():
+    import extras
+    out = {}
+    for kind in extras.JCG_TYPES:
+        x = extras._jcg_post("warnings.cgi", {"YEAR": "2026", "TYPE": kind, "LANG": "JP"})
+        tanas = re.findall(r"<tana>(\d+)</tana>", x)
+        out[kind + " tanas"] = len(tanas)
+        for n in (2, 25):
+            t = extras._jcg_post("disp_warnings.cgi", {"TYPE": kind, "TANA": ":".join(tanas[:n]) + ":", "LANG": "JP"})
+            plain = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", t))
+            out[f"{kind} disp {n}"] = {"bytes": len(t), "heads": len(extras.JCG_MSG.findall(plain)), "parsed": len(extras.parse_jcg_texts(kind, t)), "sample": plain[:1200]}
+            time.sleep(1)
+    return out
+
+
 def main(path):
     res = []
+    if os.environ.get("ROUTES_ROUND") == "8":
+        v = round8()
+        print(json.dumps(v, ensure_ascii=False)[:800])
+        with open(path, "w") as f:
+            json.dump(v, f, indent=1, ensure_ascii=False)
+        return
     if os.environ.get("ROUTES_ROUND") == "7":
         try:
             v = round7()
