@@ -157,14 +157,38 @@ def check_entsoe():
 def check_gcp():
     if m := need("GCP_SA_KEY_JSON"):
         return m
+    raw = ENV["GCP_SA_KEY_JSON"]
     try:
-        k = json.loads(ENV["GCP_SA_KEY_JSON"])
+        info = json.loads(raw)
     except ValueError:
         try:
-            k = json.loads(base64.b64decode(ENV["GCP_SA_KEY_JSON"]))
+            raw = base64.b64decode(raw).decode()
+            info = json.loads(raw)
         except Exception:  # noqa: BLE001
             return "present but not valid JSON"
-    return f"present, service account {k.get('client_email', '?')}, project {k.get('project_id', '?')} (live test after setup)"
+    project = ENV["GCP_PROJECT"] or info.get("project_id")
+    out = [f"account {info.get('client_email', '?')}, project {project}"]
+    try:
+        from google.cloud import bigquery
+        from google.oauth2 import service_account
+        creds = service_account.Credentials.from_service_account_info(info)
+        bq = bigquery.Client(project=project, credentials=creds)
+        sql = ("SELECT COUNT(*) n FROM `gdelt-bq.gdeltv2.events_partitioned` "
+               "WHERE _PARTITIONTIME = TIMESTAMP('2026-10-01')")
+        dry = bq.query(sql, job_config=bigquery.QueryJobConfig(dry_run=True, use_query_cache=False))
+        rows = list(bq.query(sql, job_config=bigquery.QueryJobConfig(maximum_bytes_billed=10**9)).result())
+        out.append(f"BigQuery OK ({dry.total_bytes_processed} bytes scanned; GDELT events 1 Oct: {rows[0].n})")
+    except Exception as e:  # noqa: BLE001
+        out.append(f"BigQuery failed: {type(e).__name__}: {str(e)[:200]}")
+    try:
+        import ee
+        ee.Initialize(credentials=ee.ServiceAccountCredentials(info["client_email"], key_data=raw), project=project)
+        n = (ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterBounds(ee.Geometry.Point(51.315, 25.117))
+             .filterDate("2026-09-01", "2026-10-10").size().getInfo())
+        out.append(f"Earth Engine OK (Sentinel-2 scenes over Al Udeid since 1 Sep: {n})")
+    except Exception as e:  # noqa: BLE001
+        out.append(f"Earth Engine failed: {type(e).__name__}: {str(e)[:200]}")
+    return "; ".join(out)
 
 
 def check_present(*names):

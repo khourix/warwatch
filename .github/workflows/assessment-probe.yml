@@ -15,9 +15,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Probe sources
+        if: false
         env:
           GFW_TOKEN: ${{ secrets.GFW_TOKEN }}
         run: python3 probe/assessment_probe.py probe/results.json
+      - name: Install Google client libraries
+        run: python3 -m pip install -q google-cloud-bigquery earthengine-api
       - name: Check new account credentials
         env:
           CDSE_CLIENT_ID: ${{ secrets.CDSE_CLIENT_ID }}
