@@ -1,0 +1,13 @@
+name: probe-estat
+on:
+  push:
+    branches: [claude/estat-probe]
+    paths: [tools/probe_estat.py]
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/probe_estat.py
+        env:
+          ESTAT_APP_ID: ${{ secrets.ESTAT_APP_ID }}
