@@ -119,6 +119,12 @@ class TestParsers(unittest.TestCase):
                 ["2", "FRANCE", "9", "2026-06"], ["3", "UKRAINE", "7", "2026-07"]]
         self.assertEqual(S.parse_census(rows, ["UKRAINE"]), [("2026-06", 5.0), ("2026-07", 7.0)])
 
+    def test_ucdp_sums_deaths_inside_box(self):
+        ev = [{"latitude": 50, "longitude": 30, "date_start": "2026-03-04 00:00:00.000", "best": 3},
+              {"latitude": 50.5, "longitude": 31, "date_start": "2026-03-20 00:00:00.000", "best": 2},
+              {"latitude": 10, "longitude": 30, "date_start": "2026-03-21 00:00:00.000", "best": 9}]
+        self.assertEqual(S.parse_ucdp(ev, (44, 53, 22, 41)), [("2026-03", 5.0)])
+
     def test_nms_counts_fresh_restrictions(self):
         def f(i, issued, text, code="QXXXX", typ="N"):
             return {"properties": {"coreNOTAMData": {"notam": {"id": i, "issued": issued, "text": text, "selectionCode": code, "type": typ}}}}

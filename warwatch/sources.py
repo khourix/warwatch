@@ -917,3 +917,59 @@ def nms_update(firs, store, today=None, cid=None, secret=None):
         have = dict(store.cache_load(f"notam_{th}"))
         have[str(today)] = parse_nms(mine, today)
         store.cache_save(f"notam_{th}", sorted(have.items()))
+
+
+# ---- UCDP Georeferenced Event Dataset (Uppsala), token in the x-ucdp-access-token header; 5,000 requests a day ----
+UCDP_API = "https://ucdpapi.pcr.uu.se/api/gedevents/"
+UCDP_YEARLY = "26.1"   # annual release; runs to the end of 2025. Monthly "candidate" releases (26.0.N) carry the months since.
+
+
+def _ucdp_pages(version, token, start):
+    out, page = [], 0
+    while page < 200:
+        p = get(f"{UCDP_API}{version}?pagesize=1000&page={page}&StartDate={start}", headers={"x-ucdp-access-token": token}, timeout=90)
+        out += p.get("Result") or []
+        if not p.get("NextPageUrl"):
+            break
+        page += 1
+    return out
+
+
+def parse_ucdp(events, box):
+    """GED events -> [(YYYY-MM, best-estimate deaths)] for events inside box = (lat_min, lat_max, lon_min, lon_max)."""
+    la0, la1, lo0, lo1 = box
+    by = {}
+    for e in events:
+        try:
+            lat, lon = float(e["latitude"]), float(e["longitude"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if la0 <= lat <= la1 and lo0 <= lon <= lo1:
+            m = str(e["date_start"])[:7]
+            by[m] = by.get(m, 0.0) + float(e.get("best") or 0)
+    return sorted(by.items())
+
+
+def ucdp_events(token, start="2018-01-01"):
+    """Annual release plus the newest monthly candidate release for the months after it ends."""
+    ev = _ucdp_pages(UCDP_YEARLY, token, start)
+    last = max((str(e["date_start"])[:10] for e in ev), default=start)
+    for n in range(14, 0, -1):
+        try:
+            more = _ucdp_pages(f"26.0.{n}", token, last)
+        except Exception:
+            continue
+        ev += [e for e in more if str(e["date_start"])[:10] > last]
+        break
+    return ev
+
+
+_UCDP = {}
+
+
+def fetch_ucdp(box, token):
+    if not token:
+        raise RuntimeError("UCDP_TOKEN not set")
+    if "ev" not in _UCDP:
+        _UCDP["ev"] = ucdp_events(token)
+    return parse_ucdp(_UCDP["ev"], box)
