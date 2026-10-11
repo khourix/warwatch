@@ -6,6 +6,7 @@ leaves its layer empty and the dashboard says so.
 import datetime as dt
 import html
 import json
+import os
 import re
 import time
 import urllib.parse
@@ -96,6 +97,30 @@ def hub_stats(theatre):
         n += a
         bad += b
     return n, bad
+
+
+OPENSKY_TOKEN = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
+
+
+def opensky_airborne(box, cid=None, secret=None):
+    """Aircraft in the air inside box = (lat_min, lat_max, lon_min, lon_max), from OpenSky's live states (free client, 4,000 credits a day;
+    one box this size costs 3). OpenSky has receivers where adsb.lol has none (Iraq). None when no client is set or the call fails."""
+    cid = cid or os.environ.get("OPENSKY_CLIENT_ID", "")
+    secret = secret or os.environ.get("OPENSKY_CLIENT_SECRET", "")
+    if not (cid and secret):
+        return None
+    import urllib.request
+    try:
+        req = urllib.request.Request(OPENSKY_TOKEN, data=urllib.parse.urlencode(
+            {"grant_type": "client_credentials", "client_id": cid, "client_secret": secret}).encode(), headers={"User-Agent": C.USER_AGENT})
+        with urllib.request.urlopen(req, timeout=40) as r:
+            tok = json.loads(r.read())["access_token"]
+        la0, la1, lo0, lo1 = box
+        d = S.get(f"https://opensky-network.org/api/states/all?lamin={la0}&lamax={la1}&lomin={lo0}&lomax={lo1}",
+                  headers={"Authorization": "Bearer " + tok}, retries=2, wait=5)
+    except Exception:
+        return None
+    return float(sum(1 for st in d.get("states") or [] if len(st) > 8 and not st[8]))   # st[8] = on_ground
 
 
 def fetch_nga():

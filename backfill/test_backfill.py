@@ -148,6 +148,30 @@ class T(unittest.TestCase):
         self.assertEqual(K.load("adsb_global_mil"), {"2026-10-01": 5.0})   # the denominator is left alone
         K.DATA = old_data
 
+    def test_news_backfill_skips_held_days_and_leaves_failed_days_empty(self):
+        import sources_news as N
+        d, old_data = tempfile.mkdtemp(), K.DATA
+        K.DATA = d
+        K.save("news_iraq", {"2024-01-01": 7})
+        calls = []
+        orig = N.S.gnews_day
+
+        def fake(q, day):
+            calls.append(day.isoformat())
+            if day == dt.date(2024, 1, 3):
+                raise RuntimeError("429")
+            return 4.0
+        N.S.gnews_day = fake
+        orig_sleep = N.time.sleep
+        N.time.sleep = lambda s: None
+        try:
+            N.cmd_news(["iraq"], dt.date(2024, 1, 1), dt.date(2024, 1, 4))
+            rows = K.load("news_iraq")
+        finally:
+            N.S.gnews_day, N.time.sleep, K.DATA = orig, orig_sleep, old_data
+        self.assertEqual(rows, {"2024-01-01": 7.0, "2024-01-02": 4.0, "2024-01-04": 4.0})   # 3 Jan failed: absent, not zero
+        self.assertNotIn("2024-01-01", calls)
+
     def test_series_merge_keeps_old_rows(self):
         K.save("x", {"2024-01-01": 1})
         K.save("x", {"2024-01-02": 2, "2024-01-01": 3})

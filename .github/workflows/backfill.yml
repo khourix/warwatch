@@ -8,11 +8,11 @@ on:
   workflow_dispatch:
     inputs:
       source:
-        description: "all | fred | nga | pla | wiki | forecasts | metaculus | senkaku | alerts | msa | gdeltwide | gdeltadd | history | state | firms | gfw | adsb"
+        description: "all | fred | nga | pla | wiki | forecasts | metaculus | senkaku | alerts | msa | gdeltwide | gdeltadd | history | state | firms | gfw | adsb | news"
         required: false
         default: "all"
       only:
-        description: "history: comma-separated catalogue ids whose long history backtest.py fetch reads (blank = the sub-theatres'); state: one theatre group, e.g. iraq,gulf (blank = all); adsb: theatres to fill, e.g. iraq,gulf (blank = all, skipping days held)"
+        description: "history: comma-separated catalogue ids whose long history backtest.py fetch reads (blank = the sub-theatres'); state: one theatre group, e.g. iraq,gulf (blank = all); adsb: theatres to fill, e.g. iraq,gulf (blank = all, skipping days held); news: theatres, iraq and/or gulf (blank = both)"
         required: false
         default: ""
       start:
@@ -257,9 +257,37 @@ jobs:
           python3 backfill/backfill.py adsb "$ONLY" --start "$S" --end "$E"
       - uses: ./.github/actions/commit-backfill
         if: always()
+  news:
+    needs: plan
+    env:
+      START: ${{ needs.plan.outputs.start }}
+      END: ${{ needs.plan.outputs.end }}
+      ONLY: ${{ needs.plan.outputs.only }}
+    # Google News headline counts per day for theatres whose live series keeps 150 days; one job per year and theatre, only when asked for by name
+    if: needs.plan.outputs.src == 'news'
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        theatre: [iraq, gulf]
+        year: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Back-fill headline counts
+        run: |
+          if [ -n "$ONLY" ] && [[ ",$ONLY," != *",${{ matrix.theatre }},"* ]]; then echo "not asked for"; exit 0; fi
+          S="${START:-${{ matrix.year }}-01-01}"; E="${END:-${{ matrix.year }}-12-31}"
+          [[ "$S" < "${{ matrix.year }}-01-01" ]] && S="${{ matrix.year }}-01-01"; [[ "$E" > "${{ matrix.year }}-12-31" ]] && E="${{ matrix.year }}-12-31"
+          if [[ "$S" > "$E" ]]; then echo "outside this year"; exit 0; fi
+          export BACKFILL_DATA="$PWD/backfill/shards/news-${{ matrix.theatre }}-${{ matrix.year }}"
+          python3 backfill/backfill.py news ${{ matrix.theatre }} --start "$S" --end "$E"
+      - uses: ./.github/actions/commit-backfill
+        if: always()
   merge:
     # folds the quarter shards into backfill/data and writes backfill/COVERAGE.md
-    needs: [plan, quick, state, firms, gfw, adsb]
+    needs: [plan, quick, state, firms, gfw, adsb, news]
     if: always() && !cancelled()
     runs-on: ubuntu-latest
     timeout-minutes: 20

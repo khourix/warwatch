@@ -972,6 +972,21 @@ class TestModel(unittest.TestCase):
         self.assertEqual(out["p"]["status"], "collecting")
         self.assertEqual(out["b"]["status"], "error")
 
+    def test_opensky_airborne_counts_only_aircraft_in_the_air(self):
+        import extras
+        import io
+        import urllib.request
+        self.assertIsNone(extras.opensky_airborne((0, 1, 0, 1), cid="", secret=""))
+        orig = (urllib.request.urlopen, extras.S.get)
+        urllib.request.urlopen = lambda req, timeout=0: io.BytesIO(b'{"access_token": "t"}')
+        extras.S.get = lambda url, **k: {"states": [["a", "", "IQ", 0, 0, 44, 33, 9000, False], ["b", "", "IQ", 0, 0, 44, 33, 0, True], ["c", "", "IQ", 0, 0, 44, 33, 8000, False]]}
+        try:
+            self.assertEqual(extras.opensky_airborne((29, 37.5, 38.5, 48.7), cid="x", secret="y"), 2.0)
+            extras.S.get = lambda url, **k: {"states": None}
+            self.assertEqual(extras.opensky_airborne((29, 37.5, 38.5, 48.7), cid="x", secret="y"), 0.0)   # an empty sky is a reading
+        finally:
+            urllib.request.urlopen, extras.S.get = orig
+
     def test_global_probability_is_chance_of_any(self):
         m = _toy_model()
         per = {t: {"p": 0.1} for t in model.TH}

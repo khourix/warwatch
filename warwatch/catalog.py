@@ -253,6 +253,17 @@ def _gnss(theatre):
     return f
 
 
+OPENSKY_CIVIL = {"iraq"}   # public ADS-B receivers see no aircraft over central Iraq; OpenSky has more receivers there
+
+
+def _civil(th):
+    if th in OPENSKY_CIVIL:
+        n = extras.opensky_airborne(C.BOXES[th])
+        if n is not None:     # zero is a reading here: Iraq's airspace emptying is the signal
+            return n
+    return float(extras.hub_stats(th)[0]) or None
+
+
 NGA = "https://msi.nga.mil/"
 # Too little civil traffic is visible in public ADS-B near these hubs (Yemen's airspace is nearly empty, Venezuela's is thin),
 # so the ADS-B GPS and airliner counts cannot be measured there; GPSJam, ports and Radar cover those theatres instead.
@@ -267,7 +278,7 @@ for th in C.HUBS:
     if th not in NO_CIVIL:
         add(f"civil_{th}", f"Airliners in the air near {nm}", "geospatial", th, "daily", False,
             "A fall means airspace is being closed or avoided. Snapshots start now.",
-            _snap(f"civil_{th}", lambda t=th: float(extras.hub_stats(t)[0]) or None), direction="down", url=ADS, sub="Airspace")
+            _snap(f"civil_{th}", lambda t=th: _civil(t)), direction="down", url=ADS, sub="Airspace")
     add(f"nga_{th}", f"New naval and air hazard warnings, last 30 days, {nm} (US NGA)", "geospatial", th, "daily", False,
         "Missile firing, exercises, mines, drones and GPS-interference notices to mariners and pilots; exercises are announced before they happen. From NGA's current feed, kept from 1 August 2026 and counted from 31 August.",
         (lambda t=th: extras.nga_series(t)), url=NGA, sub="Warnings")
@@ -425,7 +436,7 @@ def _news(th):
         pts = store.cache_load(sid)
         if not pts:
             raise C.Pending("first refresh pending (news history fills from the news job)")
-        return pts
+        return store.seed(sid, pts)   # the back-filled days before the live cache starts, when there are any
     return go
 
 
