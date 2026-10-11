@@ -121,12 +121,14 @@ def run_day(urls, boxes):
     return {k: float(len(v)) for k, v in seen.items()}, n_files, n_mil
 
 
-def cmd_adsb(start, end, step=1, token=None):
-    boxes = dict(C.BOXES)
+def cmd_adsb(start, end, step=1, token=None, only=None):
+    """only: theatre ids to fill (e.g. ["iraq", "gulf"]) for theatres added after the archive was first read; days are then
+    re-read whatever the other theatres already hold, and only those theatres' files are written."""
+    boxes = {t: b for t, b in C.BOXES.items() if not only or t in only}
     avail = releases(range(start.year, end.year + 1), token)
     todo = [d for d in K.days(start, end) if (d - start).days % step == 0 and d in avail]
     K.log("adsb: days with an archive", len(todo), "of", (end - start).days + 1)
-    have = K.load("adsb_global_mil")
+    have = {} if only else K.load("adsb_global_mil")
     for d in todo:
         if d.isoformat() in have:
             continue
@@ -136,5 +138,7 @@ def cmd_adsb(start, end, step=1, token=None):
             K.log("fail", d, str(e)[:120])
             continue
         for (th, c), v in res.items():
+            if only and th == "global":
+                continue
             K.save("adsb_global_mil" if th == "global" else f"adsb_{th}_{c}", {d.isoformat(): v})
         K.log("ok", d, "traces", nf, "military", nm, {k: int(v) for k, v in res.items() if k[1] in ("mil",) and v})

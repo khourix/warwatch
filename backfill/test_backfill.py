@@ -126,6 +126,28 @@ class T(unittest.TestCase):
         self.assertEqual(len(seen[("global", "mil")]), 2)
         self.assertEqual((len(seen[("iran", "tanker")]), len(seen[("iran", "mil")]), len(seen[("ukraine", "fighter")])), (1, 1, 1))
 
+    def test_adsb_theatre_filter_rereads_held_days_and_writes_only_those_theatres(self):
+        import datetime as dt
+        import tempfile
+        d, old_data = tempfile.mkdtemp(), K.DATA
+        K.DATA = d
+        K.save("adsb_global_mil", {"2026-10-01": 5})       # the day is already held for every older theatre
+        day = dt.date(2026, 10, 1)
+        seen = []
+        orig = (A.releases, A.run_day)
+        A.releases = lambda years, token=None: {day: ["u"]}
+        A.run_day = lambda urls, boxes: (seen.append(sorted(boxes)) or {("global", "mil"): 9.0, ("iraq", "mil"): 3.0, ("gulf", "mil"): 0.0}, 1, 1)
+        try:
+            A.cmd_adsb(day, day, only=["iraq", "gulf"])
+        finally:
+            A.releases, A.run_day = orig
+            K.DATA = old_data
+        self.assertEqual(seen, [["gulf", "iraq"]])
+        K.DATA = d
+        self.assertEqual(K.load("adsb_iraq_mil"), {"2026-10-01": 3.0})
+        self.assertEqual(K.load("adsb_global_mil"), {"2026-10-01": 5.0})   # the denominator is left alone
+        K.DATA = old_data
+
     def test_series_merge_keeps_old_rows(self):
         K.save("x", {"2024-01-01": 1})
         K.save("x", {"2024-01-02": 2, "2024-01-01": 3})

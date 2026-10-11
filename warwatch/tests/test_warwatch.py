@@ -953,6 +953,25 @@ class TestModel(unittest.TestCase):
         self.assertIn(["2024-01-01", "SA", "all", "0"], rows)
         self.assertEqual(rows, sorted(rows, key=lambda r: (r[0], r[1], backfill.ROOT_ORDER[r[2]])))
 
+    def test_a_feed_still_filling_is_collecting_not_failed(self):
+        def pending():
+            raise C.Pending("first refresh pending (test)")
+
+        def broken():
+            raise RuntimeError("HTTP 500")
+        saved = list(catalog.SERIES)
+        mk = lambda sid, fn: dict(id=sid, label=sid, domain="geospatial", theatre="iraq", kind="daily", lag=False, why="", fetch=fn,
+                                  direction="up", needs=[], drop=0, url="", sub="", every=None, scored=True, scale=None)
+        try:
+            catalog.SERIES[:] = [mk("p", pending), mk("b", broken)]
+            os.environ["WARWATCH_NO_RETRY"] = "1"
+            out = {r["id"]: r for r in run.collect()}
+        finally:
+            catalog.SERIES[:] = saved
+            os.environ.pop("WARWATCH_NO_RETRY", None)
+        self.assertEqual(out["p"]["status"], "collecting")
+        self.assertEqual(out["b"]["status"], "error")
+
     def test_global_probability_is_chance_of_any(self):
         m = _toy_model()
         per = {t: {"p": 0.1} for t in model.TH}

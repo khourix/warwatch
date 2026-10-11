@@ -3,6 +3,11 @@
 Every PSC, HS and CPV code is a hypothesis to verify against the official
 code manuals; each series in the catalogue carries a `why` line.
 """
+class Pending(RuntimeError):
+    """A feed that is working but has no history yet (its job has only just started, or the archive is still filling).
+    run.py shows it as 'collecting', not as a failure."""
+
+
 # Five independent evidence groups. A theatre's level counts how many fire at once.
 DOMAINS = {
     "logistics": "Logistics & procurement",

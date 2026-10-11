@@ -5,7 +5,7 @@
     python3 backfill/backfill.py firms THEATRE [--start D --end D]
     python3 backfill/backfill.py gfw   THEATRE [--start D --end D]
     python3 backfill/backfill.py nga   [--start D --end D]
-    python3 backfill/backfill.py adsb  [--start D --end D --step N]
+    python3 backfill/backfill.py adsb [theatre,theatre] [--start D --end D --step N]
     python3 backfill/backfill.py pla   [--start D --end D]
     python3 backfill/backfill.py wiki  [--start D --end D]     # Wikipedia page views per theatre
     python3 backfill/backfill.py forecasts                     # ConflictForecast and VIEWS monthly vintages
@@ -140,7 +140,7 @@ def main():
         F.cmd_nga(a.start, a.end)
     elif a.cmd == "adsb":
         import sources_adsb as A
-        A.cmd_adsb(max(a.start, dt.date(2022, 1, 1)), a.end, a.step, os.environ.get("GITHUB_TOKEN"))
+        A.cmd_adsb(max(a.start, dt.date(2022, 1, 1)), a.end, a.step, os.environ.get("GITHUB_TOKEN"), [t for t in a.arg.split(",") if t])
     elif a.cmd == "pla":
         import sources_slow as L
         L.cmd_pla(max(a.start, dt.date(2020, 1, 1)), a.end)

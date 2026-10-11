@@ -61,12 +61,14 @@ def collect(only=None):
         else:
             try:
                 _fetch(s, rec)
+            except C.Pending as e:    # working, history still filling: shown as collecting, not as a failure
+                rec.update(status="collecting", error=str(e)[:200])
             except Exception as e:
                 rec.update(status="error", error=str(e)[:200])
                 failed.append((s, rec))
         out.append(rec)
         print(f"{rec['status']:13} {s['id']:28} n={len(rec['points'])} {rec['error'][:80]}", flush=True)
-    retry = [(s, r) for s, r in failed if "refresh pending" not in r["error"]]
+    retry = failed
     if retry and not os.environ.get("WARWATCH_NO_RETRY"):
         time.sleep(60)
         for s, rec in retry:

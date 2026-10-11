@@ -203,7 +203,7 @@ def jcg_series(theatre, today=None):
     today = today or dt.date.today()
     d, out = dt.date.fromisoformat(JCG_COVERED_FROM) + dt.timedelta(days=30), []
     if d > today:
-        raise RuntimeError(f"archive building: first 30-day count on {d.isoformat()} ({len(mine)} warnings kept so far)")
+        raise C.Pending(f"archive building: first 30-day count on {d.isoformat()} ({len(mine)} warnings kept so far)")
     while d <= today:
         out.append((d.isoformat(), float(sum(1 for m in mine if 0 <= (d - m).days <= 30))))
         d += dt.timedelta(days=1)
