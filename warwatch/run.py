@@ -147,7 +147,7 @@ def main():
         shutil.copyfile(os.path.join(static, fn), os.path.join(os.path.dirname(os.path.abspath(a.out)), fn))
     data = dashboard.build_data(res, now, bool(a.demo), ex, geo.load())
     with open(a.out, "w", encoding="utf-8") as f:
-        f.write(dashboard.page_html(data, now))
+        f.write(dashboard.page_html(data, now, out_dir=os.path.dirname(os.path.abspath(a.out))))
     with open(os.path.join(os.path.dirname(os.path.abspath(a.out)), "feed.xml"), "w", encoding="utf-8") as f:   # This week, for feed readers
         f.write(dashboard.feed_xml(data))
     summ = {"generated": now, "demo": a.demo, "weights_version": res["weights_version"], "global": res["global"],

@@ -1,0 +1,5 @@
+inter-latin.woff2, inter-latin-ext.woff2: Inter, copyright 2016 The Inter Project Authors (https://github.com/rsms/inter).
+jbmono-latin.woff2, jbmono-latin-ext.woff2: JetBrains Mono, copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono).
+
+Both are licensed under the SIL Open Font License, Version 1.1: https://openfontlicense.org/open-font-license-official-text/
+The files are the Latin and Latin Extended subsets served by Google Fonts.

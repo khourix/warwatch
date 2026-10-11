@@ -405,6 +405,21 @@ class TestGeoAndPage(unittest.TestCase):
         self.assertEqual([i[:2] for i in h["items"]], [["2026-10-10", "tell"], ["2026-10-07", "advice"]])
         self.assertIn("2 days", h["items"][1][2])
 
+    def test_series_history_splits_into_series_json(self):
+        res = run.evaluate(demo.scenario("buildup"))
+        d = dashboard.build_data(res, "2026-10-11 03:51 UTC", True, None, None)
+        out = tempfile.mkdtemp()
+        page = dashboard.page_html(d, "2026-10-11 03:51 UTC", out_dir=out)
+        inline = json.loads(page.split('type="application/json">')[1].split("</script>")[0].replace("\\u003c", "<"))
+        with open(os.path.join(out, "series.json")) as f:
+            full = json.load(f)
+        self.assertTrue(inline["split"].startswith("series.json?v="))
+        self.assertTrue(all(len(s.get("pts") or []) <= dashboard.INLINE_PTS or s.get("tf") for s in inline["series"]))
+        self.assertFalse(any("zh" in s for s in inline["series"] if not s.get("tf")))
+        daily = next(s for s in d["series"] if s.get("zh") and len(s["pts"]) > dashboard.INLINE_PTS)
+        self.assertEqual(full[daily["id"]]["pts"], daily["pts"])     # the caller's data is left whole
+        self.assertNotIn("split", d)
+
     def test_feed_is_valid_rss(self):
         import xml.etree.ElementTree as ET
         res = run.evaluate(demo.scenario("buildup"))

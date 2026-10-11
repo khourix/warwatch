@@ -458,7 +458,37 @@ def render(result, generated, demo=False, extras=None, topo=None):
     return page_html(build_data(result, generated, demo, extras, topo), generated)
 
 
-def page_html(data, generated):
+INLINE_PTS = 60     # points per series kept in the page; the rest are in series.json
+
+
+def split_series(data):
+    """Moves each series' older points and its score history out of the page data and returns them as {id: {pts, zh}},
+    for series.json. Actions and ratings keep their whole history inline: the page words their steps from it."""
+    full = {}
+    for s in data["series"]:
+        if s.get("tf"):
+            continue
+        x = {}
+        if len(s.get("pts") or []) > INLINE_PTS:
+            x["pts"] = s["pts"]
+            s["pts"] = s["pts"][-INLINE_PTS:]
+        if s.get("zh"):
+            x["zh"] = s.pop("zh")
+        if x:
+            full[s["id"]] = x
+    return full
+
+
+def page_html(data, generated, out_dir=None):
+    """The page with its data inlined. With out_dir, the full series histories go to out_dir/series.json, which the page
+    loads after its first paint, so the first load carries about a third of the data."""
+    if out_dir:
+        import copy
+        from urllib.parse import quote
+        data = copy.deepcopy(data)
+        with open(os.path.join(out_dir, "series.json"), "w", encoding="utf-8") as f:
+            json.dump(split_series(data), f, separators=(",", ":"), ensure_ascii=False)
+        data["split"] = "series.json?v=" + quote(generated, safe="")
     blob = json.dumps(data, separators=(",", ":"), ensure_ascii=False).replace("<", "\\u003c").replace("\u2028", "\\u2028")
     with open(os.path.join(HERE, "page.html"), encoding="utf-8") as f:
         page = f.read()

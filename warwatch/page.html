@@ -28,13 +28,18 @@
 <meta name="twitter:title" content="WarWatch: war early-warning dashboard">
 <meta name="twitter:description" content="Timing tells and unusual readings for 13 theatres and 2 sub-theatres, from 600+ public signals. Updated every 30 minutes.">
 <meta name="twitter:image" content="https://khourix.github.io/warwatch/og.jpg">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="preload" href="inter-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="jbmono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* Inter and JetBrains Mono (SIL Open Font License 1.1), Latin subsets, served next to the page */
+@font-face{font-family:'Inter';font-style:normal;font-weight:400 700;font-display:swap;src:url(inter-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:400 700;font-display:swap;src:url(inter-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400 700;font-display:swap;src:url(jbmono-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400 700;font-display:swap;src:url(jbmono-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+
 :root{
   color-scheme:dark;
   --bg:oklch(0.15 0 0); --panel:oklch(0.185 0.004 260); --panel2:oklch(0.225 0.005 260); --panel3:oklch(0.265 0.006 260);
-  --line:oklch(0.3 0.006 260); --line2:oklch(0.4 0.01 255); --ink:oklch(0.96 0.004 250); --mute:oklch(0.74 0.01 255); --dim:oklch(0.6 0.01 255);
+  --line:oklch(0.3 0.006 260); --line2:oklch(0.4 0.01 255); --ink:oklch(0.96 0.004 250); --mute:oklch(0.74 0.01 255); --dim:oklch(0.64 0.01 255);
   --sel:oklch(0.27 0.03 215); --accent:oklch(0.83 0.13 205); --accent-ink:#04222b;
   --ocean:#0b0d11; --land:url(#gLand); --land-th:url(#gLandTh); --border:#3d4853; --border-th:#8fa1b0;
   --normal:#46c28a; --watch:#e5c04b; --elevated:#f08a3c; --critical:#f2545b; --na:#6b7280;
@@ -49,7 +54,8 @@ body{background:var(--bg);color:var(--ink);font:13px/1.45 var(--sans);overflow:h
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:0;padding:0}
 a{color:var(--accent)}
-:focus{outline:none}
+:focus:not(:focus-visible){outline:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
 :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .ic{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
@@ -682,7 +688,7 @@ table.st td:last-child{text-align:right;font-weight:600}
 <nav id="bnav" aria-label="Pages"></nav>
 <div id="tip"></div><div id="sbtip"></div><div id="toast" role="status"></div>
 <div id="pop" role="dialog"></div>
-<div id="modal"><div class="box" id="mbox"></div></div>
+<div id="modal" role="dialog" aria-modal="true" aria-label="Detail"><div class="box" id="mbox"></div></div>
 <script id="data" type="application/json">__DATA__</script>
 <script>
 "use strict";
@@ -758,6 +764,16 @@ const THEATRES = D.order.filter(t => t !== 'global');
 const REG = D.regions, REGBY = {}, regOf = {}; REG.forEach(r => { REGBY[r.id] = r; r.kids.forEach(k => regOf[k] = r); });
 const CODE = {mideast:'MEA', ukraine_r:'UKR', taiwan_r:'TWN', korea_r:'KOR', southasia_r:'SAS', africa_r:'AFR', americas_r:'AMR'};
 const SERIES = {}; D.series.forEach(s => SERIES[s.id] = s);
+/* Speed: the page carries the last 60 points of each series. The full histories and score histories (series.json, next to
+   the page) load after the first paint, or when a detail view first opens. Opened from disk, the page keeps the 60 points. */
+let FULL = D.split ? null : {}, fullP = null;
+function loadFull(){
+  if (FULL) return Promise.resolve();
+  if (!fullP) fullP = fetch(D.split).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(j => { Object.keys(j).forEach(id => { if (SERIES[id]) Object.assign(SERIES[id], j[id]); }); FULL = j; })
+    .catch(() => { FULL = {}; });
+  return fullP;
+}
 const thName = t => t === 'global' ? 'Global markets' : (D.theatres[t] ? D.theatres[t].name : t || 'Outside the theatres');
 const GEN = Date.parse(($('#gen').textContent || '').replace(' UTC', 'Z').replace(' ', 'T')) || Date.now();
 const pref = {lead: store.get('ww_lead', 'p'), lbl: +store.get('ww_lbl', 1) || 1, win: +store.get('ww_win', 48) || 48, dock: store.get('ww_dock', 'open'), sb: store.get('ww_sb', '')};
@@ -1079,6 +1095,7 @@ function openPop(key, anchor){
   closePop(); tipHide();
   const p = $('#pop'); p.innerHTML = P[0](); p.style.width = P[2] + 'px'; p.classList.add('on');
   POP = {key, anchor}; anchor.classList.add('on'); placePop();
+  if (anchor.matches(':focus-visible')) { const f = focusables(p); if (f.length) f[0].focus({preventScroll: true}); }
 }
 function placePop(){
   if (!POP) return;
@@ -1091,7 +1108,7 @@ function placePop(){
   p.style.left = x + 'px'; p.style.top = y + 'px';
 }
 function refreshPop(){ if (!POP) return; const st = $('#pop .pb') ? $('#pop .pb').scrollTop : 0; $('#pop').innerHTML = POPS[POP.key][0](); placePop(); const pb = $('#pop .pb'); if (pb) pb.scrollTop = st; }
-function closePop(){ if (!POP) return; POP.anchor.classList.remove('on'); POP = null; $('#pop').classList.remove('on'); }
+function closePop(){ if (!POP) return; const a = POP.anchor, back = $('#pop').contains(document.activeElement); a.classList.remove('on'); POP = null; $('#pop').classList.remove('on'); if (back && a.isConnected) a.focus({preventScroll: true}); }
 document.addEventListener('click', e => {
   const p = e.target.closest('[data-pop]'); if (p) { openPop(p.dataset.pop, p); return; }
   if (POP && !e.target.closest('#pop')) closePop();
@@ -1145,6 +1162,28 @@ addEventListener('keydown', e => {
   if ($('#modal').style.display === 'flex') { if (e.key === 'ArrowRight') stepModal(1); if (e.key === 'ArrowLeft') stepModal(-1); }
 });
 addEventListener('resize', () => { if (POP) placePop(); });
+/* Keyboard access: rows, cards and list items that act on click get tabindex and role=button, and Enter or Space clicks them.
+   Info marks show their explanation on focus. */
+const KB = '[data-id],[data-nav],[data-go],[data-alert],[data-mi],[data-dom],[data-row],[data-open],[data-pop],[data-dtab],[data-pm],.info';
+let kbQ = 0;
+function kbScan(){ kbQ = 0; document.querySelectorAll(KB).forEach(el => { if (el.dataset.kb || el.closest('svg') || el.matches('button,a[href],input,select,textarea,summary')) return; el.dataset.kb = '1'; el.tabIndex = 0; if (!el.classList.contains('info')) el.setAttribute('role', 'button'); }); }
+new MutationObserver(() => { if (!kbQ) kbQ = requestAnimationFrame(kbScan); }).observe(document.body, {childList: true, subtree: true});
+document.addEventListener('keydown', e => {
+  const el = e.target; if (!el.dataset || !el.dataset.kb || (e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault(); if (el.classList.contains('info')) { tipShow(el, esc(el.dataset.tip || '')); return; } el.click();
+});
+document.addEventListener('focusin', e => { const el = e.target.closest && e.target.closest('.info,.shadowb'); if (el && el.dataset.tip) tipShow(el, esc(el.dataset.tip)); });
+document.addEventListener('focusout', e => { if (e.target.closest && e.target.closest('.info,.shadowb')) tipHide(); });
+/* Focus: the detail view and the pop-ups take focus when they open, keep Tab inside the detail view, and give it back on close */
+let modalRet = null;
+const focusables = root => Array.from(root.querySelectorAll('button,a[href],input,select,textarea,summary,[tabindex="0"]')).filter(x => x.offsetParent !== null);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Tab' || $('#modal').style.display !== 'flex') return;
+  const f = focusables($('#mbox')); if (!f.length) return;
+  const i = f.indexOf(document.activeElement);
+  if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); }
+  else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+});
 
 /* ------------------------------------------------------------ map */
 const M = D.map;
@@ -2025,7 +2064,8 @@ function statusBox(s){
   if (s.st === 'collecting') h += `<div class="warnbox">History is still building: <b>${s.n}</b> of the <b>${s.need}</b> ${s.kind === 'daily' ? 'days' : 'months'} needed. The signal gets a score when the history is complete.</div>`;
   return h;
 }
-function openModal(id, list){
+function openModal(id, list){ if (FULL) return openModal0(id, list); loadFull().then(() => openModal0(id, list)); }
+function openModal0(id, list){
   const s = SERIES[id]; if (!s) return; modalId = id; closePop(); hideHover();
   if (list) modalList = list; else if (!modalList.includes(id)) modalList = seriesOf(s.t, s.d).sort((a, b) => (b.z ?? -99) - (a.z ?? -99)).map(x => x.id);
   const th = thName(s.t), idx = modalList.indexOf(id);
@@ -2066,10 +2106,11 @@ function openModal(id, list){
   h += row('Values held', s.n + (s.pts && s.pts.length ? ` (${esc(s.pts[0][0])} to ${esc(s.last || '')})` : '')) + row('Last value', esc(s.last || 'none') + (s.last ? ' (' + esc(ago(s.last)) + ')' : '')) + row('Needed for a score', s.need + (s.kind === 'daily' ? ' days' : ' months'));
   h += `</table><p style="margin:8px 0 0;color:var(--mute);font-size:12.5px">${methodTxt(s)} The score is limited to ±5 SD, so one bad value cannot control the result.</p><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">${s.url ? `<a class="btn" target="_blank" rel="noopener" href="${esc(s.url)}">Open the data source ${ic('ext', 's')}</a>` : ''}<a class="btn" data-nav="${s.t}/signals" data-dom="${s.d}">Show in ${esc(th)} ${ic('chev', 's')}</a></div></div>`;
   h += `<div><h3 class="mh">Other signals in this group</h3><div class="rel">${rel.map(r => `<div data-open="${esc(r.id)}"><span title="${esc(r.l)}">${esc(shortL(r.l))}</span><b class="num" style="color:${isEv(r) ? 'var(--ink)' : zcol(r.z)}">${zTxt(r)}</b></div>`).join('') || '<span style="color:var(--dim)">No other signals in this group.</span>'}</div></div></div>`;
-  $('#mbox').innerHTML = h; $('#modal').style.display = 'flex'; $('#mbox').scrollTop = 0;
+  $('#mbox').innerHTML = h; $('#modal').style.display = 'flex'; $('#mbox').scrollTop = 0; modalFocus();
 }
 function stepModal(d){ if (!modalList.length) return; const i = (modalList.indexOf(modalId) + d + modalList.length) % modalList.length; openModal(modalList[i]); }
-function closeModal(){ $('#modal').style.display = 'none'; tipHide(); }
+function closeModal(){ if ($('#modal').style.display !== 'flex') return; $('#modal').style.display = 'none'; tipHide(); const r = modalRet; modalRet = null; if (r && r.isConnected) r.focus({preventScroll: true}); }
+function modalFocus(){ if (!modalRet || !modalRet.isConnected) modalRet = document.activeElement && document.activeElement !== document.body && !$('#mbox').contains(document.activeElement) ? document.activeElement : modalRet; const h = $('#mbox h2'); if (h) $('#modal').setAttribute('aria-label', h.textContent); const x = $('#mbox .x'); if (x) x.focus({preventScroll: true}); }
 function openMarket(i){
   const m = D.markets[i]; if (!m) return; closePop(); hideHover();
   const hh = m.h || [];
@@ -2081,7 +2122,7 @@ function openMarket(i){
   if (hh.length > 2) h += chartBlock('Odds over time (the chance the market gives, %)', hh, {h: 240, c: '#58a6ff', fy: v => Math.round(v * 100) + '%', min: 0, max: 1}, hh.length > 40 ? [['30', '30'], ['90', '90'], ['all', 'All']] : null);
   else h += `<div class="warnbox">The market gave no price history.</div>`;
   h += `<p class="say" style="color:var(--mute)">Prediction markets give context. They are not part of the score. They show what traders with money at stake think, and they react to news as much as they predict it.</p><div class="row" style="margin-top:10px"><a class="btn" target="_blank" rel="noopener" href="${esc(m.url)}">Open on ${esc(m.src)} ${ic('ext', 's')}</a></div>`;
-  modalList = []; $('#mbox').innerHTML = h; $('#modal').style.display = 'flex'; $('#mbox').scrollTop = 0;
+  modalList = []; $('#mbox').innerHTML = h; $('#modal').style.display = 'flex'; $('#mbox').scrollTop = 0; modalFocus();
 }
 $('#modal').addEventListener('click', e => {
   if (e.target.id === 'modal' || e.target.closest('.x')) { closeModal(); return; }
@@ -2341,6 +2382,7 @@ matchMedia('(max-width:900px)').addEventListener('change', () => render());
 if (D.demo) $('#demo').hidden = false;
 buildMap(); renderRail();
 route(true);
+setTimeout(() => loadFull().then(() => { if (R.v === 'signals' && SF.sel) renderSignals(false); }), 1200);
 </script>
 <script>
 // pick up the 30-minute rebuilds without a manual reload (only when the tab is visible and no detail view or pop-up is open)
