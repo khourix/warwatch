@@ -1755,7 +1755,7 @@ function tempoBody(t){
   if (!T.w.length) return h + `<p class="hint">${T.st === 'awaiting_key' ? `Not read yet: it needs the free key ${esc((T.needs || []).join(', '))}.` : 'No reading yet.'}</p><div style="height:10px"></div>`;
   const now = T.w[T.w.length - 1], mx = Math.max(5, ...T.w.map(w => w[1] || 0), now[2] || 0) * 1.25;   // scaled to the counts and today's line; an older, higher line is left off
   return h + `<div class="tempo" ${SERIES[T.id] ? `data-id="${esc(T.id)}"` : ''} role="img" aria-label="${esc(T.n)}, last 12 weeks">` + T.w.map(([d, v, thr]) => `<div class="tb ${v != null && thr != null && v >= thr ? 'on' : ''}" data-tip="${esc(shortDate(d))}: ${v == null ? 'no reading' : v + ' waves in 7 days'}${thr != null ? ' · rule line ' + thr : ''}"><i style="height:${(v || 0) / mx * 100}%"></i>${thr != null && thr <= mx ? `<u style="bottom:${thr / mx * 100}%"></u>` : ''}</div>`).join('') +
-    `</div><div class="tempox"><span>${esc(shortDate(T.w[0][0]))}</span><span>now ${now[1] == null ? 'n/a' : now[1]} in 7 days${now[2] != null ? ` · line ${now[2]}` : ''}</span></div>`;
+    `</div><div class="tempox"><span>${esc(shortDate(T.w[0][0]))}</span><span>now ${now[1] == null ? 'n/a' : now[1]} in 7 days${now[2] != null ? ` · line ${now[2]}` : ''}</span></div>` + (now[2] == null ? `<p class="hint" style="margin:-8px 0 14px">The rule's line appears once 30 days of history are held; ${T.w.filter(w => w[1] != null).length} week${T.w.filter(w => w[1] != null).length === 1 ? '' : 's'} so far.</p>` : '');
 }
 function driversBody(t){
   const th = D.theatres[t]; let h = tellsBody(t) + tempoBody(t) + strongBody(t) + officialBody(t);
