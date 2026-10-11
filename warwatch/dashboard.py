@@ -66,6 +66,8 @@ def series_json(s):
          "dir": s["direction"], "why": s["why"], "url": s.get("url", ""), "st": s["status"], "er": s.get("error", ""),
          "stale": s.get("stale", ""), "kind": kind, "n": len(pts), "need": stats.min_points(kind, s.get("transform")),
          "needs": s.get("needs", []), "z": None, "w0": not s.get("scored", True)}
+    if s.get("transform") in ("step", "event"):     # actions and ratings: the page shows them as what happened, not as SD
+        d["tf"] = s["transform"]
     if pts:
         d["pts"] = [[lab, round(v, 3)] for lab, v in pts[-MAXPTS[kind]:]]
         d["last"] = pts[-1][0]
@@ -208,7 +210,7 @@ def build_data(res, generated, demo, ex, topo):
         "theatres": {t: theatre_json(t, v, res["series"], ((res.get("model") or {}).get("theatres") or {}).get(t, {}).get("base"), chg.get(t),
                                      (res.get("tells") or {}).get(t))
                      for t, v in res["theatres"].items()},
-        "order": list(C.THEATRES),
+        "order": list(C.THEATRES), "sub": C.SUBTHEATRES,
         "regions": regions_json(res["regions"]), "global": res["global"], "weights": res["weights_version"],
         "model": model_json(res.get("model")),
         "series": [series_json(s) for s in res["series"]],

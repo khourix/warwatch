@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="darkreader-lock">
 <title>WarWatch: war early-warning dashboard</title>
-<meta name="description" content="The 30-day chance of a war event in 13 theatres, from 500+ public signals. Updated every 30 minutes.">
+<meta name="description" content="Timing tells and unusual readings for 13 theatres and 2 sub-theatres, from 600+ public signals. Updated every 30 minutes.">
 <meta name="theme-color" content="#0e1217">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
@@ -16,7 +16,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="WarWatch">
 <meta property="og:title" content="WarWatch: war early-warning dashboard">
-<meta property="og:description" content="The 30-day chance of a war event in 13 theatres, from 500+ public signals. Updated every 30 minutes.">
+<meta property="og:description" content="Timing tells and unusual readings for 13 theatres and 2 sub-theatres, from 600+ public signals. Updated every 30 minutes.">
 <meta property="og:url" content="https://khourix.github.io/warwatch/">
 <meta property="og:image" content="https://khourix.github.io/warwatch/og.jpg">
 <meta property="og:image:type" content="image/jpeg">
@@ -25,7 +25,7 @@
 <meta property="og:image:alt" content="WarWatch logo over a dark world map with the watched theatres marked">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="WarWatch: war early-warning dashboard">
-<meta name="twitter:description" content="The 30-day chance of a war event in 13 theatres, from 500+ public signals. Updated every 30 minutes.">
+<meta name="twitter:description" content="Timing tells and unusual readings for 13 theatres and 2 sub-theatres, from 600+ public signals. Updated every 30 minutes.">
 <meta name="twitter:image" content="https://khourix.github.io/warwatch/og.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
@@ -37,7 +37,7 @@
   --sel:oklch(0.27 0.03 215); --accent:oklch(0.83 0.13 205); --accent-ink:#04222b;
   --ocean:#0b0d11; --land:url(#gLand); --land-th:url(#gLandTh); --border:#3d4853; --border-th:#8fa1b0;
   --normal:#46c28a; --watch:#e5c04b; --elevated:#f08a3c; --critical:#f2545b; --na:#6b7280;
-  --glass:rgba(22,24,28,.95);
+  --glass:rgba(22,24,28,.95); --tell:#f08a3c;
   --mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --dh:200px;
@@ -57,6 +57,20 @@ a{color:var(--accent)}
 #col{flex:1;min-width:0;display:flex;flex-direction:column}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--c);display:inline-block;flex:none}
 .lv{display:inline-flex;align-items:center;border-radius:999px;padding:1px 8px;font:600 10.5px/1.5 var(--sans);letter-spacing:.06em;color:#0b0b0c;background:var(--c);white-space:nowrap}
+.lv.n{background:color-mix(in oklab,var(--c) 20%,transparent);color:var(--ink);box-shadow:inset 0 0 0 1px var(--c)}
+.shadowb{font:500 11px var(--mono);border:1px dashed var(--line2);color:var(--mute);border-radius:6px;padding:3px 8px;white-space:nowrap;flex:none;cursor:help}
+.tchip{display:inline-flex;align-items:center;font:500 10.5px/1.5 var(--mono);color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:0 7px;white-space:nowrap;flex:none}
+.tchip.on{color:#1a0d02;background:var(--tell);border-color:var(--tell);font-weight:600}
+.evb{font:600 10.5px var(--mono);color:var(--ink);background:var(--panel3);border-radius:5px;padding:1px 6px;white-space:nowrap}
+.subl{font:500 10.5px var(--sans);color:var(--dim);border:1px solid var(--line);border-radius:5px;padding:0 6px;white-space:nowrap;letter-spacing:0;text-transform:none}
+.rawv{color:var(--dim);font-size:11px}
+.k3w{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 8px}
+.k3w div{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
+.k3w b{display:block;font:600 20px/1.2 var(--mono)}.k3w span{display:block;font-size:11px;color:var(--mute);line-height:1.3}
+.fi{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:start;padding:6px 4px;border-top:1px solid var(--line);font-size:12.5px;cursor:pointer;border-radius:6px}
+.fi:hover{background:var(--panel2)}.fi b{font-weight:600}.fi small{display:block;color:var(--dim);font-size:11px}.fi time{font:11px var(--mono);color:var(--dim);white-space:nowrap}
+.fdot{width:8px;height:8px;border-radius:50%;background:var(--line2);margin-top:5px}.fdot.hot{background:var(--tell)}
+.warnl{font-size:12px;color:#c4cad0;background:var(--panel2);border-left:2px solid var(--line2);padding:7px 10px;margin:0 0 10px;border-radius:0 6px 6px 0}
 .info{display:inline-flex;width:15px;height:15px;border-radius:50%;border:1px solid var(--line2);color:var(--dim);font:600 9.5px/1 var(--sans);align-items:center;justify-content:center;cursor:help;flex:none;font-style:normal;text-transform:none;letter-spacing:0}
 .info:hover{color:var(--ink);border-color:var(--accent)}
 .hint{color:var(--mute);font-size:12px;line-height:1.5}
@@ -166,6 +180,7 @@ header#top{height:52px;flex:none;display:flex;align-items:center;gap:12px;paddin
 .wf .bar i{position:absolute;top:0;bottom:0;border-radius:3px;background:var(--elevated)}
 .wf b{text-align:right;font:600 12px var(--mono)}
 .wf.t{border-top:1px solid var(--line);margin-top:4px;padding-top:7px;font-weight:600}
+.wf.wd{border-top:1px dashed var(--line);margin-top:3px;padding-top:6px;color:var(--mute)}
 #tip{position:fixed;z-index:70;pointer-events:none;background:#0a0b0d;border:1px solid var(--line2);border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.45;max-width:320px;display:none;box-shadow:0 6px 18px #000a;color:#d6dbe0}
 #tip b{color:var(--ink)}
 
@@ -266,12 +281,19 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .mv .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mv .n small{display:block;color:var(--dim);font-size:11px;overflow:hidden;text-overflow:ellipsis}
 .sdv{font:600 12.5px var(--mono);text-align:right}
+.tr2{grid-template-columns:minmax(0,1fr) auto 84px 38px}
+.tr2 .bw{display:flex;align-items:center;gap:6px}.tr2 .bw .bar6{flex:1}.tr2 .bw b{font:500 11.5px var(--mono);color:var(--mute);width:20px;text-align:right}
+.tr2 .xu{font-size:11.5px;color:var(--mute);text-align:right}
+.dtabs{display:flex;gap:10px}.dtabs button{font-weight:600;color:var(--dim);padding-bottom:2px;border-bottom:2px solid transparent}.dtabs button.on{color:var(--ink);border-color:var(--accent)}.dtabs b{font:500 10.5px var(--mono);color:var(--dim)}
 
 /* theatre panel */
 #panel{width:clamp(400px,32vw,500px);flex:none;background:var(--panel);border-left:1px solid var(--line);display:none;flex-direction:column;min-height:0;position:relative}
 #panel.on{display:flex}
-.rtabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px;flex:none;overflow:hidden}
-.rtabs button{padding:12px 10px 10px;font-size:13px;color:var(--mute);border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:7px;white-space:nowrap;min-width:0}
+.rtabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px;flex:none;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;align-items:flex-end}
+.rtabs::-webkit-scrollbar{display:none}
+.rdiv{width:1px;height:20px;background:var(--line2);margin:0 6px 10px;flex:none}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--tell);display:inline-block;flex:none}
+.rtabs button{padding:12px 10px 10px;font-size:13px;color:var(--mute);border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:7px;white-space:nowrap;flex:none}
 .rtabs button:hover{color:var(--ink)}
 .rtabs button.on{color:var(--ink);border-color:var(--accent);font-weight:600}
 .rtabs button small{font:500 11px var(--mono);color:var(--dim)}
@@ -335,6 +357,8 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .cmp tr[data-go]:hover td{background:var(--panel2)}
 .cmp .r{text-align:right}
 .cmp .cause{color:var(--mute)}
+.tw{overflow-x:auto;scrollbar-width:thin}
+.cmp.rgt{table-layout:auto}.cmp.rgt td,.cmp.rgt th{white-space:nowrap;padding-left:5px;padding-right:5px}.cmp.rgt td.cause{white-space:normal;min-width:120px;font-size:12px;line-height:1.35}
 .about p{margin:0 0 10px;color:#c4cad0;font-size:12.5px;line-height:1.55}
 .about b{color:var(--ink)}
 
@@ -357,6 +381,8 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .facets label:hover{background:var(--panel2);color:var(--ink)}
 .facets label b{margin-left:auto;font:500 11px var(--mono);color:var(--dim)}
 .facets input{accent-color:var(--accent);margin:0}
+.facets label.in{padding-left:12px}.facets label.sub{padding-left:24px}
+.fgh{font-size:11px;color:var(--dim);padding:6px 4px 1px}
 .tbl{overflow:auto;min-width:0;min-height:0;border:1px solid var(--line);border-radius:10px;scrollbar-width:thin}
 table.t{border-collapse:collapse;width:100%;font-size:12.5px}
 #stbl table.t{table-layout:fixed}
@@ -434,6 +460,7 @@ table.t tbody tr:not(.g):not(.sel):hover td{background:#1f2328}
 .chips span{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:1px 10px;font-size:12px;color:var(--mute)}
 .mk5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:12px}
 .mk5 .kp b{font-size:19px}
+.mk5.ev3{grid-template-columns:2fr 1fr 1fr 1fr}
 .gauge{margin:0 0 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 14px 6px}
 .gauge .gt{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin-bottom:5px}
 .gauge svg{width:100%;height:34px;display:block}
@@ -502,7 +529,8 @@ table.st td:last-child{text-align:right;font-weight:600}
 <div id="col">
 <header id="top">
   <div class="ttl" id="tt"></div>
-  <button class="gti" id="gti" data-pop="gti" aria-label="What drives this number"></button>
+  <button class="gti" id="gti" data-pop="gti" aria-label="This week"></button>
+  <span class="shadowb" id="shadowb" hidden tabindex="0">Model in shadow</span>
   <span class="demo" id="demo" hidden>DEMO</span>
   <div class="sp"></div>
   <div id="search"><svg class="ic s" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="q" type="search" placeholder="Search everything" autocomplete="off" aria-label="Search"><kbd>/</kbd><div id="results"></div></div>
@@ -535,10 +563,14 @@ const D = JSON.parse(document.getElementById('data').textContent);
 const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const store = {get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }, set(k, v){ try { localStorage.setItem(k, v); } catch (e) {} }};
-const LEVEL = {'Critical':'#f2545b','Elevated':'#f08a3c','Watch':'#e5c04b','Normal':'#46c28a','insufficient data':'#6b7280'};
+const PM = D.model && D.model.active ? D.model : null;
+/* Nothing is coloured by a measure that has not passed its release checks (part 3 of the review). While the model runs in
+   shadow mode the level keeps its word and gets a grey intensity; orange is kept for a fired timing tell, red for a data failure. */
+const LEVEL = PM ? {'Critical':'#f2545b','Elevated':'#f08a3c','Watch':'#e5c04b','Normal':'#46c28a','insufficient data':'#6b7280'}
+  : {'Critical':'#e8ecf0','Elevated':'#b6bec6','Watch':'#8a939c','Normal':'#5a636c','insufficient data':'#3b4148'};
+const TELLC = '#f08a3c';
 const RANKL = {'insufficient data':0, 'Normal':1, 'Watch':2, 'Elevated':3, 'Critical':4};
 const T_WATCH = D.thresholds[0], T_SIG = D.thresholds[1];
-const PM = D.model && D.model.active ? D.model : null;
 const BANDS = (D.model && D.model.bands) || [0.05, 0.1, 0.25];
 const MEANING_P = {
   'Critical':`A chance of ${pct(BANDS[2])} or more of a qualifying event in the next 30 days.`,
@@ -559,6 +591,29 @@ const fmtz = z => z == null ? 'n/a' : (z > 0 ? '+' : '') + z.toFixed(1);
 const zcol = z => z == null ? '#6b7280' : z >= T_SIG ? '#f2545b' : z >= T_WATCH ? '#f08a3c' : z >= 1 ? '#e5c04b' : '#5db391';
 const lc = s => String(s).replace(/^([A-Z])([a-z])/, (m, a, b) => a.toLowerCase() + b);
 const shortL = s => String(s || '').replace(/ \([^()]*\)$/, '');
+/* Advisory steps and CrisisWatch ratings are actions or judgements, not levels: they read as what happened and when, never as SD. */
+const isEv = s => !!s && (s.tf === 'step' || s.tf === 'event');
+const CWW = ['no alert', 'deteriorated', 'conflict-risk alert', 'conflict-risk alert, deteriorated'];
+function evWords(s){
+  const p = s.pts || [], v = p.length ? p[p.length - 1][1] : null;
+  if (v == null) return 'no reading yet';
+  if (s.tf === 'event') return `${CWW[Math.max(0, Math.min(3, Math.round(v)))] || 'rated ' + v} · ${monthName(p[p.length - 1][0])}`;
+  let i = p.length - 1; while (i > 0 && p[i - 1][1] === p[i][1]) i--;
+  if (i === 0) return `level ${fmtv(v)} · no step on record`;
+  const d = p[i][1] - p[i - 1][1];
+  return `${d > 0 ? 'raised' : 'lowered'} ${fmtv(Math.abs(d))} level${Math.abs(d) === 1 ? '' : 's'} on ${shortDate(p[i][0])} · now ${fmtv(v)}`;
+}
+function monthName(l){ const d = new Date(String(l).slice(0, 7) + '-01T00:00:00Z'); return isNaN(d) ? l : d.toLocaleString('en-GB', {month: 'short', year: 'numeric', timeZone: 'UTC'}); }
+function shortDate(l){ const d = new Date(String(l).slice(0, 10) + 'T00:00:00Z'); return isNaN(d) ? l : d.toLocaleString('en-GB', {day: 'numeric', month: 'short', timeZone: 'UTC'}); }
+/* the raw reading next to the score: "20 vs usual 4", with near-zero baselines flagged so artefacts show themselves */
+function rawTxt(s){
+  if (isEv(s)) return evWords(s);
+  if (s.z == null || s.val == null) return '';
+  if (s.base) return `${fmtv(s.val)} vs usual ${fmtv(s.base.med)}${Math.abs(s.base.med) < 0.5 ? ' · near-zero baseline' : ''}`;
+  return `${fmtv(s.val)} ${s.kind === 'monthly' ? 'latest month' : 'now'}`;
+}
+const zTxt = s => isEv(s) ? (s.z > 0 ? 'event' : '–') : fmtz(s.z);
+const WORLDW = w => /^World tempo/.test(w[0]);
 const sigm = z => 1 / (1 + Math.exp(-z)), logit = p => Math.log(p / (1 - p));
 function fmtv(v){
   if (v == null || isNaN(v)) return '';
@@ -625,7 +680,7 @@ const ICON = {
 };
 const ic = (n, c) => `<svg class="ic ${c || ''}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
 const inf = t => `<i class="info" data-tip="${esc(t)}">i</i>`;
-const lvPill = l => `<span class="lv" style="--c:${LEVEL[l]}">${esc(String(l).toUpperCase())}</span>`;
+const lvPill = l => `<span class="lv ${PM ? '' : 'n'}" style="--c:${LEVEL[l]}">${esc(String(l).toUpperCase())}</span>`;
 const dot = l => `<span class="dot" style="--c:${LEVEL[l]}"></span>`;
 $('#zhome').innerHTML = ic('home', 's');
 
@@ -647,6 +702,48 @@ function changeTxt(t, cls){
   const c = D.theatres[t].pd; if (!c || !leadP()) return `<span class="num" style="color:var(--dim)" data-tip="No earlier day in the forecast record yet">–</span>`;
   const [d, n] = c, up = d > 0.0005, dn = d < -0.0005;
   return `<span class="num ${up ? 'up' : dn ? 'dn' : ''} ${cls || ''}" ${up || dn ? '' : 'style="color:var(--dim)"'} data-tip="Change in the 30-day chance over ${n} day${n === 1 ? '' : 's'}, in percentage points">${up ? '▲' : dn ? '▼' : ''}${Math.abs(100 * d).toFixed(1)}</span>`;
+}
+
+/* sub-theatres (config.SUBTHEATRES): countries drawn into a parent's war, fitted on top of the region's own theatres */
+const SUBT = D.sub || {};
+const isSub = t => !!SUBT[t];
+function gateWhy(){
+  const G = (D.model || {}).gates || {}, why = [];
+  if (G.bss_positive === false) why.push('it does not beat the base rates');
+  if (G.auc_lo_above_half === false) why.push('the low end of its AUC range is not above 0.5');
+  if (G.beats_shuffled === false) why.push(`it does not beat shuffled timing (p ${G.shuffle_p_auc != null ? G.shuffle_p_auc.toFixed(2) : 'n/a'}, needs below 0.05)`);
+  return why.join(' and ') || 'it did not pass all its release checks';
+}
+function shadowWhy(){ return `The 30-day model runs in shadow: it is logged and scored every day but does not set the levels, because at its last refit ${gateWhy()}. Until it passes, levels come from signal pressure and colours stay neutral.`; }
+
+/* ------------------------------------------------------------ this week: tells, ratings and strong new readings */
+function weekStats(){
+  const on = []; let n = 0;
+  THEATRES.forEach(t => tellsOf(t).forEach(x => { if (x.on != null) { n++; if (x.on) on.push(Object.assign({t}, x)); } }));
+  const scored = D.series.filter(s => s.z != null && s.t !== 'global' && !isEv(s));
+  return {on, n, strong: scored.filter(s => s.z >= T_SIG && !s.stale), scored: scored.length};
+}
+function weekFeed(){
+  const out = [], wk = weekStats();
+  wk.on.forEach(x => out.push({d: x.date || '', t: x.t, hot: 1, title: x.n, sub: 'Timing tell' + (x.src && SERIES[x.src] ? ' · ' + (SERIES[x.src].s || shortL(SERIES[x.src].l)) : ''), id: x.src && SERIES[x.src] ? x.src : null}));
+  D.series.filter(s => isEv(s) && s.z > 0 && s.t !== 'global' && ageH(s.last) != null && ageH(s.last) < 24 * (s.tf === 'event' ? 45 : 14))
+    .forEach(s => out.push({d: s.last, t: s.t, title: evWords(s).split(' · ')[0], sub: s.tf === 'event' ? 'Rating · CrisisWatch (Crisis Group)' : shortL(s.l), id: s.id}));
+  D.series.filter(s => !isEv(s) && !s.lag && !s.stale && s.z != null && s.z >= T_SIG && s.t !== 'global' && ageH(s.last) != null && ageH(s.last) < 24 * 8)
+    .sort((a, b) => b.z - a.z).slice(0, 6).forEach(s => out.push({d: s.last, t: s.t, title: `${shortL(s.l)}: ${rawTxt(s)}`, sub: `Strong reading, ${fmtz(s.z)} SD · ${GN[s.d]}`, id: s.id}));
+  return out.sort((a, b) => b.hot - a.hot || String(b.d).localeCompare(String(a.d)));
+}
+function feedRows(list, n){
+  return list.slice(0, n || 99).map(f => `<div class="fi" ${f.id ? `data-id="${esc(f.id)}"` : `data-nav="${f.t}"`}><span class="fdot ${f.hot ? 'hot' : ''}"></span><div><b>${esc(thName(f.t))}</b> · ${esc(f.title)}<small>${esc(f.sub)}</small></div><time>${esc(f.d ? (String(f.d).length > 7 ? shortDate(f.d) : monthName(f.d)) : '')}</time></div>`).join('')
+    || '<div class="empty">Nothing new this week: no timing tell, rating or strong new reading.</div>';
+}
+function weekKpis(){
+  const wk = weekStats(), x15 = THEATRES.filter(t => (D.theatres[t].xu || 0) >= 1.5).length;
+  return `<div class="k3w"><div><b style="color:${wk.on.length ? 'var(--tell)' : 'var(--ink)'}">${wk.on.length}</b><span>of ${wk.n} timing tells seen</span></div><div><b>${wk.strong.length}</b><span>strong readings (3 SD or more) of ${wk.scored} scored</span></div><div><b style="color:var(--mute)">${x15}</b><span>theatre${x15 === 1 ? '' : 's'} at 1.5× usual standing risk or more${PM ? '' : ', not validated'}</span></div></div>`;
+}
+function popWeek(){
+  return `<div class="ph"><h4>This week</h4><small>last 7 days</small></div><div class="pb">${weekKpis()}<div class="sh">What happened</div><div class="feed">${feedRows(weekFeed(), 12)}</div>
+    ${D.model && !PM ? `<p class="hint" style="margin:10px 0 0">${esc(shadowWhy())}</p>` : ''}
+    <div class="row" style="margin-top:10px"><button class="btn" data-nav="record">Track record ${ic('chev', 's')}</button><button class="btn" data-nav="settings/method">How it works ${ic('chev', 's')}</button></div></div>`;
 }
 
 /* ------------------------------------------------------------ alerts (the bell) */
@@ -749,16 +846,20 @@ $('#sb').addEventListener('mouseleave', () => $('#sbtip').style.display = 'none'
 
 /* ------------------------------------------------------------ top bar */
 function renderTop(){
-  const titles = {overview: ['World overview', `${THEATRES.length} theatres`], signals: ['Signals', `${D.series.length} indicators · ${D.series.filter(s => s.z != null).length} with a score`],
+  const nsub = THEATRES.filter(isSub).length;
+  const titles = {overview: ['World overview', `${THEATRES.length - nsub} theatres${nsub ? ` and ${nsub} sub-theatres` : ''}`], signals: ['Signals', `${D.series.length} indicators · ${D.series.filter(s => s.z != null).length} with a score`],
     activity: ['Activity', 'Aircraft, ships, fires and warnings now'], settings: ['Settings', 'Display, data health, sources and method']};
   let t = titles[R.v];
   if (R.v === 'region') t = [REGBY[R.id].name, 'Region overview'];
   if (R.v === 'theatre') t = [thName(R.id), regOf[R.id] ? regOf[R.id].name : 'Markets and procurement worldwide'];
   $('#tt').innerHTML = `<h1>${esc(t[0])}</h1><small>${esc(t[1])}</small>`;
   const g = D.global || {}, gl = g.level || 'insufficient data';
+  const wk = weekStats();
   $('#gti').innerHTML = PM && g.p_any != null
     ? `<div><small>Any theatre · 30 days</small><b style="color:${LEVEL[gl]}">${pct(g.p_any)}</b></div>${lvPill(gl)}<span class="us">usual ${pct(PM.clim)}</span>${ic('chevd', 's')}`
-    : `<div><small>Signal pressure, all theatres</small><b style="color:${LEVEL[gl]}">${fs(g.score)}</b></div>${lvPill(gl)}${ic('chevd', 's')}`;
+    : `<div><small>This week</small><b style="font-size:13px"><span style="color:${wk.on.length ? 'var(--tell)' : 'var(--ink)'}">${wk.on.length} tell${wk.on.length === 1 ? '' : 's'}</span> · ${wk.strong.length} strong reading${wk.strong.length === 1 ? '' : 's'}</b></div>${ic('chevd', 's')}`;
+  const sb = $('#shadowb'); sb.hidden = !!PM || !D.model;
+  if (D.model && !PM) sb.dataset.tip = shadowWhy();
   const gen = $('#gen').textContent, hm = gen.slice(11, 16), next = (() => { const d = new Date(GEN); const m = d.getUTCMinutes(); d.setUTCMinutes(m < 7 ? 7 : m < 37 ? 37 : 67, 0, 0); return d.toISOString().slice(11, 16); })();
   $('#upd').innerHTML = `Updated ${esc(hm)} UTC<br>next run about ${next}`;
   renderBell();
@@ -768,7 +869,7 @@ function popGTI(){
   const rows = RANK.filter(hasP).slice(0, 6).map(t => { const th = D.theatres[t]; return `<div class="wf"><span>${dot(th.level)} ${esc(th.name)}</span><span class="bar"><i style="width:${Math.min(100, th.p / Math.max(0.12, D.theatres[RANK[0]].p || 0) * 100)}%;background:${LEVEL[th.level]}"></i></span><b>${pct(th.p)}</b></div>`; }).join('');
   const cnt = {}; THEATRES.forEach(t => { const l = D.theatres[t].level; cnt[l] = (cnt[l] || 0) + 1; });
   const counts = `<div class="row">${['Critical', 'Elevated', 'Watch', 'Normal'].map(l => `<span class="chip" style="height:24px">${dot(l)}${l}<b>${cnt[l] || 0}</b></span>`).join('')}</div>`;
-  if (!PM) return `<div class="ph"><h4>Signal pressure for all theatres</h4><small>0 to 100</small></div><div class="pb"><p class="hint" style="margin:0 0 8px">This index combines the signal pressure of each region. 50 is the Watch line and 90 is the Critical line. The level is the highest region level. The 30-day model runs in shadow mode, so it does not set the levels.</p><div class="sh">Theatres by level</div>${counts}</div>`;
+  if (!PM) return popWeek();
   const G = PM.gates || {};
   return `<div class="ph"><h4>Why ${pct(g.p_any)} for any theatre</h4><small>next 30 days</small></div><div class="pb">
     <p class="hint" style="margin:0 0 8px">This is the chance that at least one theatre has a qualifying event in the next 30 days. The usual value is ${pct(PM.clim)}. The theatres move together, so this is an upper limit. The level compares the value with the usual value.</p>
@@ -1185,9 +1286,10 @@ function buildPins(){
   if (!M || !isMapView()) return;
   pinItems().forEach(p => {
     const th = D.theatres[p.th], col = LEVEL[th.level], l = lead(p.th);
-    const d = document.createElement('i'); d.className = 'pdot' + (th.level !== 'Normal' && th.level !== 'insufficient data' ? ' w' : ''); d.style.setProperty('--c', col); d.dataset.pin = p.key;
+    const tl = (p.region ? p.region.kids : [p.th]).some(k => tellsCount(k).on.length);
+    const d = document.createElement('i'); d.className = 'pdot' + ((PM ? th.level !== 'Normal' && th.level !== 'insufficient data' : tl) ? ' w' : ''); d.style.setProperty('--c', tl && !PM ? 'var(--tell)' : col); d.dataset.pin = p.key;
     const b = document.createElement('div'); b.className = 'plab'; b.style.setProperty('--c', col); b.dataset.pin = p.key;
-    b.innerHTML = `<b>${esc(l.txt)}</b><span>${esc(p.name.replace(/ \(.*$/, ''))}</span>`;
+    b.innerHTML = `<b>${esc(l.txt)}</b><span>${esc(p.name.replace(/ \(.*$/, ''))}</span>${tl ? '<i class="tdot" aria-label="timing tell this week"></i>' : ''}`;
     box.appendChild(d); box.appendChild(b);
     PINS.push(Object.assign(p, {dot: d, el: b, rank: RANKL[th.level] * 10 + Math.max(0, l.v)}));
   });
@@ -1217,10 +1319,10 @@ let hoverT = null, hoverKey = null;
 function hideHover(){ clearTimeout(hoverT); hoverKey = null; $('#hcard').style.display = 'none'; $$('.plab.hl').forEach(e => e.classList.remove('hl')); $$('.tr.hl').forEach(e => e.classList.remove('hl')); }
 function summaryLine(t){
   const th = D.theatres[t];
-  const a = th.why && th.why[0] ? `The main push comes from ${esc(lc(shortL(th.why[0][0])))}.` : '';
+  const w = ownWhy(t)[0], a = w ? `The main push of its own comes from ${esc(lc(shortL(w[0])))}.` : '';
   return `${a} ${th.firing.length ? `${th.firing.length} of ${th.scorable} signal groups are unusual.` : 'No signal group is unusual now.'}`;
 }
-function drvBars(t, n){ const th = D.theatres[t], w = (th.why || []).slice(0, n || 3), mx = Math.max(...w.map(x => x[1]), .01);
+function drvBars(t, n){ const w = ownWhy(t).slice(0, n || 3), mx = Math.max(...w.map(x => x[1]), .01);
   return w.length ? `<div class="drv">${w.map(x => `<div><span title="${esc(x[0])}">${esc(shortL(x[0]))}</span><u><i style="width:${x[1] / mx * 100}%"></i></u></div>`).join('')}</div>` : '<p class="hint">No signal family pushes the chance up now.</p>'; }
 function showHover(key){
   const p = PINS.find(x => x.key === key); if (!p || !p.box) return;
@@ -1228,11 +1330,12 @@ function showHover(key){
   const t = p.th, th = D.theatres[t], r = p.region || regOf[t], kids = r && r.kids.length > 1 ? r.kids : null, l = lead(t);
   const target = p.region && kids ? 'region/' + r.id : t;
   let h = `<div class="top"><h3>${esc(p.region ? r.name : th.name)}</h3>${lvPill(th.level)}</div>`;
-  h += `<div class="big"><b style="color:${LEVEL[th.level]}">${esc(l.txt)}</b><small>${leadP() && th.p != null ? `chance in 30 days${p.region && kids ? ', ' + esc(th.name) : ''} · range ${pct(th.plo)} to ${pct(th.phi)}` : 'signal pressure, 0 to 100'}</small></div>`;
+  h += `<div class="big"><b style="color:${PM ? LEVEL[th.level] : 'var(--ink)'}">${esc(l.txt)}</b><small>${leadP() && th.p != null ? `chance in 30 days${p.region && kids ? ', ' + esc(th.name) : ''} · range ${pct(th.plo)} to ${pct(th.phi)}` : `unusual readings, 0 to 100${p.region && kids ? ', ' + esc(th.name) : ''}${th.xu != null ? ` · standing risk ${th.xu.toFixed(1)}× usual, not validated` : ''}`}</small></div>`;
   h += `<p>${summaryLine(t)}</p>`;
   { const tc = tellsCount(t); if (tc.n) h += `<p class="hint" style="margin:-2px 0 6px">Timing tells this week: <b style="color:${tc.on.length ? 'var(--elevated)' : 'var(--ink)'}">${tc.on.length} of ${tc.n}</b>${tc.on.length ? ' · ' + tc.on.map(x => esc(x.n)).join(', ') : ''}</p>`; }
-  h += `<div class="sh">What pushes ${esc(th.name)} up ${inf(PM ? 'The signal families that add most to the 30-day chance. A longer bar adds more.' : 'The signal families that add most to the model\'s 30-day chance. The model has not passed its release checks, so this is for reference only. A longer bar adds more.')}</div>${drvBars(t, 3)}`;
-  if (kids) h += `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">${leadP() ? '30 days' : 'Pressure'}</span><span class="h r">Change</span>${kids.map(k => `<span>${dot(D.theatres[k].level)} ${esc(thName(k))}</span><b class="num r">${esc(lead(k).txt)}</b><span class="r">${changeTxt(k)}</span>`).join('')}</div>`;
+  h += `<div class="sh">What pushes ${esc(th.name)} up ${inf(PM ? 'The signal families of this theatre that add most to the 30-day chance. World tempo, the same for every theatre, is left out. A longer bar adds more.' : 'The signal families of this theatre that add most to the model\'s 30-day chance. World tempo, the same for every theatre, is left out. The model has not passed its release checks, so this is for reference only.')}</div>${drvBars(t, 3)}`;
+  if (kids) h += PM ? `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">${leadP() ? '30 days' : 'Pressure'}</span><span class="h r">Change</span>${kids.map(k => `<span>${dot(D.theatres[k].level)} ${esc(thName(k))}</span><b class="num r">${esc(lead(k).txt)}</b><span class="r">${changeTxt(k)}</span>`).join('')}</div>`
+    : `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">Unusual</span><span class="h r">Tells</span>${kids.map(k => `<span>${dot(D.theatres[k].level)} ${esc(thName(k))}${isSub(k) ? ' <span class="subl">sub</span>' : ''}</span><b class="num r">${fs(D.theatres[k].score)}</b><span class="r">${tellChip(k)}</span>`).join('')}</div>`;
   h += `<div class="row" style="justify-content:space-between;margin-top:6px"><span class="hint">Data coverage ${Math.round((1 - (th.miss || 0)) * 100)}% · confidence ${esc(String(th.confl || '').toLowerCase())}</span><button class="btn pri" data-nav="${target}">Open ${esc(p.region && kids ? r.name : th.name)} ${ic('chev', 's')}</button></div>`;
   const c = $('#hcard'); c.innerHTML = h; c.style.display = 'block';
   const [cw, ch] = clientSize(), w = c.offsetWidth, hh = c.offsetHeight, b = p.box;
@@ -1248,24 +1351,45 @@ $('#hcard').addEventListener('click', e => { const n = e.target.closest('[data-n
 $('#pins').addEventListener('click', e => { const p = e.target.closest('[data-pin]'); if (!p) return; const [k, id] = p.dataset.pin.split(':'); nav(k === 'r' ? (REGBY[id].kids.length > 1 ? 'region/' + id : REGBY[id].kids[0]) : id); });
 
 /* ------------------------------------------------------------ overview dock */
+/* movers: the signals furthest from their own normal, at most two per theatre, stale copies and events left out */
+function moversList(n){
+  const per = {}, out = [];
+  D.series.filter(s => s.z != null && s.t !== 'global' && !s.stale && !isEv(s)).sort((a, b) => b.z - a.z).forEach(s => {
+    if (out.length >= n || (per[s.t] || 0) >= 2) return; per[s.t] = (per[s.t] || 0) + 1; out.push(s); });
+  return out;
+}
+const RANKW = () => THEATRES.slice().sort((a, b) => tellsCount(b).on.length - tellsCount(a).on.length || (D.theatres[b].score || 0) - (D.theatres[a].score || 0));
+function thRowN(t){
+  const th = D.theatres[t];
+  return `<div class="tr tr2" data-th="${t}"><span class="n">${dot(th.level)}${esc(th.name)}${isSub(t) ? '<em>sub</em>' : ''}</span>${tellChip(t)}<span class="bw"><span class="bar6"><i style="width:${Math.min(100, th.score || 0)}%;background:${LEVEL[th.level]}"></i></span><b class="num">${fs(th.score)}</b></span><span class="num xu" data-tip="Standing risk: 30-day chance as a multiple of the usual chance here. Not validated.">${th.xu != null ? th.xu.toFixed(1) + '×' : '–'}</span></div>`;
+}
+let dockTab = store.get('ww_dtab', 'mov');
 function renderDock(){
   const d = $('#dock');
   if (R.v !== 'overview') { d.classList.remove('on'); d.innerHTML = ''; return; }
   const min = pref.dock === 'min';
-  const movers = D.series.filter(s => s.z != null && s.t !== 'global').sort((a, b) => b.z - a.z).slice(0, 12);
+  const movers = moversList(12);
   const mks = D.markets.slice().sort((a, b) => (b.vol || 0) - (a.vol || 0));
   const top = Math.max(0.12, ...THEATRES.map(t => D.theatres[t].p || 0));
   const tog = `<button class="dtog" data-dock="1" aria-label="${min ? 'Show the panels' : 'Hide the panels'}" data-tip="${min ? 'Show the panels' : 'Hide the panels'}">${ic(min ? 'chevu' : 'chevd', 's')}</button>`;
-  d.innerHTML = `<div class="dk"><div class="dh">Theatres, highest first ${inf(leadP() ? 'The chance of a qualifying event in the next 30 days, from the fitted model. Change is in percentage points over the last 7 days.' : 'Signal pressure, 0 to 100. 50 is the Watch line and 90 is the Critical line.')}<small>${leadP() ? '30 days · change' : 'pressure'}</small>${tog}</div><div class="dc">${RANK.map(t => { const th = D.theatres[t], l = lead(t);
-      return `<div class="tr" data-th="${t}"><span class="n">${dot(th.level)}${esc(th.name)}<em>${esc(regOf[t] ? regOf[t].name : '')}</em></span><b class="num" style="text-align:right;color:${LEVEL[th.level]}">${esc(l.txt)}</b><span style="text-align:right;font-size:11.5px">${changeTxt(t)}</span><span class="bar6"><i style="width:${Math.min(100, (leadP() && th.p != null ? th.p / top : (th.score || 0) / 100) * 100)}%;background:${LEVEL[th.level]}"></i></span></div>`; }).join('')}</div></div>
-    <div class="dk"><div class="dh">Biggest movers ${inf('Signals furthest from their own normal level, in standard deviations (SD). 2 SD or more is unusual.')}<small>SD from normal</small>${tog}</div><div class="dc">${movers.map(s => `<div class="mv" data-id="${esc(s.id)}"><span class="n">${esc(shortL(s.l))}<small>${esc(thName(s.t))} · ${GN[s.d]}</small></span><span>${spark(s.pts && s.pts.slice(-30), zcol(s.z), 54, 18)}</span><span class="sdv" style="color:${zcol(s.z)}">${fmtz(s.z)}</span></div>`).join('') || '<div class="empty">No signal has a score yet.</div>'}</div></div>
-    <div class="dk"><div class="dh">Prediction markets ${inf('What traders with money at stake think. Shown for context. Not part of the score.')}<small>odds now</small>${tog}</div><div class="dc">${mks.map(m => `<div class="mv" data-mi="${D.markets.indexOf(m)}"><span class="n">${esc(m.q)}<small>${esc(m.src)} · ${m.theatre ? esc(thName(m.theatre)) : 'Global'}${m.end ? ' · ends ' + esc(m.end) : ''}</small></span><span>${spark(m.h, '#58a6ff', 54, 18)}</span><span class="sdv">${Math.round(m.p * 100)}%</span></div>`).join('') || '<div class="empty">No open war or military markets were found.</div>'}${D.pizza && D.pizza[0] != null ? `<div class="hint" style="padding:6px 6px 0">Pentagon pizza index: <b style="color:var(--ink)">${Math.round(D.pizza[0])}</b>/100, ${D.pizza[1]} active spike${D.pizza[1] === 1 ? '' : 's'}. A weak signal.</div>` : ''}</div></div>`;
+  const thPanel = PM ? `<div class="dk"><div class="dh">Theatres, highest first ${inf(leadP() ? 'The chance of a qualifying event in the next 30 days, from the fitted model. Change is in percentage points over the last 7 days.' : 'Signal pressure, 0 to 100. 50 is the Watch line and 90 is the Critical line.')}<small>${leadP() ? '30 days · change' : 'pressure'}</small>${tog}</div><div class="dc">${RANK.map(t => { const th = D.theatres[t], l = lead(t);
+      return `<div class="tr" data-th="${t}"><span class="n">${dot(th.level)}${esc(th.name)}<em>${esc(regOf[t] ? regOf[t].name : '')}</em></span><b class="num" style="text-align:right;color:${LEVEL[th.level]}">${esc(l.txt)}</b><span style="text-align:right;font-size:11.5px">${changeTxt(t)}</span><span class="bar6"><i style="width:${Math.min(100, (leadP() && th.p != null ? th.p / top : (th.score || 0) / 100) * 100)}%;background:${LEVEL[th.level]}"></i></span></div>`; }).join('')}</div></div>`
+    : `<div class="dk"><div class="dh">Theatres ${inf('Ordered by timing tells this week, then by unusual readings (0 to 100, not a chance). The grey multiple is the standing risk against the usual chance here; it is not validated.')}<small>tells · unusual · risk</small>${tog}</div><div class="dc">${RANKW().map(thRowN).join('')}</div></div>`;
+  const wkPanel = `<div class="dk"><div class="dh">This week ${inf('Timing tells seen, strong readings and new ratings in the last 7 days. Click a line to see the signal.')}<small>last 7 days</small>${tog}</div><div class="dc">${weekKpis()}<div class="feed">${feedRows(weekFeed(), 8)}</div></div></div>`;
+  const movRows = movers.map(s => `<div class="mv" data-id="${esc(s.id)}"><span class="n">${esc(shortL(s.l))}<small>${esc(thName(s.t))} · ${esc(rawTxt(s))}</small></span><span>${spark(s.pts && s.pts.slice(-30), zcol(s.z), 54, 18)}</span><span class="sdv" style="color:${zcol(s.z)}">${fmtz(s.z)}</span></div>`).join('') || '<div class="empty">No signal has a score yet.</div>';
+  const mkRows = mks.map(m => `<div class="mv" data-mi="${D.markets.indexOf(m)}"><span class="n">${esc(m.q)}<small>${esc(m.src)} · ${m.theatre ? esc(thName(m.theatre)) : 'Global'}${m.end ? ' · ends ' + esc(m.end) : ''}</small></span><span>${spark(m.h, '#58a6ff', 54, 18)}</span><span class="sdv">${Math.round(m.p * 100)}%</span></div>`).join('') || '<div class="empty">No open war or military markets were found.</div>';
+  const pizza = D.pizza && D.pizza[0] != null ? `<div class="hint" style="padding:6px 6px 0">Pentagon pizza index: <b style="color:var(--ink)">${Math.round(D.pizza[0])}</b>/100, ${D.pizza[1]} active spike${D.pizza[1] === 1 ? '' : 's'}. A weak signal.</div>` : '';
+  const thirdPanel = `<div class="dk"><div class="dh"><span class="dtabs"><button class="${dockTab === 'mov' ? 'on' : ''}" data-dtab="mov">Biggest movers</button><button class="${dockTab === 'mk' ? 'on' : ''}" data-dtab="mk">Markets <b>${mks.length}</b></button></span>${inf(dockTab === 'mov' ? 'Signals furthest from their own normal level, in standard deviations (SD), with the raw value. At most two per theatre; stale copies and events are left out.' : 'What traders with money at stake think. Shown for context. Not part of the score.')}<small>${dockTab === 'mov' ? 'SD from normal' : 'odds now'}</small>${tog}</div><div class="dc">${dockTab === 'mov' ? movRows : mkRows + pizza}</div></div>`;
+  d.innerHTML = PM ? thPanel + `<div class="dk"><div class="dh">Biggest movers ${inf('Signals furthest from their own normal level, in standard deviations (SD), with the raw value. At most two per theatre.')}<small>SD from normal</small>${tog}</div><div class="dc">${movRows}</div></div><div class="dk"><div class="dh">Prediction markets ${inf('What traders with money at stake think. Shown for context. Not part of the score.')}<small>odds now</small>${tog}</div><div class="dc">${mkRows}${pizza}</div></div>`
+    : thPanel + wkPanel + thirdPanel;
   d.classList.add('on'); d.classList.toggle('min', min);
 }
 $('#dock').addEventListener('click', e => {
+  const dt = e.target.closest('[data-dtab]'); if (dt) { dockTab = dt.dataset.dtab; store.set('ww_dtab', dockTab); renderDock(); return; }
   if (e.target.closest('[data-dock]')) { pref.dock = pref.dock === 'min' ? 'open' : 'min'; store.set('ww_dock', pref.dock); renderDock(); placePins(); layoutLabels(); return; }
   const t = e.target.closest('[data-th]'); if (t) { nav(t.dataset.th); return; }
   const s = e.target.closest('[data-id]'); if (s) { openModal(s.dataset.id); return; }
+  const nv = e.target.closest('[data-nav]'); if (nv) { nav(nv.dataset.nav); return; }
   const m = e.target.closest('[data-mi]'); if (m) openMarket(+m.dataset.mi);
 });
 $('#dock').addEventListener('mouseover', e => { const t = e.target.closest('.tr[data-th]'); if (!t) return; const p = PINS.find(x => x.th === t.dataset.th) || PINS.find(x => x.region && x.region.kids.includes(t.dataset.th)); $$('.plab.hl').forEach(x => x.classList.remove('hl')); if (p) p.el.classList.add('hl'); });
@@ -1283,6 +1407,17 @@ D.order.forEach(t => {
 });
 function steSummary(t){
   const th = D.theatres[t], out = [];
+  if (!PM) {      // shadow mode: lead with the tells, then what is strong, then official signals, then the standing risk
+    const tc = tellsCount(t);
+    if (tc.n) out.push(tc.on.length ? `<b>Timing tells this week: ${tc.on.length} of ${tc.n}</b> (${tc.on.map(x => esc(lc(x.n))).join(', ')}).` : `<b>No timing tell this week</b> (0 of ${tc.n} watched).`);
+    const ss = seriesOf(t).filter(s => s.z != null && !isEv(s) && s.z >= T_SIG), fam = Array.from(new Set(ss.map(s => GN[s.d])));
+    out.push(ss.length ? `${ss.length} reading${ss.length === 1 ? ' is' : 's are'} strong, in ${fam.join(' and ')}.` : 'No reading is strong.');
+    seriesOf(t).filter(s => isEv(s) && s.z > 0).forEach(s => out.push(s.tf === 'event' ? `CrisisWatch: ${esc(evWords(s))}.` : `${esc(shortL(s.l))}: ${esc(evWords(s))}.`));
+    if (th.xu != null) out.push(`Standing risk is ${th.xu.toFixed(1)}× usual and not validated.`);
+    if (th.basis === 'lagging only') out.push('<b>Only late data is unusual. It shows a build-up that already started. It is not an early warning.</b>');
+    if (isSub(t)) out.push(subNote(t));
+    return out.filter(Boolean).join(' ');
+  }
   if (th.p != null && PM) {
     out.push(`The chance of a qualifying event here in the next 30 days is <b>${pct(th.p)}</b>.`);
     out.push({Normal: `This is below the Watch line of ${pct(BANDS[0])}.`, Watch: 'This is up to two times the usual theatre level.', Elevated: 'This is two to five times the usual theatre level.', Critical: `This is ${pct(BANDS[2])} or more.`}[th.level] || '');
@@ -1302,32 +1437,37 @@ function renderPanel(){
   if (R.v === 'overview') { P.innerHTML = ''; return; }
   const r = R.v === 'region' ? REGBY[R.id] : regOf[R.id];
   let h = '';
-  if (r && r.kids.length > 1) h += `<div class="rtabs">${[`<button class="${R.v === 'region' ? 'on' : ''}" data-nav="region/${r.id}" data-tip="${esc(r.name)}: all theatres side by side">Overview</button>`].concat(r.kids.map(k => `<button class="${R.id === k ? 'on' : ''}" data-nav="${k}">${dot(D.theatres[k].level)}${esc(thName(k))}<small>${esc(lead(k).txt)}</small></button>`)).join('')}</div>`;
+  if (r && r.kids.length > 1) { const own = r.kids.filter(k => !isSub(k)), subs = r.kids.filter(isSub), tab = k => `<button class="${R.id === k ? 'on' : ''}" data-nav="${k}">${dot(D.theatres[k].level)}${esc(thName(k))}<small>${esc(lead(k).txt)}</small>${tellsCount(k).on.length ? '<i class="tdot" aria-label="timing tell"></i>' : ''}</button>`;
+    h += `<div class="rtabs" id="rtabs"><button class="${R.v === 'region' ? 'on' : ''}" data-nav="region/${r.id}" data-tip="${esc(r.name)}: all theatres side by side">Overview</button>${own.map(tab).join('')}${subs.length ? `<span class="rdiv" data-tip="Sub-theatres: countries drawn into a neighbour's war"></span>${subs.map(tab).join('')}` : ''}</div>`; }
   if (R.v === 'region') { P.innerHTML = h + regionBody(r); return; }
   const t = R.id, th = D.theatres[t], m = META[t];
-  h += `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}${r ? `<a data-nav="${r.kids.length > 1 ? 'region/' + r.id : r.kids[0]}">${esc(r.name)}</a>${ic('chev', 's')}` : ''}<span>${esc(thName(t))}</span></div><h2>${esc(thName(t))} ${lvPill(th.level)}</h2><p>${steSummary(t)}</p></div>`;
+  h += `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}${r ? `<a data-nav="${r.kids.length > 1 ? 'region/' + r.id : r.kids[0]}">${esc(r.name)}</a>${ic('chev', 's')}` : ''}<span>${esc(thName(t))}</span></div><h2>${esc(thName(t))} ${lvPill(th.level)}${isSub(t) ? '<span class="subl">sub-theatre</span>' : ''}</h2><p>${steSummary(t)}</p></div>`;
   const cov = Math.round((1 - (th.miss || 0)) * 100);
   const xu = th.xu != null ? `${th.xu.toFixed(1)}×` : pct(th.p);
   const k1 = th.p != null && !PM ? `<button class="kp" data-pop="kp-p"><small>Standing risk ${inf('The model\'s chance of a qualifying event in the next 30 days, as a multiple of this theatre\'s usual chance. It has not passed its release checks, so it does not set the level and is shown for reference only. Click to see what drives it.')}</small><b style="color:var(--dim)">${xu}<sub>usual</sub></b><span>not validated</span></button>`
     : th.p != null ? `<button class="kp" data-pop="kp-p"><small>Standing risk ${inf('The chance of a qualifying event in the next 30 days, as a multiple of this theatre\'s usual chance. Click to see what drives it.')}</small><b style="color:${LEVEL[th.level]}">${xu}<sub>usual</sub></b><span>${pct(th.p)} (${pct(th.plo)} to ${pct(th.phi)})</span></button>`
     : `<div class="kp"><small>30-day chance ${inf('The model gives no chance for this view. It covers the 13 theatres only.')}</small><b style="color:var(--dim)">n/a</b><span>no model here</span></div>`;
-  h += `<div class="kpis">${k1}
-    <button class="kp" data-pop="kp-s"><small>Pressure ${inf('How unusual the signals are, all together, from 0 to 100. 50 is the Watch line and 90 is the Critical line. It is not a chance. Click for details.')}</small><b>${fs(th.score)}<sub>/100</sub></b><span>${th.score == null ? 'no score' : th.score >= 90 ? 'above Critical' : th.score >= 50 ? 'above Watch' : 'below Watch'}</span></button>
-    <button class="kp" data-pop="kp-g"><small>Unusual ${inf('Signal groups at 2 SD or more from their normal level. Click to see all five.')}</small><b>${th.firing.length}<sub>/${th.scorable}</sub></b><span>${th.firing.length ? th.firing.map(d => GN[d]).join(', ') : 'none'}</span></button>
+  const tc = tellsCount(t);
+  const kTells = `<button class="kp" data-nav="${t}/drivers"><small>Timing tells ${inf('Costly, hard-to-reverse actions that came days before strikes in past cases. Each is a fixed yes-or-no rule over the last 7 days. They do not set the level.')}</small><b style="color:${tc.on.length ? 'var(--tell)' : 'var(--ink)'}">${tc.on.length}<sub>/${tc.n}</sub></b><span>${tc.n ? 'this week' : 'none watched here'}</span></button>`;
+  const kPress = `<button class="kp" data-pop="kp-s"><small>${PM ? 'Pressure' : 'Unusual readings'} ${inf('How unusual the signals are, all together, from 0 to 100. 50 is the Watch line and 90 is the Critical line. It is not a chance. Click for details.')}</small><b>${fs(th.score)}<sub>/100</sub></b><span>${th.score == null ? 'no score' : PM ? (th.score >= 90 ? 'above Critical' : th.score >= 50 ? 'above Watch' : 'below Watch') : 'not a chance'}</span></button>`;
+  const kGroups = `<button class="kp" data-pop="kp-g"><small>Unusual ${inf('Signal groups at 2 SD or more from their normal level. Click to see all five.')}</small><b>${th.firing.length}<sub>/${th.scorable}</sub></b><span>${th.firing.length ? th.firing.map(d => GN[d]).join(', ') : 'none'}</span></button>`;
+  h += `<div class="kpis">${PM ? k1 + kPress + kGroups : kTells + kPress + k1}
     <button class="kp" data-pop="kp-c"><small>Coverage ${inf('The share of this theatre\'s signals that have a score now. Low coverage makes the result less certain. Click for details.')}</small><b style="color:${cov < 60 ? 'var(--elevated)' : 'var(--ink)'}">${cov}%</b><span>${m.scored} of ${m.n}</span></button></div>`;
   const al = ALERTS.filter(a => t === 'global' ? !a.th : a.th === t), mk = marketsFor(t), hot = al.some(a => a.sev >= 70);
   const sub = R.sub || 'drivers';
-  h += `<div class="stabs">${[['drivers', 'Drivers'], ['signals', 'Signals', m.n], ['alerts', 'Alerts', al.length], ['markets', 'Markets', mk.length], ['about', 'About']].map(([k, n, c]) => `<button class="${sub === k ? 'on' : ''}" data-nav="${t}/${k}">${n}${c != null ? `<b class="${k === 'alerts' && hot ? 'hot' : ''}">${c}</b>` : ''}</button>`).join('')}</div><div class="pbody" id="pbody">`;
+  h += `<div class="stabs">${[['drivers', 'Now'], ['signals', 'Signals', m.n], ['alerts', 'Alerts', al.length], ['markets', 'Markets', mk.length], ['about', 'About']].map(([k, n, c]) => `<button class="${sub === k ? 'on' : ''}" data-nav="${t}/${k}">${n}${c != null ? `<b class="${k === 'alerts' && hot ? 'hot' : ''}">${c}</b>` : ''}</button>`).join('')}</div><div class="pbody" id="pbody">`;
   if (sub === 'drivers') h += driversBody(t);
   else if (sub === 'signals') h += signalsBody(t);
   else if (sub === 'alerts') h += alertRows(al);
   else if (sub === 'markets') h += `<div class="sh">War and military prediction markets<small>context only, not scored</small></div>` + marketRows(mk);
   else h += aboutBody(t);
   P.innerHTML = h + `</div>`;
+  keepTabInView();
 }
+function keepTabInView(){ const rt = $('#rtabs'), on = rt && rt.querySelector('button.on'); if (on && (on.offsetLeft + on.offsetWidth > rt.scrollLeft + rt.clientWidth || on.offsetLeft < rt.scrollLeft)) rt.scrollLeft = on.offsetLeft - 24; }
 function waterfall(t){
   const th = D.theatres[t]; if (th.p == null || th.pb == null) return null;
-  const base = th.pb, why = (th.why || []), L = logit(Math.min(.999, Math.max(.001, th.p))), Lb = logit(base);
+  const base = th.pb, why = (th.why || []).filter(w => !WORLDW(w)).concat((th.why || []).filter(WORLDW)), L = logit(Math.min(.999, Math.max(.001, th.p))), Lb = logit(base);
   const rest = L - Lb - why.reduce((a, w) => a + w[1], 0);
   const steps = []; let cum = Lb;
   if (Math.abs(rest) > 0.004) { const a = sigm(cum); cum += rest; steps.push({n: 'Past conflict here, and smaller signals', d: sigm(cum) - a, a, b: sigm(cum), rest: true}); }
@@ -1363,7 +1503,7 @@ function driversBody(t){
   h += `<div class="sh" style="margin-top:16px">Signal groups ${inf('Each group combines its strongest signals. The ticks mark 2 SD (unusual) and 3 SD (strong). Click a group to see its signals.')}<small>SD from normal · weight</small></div>`;
   h += D.domains.map(d => { const x = th.doms[d.id], z = x.z, w = z == null ? 0 : Math.max(0, Math.min(100, z / 5 * 100));
     const dr = (x.drivers || []).filter(q => q[1] > 0 && SERIES[q[0]]).slice(0, 2);
-    return `<div class="dom" data-dom="${d.id}" data-tip="${esc(d.help)}"><span class="nm">${GN[d.id]}<small>${x.n} signals</small></span><span class="zbar"><span class="trk"></span><i style="width:${w}%;--c:${zcol(z)}"></i><u style="left:${T_WATCH / 5 * 100}%"></u><u style="left:${T_SIG / 5 * 100}%"></u></span><span class="zv" style="color:${zcol(z)}">${fmtz(z)}</span><span class="wt">${Math.round(x.w * 100)}%</span>${dr.length ? `<span class="drow">Led by ${dr.map(q => `<a data-id="${esc(q[0])}">${esc(shortL(SERIES[q[0]].l))}</a> <span class="num" style="color:${zcol(q[1])}">${fmtz(q[1])}</span>`).join(' · ')}</span>` : ''}</div>`; }).join('');
+    return `<div class="dom" data-dom="${d.id}" data-tip="${esc(d.help)}"><span class="nm">${GN[d.id]}<small>${x.n} signals</small></span><span class="zbar"><span class="trk"></span><i style="width:${w}%;--c:${zcol(z)}"></i><u style="left:${T_WATCH / 5 * 100}%"></u><u style="left:${T_SIG / 5 * 100}%"></u></span><span class="zv" style="color:${zcol(z)}">${fmtz(z)}</span><span class="wt">${Math.round(x.w * 100)}%</span>${dr.length ? `<span class="drow">Led by ${dr.map(q => `<a data-id="${esc(q[0])}">${esc(shortL(SERIES[q[0]].l))}</a> <span class="num" style="color:${zcol(q[1])}">${zTxt(SERIES[q[0]])}</span>`).join(' · ')}</span>` : ''}</div>`; }).join('');
   return h;
 }
 function familySeries(t, label){ const s = D.series.find(x => (x.t === t || x.t === 'global') && x.l === label); return s ? s.id : null; }
@@ -1382,14 +1522,15 @@ function sigList(list){
   return list.slice().sort((a, b) => (b.z ?? -99) - (a.z ?? -99)).map(s => sigRow(s)).join('');
 }
 function sigVal(s){
+  if (isEv(s) && s.z != null) return s.z > 0 ? '<span class="evb" data-tip="An action or rating, scored as an event, not in SD">event</span>' : '<span style="color:var(--dim)">–</span>';
   if (s.z != null) return `<span style="color:${zcol(s.z)}">${fmtz(s.z)}</span>`;
   if (s.st === 'awaiting_key') return `<span style="color:var(--dim)" data-tip="Needs a free API key">key</span>`;
   if (s.st === 'collecting') return `<span style="color:var(--dim)" data-tip="History is still building: ${s.n} of ${s.need} ${s.kind === 'daily' ? 'days' : 'months'}">${s.n}/${s.need}</span>`;
   return `<span style="color:var(--dim)">${s.st === 'error' ? 'error' : 'n/a'}</span>`;
 }
 function sigRow(s, showTh){
-  const sub = [showTh ? thName(s.t) : '', s.s, GN[s.d]].filter(Boolean).join(' · ') + (s.stale ? ' · stale copy' : '');
-  return `<div class="sig ${isAn(s) ? 'an' : ''}" data-id="${esc(s.id)}"><div><div class="t">${esc(s.l)}</div><div class="s">${esc(sub)}</div></div><div><span class="ty ${s.lag ? '' : 'ld'}" data-tip="${s.lag ? 'Confirms: late data. It shows a build-up that already started.' : 'Leads: fast data. It can move before events.'}">${s.lag ? 'confirms' : 'leads'}</span></div><div>${spark(s.pts && s.pts.slice(-60), s.z == null ? '#6b7280' : zcol(s.z), 64, 20)}</div><div class="sdv">${sigVal(s)}</div></div>`;
+  const sub = [showTh ? thName(s.t) : '', s.s, GN[s.d], rawTxt(s)].filter(Boolean).join(' · ') + (s.stale ? ' · stale copy' : '');
+  return `<div class="sig ${isAn(s) && !isEv(s) ? 'an' : ''}" data-id="${esc(s.id)}"><div><div class="t">${esc(s.l)}</div><div class="s">${esc(sub)}</div></div><div><span class="ty ${s.lag ? '' : 'ld'}" data-tip="${s.lag ? 'Confirms: late data. It shows a build-up that already started.' : 'Leads: fast data. It can move before events.'}">${s.lag ? 'confirms' : 'leads'}</span></div><div>${spark(s.pts && s.pts.slice(-60), s.z == null ? '#6b7280' : zcol(s.z), 64, 20)}</div><div class="sdv">${sigVal(s)}</div></div>`;
 }
 const KIND_ICON = a => `<span class="ib" style="--c:${KIND[a.k][1]}">${ic(KIND[a.k][0], 's')}</span>`;
 function alertRows(list){
@@ -1417,13 +1558,33 @@ function aboutBody(t){
     <p><b>Data.</b> ${m.scored} signals have a score. ${st.collecting || 0} are still collecting history, ${st.awaiting_key || 0} need a free key and ${st.error || 0} failed in this run.${m.last ? ` The newest daily value is from ${esc(m.last)} (${esc(ago(m.last))}).` : ''}</p>
     <p><a data-nav="settings/method">How the score works</a> · <a data-nav="signals?th=${t}">All signals for ${esc(thName(t))} in the table</a></p></div>`;
 }
+function ownWhy(t){ return (D.theatres[t].why || []).filter(w => !WORLDW(w)); }
+function tellChip(t, short){ const c = tellsCount(t); return c.n ? `<span class="tchip ${c.on.length ? 'on' : ''}" data-tip="${c.on.length ? esc(c.on.map(x => x.n).join(', ')) : 'No timing tell in the last 7 days'}">${c.on.length}/${c.n}${short ? '' : ' tells'}</span>` : '<span class="tchip">–</span>'; }
+/* a family label without the theatre's own name at the end: "Demonstrations per month, Iraq region" -> "Demonstrations per month" */
+function causeL(t, l){ const n = thName(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); return shortL(l).replace(new RegExp(`,? (in |to )?(the )?${n}( region| waters)?$`, 'i'), ''); }
+function subNote(t){
+  const sp = SUBT[t]; if (!sp) return '';
+  const n = (D.events && D.events.list || []).filter(e => e[2] === t).length;
+  return `${esc(thName(t))} is a sub-theatre: a country drawn into a neighbour's war. Its model reads its own signals and those of ${sp.parents.map(x => esc(thName(x))).join(' and ')}, and its usual rate is pooled with ${sp.pool.map(x => esc(thName(x))).join(', ')}.${n ? ` ${n} past event${n === 1 ? '' : 's'} in the list happened here, too few to test it on its own.` : ''}`;
+}
 function regionBody(r){
-  const kids = r.kids.slice().sort((a, b) => lead(b).v - lead(a).v), top = kids[0], lv = regionLevel(r);
-  let h = `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}<span>${esc(r.name)}</span></div><h2>${esc(r.name)} ${lvPill(lv)}</h2><p>${hasP(top) && leadP() ? `${esc(thName(top))} has the highest chance in this region: <b>${pct(D.theatres[top].p)}</b> in the next 30 days.` : `${esc(thName(top))} has the highest signal pressure in this region: <b>${fs(D.theatres[top].score)}</b>.`} The region level is the highest level of its ${r.kids.length} theatres. Open a tab for the details of one theatre.</p></div><div class="pbody">`;
-  h += `<table class="cmp"><thead><tr><th class="c1">Theatre</th><th class="r cn">${leadP() ? '30 days' : 'Pressure'}</th><th class="r cn">Change</th><th>Main cause</th><th class="r cv" data-tip="Share of signals with a score now">Coverage</th></tr></thead><tbody>` +
-    kids.map(k => { const th = D.theatres[k]; return `<tr data-go="${k}"><td>${dot(th.level)} <b style="font-weight:600">${esc(thName(k))}</b></td><td class="r num" style="color:${LEVEL[th.level]};font-weight:600">${esc(lead(k).txt)}</td><td class="r">${changeTxt(k)}</td><td class="cause" title="${esc(th.why && th.why[0] ? th.why[0][0] : '')}">${esc(th.why && th.why[0] ? shortL(th.why[0][0]) : '–')}</td><td class="r num">${Math.round((1 - (th.miss || 0)) * 100)}%</td></tr>`; }).join('') + `</tbody></table>`;
-  h += `<div class="sh" style="margin-top:16px">Signal groups across the region ${inf('Distance from normal in standard deviations (SD). 2 SD or more is unusual.')}<small>SD from normal</small></div><table class="cmp"><thead><tr><th>Group</th>${kids.map(k => `<th class="r">${esc(thName(k))}</th>`).join('')}</tr></thead><tbody>` +
-    D.domains.map(d => `<tr><td data-tip="${esc(d.help)}">${GN[d.id]}</td>${kids.map(k => { const z = D.theatres[k].doms[d.id].z; return `<td class="r num" style="color:${zcol(z)};background:color-mix(in oklab,${zcol(z)} ${z == null ? 0 : Math.min(32, Math.max(0, z) * 10)}%,transparent)">${fmtz(z)}</td>`; }).join('')}</tr>`).join('') + `</tbody></table>`;
+  const kids = r.kids.slice().sort((a, b) => (isSub(a) - isSub(b)) || tellsCount(b).on.length - tellsCount(a).on.length || lead(b).v - lead(a).v), top = kids[0], lv = regionLevel(r);
+  const subs = r.kids.filter(isSub), tl = r.kids.filter(k => tellsCount(k).on.length);
+  const hot = r.kids.slice().sort((a, b) => (D.theatres[b].score || 0) - (D.theatres[a].score || 0)).filter(k => (D.theatres[k].score || 0) >= 50).slice(0, 2);
+  const sum = PM ? `${hasP(top) && leadP() ? `${esc(thName(top))} has the highest chance in this region: <b>${pct(D.theatres[top].p)}</b> in the next 30 days.` : `${esc(thName(top))} has the highest signal pressure in this region: <b>${fs(D.theatres[top].score)}</b>.`} The region level is the highest level of its ${r.kids.length} theatres.`
+    : `${tl.length ? `<b>Timing tells this week in ${tl.map(k => esc(thName(k))).join(' and ')}.</b>` : '<b>No timing tell this week.</b>'} ${hot.length ? `${hot.map(k => esc(thName(k))).join(' and ')} ${hot.length > 1 ? 'have' : 'has'} the most unusual readings.` : 'No theatre has many unusual readings.'} The region level is the highest level of its theatres.${subs.length ? ` ${subs.map(k => esc(thName(k))).join(' and ')} ${subs.length > 1 ? 'are sub-theatres' : 'is a sub-theatre'}, fitted on top of ${r.kids.filter(k => !isSub(k)).map(k => esc(thName(k))).join(', ')}.` : ''}`;
+  let h = `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}<span>${esc(r.name)}</span></div><h2>${esc(r.name)} ${lvPill(lv)}</h2><p>${sum}</p></div><div class="pbody">`;
+  const nm = k => `<td>${dot(D.theatres[k].level)} <b style="font-weight:600">${esc(thName(k))}</b>${isSub(k) ? ' <span class="subl">sub</span>' : ''}</td>`;
+  const cov = k => `<td class="r num">${Math.round((1 - (D.theatres[k].miss || 0)) * 100)}%</td>`;
+  const cause = k => { const w = ownWhy(k)[0]; return `<td class="cause" title="${esc(w ? w[0] : '')}">${esc(w ? causeL(k, w[0]) : '–')}</td>`; };
+  if (PM) h += `<table class="cmp"><thead><tr><th class="c1">Theatre</th><th class="r cn">${leadP() ? '30 days' : 'Pressure'}</th><th class="r cn">Change</th><th>Own main cause</th><th class="r cv" data-tip="Share of signals with a score now">Coverage</th></tr></thead><tbody>` +
+    kids.map(k => `<tr data-go="${k}">${nm(k)}<td class="r num" style="color:${LEVEL[D.theatres[k].level]};font-weight:600">${esc(lead(k).txt)}</td><td class="r">${changeTxt(k)}</td>${cause(k)}${cov(k)}</tr>`).join('') + `</tbody></table>`;
+  else h += `<div class="tw"><table class="cmp rgt"><thead><tr><th class="c1">Theatre</th><th data-tip="Timing tells seen in the last 7 days, of those watched">Tells</th><th class="r" data-tip="Unusual readings, 0 to 100 (signal pressure). Not a chance.">Unusual</th><th class="r" data-tip="Standing risk: the model's 30-day chance as a multiple of this theatre's usual chance. Not validated.">Risk</th><th data-tip="The theatre's own strongest signal family. World tempo, the same for every theatre, is left out.">Own main cause</th><th class="r cv" data-tip="Share of signals with a score now">Cover</th></tr></thead><tbody>` +
+    kids.map(k => { const th = D.theatres[k]; return `<tr data-go="${k}">${nm(k)}<td>${tellChip(k, 1)}</td><td class="r num">${fs(th.score)}</td><td class="r num" style="color:var(--mute)">${th.xu != null ? th.xu.toFixed(1) + '×' : '–'}</td>${cause(k)}${cov(k)}</tr>`; }).join('') + `</tbody></table></div>`;
+  const wt = (D.theatres[top].why || []).find(WORLDW);
+  if (wt) h += `<p class="hint" style="margin:6px 0 0">World tempo (markets, defence orders and tenders) moves every theatre by the same amount, so it is not listed as a theatre's cause.</p>`;
+  h += `<div class="sh" style="margin-top:16px">Signal groups across the region ${inf('Distance from normal in standard deviations (SD). 2 SD or more is unusual.')}<small>SD from normal</small></div><div class="tw"><table class="cmp"><thead><tr><th>Group</th>${kids.map(k => `<th class="r">${esc(thName(k))}</th>`).join('')}</tr></thead><tbody>` +
+    D.domains.map(d => `<tr><td data-tip="${esc(d.help)}">${GN[d.id]}</td>${kids.map(k => { const z = D.theatres[k].doms[d.id].z; return `<td class="r num" style="color:${zcol(z)};background:color-mix(in oklab,${zcol(z)} ${z == null ? 0 : Math.min(32, Math.max(0, z) * 10)}%,transparent)">${fmtz(z)}</td>`; }).join('')}</tr>`).join('') + `</tbody></table></div>`;
   const al = ALERTS.filter(a => r.kids.includes(a.th));
   h += `<div class="sh" style="margin-top:16px">Alerts in the region<small>${al.length}</small></div>` + alertRows(al);
   const mk = D.markets.filter(m => r.kids.includes(m.theatre));
@@ -1433,17 +1594,21 @@ function regionBody(r){
 function popChance(t){
   const th = D.theatres[t], wf = waterfall(t); if (!th || th.p == null) return '';
   const nxt = th.level === 'Normal' ? `Watch starts at ${pct(BANDS[0])}.` : th.level === 'Watch' ? `Elevated starts at ${pct(BANDS[1])}.` : th.level === 'Elevated' ? `Critical starts at ${pct(BANDS[2])}.` : 'This is the highest level.';
-  let h = `<div class="ph"><h4>How we get ${pct(th.p)} for ${esc(th.name)}</h4><small>percentage points</small></div><div class="pb">`;
+  let h = PM ? `<div class="ph"><h4>How we get ${pct(th.p)} for ${esc(th.name)}</h4><small>percentage points</small></div><div class="pb">`
+    : `<div class="ph"><h4>Standing risk, ${esc(th.name)}</h4><span class="shadowb">not validated</span></div><div class="pb"><p class="warnl">Shown for reference. It does not set the level: at the model's last refit ${esc(gateWhy())}.</p>
+      <div class="big" style="margin:0 0 8px"><b style="color:var(--mute)">${th.xu != null ? th.xu.toFixed(1) + '×' : pct(th.p)}</b><small>${th.xu != null ? `this theatre's usual chance · ${pct(th.p)} in 30 days (model range ${pct(th.plo)} to ${pct(th.phi)})` : 'in 30 days'}</small></div>`;
   if (wf) {
     const hi = Math.max(th.phi || th.p, th.p, wf.base, ...wf.steps.map(s => Math.max(s.a, s.b))) * 1.05;
     h += `<div class="wf"><span>Start: the long-run rate here</span><span class="bar"><i style="left:0;width:${wf.base / hi * 100}%;background:#58a6ff"></i></span><b>${pct(wf.base)}</b></div>`;
     h += wf.steps.map(s => { const lo = Math.min(s.a, s.b), w = Math.abs(s.d); const sid = s.rest ? null : familySeries(t, s.n);
-      return `<div class="wf" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''}><span title="${esc(s.n)}">${esc(shortL(s.n))}</span><span class="bar"><i style="left:${lo / hi * 100}%;width:${Math.max(1.5, w / hi * 100)}%;background:${s.d < 0 ? 'var(--normal)' : 'var(--elevated)'}"></i></span><b>${ppt(s.d)}</b></div>`; }).join('');
+      return `<div class="wf ${WORLDW([s.n]) ? 'wd' : ''}" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''}><span title="${esc(s.n)}">${esc(WORLDW([s.n]) ? 'World tempo, the same for every theatre' : shortL(s.n))}</span><span class="bar"><i style="left:${lo / hi * 100}%;width:${Math.max(1.5, w / hi * 100)}%;background:${!PM ? 'var(--mute)' : s.d < 0 ? 'var(--normal)' : 'var(--elevated)'}"></i></span><b>${ppt(s.d)}</b></div>`; }).join('');
     h += `<div class="wf t"><span>Chance now</span><span class="bar"><i style="left:0;width:${th.p / hi * 100}%;background:${LEVEL[th.level]}"></i></span><b style="color:${LEVEL[th.level]}">${pct(th.p)}</b></div>`;
     h += `<p class="hint" style="margin:10px 0 0">The model starts from the long-run rate for ${esc(th.name)}. The conflict history of the theatre and each signal family then move the chance. The steps add up in log-odds, so the same push adds more points when the chance is higher.</p>`;
   } else h += `<p class="hint" style="margin:0 0 8px">The largest causes:</p>` + drvBars(t, 6);
-  h += `<p class="hint" style="margin:8px 0 0">The range ${pct(th.plo)} to ${pct(th.phi)} shows how much the result changes when the model is fitted again on other samples of past years.</p><p class="hint" style="margin:6px 0 0"><b style="color:var(--ink)">Next level:</b> ${nxt}</p>`;
-  if (th.pd) h += `<p class="hint" style="margin:6px 0 0"><b style="color:var(--ink)">Change:</b> ${Math.abs(th.pd[0]) < 0.0005 ? 'no change' : ppt(th.pd[0]) + ' points'} in ${th.pd[1]} day${th.pd[1] === 1 ? '' : 's'}.</p>`;
+  h += `<p class="hint" style="margin:8px 0 0">The range ${pct(th.plo)} to ${pct(th.phi)} shows how much the result changes when the model is fitted again on other samples of past years.</p>`;
+  if (PM) h += `<p class="hint" style="margin:6px 0 0"><b style="color:var(--ink)">Next level:</b> ${nxt}</p>`;
+  if (PM && th.pd) h += `<p class="hint" style="margin:6px 0 0"><b style="color:var(--ink)">Change:</b> ${Math.abs(th.pd[0]) < 0.0005 ? 'no change' : ppt(th.pd[0]) + ' points'} in ${th.pd[1]} day${th.pd[1] === 1 ? '' : 's'}.</p>`;
+  if (!PM) h += `<p class="hint" style="margin:6px 0 0">"Next level" and "change" return once the model passes its checks. World tempo lifts every theatre by the same amount, so it says nothing about this theatre in particular.</p>`;
   return h + `</div>`;
 }
 function popPressure(t){
@@ -1456,7 +1621,7 @@ function popPressure(t){
     ${th.p != null && th.lvc && th.lvc !== th.level ? `<p class="hint" style="margin:0 0 8px"><b style="color:var(--ink)">Why the level is ${esc(th.level)}:</b> the model sets the level from the 30-day chance, ${pct(th.p)}. The signals are unusual, but in the past signals like these did not often come before events here.</p>` : ''}
     <div class="kv"><span>Index (100 is normal) ${inf('A weighted Mazziotta-Pareto index of the five groups. 100 is normal; each 10 points is about 1 SD.')}</span><b class="num">${th.index == null ? '–' : th.index.toFixed(1)}</b></div>
     <div class="kv"><span>Imbalance ${inf('The spread between the groups. A high value means that one group does most of the work.')}</span><b class="num">${th.imb == null ? '–' : th.imb.toFixed(1)}</b></div>
-    <div class="kv"><span>Strongest signal</span><b>${th.worst && SERIES[th.worst.id] ? `<a data-id="${esc(th.worst.id)}" style="cursor:pointer;color:var(--ink)">${esc(shortL(SERIES[th.worst.id].l))}</a> <span class="num" style="color:${zcol(th.worst.z)}">${fmtz(th.worst.z)}</span>` : '–'}</b></div>
+    <div class="kv"><span>Strongest signal</span><b>${th.worst && SERIES[th.worst.id] ? `<a data-id="${esc(th.worst.id)}" style="cursor:pointer;color:var(--ink)">${esc(shortL(SERIES[th.worst.id].l))}</a> <span class="num" style="color:${zcol(th.worst.z)}">${zTxt(SERIES[th.worst.id])}</span>` : '–'}</b></div>
     <div class="kv"><span>Basis</span><b>${esc(th.basis || '–')}</b></div></div>`;
 }
 function popGroups(t){
@@ -1492,7 +1657,7 @@ function searchAll(q){
   const out = [];
   [['overview', 'World overview'], ['signals', 'Signals'], ['activity', 'Activity'], ['settings', 'Settings']].concat(REG.filter(r => r.kids.length > 1).map(r => ['region/' + r.id, r.name]), D.order.map(t => [t, thName(t)]))
     .forEach(([id, n]) => { if (n.toLowerCase().includes(q)) out.push({g: 'Go to', t: n, s: '', run: () => nav(id)}); });
-  D.series.filter(s => (s.l + ' ' + s.s + ' ' + s.id).toLowerCase().includes(q)).slice(0, 8).forEach(s => out.push({g: 'Signals', t: s.l, s: (s.z != null ? fmtz(s.z) + ' SD · ' : '') + thName(s.t), run: () => openModal(s.id)}));
+  D.series.filter(s => (s.l + ' ' + s.s + ' ' + s.id).toLowerCase().includes(q)).slice(0, 8).forEach(s => out.push({g: 'Signals', t: s.l, s: (s.z != null ? (isEv(s) ? zTxt(s) : fmtz(s.z) + ' SD') + ' · ' : '') + thName(s.t), run: () => openModal(s.id)}));
   if (M) {
     M.mil.forEach(a => { if ((a.call + ' ' + a.hex + ' ' + (a.o || '') + ' ' + (a.ct || '') + ' ' + (a.t || '') + ' ' + (a.r || '')).toLowerCase().includes(q)) out.push({g: 'Aircraft', t: (a.call || a.hex) + ' ' + (a.t || ''), s: (a.o || (CLS[a.c] || CLS.other)[0]) + (a.th ? ' · ' + thName(a.th) : ''), run: () => { nav(a.th || 'overview'); setTimeout(() => { focusXY(a.xy, 300); openCard('mil', a); }, 80); }}); });
     (M.ships || []).forEach(a => { if ((a.n + ' ' + (a.g || '') + ' ' + (a.loc || '')).toLowerCase().includes(q)) out.push({g: 'Ships', t: a.n, s: (a.loc || '') + (a.th ? ' · ' + thName(a.th) : ''), run: () => { nav(a.th || 'overview'); setTimeout(() => { focusXY(a.xy, 700); openCard('ships', a); }, 80); }}); });
@@ -1565,7 +1730,17 @@ function chartRange(rg){ const blk = rg.closest('.cwrap'), c = CH[blk.dataset.bl
 ['#mbox', '#pg-signals'].forEach(sel => { $(sel).addEventListener('mousemove', chartHover); $(sel).addEventListener('mouseout', chartOut); });
 let modalId = null, modalList = [];
 function pctRank(vals, v){ let b = 0; vals.forEach(x => { if (x <= v) b++; }); return Math.round(100 * b / vals.length); }
+/* the percentile on the same measure as the score: a daily score reads the 7-day average, so rank the latest 7-day average
+   among the 7-day averages held; a monthly score reads the latest month */
+function pctNow(s){
+  const v = (s.pts || []).map(p => p[1]);
+  if (v.length <= 8 || isEv(s)) return null;
+  if (s.kind !== 'daily') return {p: pctRank(v, v[v.length - 1]), of: `of the last ${v.length} months`};
+  const m = []; for (let i = 6; i < v.length; i++) m.push((v[i] + v[i - 1] + v[i - 2] + v[i - 3] + v[i - 4] + v[i - 5] + v[i - 6]) / 7);
+  return m.length > 8 ? {p: pctRank(m, m[m.length - 1]), of: `of the last ${m.length} 7-day averages`} : null;
+}
 function methodTxt(s){
+  if (isEv(s)) return s.tf === 'event' ? 'Each monthly CrisisWatch issue is read as it is published: 2 for a conflict-risk alert, plus 1 for a deteriorated situation.' : 'An advisory level holds for months, so it is scored on its step: the change in the last 14 days.';
   if (s.kind === 'monthly') return 'Monthly data is put on a log scale and the usual month-to-month pattern is removed. Then it is compared with the previous 36 months.';
   return /year/.test(s.method || '') ? 'The latest 7-day average is compared with the 7-day averages of the previous year. The last 30 days are left out of that comparison, so a slow build-up does not hide itself.' : 'The latest 7-day average is compared with the previous 90 days. The year comparison starts when 120 days of history are available.';
 }
@@ -1591,19 +1766,20 @@ function openModal(id, list){
   let h = `<button class="x" aria-label="Close">&times;</button><div class="nav"><a data-nav="overview">World</a>&rsaquo;<a data-nav="${s.t}">${esc(th)}</a>&rsaquo;<a data-nav="${s.t}/signals" data-dom="${s.d}">${GN[s.d]}</a><span class="sp"></span>` +
     (modalList.length > 1 ? `<a data-step="-1" title="Previous (left arrow)">&lsaquo; Previous</a><span>${idx + 1} / ${modalList.length}</span><a data-step="1" title="Next (right arrow)">Next &rsaquo;</a>` : '') + `</div>` +
     `<h2>${esc(s.l)}</h2><div class="chips"><span>${esc(th)}</span><span>${GN[s.d]}</span>${s.s ? `<span>${esc(s.s)}</span>` : ''}<span style="color:${s.lag ? 'var(--elevated)' : 'var(--normal)'}">${s.lag ? 'Confirms: late data' : 'Leads: fast data'}</span><span>${s.kind === 'daily' ? 'Daily data' : 'Monthly data'}</span></div>` + statusBox(s);
-  const vals = (s.pts || []).map(p => p[1]), last = vals.length ? vals[vals.length - 1] : null;
+  const vals = (s.pts || []).map(p => p[1]), last = vals.length ? vals[vals.length - 1] : null, pn = pctNow(s);
   let vs = '';
   if (s.z != null && s.base && s.base.med) { const dv = (s.val - s.base.med) / Math.abs(s.base.med) * 100; vs = (dv >= 0 ? '+' : '') + dv.toFixed(Math.abs(dv) < 10 ? 1 : 0) + '%'; }
-  h += `<div class="mk5"><div class="kp"><small>${s.kind === 'daily' ? '7-day average' : 'Latest month'}</small><b>${s.z != null ? fmtv(s.val) : last != null ? fmtv(last) : 'n/a'}</b><span>${esc(s.last ? 'to ' + s.last : '')}</span></div>` +
+  if (isEv(s)) h += `<div class="mk5 ev3"><div class="kp" style="grid-column:span 2"><small>What happened</small><b style="font-size:15px;white-space:normal">${esc(evWords(s))}</b><span>${s.tf === 'event' ? 'the latest monthly CrisisWatch issue' : 'a decision, scored when it is made'}</span></div><div class="kp"><small>Reading</small><b>${s.z > 0 ? '<span class="evb">event</span>' : '–'}</b><span>${s.z > 0 ? 'counts as a strong signal' : 'nothing new'}</span></div><div class="kp"><small>Last value</small><b>${last != null ? fmtv(last) : 'n/a'}</b><span>${esc(s.last || '')}</span></div></div>`;
+  else h += `<div class="mk5"><div class="kp"><small>${s.kind === 'daily' ? '7-day average' : 'Latest month'}</small><b>${s.z != null ? fmtv(s.val) : last != null ? fmtv(last) : 'n/a'}</b><span>${esc(s.last ? 'to ' + s.last : '')}</span></div>` +
     `<div class="kp"><small>Normal level</small><b>${s.base ? fmtv(s.base.med) : 'n/a'}</b><span>${s.base ? 'median of ' + s.base.n + ' readings' : s.kind === 'monthly' ? 'seasonal baseline' : ''}</span></div>` +
     `<div class="kp"><small>Compared with normal</small><b style="color:${zcol(s.z)}">${vs || 'n/a'}</b><span>${s.base ? '1 SD = ' + fmtv(s.base.sd) : ''}</span></div>` +
     `<div class="kp"><small>Standard deviations ${inf('How far the value is from its own normal level. 2 SD or more is unusual; 3 SD or more is a strong signal.')}</small><b style="color:${zcol(s.z)}">${fmtz(s.z)}</b><span>${esc(verdict(s))}</span></div>` +
-    `<div class="kp"><small>Percentile</small><b>${vals.length > 8 ? pctRank(vals, last) + '%' : 'n/a'}</b><span>of the last ${vals.length} readings</span></div></div>`;
-  if (s.z != null) {
+    `<div class="kp"><small>Percentile ${inf('Where the current reading sits among the readings held, on the same measure as the score (the 7-day average for daily data).')}</small><b>${pn ? pn.p + '%' : 'n/a'}</b><span>${pn ? pn.of : ''}</span></div></div>`;
+  if (s.z != null && !isEv(s)) {
     const lo = -3, hi = 6, X = z => 4 + (Math.max(lo, Math.min(hi, z)) - lo) / (hi - lo) * 92;
     h += `<div class="gauge"><div class="gt"><span>Distance from normal (standard deviations)</span><span>unusual from ${T_WATCH.toFixed(0)} · strong from ${T_SIG.toFixed(0)}</span></div><svg viewBox="0 0 100 14" preserveAspectRatio="none"><rect x="4" y="5" width="${X(T_WATCH) - 4}" height="4" fill="#1f5a3a"/><rect x="${X(T_WATCH)}" y="5" width="${X(T_SIG) - X(T_WATCH)}" height="4" fill="#8a4d12"/><rect x="${X(T_SIG)}" y="5" width="${96 - X(T_SIG)}" height="4" fill="#8a2a2d"/><rect x="${X(s.z) - .6}" y="1" width="1.2" height="12" fill="${zcol(s.z)}"/></svg></div>`;
   }
-  h += `<p class="say"><b>${esc(s.why)}</b><br><span style="color:var(--mute)">${dirTxt(s)} ${trigTxt(s)}</span></p>`;
+  h += `<p class="say"><b>${esc(s.why)}</b><br><span style="color:var(--mute)">${isEv(s) ? (s.tf === 'event' ? 'A conflict-risk alert counts 2 and a deteriorated situation 1; the newest issue is the reading.' : 'A raise in the advisory level counts when it is made and goes quiet after 14 days.') : dirTxt(s) + ' ' + trigTxt(s)}</span></p>`;
   if (s.pts && s.pts.length > 1) {
     const vo = {h: 200, c: '#58a6ff'};
     if (s.base) { vo.bands = [{a: s.base.med - 2 * s.base.sd, b: s.base.med + 2 * s.base.sd, c: 'rgba(88,166,255,.13)'}, {a: s.base.med - 3 * s.base.sd, b: s.base.med + 3 * s.base.sd, c: 'rgba(88,166,255,.07)'}];
@@ -1623,7 +1799,7 @@ function openModal(id, list){
   if (s.z != null) { h += row('Method', esc(s.method)); if (s.base) h += row('Baseline spread (1 SD)', esc(fmtv(s.base.sd))); }
   h += row('Values held', s.n + (s.pts && s.pts.length ? ` (${esc(s.pts[0][0])} to ${esc(s.last || '')})` : '')) + row('Last value', esc(s.last || 'none') + (s.last ? ' (' + esc(ago(s.last)) + ')' : '')) + row('Needed for a score', s.need + (s.kind === 'daily' ? ' days' : ' months'));
   h += `</table><p style="margin:8px 0 0;color:var(--mute);font-size:12.5px">${methodTxt(s)} The score is limited to ±5 SD, so one bad value cannot control the result.</p><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">${s.url ? `<a class="btn" target="_blank" rel="noopener" href="${esc(s.url)}">Open the data source ${ic('ext', 's')}</a>` : ''}<a class="btn" data-nav="${s.t}/signals" data-dom="${s.d}">Show in ${esc(th)} ${ic('chev', 's')}</a></div></div>`;
-  h += `<div><h3 class="mh">Other signals in this group</h3><div class="rel">${rel.map(r => `<div data-open="${esc(r.id)}"><span title="${esc(r.l)}">${esc(shortL(r.l))}</span><b class="num" style="color:${zcol(r.z)}">${fmtz(r.z)}</b></div>`).join('') || '<span style="color:var(--dim)">No other signals in this group.</span>'}</div></div></div>`;
+  h += `<div><h3 class="mh">Other signals in this group</h3><div class="rel">${rel.map(r => `<div data-open="${esc(r.id)}"><span title="${esc(r.l)}">${esc(shortL(r.l))}</span><b class="num" style="color:${isEv(r) ? 'var(--ink)' : zcol(r.z)}">${zTxt(r)}</b></div>`).join('') || '<span style="color:var(--dim)">No other signals in this group.</span>'}</div></div></div>`;
   $('#mbox').innerHTML = h; $('#modal').style.display = 'flex'; $('#mbox').scrollTop = 0;
 }
 function stepModal(d){ if (!modalList.length) return; const i = (modalList.indexOf(modalId) + d + modalList.length) % modalList.length; openModal(modalList[i]); }
@@ -1673,15 +1849,15 @@ function renderSignals(first){
   const rows = D.series.filter(s => sfPass(s));
   const key = {z: s => s.z ?? -99, l: s => s.l.toLowerCase(), t: s => thName(s.t), d: s => GN[s.d], lag: s => s.lag ? 1 : 0, last: s => s.last || ''}[SF.sk];
   rows.sort((a, b) => { const x = key(a), y = key(b); return (x < y ? -1 : x > y ? 1 : 0) * SF.sd || ((b.z ?? -99) - (a.z ?? -99)); });
-  const facet = (title, k, items) => `<h5>${title}${SF[k].length ? `<a data-fclear="${k}">clear</a>` : ''}</h5>` + items.map(([v, n]) => { const c = D.series.filter(s => sfPass(s, k) && ({st: s.st, dom: s.d, th: s.t, spd: s.lag ? 'conf' : 'lead'})[k] === v).length;
-    return `<label><input type="checkbox" data-f="${k}" value="${v}" ${SF[k].includes(v) ? 'checked' : ''}>${esc(n)}<b>${c}</b></label>`; }).join('');
+  const facet = (title, k, items) => `<h5>${title}${SF[k].length ? `<a data-fclear="${k}">clear</a>` : ''}</h5>` + items.map(([v, n, cls]) => { if (v === '__h') return `<div class="fgh">${esc(n)}</div>`; const c = D.series.filter(s => sfPass(s, k) && ({st: s.st, dom: s.d, th: s.t, spd: s.lag ? 'conf' : 'lead'})[k] === v).length;
+    return `<label class="${cls || ''}"><input type="checkbox" data-f="${k}" value="${v}" ${SF[k].includes(v) ? 'checked' : ''}>${esc(n)}<b>${c}</b></label>`; }).join('');
   const groupKey = {th: s => s.t, dom: s => s.d, src: s => s.s || 'Other', st: s => s.st, none: () => ''}[SF.group];
   const groupName = {th: k => thName(k), dom: k => GN[k], src: k => k, st: k => STN[k] || k, none: () => ''}[SF.group];
   const groups = {}; rows.forEach(s => (groups[groupKey(s)] = groups[groupKey(s)] || []).push(s));
   const order = Object.keys(groups).sort((a, b) => Math.max(...groups[b].map(s => s.z ?? -99)) - Math.max(...groups[a].map(s => s.z ?? -99)) || a.localeCompare(b));
   const showTh = SF.group !== 'th', cols = (showTh ? 6 : 5) - (SF.sel ? 2 : 0);
   const hd = (k, n, al, c) => `<th data-sort="${k}" class="${SF.sk === k ? 'on' : ''} ${c || ''}" ${al ? 'style="text-align:right"' : ''}>${n}${SF.sk === k ? (SF.sd < 0 ? ' ▼' : ' ▲') : ''}</th>`;
-  const tr = s => `<tr data-row="${esc(s.id)}" class="${SF.sel === s.id ? 'sel' : ''}"><td class="n">${esc(s.l)}<small>${esc([s.s, s.lag ? 'confirms' : 'leads'].filter(Boolean).join(' · '))}</small>${s.stale ? ' <span class="ty" style="color:var(--watch)">stale</span>' : ''}</td>${showTh ? `<td class="w">${esc(thName(s.t))}</td>` : ''}<td class="hsel">${GN[s.d]}</td><td class="num" style="color:var(--mute)" title="${esc(s.last || '')}">${esc(s.last ? (s.last.length > 7 ? s.last.slice(5) : s.last) : '–')}</td><td class="hsel">${spark(s.pts && s.pts.slice(-30), s.z == null ? '#6b7a8a' : zcol(s.z), 60, 18)}</td><td><div class="sdb">${s.z != null ? `<u><i style="width:${Math.min(100, Math.max(0, s.z) / 5 * 100)}%;background:${zcol(s.z)}"></i></u>` : ''}<b class="num" style="color:${s.z == null ? 'var(--dim)' : zcol(s.z)}">${sigVal(s)}</b></div></td></tr>`;
+  const tr = s => `<tr data-row="${esc(s.id)}" class="${SF.sel === s.id ? 'sel' : ''}"><td class="n">${esc(s.l)}<small>${esc([s.s, s.lag ? 'confirms' : 'leads', rawTxt(s)].filter(Boolean).join(' · '))}</small>${s.stale ? ' <span class="ty" style="color:var(--watch)">stale</span>' : ''}</td>${showTh ? `<td class="w">${esc(thName(s.t))}</td>` : ''}<td class="hsel">${GN[s.d]}</td><td class="num" style="color:var(--mute)" title="${esc(s.last || '')}">${esc(s.last ? (s.last.length > 7 ? s.last.slice(5) : s.last) : '–')}</td><td class="hsel">${spark(s.pts && s.pts.slice(-30), s.z == null ? '#6b7a8a' : zcol(s.z), 60, 18)}</td><td><div class="sdb">${s.z != null && !isEv(s) ? `<u><i style="width:${Math.min(100, Math.max(0, s.z) / 5 * 100)}%;background:${zcol(s.z)}"></i></u>` : ''}<b class="num" style="color:${s.z == null ? 'var(--dim)' : zcol(s.z)}">${sigVal(s)}</b></div></td></tr>`;
   let body = '';
   if (!rows.length) body = `<tr><td colspan="${cols}" class="empty">No signal matches. <a data-sfreset="1">Clear all filters</a>.</td></tr>`;
   else if (SF.group === 'none') body = rows.map(tr).join('');
@@ -1697,7 +1873,7 @@ function renderSignals(first){
     <div class="intel ${sel ? 'sel' : ''}">
       <div class="facets">${facet('Status', 'st', [['ok', 'Has a score'], ['collecting', 'Collecting history'], ['awaiting_key', 'Needs a key'], ['error', 'Failed']])}
         ${facet('Signal group', 'dom', D.domains.map(d => [d.id, GN[d.id]]))}
-        ${facet('Theatre', 'th', D.order.map(t => [t, thName(t)]))}
+        ${facet('Theatre', 'th', REG.flatMap(r => (r.kids.length > 1 ? [['__h', r.name]] : []).concat(r.kids.map(k => [k, thName(k), (isSub(k) ? 'sub ' : '') + (r.kids.length > 1 ? 'in' : '')]))).concat(D.theatres.global ? [['global', thName('global')]] : []))}
         ${facet('Data speed', 'spd', [['lead', 'Leads (fast data)'], ['conf', 'Confirms (late data)']])}</div>
       <div class="tbl" id="stbl"><table class="t"><thead><tr>${hd('l', 'Signal')}${showTh ? hd('t', 'Theatre') : ''}${hd('d', 'Group', 0, 'hsel')}${hd('last', 'Last')}<th class="hsel tr">Trend</th>${hd('z', 'SD', 1)}</tr></thead><tbody>${body}</tbody></table></div>
       ${sel ? drawer(sel) : ''}</div>`;
@@ -1706,7 +1882,7 @@ function renderSignals(first){
 function drawer(s){
   const vals = (s.pts || []).map(p => p[1]), last = vals.length ? vals[vals.length - 1] : null;
   return `<div class="drawer"><div class="dhh"><div class="row" style="justify-content:space-between"><span class="hint">${esc(thName(s.t))} · ${GN[s.d]}</span><button class="x" data-dclose="1" aria-label="Close">&times;</button></div><h3>${esc(s.l)}</h3><div class="row" style="margin-top:6px"><span class="ty ${s.lag ? '' : 'ld'}">${s.lag ? 'confirms' : 'leads'}</span><span class="hint">${esc(s.s || '')} · ${s.kind}</span></div></div>
-    <div class="db">${statusBox(s)}<div class="k3"><div class="kp"><small>Now ${inf(s.kind === 'daily' ? 'The 7-day average' : 'The latest month')}</small><b>${s.z != null ? fmtv(s.val) : last != null ? fmtv(last) : 'n/a'}</b></div><div class="kp"><small>SD ${inf('Distance from its own normal level, in standard deviations')}</small><b style="color:${zcol(s.z)}">${fmtz(s.z)}</b></div><div class="kp"><small>Percentile</small><b>${vals.length > 8 ? pctRank(vals, last) + '%' : 'n/a'}</b></div></div>
+    <div class="db">${statusBox(s)}<div class="k3"><div class="kp"><small>Now ${inf(s.kind === 'daily' ? 'The 7-day average' : 'The latest month')}</small><b>${s.z != null ? fmtv(s.val) : last != null ? fmtv(last) : 'n/a'}</b></div><div class="kp"><small>SD ${inf('Distance from its own normal level, in standard deviations')}</small><b style="color:${zcol(s.z)}">${fmtz(s.z)}</b></div><div class="kp"><small>Percentile</small><b>${pctNow(s) ? pctNow(s).p + '%' : 'n/a'}</b></div></div>
     ${s.pts && s.pts.length > 2 ? `<div class="cwrap" style="padding:6px 8px">${areaChart(s.pts.slice(-120), {w: 330, h: 120, fs: 10, c: s.z == null ? '#6b7a8a' : '#58a6ff', bands: s.base ? [{a: s.base.med - 2 * s.base.sd, b: s.base.med + 2 * s.base.sd, c: 'rgba(88,166,255,.13)'}] : null})}<div class="cbub"></div></div>` : ''}
     <p class="hint">${s.z != null ? `This value is ${({'strong signal': 'a strong signal', 'unusual': 'unusual', 'a little high': 'a little high', 'normal range': 'in the normal range'})[verdict(s)]}.` : ''} ${dirTxt(s)} ${s.lag ? 'It is late data, so it confirms a build-up.' : 'It is fast data, so it can move before events.'}</p>
     ${kv('Normal level', s.base ? `<span class="num">${fmtv(s.base.med)}</span>` : 'n/a')}${s.base ? kv('Strong signal from', `<span class="num">${fmtv(s.dir === 'down' ? s.base.med - T_SIG * s.base.sd : s.base.med + T_SIG * s.base.sd)}</span>`) : ''}${kv('Method', esc(s.method || 'no score yet'))}${kv('Last value', esc(s.last || 'none') + (s.last ? ' · ' + esc(ago(s.last)) : ''))}
@@ -1784,7 +1960,7 @@ function renderSettings(){
   const P = $('#pg-settings'), sub = R.sub || 'health', iss = issues(), cnt = {}; iss.forEach(i => cnt[i.k] = (cnt[i.k] || 0) + 1);
   const st = {}; D.series.forEach(s => st[s.st] = (st[s.st] || 0) + 1);
   const bad = (cnt.error || 0) + (cnt.stale || 0);
-  const tabs = [['display', 'Display', 'eye'], ['health', 'Data health', 'health', bad || iss.length, bad > 0], ['sources', 'Sources and schedule', 'clock'], ['method', 'How the score works', 'book'], ['record', 'Track record', 'table'], ['gaps', 'Data we cannot get', 'gap', D.unavailable.length]];
+  const tabs = [['display', 'Display', 'eye'], ['health', 'Data health', 'health', bad, bad > 0], ['sources', 'Sources and schedule', 'clock'], ['method', 'How the score works', 'book'], ['record', 'Track record', 'table'], ['gaps', 'Data we cannot get', 'gap', D.unavailable.length]];
   let body = '';
   if (sub === 'display') {
     const seg = (k, opts, cur) => `<span class="seg">${opts.map(([v, n]) => `<button class="${String(cur) === String(v) ? 'on' : ''}" data-set="${k}" data-v="${v}">${n}</button>`).join('')}</span>`;
