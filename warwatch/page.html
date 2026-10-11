@@ -680,7 +680,7 @@ function openAlert(a){
 }
 
 /* ------------------------------------------------------------ routing */
-const SUBS = ['drivers', 'signals', 'alerts', 'markets', 'about'], SETS = ['display', 'health', 'sources', 'method', 'gaps'];
+const SUBS = ['drivers', 'signals', 'alerts', 'markets', 'about'], SETS = ['display', 'health', 'sources', 'method', 'record', 'gaps'];
 let R = {v: 'overview'}, selDom = null;
 function parseHash(){
   const h = decodeURIComponent(location.hash.slice(1)), [path, qs] = h.split('?'), [a, b] = path.split('/');
@@ -1784,7 +1784,7 @@ function renderSettings(){
   const P = $('#pg-settings'), sub = R.sub || 'health', iss = issues(), cnt = {}; iss.forEach(i => cnt[i.k] = (cnt[i.k] || 0) + 1);
   const st = {}; D.series.forEach(s => st[s.st] = (st[s.st] || 0) + 1);
   const bad = (cnt.error || 0) + (cnt.stale || 0);
-  const tabs = [['display', 'Display', 'eye'], ['health', 'Data health', 'health', bad || iss.length, bad > 0], ['sources', 'Sources and schedule', 'clock'], ['method', 'How the score works', 'book'], ['gaps', 'Data we cannot get', 'gap', D.unavailable.length]];
+  const tabs = [['display', 'Display', 'eye'], ['health', 'Data health', 'health', bad || iss.length, bad > 0], ['sources', 'Sources and schedule', 'clock'], ['method', 'How the score works', 'book'], ['record', 'Track record', 'table'], ['gaps', 'Data we cannot get', 'gap', D.unavailable.length]];
   let body = '';
   if (sub === 'display') {
     const seg = (k, opts, cur) => `<span class="seg">${opts.map(([v, n]) => `<button class="${String(cur) === String(v) ? 'on' : ''}" data-set="${k}" data-v="${v}">${n}</button>`).join('')}</span>`;
@@ -1803,6 +1803,14 @@ function renderSettings(){
     body = `<div class="hs">${ks('Have a score', st.ok || 0, 'of ' + D.series.length + ' signals', 'var(--normal)')}${ks('Collecting history', st.collecting || 0, 'they get a score later', 'var(--watch)')}${ks('Need a key', st.awaiting_key || 0, keys.length + ' free key' + (keys.length === 1 ? '' : 's') + ' missing', st.awaiting_key ? 'var(--elevated)' : null)}${ks('Failed this run', (st.error || 0) + (D.errors || []).length, 'the next run tries again', st.error || (D.errors || []).length ? 'var(--critical)' : null)}${ks('Stale copy', cnt.stale || 0, 'last good copy shown', cnt.stale ? 'var(--watch)' : null)}</div>
       <div class="toolbar" style="margin:0">${[['all', 'All issues', iss.length], ['error', 'Failed', cnt.error || 0], ['stale', 'Stale', cnt.stale || 0], ['awaiting_key', 'Need a key', cnt.awaiting_key || 0], ['collecting', 'Collecting', cnt.collecting || 0]].map(([k, n, c]) => `<button class="chip ${HF.chip === k ? 'on' : ''}" data-hchip="${k}">${n}<b>${c}</b></button>`).join('')}<span class="sp"></span><label class="inp" style="width:240px">${ic('search', 's')}<input id="hq" type="search" placeholder="Filter issues" value="${esc(HF.q)}" aria-label="Filter issues"></label></div>
       <div class="tbl" style="flex:1"><table class="t"><thead><tr><th>Signal</th><th>Theatre</th><th>Issue</th><th>Detail</th><th>What to do</th></tr></thead><tbody>${list.map(i => `<tr ${i.s ? `data-open="${esc(i.s.id)}"` : ''}><td class="n">${i.s ? esc(i.s.l) + (i.s.s ? `<small>${esc(i.s.s)}</small>` : '') : 'Map layer'}</td><td>${i.s ? esc(thName(i.s.t)) : '–'}</td><td><span class="ty" style="color:${col[i.k]}">${esc(i.iss)}</span></td><td style="white-space:normal;color:var(--mute);max-width:280px">${esc(i.det)}</td><td style="white-space:normal;color:var(--mute);max-width:300px">${esc(i.fix)}</td></tr>`).join('') || `<tr><td colspan="5" class="empty">No issue matches.</td></tr>`}</tbody></table></div>`;
+  } else if (sub === 'record') {
+    const R = D.forward || [];
+    const cell = r => r.err ? `<span style="color:var(--mute)">not available: ${esc(r.err)}</span>`
+      : !r.chain ? '<span class="ty" style="color:var(--critical)">record broken</span>'
+      : r.ready ? `<span class="ty" style="color:${r.pass ? 'var(--normal)' : 'var(--watch)'}">${r.pass ? 'passes' : 'does not pass yet'}</span>`
+      : `${r.days} of ${r.need} days matured`;
+    body = `<div class="prose" style="flex:0 0 auto;margin-bottom:12px"><p>Every day the build logs each target's chance for every theatre before anything happens, in a hash-chained record nobody can edit later. A forecast is scored once its window has passed: 30 days for the first two targets, 7 for the strike-wave one. The numbers appear here once ${(R[0] || {}).need || 90} days of forecasts have been scored. A target passes when its forecasts beat each theatre's usual rate (Brier skill above 0) and the low end of its AUC range is above 0.5. The first target to pass is the one to put on the page; until then the page keeps its current reading. The 30-day targets are scored only up to the date the event list is complete to, so their count moves when the list is brought up to date.</p></div>
+      <div class="tbl" style="flex:1"><table class="t"><thead><tr><th>What is predicted</th><th>Logged since</th><th>Outcomes known to</th><th>Brier skill</th><th>AUC (low end)</th><th>Forward check</th></tr></thead><tbody>${R.map(r => `<tr style="cursor:default"><td class="n" style="white-space:normal">${esc(r.name)}</td><td>${r.first ? esc(r.first) + `<span style="color:var(--mute)"> · ${r.logged} day${r.logged === 1 ? '' : 's'}</span>` : '–'}</td><td>${r.through ? esc(r.through) : '–'}</td><td>${r.bss != null ? (r.bss >= 0 ? '+' : '') + r.bss.toFixed(3) : '–'}</td><td>${r.auc != null ? r.auc.toFixed(2) + ` (${r.auc_lo.toFixed(2)})` : '–'}</td><td>${cell(r)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">No forward record in this build.</td></tr>'}</tbody></table></div>`;
   } else if (sub === 'sources') {
     body = `<div class="tbl" style="flex:1"><table class="t"><thead><tr><th>Source</th><th>How often</th><th>Why that is enough, and the free limit</th></tr></thead><tbody>${(D.updates || []).map(u => `<tr style="cursor:default"><td class="n"><b style="font-weight:600">${esc(u.s)}</b></td><td>${esc(u.e)}</td><td style="white-space:normal;color:var(--mute)">${esc(u.l)}</td></tr>`).join('')}</tbody></table></div>`;
   } else if (sub === 'method') {

@@ -85,28 +85,59 @@ KINDS = {   # record, model file, report, title, events, horizon
 }
 
 
-def main(kind="main"):
-    path, mpath, name, title, events, horizon = KINDS[kind]
-    ok, bad, rows = model.forward_verify(path)
-    os.makedirs(DOCS, exist_ok=True)
-    m = model.load(mpath) or {"bands": [0.05, 0.10, 0.25]}
-    if kind == "wave":     # the wave feeds are read every day: outcomes are known through the oldest feed's newest day
+def _through(kind, m, series=None):
+    """The last day outcomes are known for: the events file's date, or for the wave record the oldest wave feed's newest day."""
+    if kind == "wave":
         ths = m.get("theatres") or list(model.WAVE_FEEDS)
-        through = min(dt.date.fromisoformat(model.wave_points(model.WAVE_FEEDS[t])[-1][0][:10]) for t in ths)
-        src = "the newest day of its alert-wave feeds"
-    else:
-        with open(os.path.join(HERE, "data", "events_through.txt")) as f:
-            through = dt.date.fromisoformat(f.read().strip())
-        src = "`warwatch/data/events_through.txt`"
-    bands = m["bands"]
+        return min(dt.date.fromisoformat(model.wave_points(model.WAVE_FEEDS[t], series)[-1][0][:10]) for t in ths)
+    with open(os.path.join(HERE, "data", "events_through.txt")) as f:
+        return dt.date.fromisoformat(f.read().strip())
+
+
+def evaluate(kind, series=None):
+    """One record verified and scored. -> dict(ok, bad, rows, scored, anyrows, through, gates, horizon, bands)."""
+    path, mpath, _, _, events, horizon = KINDS[kind]
+    ok, bad, rows = model.forward_verify(path)
+    m = model.load(mpath) or {"bands": [0.05, 0.10, 0.25]}
+    through = _through(kind, m, series)
+    ev = model.wave_events(series) if kind == "wave" else events()
+    scored, anyrows = score(rows, ev, through, m["bands"], horizon, horizon) if ok else ([], {})
+    return {"ok": ok, "bad": bad, "rows": rows, "scored": scored, "anyrows": anyrows, "through": through, "gates": gates(scored), "horizon": horizon, "bands": m["bands"]}
+
+
+NAMES = {"main": "Any qualifying event within 30 days (the page's model)", "armed": "Armed force within 30 days (hidden)",
+         "wave": "A new strike wave within 7 days, wars under way (hidden)"}
+
+
+def scorecard(series=None):
+    """The page's track-record panel: each target's forward record and its forward gates, numbers only once FORWARD_DAYS days have matured."""
+    out = []
+    for k in ("main", "armed", "wave"):
+        try:
+            e = evaluate(k, series)
+        except Exception as x:       # a missing feed or model file must not break the page
+            out.append({"k": k, "name": NAMES[k], "err": str(x)[:120]})
+            continue
+        g = e["gates"]
+        out.append({"k": k, "name": NAMES[k], "h": e["horizon"], "chain": e["ok"], "first": e["rows"][0]["date"] if e["rows"] else None,
+                    "logged": len({r["date"] for r in e["rows"]}), "days": g["days"], "need": FORWARD_DAYS, "through": e["through"].isoformat(),
+                    "ready": g["ready"], "pass": g["pass"], "bss": round(g["bss"], 4) if g["ready"] else None, "auc_lo": round(g["auc_lo"], 3) if g["ready"] else None,
+                    "auc": round(auc([(p, y) for p, _, y, _ in e["scored"]]) or 0, 3) if g["ready"] else None})
+    return out
+
+
+def main(kind="main"):
+    path, mpath, name, title, _, horizon = KINDS[kind]
+    os.makedirs(DOCS, exist_ok=True)
+    e = evaluate(kind)
+    ok, bad, rows, scored, anyrows, through, g, bands = (e[k] for k in ("ok", "bad", "rows", "scored", "anyrows", "through", "gates", "bands"))
+    src = "the newest day of its alert-wave feeds" if kind == "wave" else "`warwatch/data/events_through.txt`"
     what = "a strike wave" if kind == "wave" else "an event"
     L = ["# Forward record" + title, "",
          f"Every day the live build appends its probabilities for every theatre it covers to `{os.path.relpath(path, model.ROOT)}` before any outcome is known. Each row carries the hash of the row before it, so a "
          f"later edit anywhere breaks the chain from that row on; `python3 warwatch/forward_score.py` checks it. This report scores the forecasts that have matured: made at least {horizon} days before "
          f"{src} ({through}), outside the {horizon} days after {what}.", "",
          f"Chain: **{'intact' if ok else f'BROKEN at row {bad}'}**, {len(rows):,} rows" + (f", {rows[0]['date']} to {rows[-1]['date']}." if rows else "."), ""]
-    scored, anyrows = score(rows, events(), through, bands, horizon, horizon) if ok else ([], {})
-    g = gates(scored)
     if len(scored) < 100:
         L += [f"Matured forecasts so far: {len(scored)}. Too few to score; the first report with numbers needs about a quarter of daily forecasts.", ""]
     else:

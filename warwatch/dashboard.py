@@ -216,8 +216,19 @@ def build_data(res, generated, demo, ex, topo):
         "unavailable": [{"n": a, "w": b} for a, b in UNAVAILABLE], "updates": [{"s": a, "e": b, "l": c} for a, b, c in UPDATES], "clsnames": CLS_NAMES,
         "map": map_json(topo, ex, ex.get("levels", {})) if topo else None,
         "adsb": adsb_recent(),
+        "forward": None if demo else forward_json(res["series"]),
     }
     return data
+
+
+def forward_json(series):
+    """The track-record panel (forward_score.scorecard); the page must build without it."""
+    try:
+        import forward_score
+        return forward_score.scorecard(series)
+    except Exception as e:
+        print("forward scorecard skipped:", str(e)[:200])
+        return None
 
 
 def model_json(m):
