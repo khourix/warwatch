@@ -22,7 +22,7 @@ except ImportError:
     sync_playwright = None
 
 WIDTHS = [(390, 844, "phone"), (820, 1180, "tablet"), (1440, 900, "desktop")]
-ROUTES = ["overview", "region/mideast", "iran", "gulf", "iran/signals", "signals", "activity", "record",
+ROUTES = ["overview", "region/mideast", "iran", "gulf", "iran/signals", "israel/history", "signals", "activity", "record",
           "settings/health", "settings/method"]
 
 
