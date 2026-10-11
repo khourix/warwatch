@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="darkreader-lock">
 <title>WarWatch: war early-warning dashboard</title>
@@ -127,6 +127,7 @@ header#top{height:52px;flex:none;display:flex;align-items:center;gap:12px;paddin
 .ttl{min-width:0;max-width:240px}
 .ttl h1{margin:0;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ttl small{display:block;color:var(--dim);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttl .bk{display:none}
 .gti{display:flex;align-items:center;gap:10px;height:38px;padding:0 10px 0 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);flex:none}
 .gti:hover,.gti.on{border-color:var(--line2);background:var(--panel3)}
 .gti small{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);display:block;line-height:1.1;text-align:left}
@@ -381,7 +382,7 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .facets label:hover{background:var(--panel2);color:var(--ink)}
 .facets label b{margin-left:auto;font:500 11px var(--mono);color:var(--dim)}
 .facets input{accent-color:var(--accent);margin:0}
-.facets label.in{padding-left:12px}.facets label.sub{padding-left:24px}
+.facets label.in{padding-left:12px}
 .fgh{font-size:11px;color:var(--dim);padding:6px 4px 1px}
 .tbl{overflow:auto;min-width:0;min-height:0;border:1px solid var(--line);border-radius:10px;scrollbar-width:thin}
 table.t{border-collapse:collapse;width:100%;font-size:12.5px}
@@ -489,23 +490,102 @@ table.st td:last-child{text-align:right;font-weight:600}
 @media(max-height:820px){:root{--dh:176px}.thd{padding:10px 16px 8px}.thd p{margin-top:6px;font-size:12.5px}.kpis{padding-bottom:10px}}
 @media(max-height:740px){:root{--dh:150px}.kstrip .ks{padding:7px 10px}.ks b{font-size:19px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* phones and portrait tablets: a bottom tab bar, list-first overview, the theatre page as one scroll, bottom sheets */
+#bnav,#plist,.phonly,#sbtn{display:none}
 @media(max-width:900px){
-  body{overflow:auto}
+  html,body{height:auto}
+  body{overflow:auto;padding-bottom:calc(60px + env(safe-area-inset-bottom))}
   #app{display:block;height:auto}
-  #sb,#sb.open{width:100%;flex-direction:row}
-  #sb .brand{border-bottom:0}
-  #sbnav{flex-direction:row;overflow-x:auto;padding:4px}
-  #sb .grp,#sb .kids,#sb .sbf,#sb .sc{display:none}
-  header#top{flex-wrap:wrap;height:auto;padding:8px 10px}
-  #search{width:100%}
+  #sb{display:none}
+  header#top{position:sticky;top:0;height:54px;padding:0 10px;gap:8px}
+  .ttl{flex:1;max-width:none;display:flex;align-items:center;gap:8px}
+  .ttl .bk{display:flex;width:34px;height:34px;border:1px solid var(--line);border-radius:9px;align-items:center;justify-content:center;color:var(--mute);flex:none}
+  .ttl>div{min-width:0}
+  .gti{height:36px;padding:0 8px}.gti small{display:none}.gti b{font-size:12px!important}.gti .ic{display:none}.gti .gx{display:none}
+  #shadowb{display:none}
+  #search{display:none;position:absolute;left:8px;right:8px;top:9px;width:auto;z-index:5}
+  header#top.srch #search{display:block}
+  header#top.srch>:not(#search){visibility:hidden}
+  #results{width:auto;left:0;right:0;max-height:70vh}
+  #sbtn{display:flex}
+  .iconbtn{width:36px;height:36px}
+  .upd{display:none}
   main{display:block}
-  #mapwrap{height:60vh}
-  #panel{width:auto;border-left:0}
-  #dock.on{position:static;grid-template-columns:1fr;padding:10px}
-  .page{overflow:visible}
-  .intel,.intel.sel,.set{grid-template-columns:1fr}
-  .kstrip,.hs,.mk5{grid-template-columns:repeat(2,1fr)}
+  #plist{display:block;padding:10px 12px 4px}
+  #mapwrap{display:none;height:calc(100dvh - 54px - 60px - 52px);min-height:320px}
+  body.mapon #mapwrap{display:block}
+  body.mapon.th #mapwrap{height:46vh}
+  .rail{top:8px;left:8px}.rail button{width:36px;height:36px}
+  #dock{display:none!important}
+  #panel{width:auto;border-left:0;min-height:0;display:none}
+  #panel.on{display:block}
+  .pbody{overflow:visible;padding:10px 12px 16px}
+  .thd{padding:10px 12px 8px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 12px 10px}
+  .stabs{overflow-x:auto;scrollbar-width:none;padding:0 6px;position:sticky;top:54px;background:var(--panel);z-index:4}
+  .rtabs{padding:6px 8px;gap:6px;border-bottom:1px solid var(--line)}
+  .rtabs button{border:1px solid var(--line);border-radius:999px;padding:5px 11px;margin:0;font-size:12.5px}
+  .rtabs button.on{border-color:var(--accent);background:var(--sel)}
+  .rdiv{margin:0 2px;height:22px;align-self:center}
+  .phonly{display:flex}
+  .mapt{margin:8px 12px 0;justify-content:center;border:1px dashed var(--line2);border-radius:9px;padding:9px;color:var(--mute);font-size:12.5px;width:calc(100% - 24px)}
+  #hcard{display:none!important}
+  #card{position:fixed;left:0;right:0;top:auto;bottom:calc(60px + env(safe-area-inset-bottom));width:auto;max-height:60vh;border-radius:14px 14px 0 0;z-index:40}
+  #pop{left:0!important;right:0;top:auto!important;bottom:0;width:auto!important;max-height:78vh;border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom)}
+  #pop:before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:var(--line2);margin:8px auto 0;flex:none}
+  #modal{padding:0}
+  #modal .box{width:100%;height:100%;max-height:none;border-radius:0;border:0;padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
+  #modal h2{font-size:17px}
+  #modal .nav{padding-right:30px}
+  .page{padding:10px 12px;min-height:calc(100dvh - 54px - 60px)}
+  .toolbar{gap:6px}
+  .intel,.intel.sel,.set{grid-template-columns:1fr;display:block}
+  .facets{display:none}
+  .intel.fopen .facets{display:block;position:fixed;left:0;right:0;bottom:0;max-height:75vh;z-index:45;background:var(--panel);border:1px solid var(--line2);border-radius:16px 16px 0 0;padding:14px 16px calc(70px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px #000b}
+  .drawer{display:none}
+  #stbl{border:0;overflow:visible}
+  #stbl table.t,#stbl tbody,#stbl tr.g{display:block;width:100%}
+  #stbl thead{display:none}
+  #stbl tr.g td{position:static;display:block;border-radius:8px;margin-top:8px}
+  #stbl tr[data-row]{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:2px 10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:6px 0}
+  #stbl tr[data-row] td{display:block;border:0;padding:0;white-space:normal;overflow:visible}
+  #stbl tr[data-row] td.n{grid-column:1/-1;font-size:13px}
+  #stbl tr[data-row] td.n small{display:block;margin:2px 0 0}
+  #stbl tr[data-row] td.w{display:none}
+  #stbl tr[data-row] td:nth-last-child(4){display:none}
+  #stbl tr[data-row] td:nth-last-child(3){font-size:11.5px}
+  #stbl tr[data-row] td.hsel:not(:nth-last-child(2)){display:none}
+  .kstrip,.hs,.mk5{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mk5.ev3{grid-template-columns:1fr 1fr}
+  .grid4{grid-template-columns:1fr;overflow:visible}
   .two{grid-template-columns:1fr}
+  .setnav{flex-direction:row;overflow-x:auto;scrollbar-width:none;gap:6px;margin-bottom:10px}
+  .setnav button{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+  .setb{overflow:visible}.setscroll{overflow:visible}
+  .setrow{grid-template-columns:1fr;gap:6px}
+  .tbl{overflow-x:auto}
+  #bnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:38;background:var(--panel);border-top:1px solid var(--line);padding:4px 4px env(safe-area-inset-bottom)}
+  #bnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 7px;color:var(--dim);font-size:10.5px;min-height:52px;justify-content:center}
+  #bnav button.on{color:var(--accent)}
+  #bnav .ic{width:20px;height:20px}
+  .pmeta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font:11.5px var(--mono);color:var(--dim);margin:0 0 8px}
+  .pcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+  .pcard .dh{display:flex;align-items:baseline;gap:8px;font-weight:600;margin-bottom:8px}.pcard .dh small{color:var(--dim);font-weight:400;margin-left:auto}
+  .pcard .more{display:block;width:100%;text-align:center;color:var(--accent);font-size:12.5px;padding:8px 0 2px}
+  .mseg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;margin:2px 0 6px}
+  .mseg button{flex:1;padding:7px;border-radius:8px;color:var(--mute);font-weight:500}.mseg button.on{background:var(--sel);color:var(--ink)}
+  .prg{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin:14px 0 2px}
+  .prow{display:grid;grid-template-columns:minmax(0,1fr) 92px auto;gap:10px;align-items:center;padding:9px 2px;border-bottom:1px solid var(--line);min-height:52px;cursor:pointer;width:100%;text-align:left}
+  .prow.sub{padding-left:12px;border-left:2px solid var(--line2)}
+  .prow .tn b{display:block;font-weight:600;font-size:14px}.prow .tn small{color:var(--dim);font-size:11.5px}
+  .prow .bw{display:flex;align-items:center;gap:6px}.prow .bw .bar6{flex:1}.prow .bw b{font:500 12px var(--mono);color:var(--mute);width:22px;text-align:right}
+  .prow .r{display:flex;flex-direction:column;align-items:flex-end;gap:3px}.prow .r .xu{font:11px var(--mono);color:var(--mute)}
+}
+@media(max-width:560px){
+  .cmp.rgt .cv{display:none}
+  .kstrip,.hs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .k3w b{font-size:18px}
+  .ttl h1{font-size:14px}
 }
 </style>
 </head>
@@ -535,9 +615,11 @@ table.st td:last-child{text-align:right;font-weight:600}
   <div class="sp"></div>
   <div id="search"><svg class="ic s" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="q" type="search" placeholder="Search everything" autocomplete="off" aria-label="Search"><kbd>/</kbd><div id="results"></div></div>
   <div class="upd" id="upd"></div><span id="gen" hidden>__GENERATED__</span>
+  <button class="iconbtn" id="sbtn" aria-label="Search"></button>
   <button class="iconbtn" id="bell" data-pop="bell" aria-label="Notifications"></button>
 </header>
 <main id="main">
+  <div id="plist"></div>
   <div id="mapwrap">
     <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
     <div id="pins"></div>
@@ -553,6 +635,7 @@ table.st td:last-child{text-align:right;font-weight:600}
 <section class="page" id="pg-activity"></section>
 <section class="page" id="pg-settings"></section>
 </div></div>
+<nav id="bnav" aria-label="Pages"></nav>
 <div id="tip"></div><div id="sbtip"></div>
 <div id="pop" role="dialog"></div>
 <div id="modal"><div class="box" id="mbox"></div></div>
@@ -676,6 +759,7 @@ const ICON = {
   chev:'<path d="M9 6l6 6-6 6"/>', chevd:'<path d="M6 9l6 6 6-6"/>', chevu:'<path d="M6 15l6-6 6 6"/>', x:'<path d="M6 6l12 12M18 6L6 18"/>',
   search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>', group:'<path d="M4 6h16M4 12h10M4 18h6"/>',
   health:'<path d="M3 12h4l3-7 4 14 3-7h4"/>', book:'<path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM4 5v16"/>', gap:'<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>',
+  check:'<path d="M4 6h10M4 12h7M4 18h7"/><path d="M14 15l3 3 5-6"/>', more:'<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>', back:'<path d="M15 6l-6 6 6 6"/>',
   eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', ext:'<path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/>'
 };
 const ic = (n, c) => `<svg class="ic ${c || ''}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
@@ -786,11 +870,12 @@ function parseHash(){
   if (D.theatres[a]) return {v: 'theatre', id: a, sub: SUBS.includes(b) ? b : 'drivers'};
   if (a === 'signals') return {v: 'signals', qs: qs || ''};
   if (a === 'activity' || a === 'assets') return {v: 'activity'};
+  if (a === 'record') return {v: 'settings', sub: 'record'};
   if (a === 'settings' || a === 'system') return {v: 'settings', sub: SETS.includes(b) ? b : 'health'};
   return {v: 'overview'};
 }
 function nav(path){ if (location.hash.slice(1) === path) route(); else location.hash = path; }
-addEventListener('hashchange', () => route());
+addEventListener('hashchange', () => { closeModal(); route(); });
 function route(first){
   const prev = R; R = parseHash();
   if (prev.v === R.v && prev.id === R.id && R.v === 'theatre' && !first) { renderPanel(); return; }   // only the sub-tab changed
@@ -800,15 +885,21 @@ function route(first){
 function isMapView(){ return R.v === 'overview' || R.v === 'region' || R.v === 'theatre'; }
 function wideView(){ return R.v === 'overview' || (R.v === 'theatre' && R.id === 'global'); }
 function HL(){ return R.v === 'region' ? REGBY[R.id].kids : R.v === 'theatre' && R.id !== 'global' ? [R.id] : []; }
+const isPhone = () => matchMedia('(max-width:900px)').matches;
+let mapOpen = false;    // phone theatre and region pages: the map is folded behind a button
+function syncPhoneMap(){
+  const on = R.v === 'overview' ? pref.pm === 'map' : isMapView() && mapOpen;
+  document.body.classList.toggle('mapon', on); document.body.classList.toggle('th', R.v !== 'overview');
+}
 function render(first){
   closePop(); closeCard(); hideHover(); tipHide();
-  renderSB(); renderTop();
+  renderSB(); renderTop(); renderBNav(); syncPhoneMap();
   const map = isMapView();
   $('#main').style.display = map ? '' : 'none';
   ['signals', 'activity', 'settings'].forEach(p => $('#pg-' + p).classList.toggle('on', R.v === p));
   if (map) {
     $('#panel').classList.toggle('on', R.v !== 'overview');
-    renderPanel(); renderDock(); renderRail();
+    renderPanel(); renderDock(); renderRail(); renderPList();
     if (M) { syncLayers(); buildPins(); fitTab(!first); }
   } else if (R.v === 'signals') renderSignals();
   else if (R.v === 'activity') renderActivity();
@@ -844,6 +935,36 @@ $('#sb').addEventListener('click', e => {
 $('#sb').addEventListener('mouseover', e => { const b = e.target.closest('[data-sbtip]'); const t = $('#sbtip'); if (!b || $('#sb').classList.contains('open')) { t.style.display = 'none'; return; } const r = b.getBoundingClientRect(); t.textContent = b.dataset.sbtip; t.style.display = 'block'; t.style.left = (r.right + 8) + 'px'; t.style.top = (r.top + r.height / 2 - t.offsetHeight / 2) + 'px'; });
 $('#sb').addEventListener('mouseleave', () => $('#sbtip').style.display = 'none');
 
+/* ------------------------------------------------------------ phones: bottom tab bar and the list-first overview */
+function renderBNav(){
+  const cur = R.v === 'settings' ? (R.sub === 'record' ? 'record' : 'settings') : R.v === 'signals' || R.v === 'activity' || R.v === 'record' ? R.v : 'overview';
+  $('#bnav').innerHTML = [['overview', 'globe', 'Overview'], ['signals', 'table', 'Signals'], ['activity', 'radar', 'Activity'], ['record', 'check', 'Record'], ['settings', 'more', 'More']]
+    .map(([k, icn, n]) => `<button class="${cur === k ? 'on' : ''}" data-nav="${k}" ${cur === k ? 'aria-current="page"' : ''}>${ic(icn)}<span>${n}</span></button>`).join('');
+}
+$('#bnav').addEventListener('click', e => { const n = e.target.closest('[data-nav]'); if (n) { window.scrollTo(0, 0); nav(n.dataset.nav); } });
+pref.pm = store.get('ww_pm', 'list');
+function pRow(t){
+  const th = D.theatres[t], sc = seriesOf(t).filter(s => s.z != null && !isEv(s)), st = sc.filter(s => s.z >= T_SIG).length;
+  return `<button class="prow ${isSub(t) ? 'sub' : ''}" data-nav="${t}"><span class="tn"><b>${dot(th.level)} ${esc(th.name)}</b><small>${st} strong of ${sc.length} scored${isSub(t) ? ' · sub-theatre' : ''}</small></span><span class="bw"><span class="bar6"><i style="width:${Math.min(100, th.score || 0)}%;background:${LEVEL[th.level]}"></i></span><b>${PM && leadP() ? esc(lead(t).txt) : fs(th.score)}</b></span><span class="r">${tellChip(t)}<span class="xu">${th.xu != null ? th.xu.toFixed(1) + '× usual' : ''}</span></span></button>`;
+}
+function renderPList(){
+  const el = $('#plist'); if (R.v !== 'overview') { el.innerHTML = ''; return; }
+  const seg = `<div class="mseg" role="tablist"><button class="${pref.pm !== 'map' ? 'on' : ''}" data-pm="list" role="tab">List</button><button class="${pref.pm === 'map' ? 'on' : ''}" data-pm="map" role="tab">Map</button></div>`;
+  if (pref.pm === 'map') { el.innerHTML = seg; return; }
+  const gen = $('#gen').textContent.slice(11, 16);
+  let h = `<div class="pmeta">Updated ${esc(gen)} UTC${D.model && !PM ? ' · <span class="shadowb" data-tip="' + esc(shadowWhy()) + '">model in shadow</span>' : ''}</div>`;
+  h += `<div class="pcard"><div class="dh">This week<small>last 7 days</small></div>${weekKpis()}<div class="feed">${feedRows(weekFeed(), 3)}</div><button class="more" data-pop="gti">All of this week</button></div>${seg}`;
+  REG.forEach(r => { h += `<div class="prg">${esc(r.name)}</div>` + r.kids.filter(k => !isSub(k)).concat(r.kids.filter(isSub)).map(pRow).join(''); });
+  if (D.theatres.global) h += `<div class="prg">World</div><button class="prow" data-nav="global"><span class="tn"><b>${esc(thName('global'))}</b><small>markets and procurement worldwide</small></span><span class="bw"><span class="bar6"><i style="width:${Math.min(100, D.theatres.global.score || 0)}%;background:${LEVEL[D.theatres.global.level]}"></i></span><b>${fs(D.theatres.global.score)}</b></span><span class="r"></span></button>`;
+  el.innerHTML = h;
+}
+$('#plist').addEventListener('click', e => {
+  const pm = e.target.closest('[data-pm]'); if (pm) { pref.pm = pm.dataset.pm; store.set('ww_pm', pref.pm); syncPhoneMap(); renderPList(); if (pref.pm === 'map' && M) { syncLayers(); buildPins(); fitTab(false); } return; }
+  if (e.target.closest('[data-pop]')) return;
+  const id = e.target.closest('[data-id]'); if (id) { openModal(id.dataset.id); return; }
+  const n = e.target.closest('[data-nav]'); if (n) { window.scrollTo(0, 0); nav(n.dataset.nav); }
+});
+
 /* ------------------------------------------------------------ top bar */
 function renderTop(){
   const nsub = THEATRES.filter(isSub).length;
@@ -852,18 +973,25 @@ function renderTop(){
   let t = titles[R.v];
   if (R.v === 'region') t = [REGBY[R.id].name, 'Region overview'];
   if (R.v === 'theatre') t = [thName(R.id), regOf[R.id] ? regOf[R.id].name : 'Markets and procurement worldwide'];
-  $('#tt').innerHTML = `<h1>${esc(t[0])}</h1><small>${esc(t[1])}</small>`;
+  const back = R.v === 'theatre' ? (regOf[R.id] && regOf[R.id].kids.length > 1 ? 'region/' + regOf[R.id].id : 'overview') : R.v === 'region' ? 'overview' : null;
+  $('#tt').innerHTML = (back ? `<button class="bk" data-nav="${back}" aria-label="Back">${ic('back', 's')}</button>` : '') + `<div><h1>${esc(t[0])}</h1><small>${esc(t[1])}</small></div>`;
   const g = D.global || {}, gl = g.level || 'insufficient data';
   const wk = weekStats();
   $('#gti').innerHTML = PM && g.p_any != null
     ? `<div><small>Any theatre · 30 days</small><b style="color:${LEVEL[gl]}">${pct(g.p_any)}</b></div>${lvPill(gl)}<span class="us">usual ${pct(PM.clim)}</span>${ic('chevd', 's')}`
-    : `<div><small>This week</small><b style="font-size:13px"><span style="color:${wk.on.length ? 'var(--tell)' : 'var(--ink)'}">${wk.on.length} tell${wk.on.length === 1 ? '' : 's'}</span> · ${wk.strong.length} strong reading${wk.strong.length === 1 ? '' : 's'}</b></div>${ic('chevd', 's')}`;
+    : `<div><small>This week</small><b style="font-size:13px"><span style="color:${wk.on.length ? 'var(--tell)' : 'var(--ink)'}">${wk.on.length} tell${wk.on.length === 1 ? '' : 's'}</span><span class="gx"> · ${wk.strong.length} strong reading${wk.strong.length === 1 ? '' : 's'}</span></b></div>${ic('chevd', 's')}`;
   const sb = $('#shadowb'); sb.hidden = !!PM || !D.model;
   if (D.model && !PM) sb.dataset.tip = shadowWhy();
   const gen = $('#gen').textContent, hm = gen.slice(11, 16), next = (() => { const d = new Date(GEN); const m = d.getUTCMinutes(); d.setUTCMinutes(m < 7 ? 7 : m < 37 ? 37 : 67, 0, 0); return d.toISOString().slice(11, 16); })();
   $('#upd').innerHTML = `Updated ${esc(hm)} UTC<br>next run about ${next}`;
   renderBell();
 }
+$('#sbtn').innerHTML = ic('search');
+$('#top').addEventListener('click', e => {
+  if (e.target.closest('#sbtn')) { $('#top').classList.add('srch'); $('#q').focus(); return; }
+  const n = e.target.closest('.ttl [data-nav]'); if (n) nav(n.dataset.nav);
+});
+$('#q').addEventListener('blur', () => setTimeout(() => $('#top').classList.remove('srch'), 150));
 function popGTI(){
   const g = D.global || {};
   const rows = RANK.filter(hasP).slice(0, 6).map(t => { const th = D.theatres[t]; return `<div class="wf"><span>${dot(th.level)} ${esc(th.name)}</span><span class="bar"><i style="width:${Math.min(100, th.p / Math.max(0.12, D.theatres[RANK[0]].p || 0) * 100)}%;background:${LEVEL[th.level]}"></i></span><b>${pct(th.p)}</b></div>`; }).join('');
@@ -905,7 +1033,8 @@ function openPop(key, anchor){
   POP = {key, anchor}; anchor.classList.add('on'); placePop();
 }
 function placePop(){
-  if (!POP) return; const p = $('#pop'), r = POP.anchor.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight, mode = POPS[POP.key][1];
+  if (!POP) return;
+  if (isPhone()) { $('#pop').style.left = $('#pop').style.top = ''; return; }   // a bottom sheet (CSS) const p = $('#pop'), r = POP.anchor.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight, mode = POPS[POP.key][1];
   let x, y;
   if (mode === 'right') { x = r.right + 10; y = r.top; }
   else if (mode === 'below-right') { x = r.right - w; y = r.bottom + 8; }
@@ -941,6 +1070,14 @@ function tipShow(el, html){
 }
 function tipAt(e, html){ const t = $('#tip'); t.innerHTML = html; t.style.display = 'block'; const w = t.offsetWidth, h = t.offsetHeight; let x = e.clientX + 14, y = e.clientY + 14; if (x + w > innerWidth - 6) x = e.clientX - w - 12; if (y + h > innerHeight - 6) y = e.clientY - h - 12; t.style.left = x + 'px'; t.style.top = y + 'px'; }
 function tipHide(){ $('#tip').style.display = 'none'; }
+/* touch screens have no hover: a tap on an (i) or a badge opens its explanation, the next tap anywhere closes it */
+let tipEl = null;
+document.addEventListener('click', e => {
+  if (!matchMedia('(hover: none)').matches) return;
+  const el = e.target.closest('.info,.shadowb');
+  if (el && el.dataset.tip) { e.stopPropagation(); e.preventDefault(); if (tipEl === el) { tipHide(); tipEl = null; } else { tipShow(el, esc(el.dataset.tip)); tipEl = el; } return; }
+  if (tipEl) { tipHide(); tipEl = null; }
+}, true);
 document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip]'); if (el) tipShow(el, esc(el.dataset.tip)); });
 document.addEventListener('mouseout', e => { const el = e.target.closest('[data-tip]'); if (el && !el.contains(e.relatedTarget)) tipHide(); });
 addEventListener('keydown', e => {
@@ -1191,15 +1328,23 @@ function popText(){
   return `<div class="ph"><h4>Label size</h4></div><div class="pb"><span class="seg">${[[0.9, 'Small'], [1, 'Medium'], [1.25, 'Large']].map(([v, n]) => `<button class="${Math.abs(pref.lbl - v) < .01 ? 'on' : ''}" data-sz="${v}">${n}</button>`).join('')}</span></div>`;
 }
 /* map interaction */
-let drag = null, moved = false;
-svg.addEventListener('pointerdown', e => { if (e.button !== 0) return; drag = {x: e.clientX, y: e.clientY, vx: view.x, vy: view.y}; moved = false; });
+let drag = null, moved = false, pinch = null;
+const ptrs = new Map();   // touch points on the map, for pinch zoom
+svg.addEventListener('pointerdown', e => {
+  ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
+  if (ptrs.size === 2) { const [a, b] = Array.from(ptrs.values()); pinch = {d: Math.hypot(a.x - b.x, a.y - b.y)}; drag = null; moved = true; return; }
+  if (e.button !== 0) return; drag = {x: e.clientX, y: e.clientY, vx: view.x, vy: view.y}; moved = false; });
 addEventListener('pointermove', e => {
+  if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
+  if (pinch && ptrs.size === 2) { const [a, b] = Array.from(ptrs.values()), d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (d > 0 && pinch.d > 0) { if (anim) cancelAnimationFrame(anim); zoomAt(d / pinch.d, (a.x + b.x) / 2, (a.y + b.y) / 2); pinch.d = d; } return; }
   if (!drag) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   if (!moved && Math.hypot(dx, dy) > 4) { moved = true; svg.classList.add('drag'); tipHide(); hideHover(); if (anim) cancelAnimationFrame(anim); }
   if (moved) { const [cw] = clientSize(); const s = view.w / cw; view.x = drag.vx - dx * s; view.y = drag.vy - dy * s; clampView(); applyView(); }
 });
-addEventListener('pointerup', () => { drag = null; svg.classList.remove('drag'); });
+const ptrEnd = e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; drag = null; svg.classList.remove('drag'); };
+addEventListener('pointerup', ptrEnd); addEventListener('pointercancel', ptrEnd);
 svg.addEventListener('wheel', e => { e.preventDefault(); if (anim) cancelAnimationFrame(anim); hideHover(); zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY); }, {passive: false});
 $('#zin').onclick = () => { const r = svg.getBoundingClientRect(); zoomAt(1.5, r.left + r.width / 2, r.top + r.height / 2); };
 $('#zout').onclick = () => { const r = svg.getBoundingClientRect(); zoomAt(1 / 1.5, r.left + r.width / 2, r.top + r.height / 2); };
@@ -1439,6 +1584,8 @@ function renderPanel(){
   let h = '';
   if (r && r.kids.length > 1) { const own = r.kids.filter(k => !isSub(k)), subs = r.kids.filter(isSub), tab = k => `<button class="${R.id === k ? 'on' : ''}" data-nav="${k}">${dot(D.theatres[k].level)}${esc(thName(k))}<small>${esc(lead(k).txt)}</small>${tellsCount(k).on.length ? '<i class="tdot" aria-label="timing tell"></i>' : ''}</button>`;
     h += `<div class="rtabs" id="rtabs"><button class="${R.v === 'region' ? 'on' : ''}" data-nav="region/${r.id}" data-tip="${esc(r.name)}: all theatres side by side">Overview</button>${own.map(tab).join('')}${subs.length ? `<span class="rdiv" data-tip="Sub-theatres: countries drawn into a neighbour's war"></span>${subs.map(tab).join('')}` : ''}</div>`; }
+  const mapt = `<button class="phonly mapt" data-mapt="1">${ic(mapOpen ? 'chevu' : 'chevd', 's')} ${mapOpen ? 'Hide the map' : 'Show the map'}</button>`;
+  h += mapt;
   if (R.v === 'region') { P.innerHTML = h + regionBody(r); return; }
   const t = R.id, th = D.theatres[t], m = META[t];
   h += `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}${r ? `<a data-nav="${r.kids.length > 1 ? 'region/' + r.id : r.kids[0]}">${esc(r.name)}</a>${ic('chev', 's')}` : ''}<span>${esc(thName(t))}</span></div><h2>${esc(thName(t))} ${lvPill(th.level)}${isSub(t) ? '<span class="subl">sub-theatre</span>' : ''}</h2><p>${steSummary(t)}</p></div>`;
@@ -1498,7 +1645,7 @@ function driversBody(t){
     const mx = Math.max(...wf.steps.filter(s => !s.rest).map(s => s.d), .0001);
     h += `<div class="sh">What moves the chance ${inf('Each bar shows how many percentage points one signal family adds to the 30-day chance. Click a row to see the signal.')}<small>${PM ? 'points added' : 'model not validated'}</small></div>`;
     h += wf.steps.filter(s => !s.rest).map(s => { const sid = familySeries(t, s.n); return `<div class="wf" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''}><span title="${esc(s.n)}">${esc(shortL(s.n))}</span><span class="bar"><i style="width:${Math.max(2, s.d / mx * 100)}%;background:var(--accent)"></i></span><b style="color:var(--mute)">${ppt(s.d)}</b></div>`; }).join('') || '<p class="hint">No signal family pushes the chance up now.</p>';
-    h += `<p class="hint" style="margin:6px 0 0">The chance starts from the long-run rate here, ${pct(wf.base)}. Click "30-day chance" above for every step.</p>`;
+    h += `<p class="hint" style="margin:6px 0 0">The chance starts from the long-run rate here, ${pct(wf.base)}. ${PM ? 'Open "30-day chance" above' : 'Open Standing risk above'} for every step.</p>`;
   } else if (th.why && th.why.length) h += `<div class="sh">What moves the chance</div>` + drvBars(t, 6);
   h += `<div class="sh" style="margin-top:16px">Signal groups ${inf('Each group combines its strongest signals. The ticks mark 2 SD (unusual) and 3 SD (strong). Click a group to see its signals.')}<small>SD from normal · weight</small></div>`;
   h += D.domains.map(d => { const x = th.doms[d.id], z = x.z, w = z == null ? 0 : Math.max(0, Math.min(100, z / 5 * 100));
@@ -1575,7 +1722,7 @@ function regionBody(r){
     : `${tl.length ? `<b>Timing tells this week in ${tl.map(k => esc(thName(k))).join(' and ')}.</b>` : '<b>No timing tell this week.</b>'} ${hot.length ? `${hot.map(k => esc(thName(k))).join(' and ')} ${hot.length > 1 ? 'have' : 'has'} the most unusual readings.` : 'No theatre has many unusual readings.'} The region level is the highest level of its theatres.${subs.length ? ` ${subs.map(k => esc(thName(k))).join(' and ')} ${subs.length > 1 ? 'are sub-theatres' : 'is a sub-theatre'}, fitted on top of ${r.kids.filter(k => !isSub(k)).map(k => esc(thName(k))).join(', ')}.` : ''}`;
   let h = `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}<span>${esc(r.name)}</span></div><h2>${esc(r.name)} ${lvPill(lv)}</h2><p>${sum}</p></div><div class="pbody">`;
   const nm = k => `<td>${dot(D.theatres[k].level)} <b style="font-weight:600">${esc(thName(k))}</b>${isSub(k) ? ' <span class="subl">sub</span>' : ''}</td>`;
-  const cov = k => `<td class="r num">${Math.round((1 - (D.theatres[k].miss || 0)) * 100)}%</td>`;
+  const cov = k => `<td class="r num cv">${Math.round((1 - (D.theatres[k].miss || 0)) * 100)}%</td>`;
   const cause = k => { const w = ownWhy(k)[0]; return `<td class="cause" title="${esc(w ? w[0] : '')}">${esc(w ? causeL(k, w[0]) : '–')}</td>`; };
   if (PM) h += `<table class="cmp"><thead><tr><th class="c1">Theatre</th><th class="r cn">${leadP() ? '30 days' : 'Pressure'}</th><th class="r cn">Change</th><th>Own main cause</th><th class="r cv" data-tip="Share of signals with a score now">Coverage</th></tr></thead><tbody>` +
     kids.map(k => `<tr data-go="${k}">${nm(k)}<td class="r num" style="color:${LEVEL[D.theatres[k].level]};font-weight:600">${esc(lead(k).txt)}</td><td class="r">${changeTxt(k)}</td>${cause(k)}${cov(k)}</tr>`).join('') + `</tbody></table>`;
@@ -1638,6 +1785,7 @@ function popCoverage(t){
     `<p class="hint" style="margin:8px 0 0">Coverage counts the signals that have a score now. When it is low, the result is less certain.</p><div class="row" style="margin-top:8px"><button class="btn" data-nav="settings/health">Open data health ${ic('chev', 's')}</button></div></div>`;
 }
 $('#panel').addEventListener('click', e => {
+  if (e.target.closest('[data-mapt]')) { mapOpen = !mapOpen; syncPhoneMap(); renderPanel(); if (mapOpen && M) { syncLayers(); buildPins(); fitTab(false); window.scrollTo(0, 0); } return; }
   const n = e.target.closest('[data-nav]'); if (n && !e.target.closest('[data-pop]')) { nav(n.dataset.nav); return; }
   const g = e.target.closest('[data-go]'); if (g) { nav(g.dataset.go); return; }
   const a = e.target.closest('[data-alert]'); if (a) { openAlert(ALERTS.find(x => x.id === a.dataset.alert)); return; }
@@ -1865,15 +2013,17 @@ function renderSignals(first){
     body += `<tr class="g" data-grp="${esc(g)}"><td colspan="${cols}">${ic(closed ? 'chev' : 'chevd', 's')} ${esc(groupName(g))}<small>${list.length} signal${list.length === 1 ? '' : 's'}${mx > -99 ? ' · highest ' + fmtz(mx) + ' SD' : ''}${SF.group === 'th' && hasP(g) && PM ? ' · 30-day chance ' + pct(D.theatres[g].p) : ''}</small></td></tr>`;
     if (!closed) body += list.map(tr).join(''); });
   const sel = SF.sel && SERIES[SF.sel];
-  P.innerHTML = `<div class="toolbar"><label class="inp" style="flex:0 1 300px;min-width:170px">${ic('search', 's')}<input id="sq" type="search" placeholder="Search name, source or theatre" value="${esc(SF.q)}" aria-label="Search signals"></label>
+  const nf = SF.st.length + SF.dom.length + SF.th.length + SF.spd.length;
+  P.innerHTML = `<div class="toolbar"><button class="chip phonly ${nf ? 'on' : ''}" data-ftog="1">${ic('group', 's')} Filters${nf ? ` · ${nf}` : ''}</button><label class="inp" style="flex:0 1 300px;min-width:170px">${ic('search', 's')}<input id="sq" type="search" placeholder="Search name, source or theatre" value="${esc(SF.q)}" aria-label="Search signals"></label>
       ${[['an', 'Unusual', D.series.filter(isAn).length, 'Signals at 2 SD or more from their normal level'], ['lead', 'Leads only', D.series.filter(s => !s.lag).length, 'Fast data that can move before events'], ['today', 'Changed today', D.series.filter(s => s.last === today).length, 'Signals with a new value today']].map(([k, n, c, tip]) => `<button class="chip ${SF.quick === k ? 'on' : ''}" data-quick="${k}" data-tip="${tip}">${n}<b>${c}</b></button>`).join('')}
       ${SF.q || SF.quick || SF.st.length || SF.dom.length || SF.th.length || SF.spd.length ? `<button class="chip" data-sfreset="1">${ic('x', 's')} Clear all</button>` : ''}
       <span class="sp"></span><span class="hint">${rows.length} of ${D.series.length} signals</span>
       <label class="inp">${ic('group', 's')} Group by <select id="sgroup">${[['th', 'Theatre'], ['dom', 'Signal group'], ['src', 'Source'], ['st', 'Status'], ['none', 'No grouping']].map(([v, n]) => `<option value="${v}" ${SF.group === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>
-    <div class="intel ${sel ? 'sel' : ''}">
-      <div class="facets">${facet('Status', 'st', [['ok', 'Has a score'], ['collecting', 'Collecting history'], ['awaiting_key', 'Needs a key'], ['error', 'Failed']])}
+    <div class="intel ${sel ? 'sel' : ''} ${SF.fopen ? 'fopen' : ''}">
+      <div class="facets"><button class="btn pri phonly" data-ftog="1" style="width:100%;justify-content:center;margin-bottom:10px">Show ${rows.length} signal${rows.length === 1 ? '' : 's'}</button>${facet('Status', 'st', [['ok', 'Has a score'], ['collecting', 'Collecting history'], ['awaiting_key', 'Needs a key'], ['error', 'Failed']])}
         ${facet('Signal group', 'dom', D.domains.map(d => [d.id, GN[d.id]]))}
-        ${facet('Theatre', 'th', REG.flatMap(r => (r.kids.length > 1 ? [['__h', r.name]] : []).concat(r.kids.map(k => [k, thName(k), (isSub(k) ? 'sub ' : '') + (r.kids.length > 1 ? 'in' : '')]))).concat(D.theatres.global ? [['global', thName('global')]] : []))}
+        ${facet('Theatre', 'th', REG.flatMap(r => { const own = r.kids.filter(k => !isSub(k)), sub = r.kids.filter(isSub), cl = r.kids.length > 1 ? 'in' : '';
+          return (r.kids.length > 1 ? [['__h', r.name]] : []).concat(own.map(k => [k, thName(k), cl]), sub.length ? [['__h', r.name + ' sub-theatres']] : [], sub.map(k => [k, thName(k), cl])); }).concat(D.theatres.global ? [['global', thName('global')]] : []))}
         ${facet('Data speed', 'spd', [['lead', 'Leads (fast data)'], ['conf', 'Confirms (late data)']])}</div>
       <div class="tbl" id="stbl"><table class="t"><thead><tr>${hd('l', 'Signal')}${showTh ? hd('t', 'Theatre') : ''}${hd('d', 'Group', 0, 'hsel')}${hd('last', 'Last')}<th class="hsel tr">Trend</th>${hd('z', 'SD', 1)}</tr></thead><tbody>${body}</tbody></table></div>
       ${sel ? drawer(sel) : ''}</div>`;
@@ -1892,6 +2042,8 @@ $('#pg-signals').addEventListener('click', e => {
   const t = e.target;
   const so = t.closest('th[data-sort]'); if (so) { const k = so.dataset.sort; if (SF.sk === k) SF.sd = -SF.sd; else { SF.sk = k; SF.sd = k === 'z' || k === 'last' ? -1 : 1; } renderSignals(false); return; }
   const g = t.closest('tr.g'); if (g) { const k = g.dataset.grp; SF.closed = SF.closed.includes(k) ? SF.closed.filter(x => x !== k) : SF.closed.concat(k); renderSignals(false); return; }
+  if (t.closest('[data-ftog]')) { SF.fopen = !SF.fopen; renderSignals(false); return; }
+  const rw0 = t.closest('tr[data-row]'); if (rw0 && isPhone()) { openModal(rw0.dataset.row, Array.from($$('#stbl tr[data-row]')).map(r => r.dataset.row)); return; }
   const rw = t.closest('tr[data-row]'); if (rw) { SF.sel = SF.sel === rw.dataset.row ? null : rw.dataset.row; const st = $('#stbl').scrollTop; renderSignals(false); $('#stbl').scrollTop = st; return; }
   const q = t.closest('[data-quick]'); if (q) { SF.quick = SF.quick === q.dataset.quick ? '' : q.dataset.quick; renderSignals(false); return; }
   if (t.closest('[data-sfreset]')) { SF = Object.assign(SF, {q: '', quick: '', st: [], dom: [], th: [], spd: []}); renderSignals(false); return; }
@@ -2021,6 +2173,8 @@ $('#pg-settings').addEventListener('click', e => {
   renderSettings();
 });
 $('#pg-settings').addEventListener('input', e => { if (e.target.id === 'hq') { HF.q = e.target.value; const pos = e.target.selectionStart; renderSettings(); const q = $('#hq'); q.focus(); q.setSelectionRange(pos, pos); } });
+
+matchMedia('(max-width:900px)').addEventListener('change', () => render());
 
 /* ------------------------------------------------------------ start */
 if (D.demo) $('#demo').hidden = false;
