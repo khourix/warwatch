@@ -374,6 +374,60 @@ class TestGeoAndPage(unittest.TestCase):
         self.assertTrue(daily["zh"])
         self.assertIsNotNone(daily["z"])
 
+    def test_page_data_has_events_tempo_and_official_signals(self):
+        res = run.evaluate(demo.scenario("buildup"))
+        d = dashboard.build_data(res, "2026-10-11 03:51 UTC", True, None, None)
+        self.assertGreater(len(d["events"]["list"]), 100)
+        self.assertRegex(d["events"]["through"] or "", r"^\d{4}-\d{2}-\d{2}$")
+        self.assertEqual(len(d["events"]["list"][0]), 6)
+        self.assertIn("official", d["theatres"]["iran"])
+        self.assertIn("israel", d["tempo"])
+
+    def test_tempo_reads_the_strike_wave_line(self):
+        pts = [((dt.date(2026, 1, 1) + dt.timedelta(days=i)).isoformat(), 2.0 if i < 150 else 9.0) for i in range(160)]
+        out = dashboard.tempo_json({"tzeva_israel": {"status": "ok", "points": pts}})["israel"]
+        self.assertEqual(len(out["w"]), 12)
+        self.assertEqual(out["w"][-1][1], 9.0)
+        self.assertEqual(out["w"][-1][2], 5.0)       # twice a median of 2, floored at 5
+
+    def test_history_skips_the_advisory_seam_and_groups_uk_advice(self):
+        self.assertEqual(dashboard._steps([("2026-10-09", 10.0), ("2026-10-10", 12.0), ("2026-10-11", 13.0)], "2026-10-01", "2026-10-10"),
+                         [("2026-10-11", 12.0, 13.0)])
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "log.csv"), "w") as f:
+            f.write("date,theatre,p,lo,hi,raw,base,level\n2026-10-10,iran,0.2,0.1,0.3,0.2,0.1,Watch\n")
+        with open(os.path.join(d, "tells.csv"), "w") as f:
+            f.write("date,theatre,tell,on,fired,src\n2026-10-09,iran,sea,0,,\n2026-10-10,iran,sea,1,2026-10-10,nga_iran\n2026-10-11,iran,sea,1,2026-10-10,nga_iran\n")
+        fc = [("2026-10-05", 1.0), ("2026-10-06", 0.0), ("2026-10-07", 2.0), ("2026-10-11", 0.0)]
+        res = {"theatres": {"iran": {}}, "series": [{"id": "fcdo_iran", "kind": "daily", "points": fc}]}
+        h = dashboard.hist_json(res, {"fcdo_iran": res["series"][0]}, fwd=d)["iran"]
+        self.assertEqual(h["risk"], [["2026-10-10", 2.0, 0.2, "Watch"]])
+        self.assertEqual([i[:2] for i in h["items"]], [["2026-10-10", "tell"], ["2026-10-07", "advice"]])
+        self.assertIn("2 days", h["items"][1][2])
+
+    def test_series_history_splits_into_series_json(self):
+        res = run.evaluate(demo.scenario("buildup"))
+        d = dashboard.build_data(res, "2026-10-11 03:51 UTC", True, None, None)
+        out = tempfile.mkdtemp()
+        page = dashboard.page_html(d, "2026-10-11 03:51 UTC", out_dir=out)
+        inline = json.loads(page.split('type="application/json">')[1].split("</script>")[0].replace("\\u003c", "<"))
+        with open(os.path.join(out, "series.json")) as f:
+            full = json.load(f)
+        self.assertTrue(inline["split"].startswith("series.json?v="))
+        self.assertTrue(all(len(s.get("pts") or []) <= dashboard.INLINE_PTS or s.get("tf") for s in inline["series"]))
+        self.assertFalse(any("zh" in s for s in inline["series"] if not s.get("tf")))
+        daily = next(s for s in d["series"] if s.get("zh") and len(s["pts"]) > dashboard.INLINE_PTS)
+        self.assertEqual(full[daily["id"]]["pts"], daily["pts"])     # the caller's data is left whole
+        self.assertNotIn("split", d)
+
+    def test_feed_is_valid_rss(self):
+        import xml.etree.ElementTree as ET
+        res = run.evaluate(demo.scenario("buildup"))
+        d = dashboard.build_data(res, "2026-10-11 03:51 UTC", True, None, None)
+        root = ET.fromstring(dashboard.feed_xml(d))
+        self.assertEqual(root.tag, "rss")
+        self.assertEqual(len(root.findall("./channel/item")), len(dashboard.feed_items(d)))
+
     def test_region_map_has_countries(self):
         topo = geo.load()
         if topo is None:

@@ -8,6 +8,7 @@ The data travels as one JSON block inside the page.
 import datetime as dt
 import json
 import os
+import statistics
 
 import config as C
 import engine
@@ -66,6 +67,10 @@ def series_json(s):
          "dir": s["direction"], "why": s["why"], "url": s.get("url", ""), "st": s["status"], "er": s.get("error", ""),
          "stale": s.get("stale", ""), "kind": kind, "n": len(pts), "need": stats.min_points(kind, s.get("transform")),
          "needs": s.get("needs", []), "z": None, "w0": not s.get("scored", True)}
+    if s.get("transform") in ("step", "event"):     # actions and ratings: the page shows them as what happened, not as SD
+        d["tf"] = s["transform"]
+        if _seam(s["id"]):
+            d["seam"] = _seam(s["id"])
     if pts:
         d["pts"] = [[lab, round(v, 3)] for lab, v in pts[-MAXPTS[kind]:]]
         d["last"] = pts[-1][0]
@@ -208,7 +213,7 @@ def build_data(res, generated, demo, ex, topo):
         "theatres": {t: theatre_json(t, v, res["series"], ((res.get("model") or {}).get("theatres") or {}).get(t, {}).get("base"), chg.get(t),
                                      (res.get("tells") or {}).get(t))
                      for t, v in res["theatres"].items()},
-        "order": list(C.THEATRES),
+        "order": list(C.THEATRES), "sub": C.SUBTHEATRES,
         "regions": regions_json(res["regions"]), "global": res["global"], "weights": res["weights_version"],
         "model": model_json(res.get("model")),
         "series": [series_json(s) for s in res["series"]],
@@ -217,8 +222,218 @@ def build_data(res, generated, demo, ex, topo):
         "map": map_json(topo, ex, ex.get("levels", {})) if topo else None,
         "adsb": adsb_recent(),
         "forward": None if demo else forward_json(res["series"]),
+        "events": events_json(),
     }
+    by_id = {s["id"]: s for s in res["series"]}
+    data["tempo"] = tempo_json(by_id)
+    data["hist"] = {} if demo else hist_json(res, by_id)
+    for t, v in data["theatres"].items():
+        v["official"] = official_json(by_id, t)
     return data
+
+
+EVENTS = os.path.join(HERE, "data", "events.csv")
+EVENTS_THROUGH = os.path.join(HERE, "data", "events_through.txt")
+FORWARD_DIR = os.path.join(os.path.dirname(HERE), "forward")
+HIST_DAYS = 90
+TEMPO = {"israel": ("tzeva_israel", "Siren waves (Tzeva Adom)"), "ukraine": ("uaair_ukraine", "Air-raid alert waves (alerts.in.ua)")}
+CW_WORDS = ["no alert", "deteriorated", "conflict-risk alert", "conflict-risk alert, deteriorated"]
+
+
+def _csv(path):
+    import csv
+    try:
+        with open(path, newline="", encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+    except OSError:
+        return []
+
+
+def events_json(path=EVENTS, through=EVENTS_THROUGH):
+    """The event list the model is fitted and scored on: [[date, theatre, site theatre, type, description, market moving]],
+    and the date it is complete to (forecasts after it cannot be scored until the list is brought up to date)."""
+    rows = [[r["date"], r["theatre"], r.get("site_theatre") or "", r.get("type") or "", r.get("description") or "",
+             r.get("market_moving") == "True"] for r in _csv(path) if r.get("date")]
+    if not rows:
+        return None
+    try:
+        with open(through) as f:
+            thr = f.read().strip() or None
+    except OSError:
+        thr = None
+    return {"through": thr, "list": sorted(rows)}
+
+
+def tempo_json(by_id, weeks=12):
+    """For wars under way: the 7-day alert-wave count on each of the last `weeks` weeks, with the strike-wave tell's
+    threshold on that day (twice the median of the 90 days before, and at least 5). A hidden model's input, shown as tempo."""
+    import tells
+    out = {}
+    for t, (sid, name) in TEMPO.items():
+        s = by_id.get(sid)
+        if not s:
+            continue
+        pts = [tuple(p) for p in s.get("points") or []]
+        o = {"id": sid, "n": name, "st": s["status"], "needs": s.get("needs", []), "w": []}
+        if pts:
+            last = dt.date.fromisoformat(pts[-1][0])
+            for k in range(weeks - 1, -1, -1):
+                day = (last - dt.timedelta(days=7 * k)).isoformat()
+                now = tells._vals(pts, day, 1)
+                base = tells._before(pts, day, 1, 90)
+                thr = max(5.0, 2 * statistics.median(base)) if len(base) >= 30 else None
+                o["w"].append([day, round(now[0], 1) if now else None, _r(thr, 1)])
+        out[t] = o
+    return out
+
+
+def _seam(sid):
+    """The first day of the live advisory readings (one level per country, from October 2026). The archive before it summed
+    every item filed under a code, so a step on that day is the change of method, not a change of advice."""
+    if not sid.startswith("state_"):
+        return None
+    import store
+    live = store.daily("state_dep_main_" + sid[len("state_dep_"):] if sid.startswith("state_dep_") else "state_main_" + sid[len("state_"):])
+    return live[0][0][:10] if live else None
+
+
+def _steps(pts, since, seam=None):
+    """(day, before, after) for every change of value on or after `since` in a flat series, leaving out the `seam` day."""
+    out = []
+    for (d0, v0), (d1, v1) in zip(pts, pts[1:]):
+        if d1 >= since and v1 != v0 and d1[:10] != seam:
+            out.append((d1, v0, v1))
+    return out
+
+
+def _n(v):
+    return f"{v:g}"
+
+
+def hist_json(res, by_id, days=HIST_DAYS, fwd=FORWARD_DIR):
+    """Per theatre, the last `days` days: the standing risk from the forward record ([[day, times usual, chance, level]])
+    and a timeline ([[day, kind, text, series id]]) of tells fired, advisory steps, UK advice updates, CrisisWatch ratings
+    and strike waves. Built from the hash-chained records and the stored series, so it is the same on every run."""
+    import tells
+    last = max((s["points"][-1][0] for s in res["series"] if s.get("points") and s["kind"] == "daily"), default=None)
+    if not last:
+        return {}
+    since = (dt.date.fromisoformat(last[:10]) - dt.timedelta(days=days)).isoformat()
+    out = {t: {"risk": [], "items": []} for t in res["theatres"]}
+    for r in _csv(os.path.join(fwd, "log.csv")):
+        t = r.get("theatre")
+        if t in out and r.get("date", "") >= since and r.get("p"):
+            p, b = float(r["p"]), float(r["base"]) if r.get("base") else None
+            out[t]["risk"].append([r["date"], round(p / b, 2) if b else None, round(p, 4), r.get("level") or ""])
+    names = {x["id"]: x["name"] for x in tells.TELLS}
+    seen = {}
+    for r in _csv(os.path.join(fwd, "tells.csv")):
+        t, k = r.get("theatre"), r.get("tell")
+        on = r.get("on") == "1"
+        if t in out and on and not seen.get((t, k)) and r.get("date", "") >= since:
+            out[t]["items"].append([r.get("fired") or r["date"], "tell", names.get(k, k), r.get("src") or None])
+        seen[(t, k)] = on
+    for t, L in (res.get("tells") or {}).items():    # today's firings, before the record has them
+        for x in L:
+            if t in out and x.get("on") and x.get("date") and not any(i[1] == "tell" and i[2] == x["n"] for i in out[t]["items"]):
+                out[t]["items"].append([x["date"], "tell", x["n"], x.get("src")])
+    for t in out:
+        it = out[t]["items"]
+        s = by_id.get(f"state_{t}")
+        for d, a, b in _steps(s.get("points") or [], since, _seam(s["id"])) if s else []:
+            it.append([d, "advisory", f"US travel advisories {'raised' if b > a else 'lowered'}: level sum {_n(a)} to {_n(b)}", s["id"]])
+        s = by_id.get(f"state_dep_{t}")
+        for d, a, b in _steps(s.get("points") or [], since, _seam(s["id"])) if s else []:
+            it.append([d, "advisory", f"US ordered or authorised departures: {_n(a)} to {_n(b)} countr{'y' if b == 1 else 'ies'}", s["id"]])
+        s = by_id.get(f"fcdo_{t}")
+        wk = {}    # UK advice is rewritten often: one line per week, on its latest day
+        for d, v in (s.get("points") or []) if s else []:
+            if d >= since and v > 0:
+                wk.setdefault(dt.date.fromisoformat(d[:10]).isocalendar()[:2], []).append(d)
+        for days_ in wk.values():
+            it.append([max(days_), "advice", "UK travel advice updated" + (f" on {len(days_)} days that week" if len(days_) > 1 else ""), s["id"]])
+        s = by_id.get(f"crisiswatch_{t}")
+        for d, v in (s.get("points") or []) if s else []:
+            if d >= since[:7] and v > 0:
+                it.append([d[:7], "rating", "CrisisWatch: " + CW_WORDS[max(0, min(3, int(round(v))))], s["id"]])
+        if t in TEMPO and by_id.get(TEMPO[t][0]):
+            s = by_id[TEMPO[t][0]]
+            for d in (x.isoformat() for x in tells.wave_onsets([tuple(p) for p in s.get("points") or []])):
+                if d >= since:
+                    it.append([d, "wave", "Strike wave: alert waves doubled against their usual count", s["id"]])
+        it.sort(key=lambda i: i[0], reverse=True)
+    return out
+
+
+def official_json(by_id, t):
+    """What governments and Crisis Group say about the theatre now: [{n: what, v: reading, d: date, id}]."""
+    out = []
+    s = by_id.get(f"state_{t}")
+    if s and s.get("points"):
+        p = s["points"]
+        st = _steps(p, p[0][0], _seam(s["id"]))
+        n = len(C.STATE_ISO.get(t, []))
+        out.append({"n": "US travel advisories", "id": s["id"], "d": st[-1][0] if st else None,
+                    "v": f"level sum {_n(p[-1][1])} across {n} countr{'y' if n == 1 else 'ies'} (each 1 to 4)" +
+                         (f"; last step {'up' if st[-1][2] > st[-1][1] else 'down'} from {_n(st[-1][1])}" if st else "; no step on record")})
+    s = by_id.get(f"state_dep_{t}")
+    if s and s.get("points"):
+        v = s["points"][-1][1]
+        out.append({"n": "US ordered or authorised departures", "id": s["id"], "d": s["points"][-1][0],
+                    "v": f"{_n(v)} countr{'y' if v == 1 else 'ies'}" if v else "none now"})
+    s = by_id.get(f"fcdo_{t}")
+    if s and s.get("points"):
+        up = [d for d, v in s["points"] if v > 0]
+        last = s["points"][-1][0]
+        recent = sum(1 for d in up if d >= (dt.date.fromisoformat(last) - dt.timedelta(days=30)).isoformat())
+        out.append({"n": "UK travel advice", "id": s["id"], "d": up[-1] if up else None,
+                    "v": (f"updated on {recent} day{'' if recent == 1 else 's'} in the last 30" if recent else "no update in the last 30 days")})
+    s = by_id.get(f"crisiswatch_{t}")
+    if s and s.get("points"):
+        d, v = s["points"][-1]
+        out.append({"n": "CrisisWatch (Crisis Group)", "id": s["id"], "d": d[:7], "v": CW_WORDS[max(0, min(3, int(round(v))))]})
+    return out
+
+
+def feed_items(data, days=8):
+    """The This-week list, as the page builds it: tells fired, official steps and ratings, and the strongest fast readings."""
+    out = []
+    gen = data["generated"][:10]
+    cut = (dt.date.fromisoformat(gen) - dt.timedelta(days=days)).isoformat() if gen[:4].isdigit() else ""
+    name = {t: v.get("name", t) for t, v in data["theatres"].items()}
+    for t, v in data["theatres"].items():
+        for x in v.get("tells") or []:
+            if x.get("on"):
+                out.append({"d": x.get("date") or gen, "t": t, "title": f"{name[t]}: {x['n']}", "sub": "Timing tell. " + x["says"], "hot": 1})
+    for t, h in (data.get("hist") or {}).items():
+        for d, kind, text, sid in h["items"]:
+            if kind in ("advisory", "rating", "wave") and d >= cut[:len(d)]:
+                out.append({"d": d, "t": t, "title": f"{name.get(t, t)}: {text}", "sub": "Official signal" if kind != "wave" else "Tempo", "hot": 0})
+    strong = [s for s in data["series"] if s.get("z") is not None and s["z"] >= C.THRESH_SIGNAL and not s["lag"] and not s.get("stale")
+              and not s.get("tf") and s["t"] != "global" and s.get("last", "") >= cut]
+    for s in sorted(strong, key=lambda s: -s["z"])[:6]:
+        out.append({"d": s["last"], "t": s["t"], "title": f"{name.get(s['t'], s['t'])}: {s['l']}", "sub": f"Strong reading, +{s['z']:.1f} SD from normal", "hot": 0})
+    out.sort(key=lambda f: (f["hot"], f["d"]), reverse=True)
+    return out
+
+
+def feed_xml(data, site="https://khourix.github.io/warwatch/"):
+    """An RSS 2.0 feed of the This-week items, written next to the page so anyone can subscribe without a server."""
+    from email.utils import format_datetime
+    from xml.sax.saxutils import escape
+
+    def when(d):
+        try:
+            return format_datetime(dt.datetime.fromisoformat(d[:10] if len(d) >= 10 else d + "-01").replace(tzinfo=dt.timezone.utc))
+        except ValueError:
+            return ""
+    items = "".join(
+        f"<item><title>{escape(f['title'])}</title><link>{escape(site)}#{escape(f['t'])}</link><description>{escape(f['sub'])}</description>"
+        f"<guid isPermaLink=\"false\">{escape(f['t'] + '|' + f['d'] + '|' + f['title'])}</guid><pubDate>{when(f['d'])}</pubDate></item>"
+        for f in feed_items(data))
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>WarWatch: this week</title>'
+            f"<link>{escape(site)}</link><description>Timing tells, official steps and strong readings for 13 theatres and 2 sub-theatres. "
+            f"Built {escape(data['generated'])}.</description>{items}</channel></rss>\n")
 
 
 def forward_json(series):
@@ -240,7 +455,40 @@ def model_json(m):
 
 
 def render(result, generated, demo=False, extras=None, topo=None):
-    data = build_data(result, generated, demo, extras, topo)
+    return page_html(build_data(result, generated, demo, extras, topo), generated)
+
+
+INLINE_PTS = 60     # points per series kept in the page; the rest are in series.json
+
+
+def split_series(data):
+    """Moves each series' older points and its score history out of the page data and returns them as {id: {pts, zh}},
+    for series.json. Actions and ratings keep their whole history inline: the page words their steps from it."""
+    full = {}
+    for s in data["series"]:
+        if s.get("tf"):
+            continue
+        x = {}
+        if len(s.get("pts") or []) > INLINE_PTS:
+            x["pts"] = s["pts"]
+            s["pts"] = s["pts"][-INLINE_PTS:]
+        if s.get("zh"):
+            x["zh"] = s.pop("zh")
+        if x:
+            full[s["id"]] = x
+    return full
+
+
+def page_html(data, generated, out_dir=None):
+    """The page with its data inlined. With out_dir, the full series histories go to out_dir/series.json, which the page
+    loads after its first paint, so the first load carries about a third of the data."""
+    if out_dir:
+        import copy
+        from urllib.parse import quote
+        data = copy.deepcopy(data)
+        with open(os.path.join(out_dir, "series.json"), "w", encoding="utf-8") as f:
+            json.dump(split_series(data), f, separators=(",", ":"), ensure_ascii=False)
+        data["split"] = "series.json?v=" + quote(generated, safe="")
     blob = json.dumps(data, separators=(",", ":"), ensure_ascii=False).replace("<", "\\u003c").replace("\u2028", "\\u2028")
     with open(os.path.join(HERE, "page.html"), encoding="utf-8") as f:
         page = f.read()

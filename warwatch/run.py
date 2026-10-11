@@ -145,8 +145,11 @@ def main():
     static = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")   # tab icons and the link-preview image, served next to the page
     for fn in os.listdir(static) if os.path.isdir(static) else []:
         shutil.copyfile(os.path.join(static, fn), os.path.join(os.path.dirname(os.path.abspath(a.out)), fn))
+    data = dashboard.build_data(res, now, bool(a.demo), ex, geo.load())
     with open(a.out, "w", encoding="utf-8") as f:
-        f.write(dashboard.render(res, now, demo=bool(a.demo), extras=ex, topo=geo.load()))
+        f.write(dashboard.page_html(data, now, out_dir=os.path.dirname(os.path.abspath(a.out))))
+    with open(os.path.join(os.path.dirname(os.path.abspath(a.out)), "feed.xml"), "w", encoding="utf-8") as f:   # This week, for feed readers
+        f.write(dashboard.feed_xml(data))
     summ = {"generated": now, "demo": a.demo, "weights_version": res["weights_version"], "global": res["global"],
             "theatres": {t: {k: v[k] for k in ("level", "score", "zc", "index", "imbalance", "worst", "confidence", "conf_label", "firing", "scorable", "basis")}
                          for t, v in res["theatres"].items()},

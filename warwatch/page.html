@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="darkreader-lock">
 <title>WarWatch: war early-warning dashboard</title>
-<meta name="description" content="The 30-day chance of a war event in 13 theatres, from 500+ public signals. Updated every 30 minutes.">
+<meta name="description" content="Timing tells and unusual readings for 13 theatres and 2 sub-theatres, from 600+ public signals. Updated every 30 minutes.">
 <meta name="theme-color" content="#0e1217">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
@@ -16,7 +16,8 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="WarWatch">
 <meta property="og:title" content="WarWatch: war early-warning dashboard">
-<meta property="og:description" content="The 30-day chance of a war event in 13 theatres, from 500+ public signals. Updated every 30 minutes.">
+<meta property="og:description" content="Timing tells and unusual readings for 13 theatres and 2 sub-theatres, from 600+ public signals. Updated every 30 minutes.">
+<link rel="alternate" type="application/rss+xml" title="WarWatch: this week" href="feed.xml">
 <meta property="og:url" content="https://khourix.github.io/warwatch/">
 <meta property="og:image" content="https://khourix.github.io/warwatch/og.jpg">
 <meta property="og:image:type" content="image/jpeg">
@@ -25,19 +26,24 @@
 <meta property="og:image:alt" content="WarWatch logo over a dark world map with the watched theatres marked">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="WarWatch: war early-warning dashboard">
-<meta name="twitter:description" content="The 30-day chance of a war event in 13 theatres, from 500+ public signals. Updated every 30 minutes.">
+<meta name="twitter:description" content="Timing tells and unusual readings for 13 theatres and 2 sub-theatres, from 600+ public signals. Updated every 30 minutes.">
 <meta name="twitter:image" content="https://khourix.github.io/warwatch/og.jpg">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="preload" href="inter-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="jbmono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* Inter and JetBrains Mono (SIL Open Font License 1.1), Latin subsets, served next to the page */
+@font-face{font-family:'Inter';font-style:normal;font-weight:400 700;font-display:swap;src:url(inter-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:400 700;font-display:swap;src:url(inter-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400 700;font-display:swap;src:url(jbmono-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400 700;font-display:swap;src:url(jbmono-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+
 :root{
   color-scheme:dark;
   --bg:oklch(0.15 0 0); --panel:oklch(0.185 0.004 260); --panel2:oklch(0.225 0.005 260); --panel3:oklch(0.265 0.006 260);
-  --line:oklch(0.3 0.006 260); --line2:oklch(0.4 0.01 255); --ink:oklch(0.96 0.004 250); --mute:oklch(0.74 0.01 255); --dim:oklch(0.6 0.01 255);
+  --line:oklch(0.3 0.006 260); --line2:oklch(0.4 0.01 255); --ink:oklch(0.96 0.004 250); --mute:oklch(0.74 0.01 255); --dim:oklch(0.64 0.01 255);
   --sel:oklch(0.27 0.03 215); --accent:oklch(0.83 0.13 205); --accent-ink:#04222b;
   --ocean:#0b0d11; --land:url(#gLand); --land-th:url(#gLandTh); --border:#3d4853; --border-th:#8fa1b0;
   --normal:#46c28a; --watch:#e5c04b; --elevated:#f08a3c; --critical:#f2545b; --na:#6b7280;
-  --glass:rgba(22,24,28,.95);
+  --glass:rgba(22,24,28,.95); --tell:#f08a3c;
   --mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --dh:200px;
@@ -48,7 +54,8 @@ body{background:var(--bg);color:var(--ink);font:13px/1.45 var(--sans);overflow:h
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:0;padding:0}
 a{color:var(--accent)}
-:focus{outline:none}
+:focus:not(:focus-visible){outline:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
 :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .ic{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
@@ -57,6 +64,20 @@ a{color:var(--accent)}
 #col{flex:1;min-width:0;display:flex;flex-direction:column}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--c);display:inline-block;flex:none}
 .lv{display:inline-flex;align-items:center;border-radius:999px;padding:1px 8px;font:600 10.5px/1.5 var(--sans);letter-spacing:.06em;color:#0b0b0c;background:var(--c);white-space:nowrap}
+.lv.n{background:color-mix(in oklab,var(--c) 20%,transparent);color:var(--ink);box-shadow:inset 0 0 0 1px var(--c)}
+.shadowb{font:500 11px var(--mono);border:1px dashed var(--line2);color:var(--mute);border-radius:6px;padding:3px 8px;white-space:nowrap;flex:none;cursor:help}
+.tchip{display:inline-flex;align-items:center;font:500 10.5px/1.5 var(--mono);color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:0 7px;white-space:nowrap;flex:none}
+.tchip.on{color:#1a0d02;background:var(--tell);border-color:var(--tell);font-weight:600}
+.evb{font:600 10.5px var(--mono);color:var(--ink);background:var(--panel3);border-radius:5px;padding:1px 6px;white-space:nowrap}
+.subl{font:500 10.5px var(--sans);color:var(--dim);border:1px solid var(--line);border-radius:5px;padding:0 6px;white-space:nowrap;letter-spacing:0;text-transform:none}
+.rawv{color:var(--dim);font-size:11px}
+.k3w{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 8px}
+.k3w div{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
+.k3w b{display:block;font:600 20px/1.2 var(--mono)}.k3w span{display:block;font-size:11px;color:var(--mute);line-height:1.3}
+.fi{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:start;padding:6px 4px;border-top:1px solid var(--line);font-size:12.5px;cursor:pointer;border-radius:6px}
+.fi:hover{background:var(--panel2)}.fi b{font-weight:600}.fi small{display:block;color:var(--dim);font-size:11px}.fi time{font:11px var(--mono);color:var(--dim);white-space:nowrap}
+.fdot{width:8px;height:8px;border-radius:50%;background:var(--line2);margin-top:5px}.fdot.hot{background:var(--tell)}
+.warnl{font-size:12px;color:#c4cad0;background:var(--panel2);border-left:2px solid var(--line2);padding:7px 10px;margin:0 0 10px;border-radius:0 6px 6px 0}
 .info{display:inline-flex;width:15px;height:15px;border-radius:50%;border:1px solid var(--line2);color:var(--dim);font:600 9.5px/1 var(--sans);align-items:center;justify-content:center;cursor:help;flex:none;font-style:normal;text-transform:none;letter-spacing:0}
 .info:hover{color:var(--ink);border-color:var(--accent)}
 .hint{color:var(--mute);font-size:12px;line-height:1.5}
@@ -113,6 +134,7 @@ header#top{height:52px;flex:none;display:flex;align-items:center;gap:12px;paddin
 .ttl{min-width:0;max-width:240px}
 .ttl h1{margin:0;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ttl small{display:block;color:var(--dim);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttl .bk{display:none}
 .gti{display:flex;align-items:center;gap:10px;height:38px;padding:0 10px 0 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);flex:none}
 .gti:hover,.gti.on{border-color:var(--line2);background:var(--panel3)}
 .gti small{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);display:block;line-height:1.1;text-align:left}
@@ -157,6 +179,44 @@ header#top{height:52px;flex:none;display:flex;align-items:center;gap:12px;paddin
 .nl time span{display:block;color:var(--mute)}
 .unread{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;margin:0 6px 1px 0}
 .wf{display:grid;grid-template-columns:minmax(0,1fr) 120px 52px;gap:8px;align-items:center;font-size:12.5px;padding:3px 0}
+.tl2{border-bottom:1px solid var(--line)}
+.tl2 summary{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:1px 8px;align-items:center;padding:6px 0;cursor:pointer;list-style:none;font-size:12.5px}
+.tl2 summary::-webkit-details-marker{display:none}
+.tl2 .mk{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--dim)}.tl2.on .mk{background:var(--tell);border-color:var(--tell)}.tl2.nw .mk{border-style:dashed}
+.tl2 .nm{color:var(--mute);min-width:0}.tl2.on .nm{color:var(--ink);font-weight:600}.tl2.nw .nm{color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl2 .dt{font:11px var(--mono);color:var(--dim);text-align:right}.tl2.on .dt{color:var(--tell)}
+.tl2 .rc{grid-column:2/4;font:10.5px var(--mono);color:var(--dim)}
+.tl2 .tx{font-size:11.5px;color:var(--mute);line-height:1.5;padding:0 0 8px 22px}.tl2 .tx a{color:var(--accent);cursor:pointer}
+.tl2[open] .nm{white-space:normal}
+.sr{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);cursor:pointer;font-size:12.5px}
+.sr>span{flex:1;min-width:0}.sr small{display:block;color:var(--dim);font-size:11px;margin-top:1px}.sr b{font:600 12.5px var(--mono)}.sr time{font:11px var(--mono);color:var(--dim);white-space:nowrap}
+.sr:hover{background:var(--panel2)}
+.tempo{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;height:64px;align-items:end;cursor:pointer;margin-top:4px}
+.tb{position:relative;height:100%;background:var(--panel2);border-radius:3px}.tb i{position:absolute;left:0;right:0;bottom:0;background:var(--mute);border-radius:3px}
+.tb.on i{background:var(--tell)}.tb u{position:absolute;left:-2px;right:-2px;border-top:1.5px dashed var(--ink);opacity:.55}
+.tempox{display:flex;justify-content:space-between;font:11px var(--mono);color:var(--dim);margin:4px 0 14px}
+.hi{display:grid;grid-template-columns:62px 92px minmax(0,1fr);gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.hi[data-id],.hi[data-alert]{cursor:pointer}.hi:hover{background:var(--panel2)}
+.hi time{font:11px var(--mono);color:var(--dim)}.hi .hk{font-size:11px}.hi .tx{min-width:0}
+.pe{display:grid;grid-template-columns:78px minmax(0,1fr);gap:8px;padding:5px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.pe time{font:11px var(--mono);color:var(--dim)}.pe small{display:block;color:var(--dim);font-size:11px}
+details.more>summary{cursor:pointer;color:var(--accent);font-size:12px;padding:8px 0;list-style:none}details.more>summary::-webkit-details-marker{display:none}
+.evm path{cursor:help}
+#pg-record{overflow:auto}
+.rec{max-width:980px;display:flex;flex-direction:column;gap:12px}
+.rec .note{border:1px solid color-mix(in oklab,var(--tell) 45%,var(--line));background:color-mix(in oklab,var(--tell) 8%,var(--panel));border-radius:11px;padding:10px 14px;font-size:13px}
+.rgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.rcard{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.rcard h4{margin:0;font-size:13.5px}.rcard .prog{height:7px;background:var(--panel3);border-radius:4px;overflow:hidden}.rcard .prog i{display:block;height:100%;background:var(--ink);opacity:.75}
+.rcard .kv{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--mute)}.rcard .kv b{font:600 12px var(--mono);color:var(--ink);text-align:right}
+.gates{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
+.gates h4{margin:0 0 6px;font-size:13.5px}
+.gr{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.gr:last-of-type{border-bottom:0}.gr .ok{color:var(--normal)}.gr .no{color:var(--critical)}.gr b{font:600 12px var(--mono);white-space:nowrap}
+.ac .qt{font-size:11.5px;color:var(--dim)}
+.quiet{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;font-size:12px;color:var(--dim)}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel3);border:1px solid var(--line2);border-radius:9px;padding:8px 14px;font-size:12.5px;z-index:90;display:none}
+.thd .crumb .cp{margin-left:auto;background:none;border:0;color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:4px;font-size:11.5px}.thd .crumb .cp:hover{color:var(--ink)}
 .tl{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:2px 8px;align-items:baseline;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--line)}
 .tl .mk{font:600 12px var(--mono);color:var(--dim)}.tl.on .mk{color:var(--elevated)}.tl.on .nm{color:var(--ink);font-weight:600}
 .tl .nm{color:var(--mute)}.tl .dt{font:11px var(--mono);color:var(--dim);text-align:right}
@@ -166,6 +226,7 @@ header#top{height:52px;flex:none;display:flex;align-items:center;gap:12px;paddin
 .wf .bar i{position:absolute;top:0;bottom:0;border-radius:3px;background:var(--elevated)}
 .wf b{text-align:right;font:600 12px var(--mono)}
 .wf.t{border-top:1px solid var(--line);margin-top:4px;padding-top:7px;font-weight:600}
+.wf.wd{border-top:1px dashed var(--line);margin-top:3px;padding-top:6px;color:var(--mute)}
 #tip{position:fixed;z-index:70;pointer-events:none;background:#0a0b0d;border:1px solid var(--line2);border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.45;max-width:320px;display:none;box-shadow:0 6px 18px #000a;color:#d6dbe0}
 #tip b{color:var(--ink)}
 
@@ -266,12 +327,19 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .mv .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mv .n small{display:block;color:var(--dim);font-size:11px;overflow:hidden;text-overflow:ellipsis}
 .sdv{font:600 12.5px var(--mono);text-align:right}
+.tr2{grid-template-columns:minmax(0,1fr) auto 84px 38px}
+.tr2 .bw{display:flex;align-items:center;gap:6px}.tr2 .bw .bar6{flex:1}.tr2 .bw b{font:500 11.5px var(--mono);color:var(--mute);width:20px;text-align:right}
+.tr2 .xu{font-size:11.5px;color:var(--mute);text-align:right}
+.dtabs{display:flex;gap:10px}.dtabs button{font-weight:600;color:var(--dim);padding-bottom:2px;border-bottom:2px solid transparent}.dtabs button.on{color:var(--ink);border-color:var(--accent)}.dtabs b{font:500 10.5px var(--mono);color:var(--dim)}
 
 /* theatre panel */
 #panel{width:clamp(400px,32vw,500px);flex:none;background:var(--panel);border-left:1px solid var(--line);display:none;flex-direction:column;min-height:0;position:relative}
 #panel.on{display:flex}
-.rtabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px;flex:none;overflow:hidden}
-.rtabs button{padding:12px 10px 10px;font-size:13px;color:var(--mute);border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:7px;white-space:nowrap;min-width:0}
+.rtabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px;flex:none;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;align-items:flex-end}
+.rtabs::-webkit-scrollbar{display:none}
+.rdiv{width:1px;height:20px;background:var(--line2);margin:0 6px 10px;flex:none}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--tell);display:inline-block;flex:none}
+.rtabs button{padding:12px 10px 10px;font-size:13px;color:var(--mute);border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:7px;white-space:nowrap;flex:none}
 .rtabs button:hover{color:var(--ink)}
 .rtabs button.on{color:var(--ink);border-color:var(--accent);font-weight:600}
 .rtabs button small{font:500 11px var(--mono);color:var(--dim)}
@@ -335,6 +403,8 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .cmp tr[data-go]:hover td{background:var(--panel2)}
 .cmp .r{text-align:right}
 .cmp .cause{color:var(--mute)}
+.tw{overflow-x:auto;scrollbar-width:thin}
+.cmp.rgt{table-layout:auto}.cmp.rgt td,.cmp.rgt th{white-space:nowrap;padding-left:5px;padding-right:5px}.cmp.rgt td.cause{white-space:normal;min-width:120px;font-size:12px;line-height:1.35}
 .about p{margin:0 0 10px;color:#c4cad0;font-size:12.5px;line-height:1.55}
 .about b{color:var(--ink)}
 
@@ -357,6 +427,8 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .facets label:hover{background:var(--panel2);color:var(--ink)}
 .facets label b{margin-left:auto;font:500 11px var(--mono);color:var(--dim)}
 .facets input{accent-color:var(--accent);margin:0}
+.facets label.in{padding-left:12px}
+.fgh{font-size:11px;color:var(--dim);padding:6px 4px 1px}
 .tbl{overflow:auto;min-width:0;min-height:0;border:1px solid var(--line);border-radius:10px;scrollbar-width:thin}
 table.t{border-collapse:collapse;width:100%;font-size:12.5px}
 #stbl table.t{table-layout:fixed}
@@ -384,8 +456,8 @@ table.t tbody tr:not(.g):not(.sel):hover td{background:#1f2328}
 .drawer .db{overflow:auto;padding:0 14px 14px;flex:1;scrollbar-width:thin}
 .drawer .x{color:var(--mute);font-size:20px;line-height:1}
 .k3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}
-.kstrip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:10px;flex:none}
-.ks{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:9px 12px;min-width:0}
+.kstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px;flex:none}
+.ks{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:9px 12px;min-width:0;overflow:hidden}
 .ks small{display:flex;justify-content:space-between;gap:6px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
 .ks b{font:600 22px/1.3 var(--mono);display:block}
 .ks span{font-size:11.5px;color:var(--mute);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -434,6 +506,7 @@ table.t tbody tr:not(.g):not(.sel):hover td{background:#1f2328}
 .chips span{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:1px 10px;font-size:12px;color:var(--mute)}
 .mk5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:12px}
 .mk5 .kp b{font-size:19px}
+.mk5.ev3{grid-template-columns:2fr 1fr 1fr 1fr}
 .gauge{margin:0 0 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 14px 6px}
 .gauge .gt{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin-bottom:5px}
 .gauge svg{width:100%;height:34px;display:block}
@@ -462,23 +535,106 @@ table.st td:last-child{text-align:right;font-weight:600}
 @media(max-height:820px){:root{--dh:176px}.thd{padding:10px 16px 8px}.thd p{margin-top:6px;font-size:12.5px}.kpis{padding-bottom:10px}}
 @media(max-height:740px){:root{--dh:150px}.kstrip .ks{padding:7px 10px}.ks b{font-size:19px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* phones and portrait tablets: a bottom tab bar, list-first overview, the theatre page as one scroll, bottom sheets */
+#bnav,#plist,.phonly,#sbtn{display:none}
 @media(max-width:900px){
-  body{overflow:auto}
+  html,body{height:auto}
+  body{overflow:auto;padding-bottom:calc(60px + env(safe-area-inset-bottom))}
   #app{display:block;height:auto}
-  #sb,#sb.open{width:100%;flex-direction:row}
-  #sb .brand{border-bottom:0}
-  #sbnav{flex-direction:row;overflow-x:auto;padding:4px}
-  #sb .grp,#sb .kids,#sb .sbf,#sb .sc{display:none}
-  header#top{flex-wrap:wrap;height:auto;padding:8px 10px}
-  #search{width:100%}
+  #sb{display:none}
+  header#top{position:sticky;top:0;height:54px;padding:0 10px;gap:8px}
+  .ttl{flex:1;max-width:none;display:flex;align-items:center;gap:8px}
+  .ttl .bk{display:flex;width:34px;height:34px;border:1px solid var(--line);border-radius:9px;align-items:center;justify-content:center;color:var(--mute);flex:none}
+  .ttl>div{min-width:0}
+  .gti{height:36px;padding:0 8px}.gti small{display:none}.gti b{font-size:12px!important}.gti .ic{display:none}.gti .gx{display:none}
+  #shadowb{display:none}
+  #search{display:none;position:absolute;left:8px;right:8px;top:9px;width:auto;z-index:5}
+  header#top.srch #search{display:block}
+  header#top.srch>:not(#search){visibility:hidden}
+  #results{width:auto;left:0;right:0;max-height:70vh}
+  #sbtn{display:flex}
+  .iconbtn{width:36px;height:36px}
+  .upd{display:none}
   main{display:block}
-  #mapwrap{height:60vh}
-  #panel{width:auto;border-left:0}
-  #dock.on{position:static;grid-template-columns:1fr;padding:10px}
-  .page{overflow:visible}
-  .intel,.intel.sel,.set{grid-template-columns:1fr}
-  .kstrip,.hs,.mk5{grid-template-columns:repeat(2,1fr)}
+  #plist{display:block;padding:10px 12px 4px}
+  #mapwrap{display:none;height:calc(100dvh - 54px - 60px - 52px);min-height:320px}
+  body.mapon #mapwrap{display:block}
+  body.mapon.th #mapwrap{height:46vh}
+  .rail{top:8px;left:8px}.rail button{width:36px;height:36px}
+  #dock{display:none!important}
+  #panel{width:auto;border-left:0;min-height:0;display:none}
+  #panel.on{display:block}
+  .pbody{overflow:visible;padding:10px 12px 16px}
+  .thd{padding:10px 12px 8px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 12px 10px}
+  .stabs{overflow-x:auto;scrollbar-width:none;padding:0 6px;position:sticky;top:54px;background:var(--panel);z-index:4}
+  .rtabs{padding:6px 8px;gap:6px;border-bottom:1px solid var(--line)}
+  .rtabs button{border:1px solid var(--line);border-radius:999px;padding:5px 11px;margin:0;font-size:12.5px}
+  .rtabs button.on{border-color:var(--accent);background:var(--sel)}
+  .rdiv{margin:0 2px;height:22px;align-self:center}
+  .phonly{display:flex}
+  .mapt{margin:8px 12px 0;justify-content:center;border:1px dashed var(--line2);border-radius:9px;padding:9px;color:var(--mute);font-size:12.5px;width:calc(100% - 24px)}
+  #hcard{display:none!important}
+  #card{position:fixed;left:0;right:0;top:auto;bottom:calc(60px + env(safe-area-inset-bottom));width:auto;max-height:60vh;border-radius:14px 14px 0 0;z-index:40}
+  #pop{left:0!important;right:0;top:auto!important;bottom:0;width:auto!important;max-height:78vh;border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom)}
+  #pop:before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:var(--line2);margin:8px auto 0;flex:none}
+  #modal{padding:0}
+  #modal .box{width:100%;height:100%;max-height:none;border-radius:0;border:0;padding:14px 14px calc(20px + env(safe-area-inset-bottom))}
+  #modal h2{font-size:17px}
+  #modal .nav{padding-right:30px}
+  .page{padding:10px 12px;min-height:calc(100dvh - 54px - 60px)}
+  .toolbar{gap:6px}
+  .intel,.intel.sel,.set{grid-template-columns:1fr;display:block}
+  .facets{display:none}
+  .intel.fopen .facets{display:block;position:fixed;left:0;right:0;bottom:0;max-height:75vh;z-index:45;background:var(--panel);border:1px solid var(--line2);border-radius:16px 16px 0 0;padding:14px 16px calc(70px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px #000b}
+  .drawer{display:none}
+  #stbl{border:0;overflow:visible}
+  #stbl table.t,#stbl tbody,#stbl tr.g{display:block;width:100%}
+  #stbl thead{display:none}
+  #stbl tr.g td{position:static;display:block;border-radius:8px;margin-top:8px}
+  #stbl tr[data-row]{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:2px 10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:6px 0}
+  #stbl tr[data-row] td{display:block;border:0;padding:0;white-space:normal;overflow:visible}
+  #stbl tr[data-row] td.n{grid-column:1/-1;font-size:13px}
+  #stbl tr[data-row] td.n small{display:block;margin:2px 0 0}
+  #stbl tr[data-row] td.w{display:none}
+  #stbl tr[data-row] td:nth-last-child(4){display:none}
+  #stbl tr[data-row] td:nth-last-child(3){font-size:11.5px}
+  #stbl tr[data-row] td.hsel:not(:nth-last-child(2)){display:none}
+  .hs,.mk5{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kstrip{display:flex;overflow-x:auto;scrollbar-width:none}.kstrip .ks{flex:0 0 152px}
+  .rgrid{grid-template-columns:1fr}
+  #toast{bottom:84px}
+  .hi{grid-template-columns:54px minmax(0,1fr)}.hi .hk{display:none}
+  .mk5.ev3{grid-template-columns:1fr 1fr}
+  .grid4{grid-template-columns:1fr;overflow:visible}
   .two{grid-template-columns:1fr}
+  .setnav{flex-direction:row;overflow-x:auto;scrollbar-width:none;gap:6px;margin-bottom:10px}
+  .setnav button{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+  .setb{overflow:visible}.setscroll{overflow:visible}
+  .setrow{grid-template-columns:1fr;gap:6px}
+  .tbl{overflow-x:auto}
+  #bnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:38;background:var(--panel);border-top:1px solid var(--line);padding:4px 4px env(safe-area-inset-bottom)}
+  #bnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 7px;color:var(--dim);font-size:10.5px;min-height:52px;justify-content:center}
+  #bnav button.on{color:var(--accent)}
+  #bnav .ic{width:20px;height:20px}
+  .pmeta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font:11.5px var(--mono);color:var(--dim);margin:0 0 8px}
+  .pcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+  .pcard .dh{display:flex;align-items:baseline;gap:8px;font-weight:600;margin-bottom:8px}.pcard .dh small{color:var(--dim);font-weight:400;margin-left:auto}
+  .pcard .more{display:block;width:100%;text-align:center;color:var(--accent);font-size:12.5px;padding:8px 0 2px}
+  .mseg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;margin:2px 0 6px}
+  .mseg button{flex:1;padding:7px;border-radius:8px;color:var(--mute);font-weight:500}.mseg button.on{background:var(--sel);color:var(--ink)}
+  .prg{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin:14px 0 2px}
+  .prow{display:grid;grid-template-columns:minmax(0,1fr) 92px auto;gap:10px;align-items:center;padding:9px 2px;border-bottom:1px solid var(--line);min-height:52px;cursor:pointer;width:100%;text-align:left}
+  .prow.sub{padding-left:12px;border-left:2px solid var(--line2)}
+  .prow .tn b{display:block;font-weight:600;font-size:14px}.prow .tn small{color:var(--dim);font-size:11.5px}
+  .prow .bw{display:flex;align-items:center;gap:6px}.prow .bw .bar6{flex:1}.prow .bw b{font:500 12px var(--mono);color:var(--mute);width:22px;text-align:right}
+  .prow .r{display:flex;flex-direction:column;align-items:flex-end;gap:3px}.prow .r .xu{font:11px var(--mono);color:var(--mute)}
+}
+@media(max-width:560px){
+  .cmp.rgt .cv{display:none}
+  .hs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .k3w b{font-size:18px}
+  .ttl h1{font-size:14px}
 }
 </style>
 </head>
@@ -502,14 +658,17 @@ table.st td:last-child{text-align:right;font-weight:600}
 <div id="col">
 <header id="top">
   <div class="ttl" id="tt"></div>
-  <button class="gti" id="gti" data-pop="gti" aria-label="What drives this number"></button>
+  <button class="gti" id="gti" data-pop="gti" aria-label="This week"></button>
+  <span class="shadowb" id="shadowb" hidden tabindex="0">Model in shadow</span>
   <span class="demo" id="demo" hidden>DEMO</span>
   <div class="sp"></div>
   <div id="search"><svg class="ic s" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="q" type="search" placeholder="Search everything" autocomplete="off" aria-label="Search"><kbd>/</kbd><div id="results"></div></div>
   <div class="upd" id="upd"></div><span id="gen" hidden>__GENERATED__</span>
+  <button class="iconbtn" id="sbtn" aria-label="Search"></button>
   <button class="iconbtn" id="bell" data-pop="bell" aria-label="Notifications"></button>
 </header>
 <main id="main">
+  <div id="plist"></div>
   <div id="mapwrap">
     <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
     <div id="pins"></div>
@@ -523,11 +682,13 @@ table.st td:last-child{text-align:right;font-weight:600}
 </main>
 <section class="page" id="pg-signals"></section>
 <section class="page" id="pg-activity"></section>
+<section class="page" id="pg-record"></section>
 <section class="page" id="pg-settings"></section>
 </div></div>
-<div id="tip"></div><div id="sbtip"></div>
+<nav id="bnav" aria-label="Pages"></nav>
+<div id="tip"></div><div id="sbtip"></div><div id="toast" role="status"></div>
 <div id="pop" role="dialog"></div>
-<div id="modal"><div class="box" id="mbox"></div></div>
+<div id="modal" role="dialog" aria-modal="true" aria-label="Detail"><div class="box" id="mbox"></div></div>
 <script id="data" type="application/json">__DATA__</script>
 <script>
 "use strict";
@@ -535,10 +696,14 @@ const D = JSON.parse(document.getElementById('data').textContent);
 const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const store = {get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }, set(k, v){ try { localStorage.setItem(k, v); } catch (e) {} }};
-const LEVEL = {'Critical':'#f2545b','Elevated':'#f08a3c','Watch':'#e5c04b','Normal':'#46c28a','insufficient data':'#6b7280'};
+const PM = D.model && D.model.active ? D.model : null;
+/* Nothing is coloured by a measure that has not passed its release checks (part 3 of the review). While the model runs in
+   shadow mode the level keeps its word and gets a grey intensity; orange is kept for a fired timing tell, red for a data failure. */
+const LEVEL = PM ? {'Critical':'#f2545b','Elevated':'#f08a3c','Watch':'#e5c04b','Normal':'#46c28a','insufficient data':'#6b7280'}
+  : {'Critical':'#e8ecf0','Elevated':'#b6bec6','Watch':'#8a939c','Normal':'#5a636c','insufficient data':'#3b4148'};
+const TELLC = '#f08a3c';
 const RANKL = {'insufficient data':0, 'Normal':1, 'Watch':2, 'Elevated':3, 'Critical':4};
 const T_WATCH = D.thresholds[0], T_SIG = D.thresholds[1];
-const PM = D.model && D.model.active ? D.model : null;
 const BANDS = (D.model && D.model.bands) || [0.05, 0.1, 0.25];
 const MEANING_P = {
   'Critical':`A chance of ${pct(BANDS[2])} or more of a qualifying event in the next 30 days.`,
@@ -559,6 +724,29 @@ const fmtz = z => z == null ? 'n/a' : (z > 0 ? '+' : '') + z.toFixed(1);
 const zcol = z => z == null ? '#6b7280' : z >= T_SIG ? '#f2545b' : z >= T_WATCH ? '#f08a3c' : z >= 1 ? '#e5c04b' : '#5db391';
 const lc = s => String(s).replace(/^([A-Z])([a-z])/, (m, a, b) => a.toLowerCase() + b);
 const shortL = s => String(s || '').replace(/ \([^()]*\)$/, '');
+/* Advisory steps and CrisisWatch ratings are actions or judgements, not levels: they read as what happened and when, never as SD. */
+const isEv = s => !!s && (s.tf === 'step' || s.tf === 'event');
+const CWW = ['no alert', 'deteriorated', 'conflict-risk alert', 'conflict-risk alert, deteriorated'];
+function evWords(s){
+  const p = s.pts || [], v = p.length ? p[p.length - 1][1] : null;
+  if (v == null) return 'no reading yet';
+  if (s.tf === 'event') return `${CWW[Math.max(0, Math.min(3, Math.round(v)))] || 'rated ' + v} · ${monthName(p[p.length - 1][0])}`;
+  let i = p.length - 1; while (i > 0 && (p[i - 1][1] === p[i][1] || p[i][0] === s.seam)) i--;   // a step on the seam day is the change of method
+  if (i === 0 || p[i][0] === s.seam) return `level ${fmtv(v)} · no step on record`;
+  const d = p[i][1] - p[i - 1][1];
+  return `${d > 0 ? 'raised' : 'lowered'} ${fmtv(Math.abs(d))} level${Math.abs(d) === 1 ? '' : 's'} on ${shortDate(p[i][0])} · now ${fmtv(v)}`;
+}
+function monthName(l){ const d = new Date(String(l).slice(0, 7) + '-01T00:00:00Z'); return isNaN(d) ? l : d.toLocaleString('en-GB', {month: 'short', year: 'numeric', timeZone: 'UTC'}); }
+function shortDate(l){ const d = new Date(String(l).slice(0, 10) + 'T00:00:00Z'); return isNaN(d) ? l : d.toLocaleString('en-GB', {day: 'numeric', month: 'short', timeZone: 'UTC'}); }
+/* the raw reading next to the score: "20 vs usual 4", with near-zero baselines flagged so artefacts show themselves */
+function rawTxt(s){
+  if (isEv(s)) return evWords(s);
+  if (s.z == null || s.val == null) return '';
+  if (s.base) return `${fmtv(s.val)} vs usual ${fmtv(s.base.med)}${Math.abs(s.base.med) < 0.5 ? ' · near-zero baseline' : ''}`;
+  return `${fmtv(s.val)} ${s.kind === 'monthly' ? 'latest month' : 'now'}`;
+}
+const zTxt = s => isEv(s) ? (s.z > 0 ? 'event' : '–') : fmtz(s.z);
+const WORLDW = w => /^World tempo/.test(w[0]);
 const sigm = z => 1 / (1 + Math.exp(-z)), logit = p => Math.log(p / (1 - p));
 function fmtv(v){
   if (v == null || isNaN(v)) return '';
@@ -576,6 +764,16 @@ const THEATRES = D.order.filter(t => t !== 'global');
 const REG = D.regions, REGBY = {}, regOf = {}; REG.forEach(r => { REGBY[r.id] = r; r.kids.forEach(k => regOf[k] = r); });
 const CODE = {mideast:'MEA', ukraine_r:'UKR', taiwan_r:'TWN', korea_r:'KOR', southasia_r:'SAS', africa_r:'AFR', americas_r:'AMR'};
 const SERIES = {}; D.series.forEach(s => SERIES[s.id] = s);
+/* Speed: the page carries the last 60 points of each series. The full histories and score histories (series.json, next to
+   the page) load after the first paint, or when a detail view first opens. Opened from disk, the page keeps the 60 points. */
+let FULL = D.split ? null : {}, fullP = null;
+function loadFull(){
+  if (FULL) return Promise.resolve();
+  if (!fullP) fullP = fetch(D.split).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(j => { Object.keys(j).forEach(id => { if (SERIES[id]) Object.assign(SERIES[id], j[id]); }); FULL = j; })
+    .catch(() => { FULL = {}; });
+  return fullP;
+}
 const thName = t => t === 'global' ? 'Global markets' : (D.theatres[t] ? D.theatres[t].name : t || 'Outside the theatres');
 const GEN = Date.parse(($('#gen').textContent || '').replace(' UTC', 'Z').replace(' ', 'T')) || Date.now();
 const pref = {lead: store.get('ww_lead', 'p'), lbl: +store.get('ww_lbl', 1) || 1, win: +store.get('ww_win', 48) || 48, dock: store.get('ww_dock', 'open'), sb: store.get('ww_sb', '')};
@@ -621,11 +819,12 @@ const ICON = {
   chev:'<path d="M9 6l6 6-6 6"/>', chevd:'<path d="M6 9l6 6 6-6"/>', chevu:'<path d="M6 15l6-6 6 6"/>', x:'<path d="M6 6l12 12M18 6L6 18"/>',
   search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>', group:'<path d="M4 6h16M4 12h10M4 18h6"/>',
   health:'<path d="M3 12h4l3-7 4 14 3-7h4"/>', book:'<path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM4 5v16"/>', gap:'<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>',
+  check:'<path d="M4 6h10M4 12h7M4 18h7"/><path d="M14 15l3 3 5-6"/>', more:'<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>', back:'<path d="M15 6l-6 6 6 6"/>', link:'<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>',
   eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', ext:'<path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/>'
 };
 const ic = (n, c) => `<svg class="ic ${c || ''}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
 const inf = t => `<i class="info" data-tip="${esc(t)}">i</i>`;
-const lvPill = l => `<span class="lv" style="--c:${LEVEL[l]}">${esc(String(l).toUpperCase())}</span>`;
+const lvPill = l => `<span class="lv ${PM ? '' : 'n'}" style="--c:${LEVEL[l]}">${esc(String(l).toUpperCase())}</span>`;
 const dot = l => `<span class="dot" style="--c:${LEVEL[l]}"></span>`;
 $('#zhome').innerHTML = ic('home', 's');
 
@@ -647,6 +846,49 @@ function changeTxt(t, cls){
   const c = D.theatres[t].pd; if (!c || !leadP()) return `<span class="num" style="color:var(--dim)" data-tip="No earlier day in the forecast record yet">–</span>`;
   const [d, n] = c, up = d > 0.0005, dn = d < -0.0005;
   return `<span class="num ${up ? 'up' : dn ? 'dn' : ''} ${cls || ''}" ${up || dn ? '' : 'style="color:var(--dim)"'} data-tip="Change in the 30-day chance over ${n} day${n === 1 ? '' : 's'}, in percentage points">${up ? '▲' : dn ? '▼' : ''}${Math.abs(100 * d).toFixed(1)}</span>`;
+}
+
+/* sub-theatres (config.SUBTHEATRES): countries drawn into a parent's war, fitted on top of the region's own theatres */
+const SUBT = D.sub || {};
+const isSub = t => !!SUBT[t];
+function gateWhy(){
+  const G = (D.model || {}).gates || {}, why = [];
+  if (G.bss_positive === false) why.push('it does not beat the base rates');
+  if (G.auc_lo_above_half === false) why.push('the low end of its AUC range is not above 0.5');
+  if (G.beats_shuffled === false) why.push(`it does not beat shuffled timing (p ${G.shuffle_p_auc != null ? G.shuffle_p_auc.toFixed(2) : 'n/a'}, needs below 0.05)`);
+  return why.join(' and ') || 'it did not pass all its release checks';
+}
+function shadowWhy(){ return `The 30-day model runs in shadow: it is logged and scored every day but does not set the levels, because at its last refit ${gateWhy()}. Until it passes, levels come from signal pressure and colours stay neutral.`; }
+
+/* ------------------------------------------------------------ this week: tells, ratings and strong new readings */
+function weekStats(){
+  const on = []; let n = 0;
+  THEATRES.forEach(t => tellsOf(t).forEach(x => { if (x.on != null) { n++; if (x.on) on.push(Object.assign({t}, x)); } }));
+  const scored = D.series.filter(s => s.z != null && s.t !== 'global' && !isEv(s));
+  return {on, n, strong: scored.filter(s => s.z >= T_SIG && !s.stale), scored: scored.length};
+}
+function weekFeed(){
+  const out = [], wk = weekStats();
+  wk.on.forEach(x => out.push({d: x.date || '', t: x.t, hot: 1, title: x.n, sub: 'Timing tell' + (x.src && SERIES[x.src] ? ' · ' + (SERIES[x.src].s || shortL(SERIES[x.src].l)) : ''), id: x.src && SERIES[x.src] ? x.src : null}));
+  const cut = new Date(GEN - 8 * 864e5).toISOString().slice(0, 10);
+  Object.entries(D.hist || {}).forEach(([t, h]) => h.items.forEach(([d, k, tx, id]) => {
+    if (['advisory', 'rating', 'wave'].includes(k) && d >= cut.slice(0, d.length)) out.push({d, t, title: tx, sub: k === 'wave' ? 'Tempo' : 'Official signal', id: SERIES[id] ? id : null}); }));
+  D.series.filter(s => !isEv(s) && !s.lag && !s.stale && s.z != null && s.z >= T_SIG && s.t !== 'global' && ageH(s.last) != null && ageH(s.last) < 24 * 8)
+    .sort((a, b) => b.z - a.z).slice(0, 6).forEach(s => out.push({d: s.last, t: s.t, title: `${shortL(s.l)}: ${rawTxt(s)}`, sub: `Strong reading, ${fmtz(s.z)} SD · ${GN[s.d]}`, id: s.id}));
+  return out.sort((a, b) => b.hot - a.hot || String(b.d).localeCompare(String(a.d)));
+}
+function feedRows(list, n){
+  return list.slice(0, n || 99).map(f => `<div class="fi" ${f.id ? `data-id="${esc(f.id)}"` : `data-nav="${f.t}"`}><span class="fdot ${f.hot ? 'hot' : ''}"></span><div><b>${esc(thName(f.t))}</b> · ${esc(f.title)}<small>${esc(f.sub)}</small></div><time>${esc(f.d ? (String(f.d).length > 7 ? shortDate(f.d) : monthName(f.d)) : '')}</time></div>`).join('')
+    || '<div class="empty">Nothing new this week: no timing tell, rating or strong new reading.</div>';
+}
+function weekKpis(){
+  const wk = weekStats(), x15 = THEATRES.filter(t => (D.theatres[t].xu || 0) >= 1.5).length;
+  return `<div class="k3w"><div><b style="color:${wk.on.length ? 'var(--tell)' : 'var(--ink)'}">${wk.on.length}</b><span>of ${wk.n} timing tells seen</span></div><div><b>${wk.strong.length}</b><span>strong readings (3 SD or more) of ${wk.scored} scored</span></div><div><b style="color:var(--mute)">${x15}</b><span>theatre${x15 === 1 ? '' : 's'} at 1.5× usual standing risk or more${PM ? '' : ', not validated'}</span></div></div>`;
+}
+function popWeek(){
+  return `<div class="ph"><h4>This week</h4><small>last 7 days</small></div><div class="pb">${weekKpis()}<div class="sh">What happened</div><div class="feed">${feedRows(weekFeed(), 12)}</div>
+    ${D.model && !PM ? `<p class="hint" style="margin:10px 0 0">${esc(shadowWhy())}</p>` : ''}
+    <div class="row" style="margin-top:10px"><button class="btn" data-nav="record">Track record ${ic('chev', 's')}</button><button class="btn" data-nav="settings/method">How it works ${ic('chev', 's')}</button><a class="btn" href="feed.xml" target="_blank" rel="noopener">RSS feed</a></div></div>`;
 }
 
 /* ------------------------------------------------------------ alerts (the bell) */
@@ -680,41 +922,51 @@ function openAlert(a){
 }
 
 /* ------------------------------------------------------------ routing */
-const SUBS = ['drivers', 'signals', 'alerts', 'markets', 'about'], SETS = ['display', 'health', 'sources', 'method', 'record', 'gaps'];
+const SUBS = ['drivers', 'signals', 'history', 'markets', 'about'], SETS = ['display', 'health', 'sources', 'method', 'gaps'];
 let R = {v: 'overview'}, selDom = null;
 function parseHash(){
   const h = decodeURIComponent(location.hash.slice(1)), [path, qs] = h.split('?'), [a, b] = path.split('/');
   if (!a || a === 'overview') return {v: 'overview'};
   if (a === 'region' && REGBY[b]) return REGBY[b].kids.length > 1 ? {v: 'region', id: b} : {v: 'theatre', id: REGBY[b].kids[0], sub: 'drivers'};
-  if (D.theatres[a]) return {v: 'theatre', id: a, sub: SUBS.includes(b) ? b : 'drivers'};
+  if (D.theatres[a]) return {v: 'theatre', id: a, sub: b === 'alerts' ? 'history' : SUBS.includes(b) ? b : 'drivers'};
   if (a === 'signals') return {v: 'signals', qs: qs || ''};
   if (a === 'activity' || a === 'assets') return {v: 'activity'};
+  if (a === 'record' || ((a === 'settings' || a === 'system') && b === 'record')) return {v: 'record'};
   if (a === 'settings' || a === 'system') return {v: 'settings', sub: SETS.includes(b) ? b : 'health'};
   return {v: 'overview'};
 }
 function nav(path){ if (location.hash.slice(1) === path) route(); else location.hash = path; }
-addEventListener('hashchange', () => route());
+addEventListener('hashchange', () => { closeModal(); route(); });
 function route(first){
   const prev = R; R = parseHash();
   if (prev.v === R.v && prev.id === R.id && R.v === 'theatre' && !first) { renderPanel(); return; }   // only the sub-tab changed
+  const op = R.v === 'signals' && new URLSearchParams(R.qs).get('open');
+  if (op && SERIES[op]) setTimeout(() => openModal(op), 0);
   if (!(R.v === 'theatre' && prev.id === R.id)) selDom = null;
   render(first);
 }
 function isMapView(){ return R.v === 'overview' || R.v === 'region' || R.v === 'theatre'; }
 function wideView(){ return R.v === 'overview' || (R.v === 'theatre' && R.id === 'global'); }
 function HL(){ return R.v === 'region' ? REGBY[R.id].kids : R.v === 'theatre' && R.id !== 'global' ? [R.id] : []; }
+const isPhone = () => matchMedia('(max-width:900px)').matches;
+let mapOpen = false;    // phone theatre and region pages: the map is folded behind a button
+function syncPhoneMap(){
+  const on = R.v === 'overview' ? pref.pm === 'map' : isMapView() && mapOpen;
+  document.body.classList.toggle('mapon', on); document.body.classList.toggle('th', R.v !== 'overview');
+}
 function render(first){
   closePop(); closeCard(); hideHover(); tipHide();
-  renderSB(); renderTop();
+  renderSB(); renderTop(); renderBNav(); syncPhoneMap();
   const map = isMapView();
   $('#main').style.display = map ? '' : 'none';
-  ['signals', 'activity', 'settings'].forEach(p => $('#pg-' + p).classList.toggle('on', R.v === p));
+  ['signals', 'activity', 'record', 'settings'].forEach(p => $('#pg-' + p).classList.toggle('on', R.v === p));
   if (map) {
     $('#panel').classList.toggle('on', R.v !== 'overview');
-    renderPanel(); renderDock(); renderRail();
+    renderPanel(); renderDock(); renderRail(); renderPList();
     if (M) { syncLayers(); buildPins(); fitTab(!first); }
   } else if (R.v === 'signals') renderSignals();
   else if (R.v === 'activity') renderActivity();
+  else if (R.v === 'record') renderRecord();
   else renderSettings();
 }
 
@@ -734,7 +986,7 @@ function renderSB(){
   const g = D.theatres.global;
   if (g) h += `<button class="ni ${R.id === 'global' ? 'on' : ''}" data-nav="global" data-sbtip="Global markets and procurement · ${esc(g.level)}"><span class="code" style="--c:${LEVEL[g.level]}">GLB</span><span class="tx">Global markets</span><span class="sc">${fs(g.score)}</span></button>`;
   const bad = D.series.some(s => s.st === 'error' || s.stale) || D.errors.length;
-  h += `<div class="grp">Workspace</div>` + item('signals', 'table', 'Signals') + item('activity', 'radar', 'Activity') + item('settings', 'cog', 'Settings', bad ? `<span class="alarm" aria-label="Data problems"></span>` : '');
+  h += `<div class="grp">Workspace</div>` + item('signals', 'table', 'Signals') + item('activity', 'radar', 'Activity') + item('record', 'check', 'Track record') + item('settings', 'cog', 'Settings', bad ? `<span class="alarm" aria-label="Data problems"></span>` : '');
   h += `</nav><div class="sbf"><button class="ni" id="sbt" data-sbtip="${open ? 'Collapse the sidebar' : 'Expand the sidebar'}">${ic('panel')}<span class="tx">Collapse</span></button></div>`;
   $('#sb').innerHTML = h;
 }
@@ -747,28 +999,69 @@ $('#sb').addEventListener('click', e => {
 $('#sb').addEventListener('mouseover', e => { const b = e.target.closest('[data-sbtip]'); const t = $('#sbtip'); if (!b || $('#sb').classList.contains('open')) { t.style.display = 'none'; return; } const r = b.getBoundingClientRect(); t.textContent = b.dataset.sbtip; t.style.display = 'block'; t.style.left = (r.right + 8) + 'px'; t.style.top = (r.top + r.height / 2 - t.offsetHeight / 2) + 'px'; });
 $('#sb').addEventListener('mouseleave', () => $('#sbtip').style.display = 'none');
 
+/* ------------------------------------------------------------ phones: bottom tab bar and the list-first overview */
+function renderBNav(){
+  const cur = R.v === 'settings' ? 'settings' : R.v === 'signals' || R.v === 'activity' || R.v === 'record' ? R.v : 'overview';
+  $('#bnav').innerHTML = [['overview', 'globe', 'Overview'], ['signals', 'table', 'Signals'], ['activity', 'radar', 'Activity'], ['record', 'check', 'Record'], ['settings', 'more', 'More']]
+    .map(([k, icn, n]) => `<button class="${cur === k ? 'on' : ''}" data-nav="${k}" ${cur === k ? 'aria-current="page"' : ''}>${ic(icn)}<span>${n}</span></button>`).join('');
+}
+$('#bnav').addEventListener('click', e => { const n = e.target.closest('[data-nav]'); if (n) { window.scrollTo(0, 0); nav(n.dataset.nav); } });
+pref.pm = store.get('ww_pm', 'list');
+function pRow(t){
+  const th = D.theatres[t], sc = seriesOf(t).filter(s => s.z != null && !isEv(s)), st = sc.filter(s => s.z >= T_SIG).length;
+  return `<button class="prow ${isSub(t) ? 'sub' : ''}" data-nav="${t}"><span class="tn"><b>${dot(th.level)} ${esc(th.name)}</b><small>${st} strong of ${sc.length} scored${isSub(t) ? ' · sub-theatre' : ''}</small></span><span class="bw"><span class="bar6"><i style="width:${Math.min(100, th.score || 0)}%;background:${LEVEL[th.level]}"></i></span><b>${PM && leadP() ? esc(lead(t).txt) : fs(th.score)}</b></span><span class="r">${tellChip(t)}<span class="xu">${th.xu != null ? th.xu.toFixed(1) + '× usual' : ''}</span></span></button>`;
+}
+function renderPList(){
+  const el = $('#plist'); if (R.v !== 'overview') { el.innerHTML = ''; return; }
+  const seg = `<div class="mseg" role="tablist"><button class="${pref.pm !== 'map' ? 'on' : ''}" data-pm="list" role="tab">List</button><button class="${pref.pm === 'map' ? 'on' : ''}" data-pm="map" role="tab">Map</button></div>`;
+  if (pref.pm === 'map') { el.innerHTML = seg; return; }
+  const gen = $('#gen').textContent.slice(11, 16);
+  let h = `<div class="pmeta">Updated ${esc(gen)} UTC${D.model && !PM ? ' · <span class="shadowb" data-tip="' + esc(shadowWhy()) + '">model in shadow</span>' : ''}</div>`;
+  h += `<div class="pcard"><div class="dh">This week<small>last 7 days</small></div>${weekKpis()}<div class="feed">${feedRows(weekFeed(), 3)}</div><button class="more" data-pop="gti">All of this week</button></div>${seg}`;
+  REG.forEach(r => { h += `<div class="prg">${esc(r.name)}</div>` + r.kids.filter(k => !isSub(k)).concat(r.kids.filter(isSub)).map(pRow).join(''); });
+  if (D.theatres.global) h += `<div class="prg">World</div><button class="prow" data-nav="global"><span class="tn"><b>${esc(thName('global'))}</b><small>markets and procurement worldwide</small></span><span class="bw"><span class="bar6"><i style="width:${Math.min(100, D.theatres.global.score || 0)}%;background:${LEVEL[D.theatres.global.level]}"></i></span><b>${fs(D.theatres.global.score)}</b></span><span class="r"></span></button>`;
+  el.innerHTML = h;
+}
+$('#plist').addEventListener('click', e => {
+  const pm = e.target.closest('[data-pm]'); if (pm) { pref.pm = pm.dataset.pm; store.set('ww_pm', pref.pm); syncPhoneMap(); renderPList(); if (pref.pm === 'map' && M) { syncLayers(); buildPins(); fitTab(false); } return; }
+  if (e.target.closest('[data-pop]')) return;
+  const id = e.target.closest('[data-id]'); if (id) { openModal(id.dataset.id); return; }
+  const n = e.target.closest('[data-nav]'); if (n) { window.scrollTo(0, 0); nav(n.dataset.nav); }
+});
+
 /* ------------------------------------------------------------ top bar */
 function renderTop(){
-  const titles = {overview: ['World overview', `${THEATRES.length} theatres`], signals: ['Signals', `${D.series.length} indicators · ${D.series.filter(s => s.z != null).length} with a score`],
-    activity: ['Activity', 'Aircraft, ships, fires and warnings now'], settings: ['Settings', 'Display, data health, sources and method']};
+  const nsub = THEATRES.filter(isSub).length;
+  const titles = {overview: ['World overview', `${THEATRES.length - nsub} theatres${nsub ? ` and ${nsub} sub-theatres` : ''}`], signals: ['Signals', `${D.series.length} indicators · ${D.series.filter(s => s.z != null).length} with a score`],
+    activity: ['Activity', 'Aircraft, ships, fires and warnings now'], record: ['Track record', 'Forecasts logged before the fact, and how they score'], settings: ['Settings', 'Display, data health, sources and method']};
   let t = titles[R.v];
   if (R.v === 'region') t = [REGBY[R.id].name, 'Region overview'];
   if (R.v === 'theatre') t = [thName(R.id), regOf[R.id] ? regOf[R.id].name : 'Markets and procurement worldwide'];
-  $('#tt').innerHTML = `<h1>${esc(t[0])}</h1><small>${esc(t[1])}</small>`;
+  const back = R.v === 'theatre' ? (regOf[R.id] && regOf[R.id].kids.length > 1 ? 'region/' + regOf[R.id].id : 'overview') : R.v === 'region' ? 'overview' : null;
+  $('#tt').innerHTML = (back ? `<button class="bk" data-nav="${back}" aria-label="Back">${ic('back', 's')}</button>` : '') + `<div><h1>${esc(t[0])}</h1><small>${esc(t[1])}</small></div>`;
   const g = D.global || {}, gl = g.level || 'insufficient data';
+  const wk = weekStats();
   $('#gti').innerHTML = PM && g.p_any != null
     ? `<div><small>Any theatre · 30 days</small><b style="color:${LEVEL[gl]}">${pct(g.p_any)}</b></div>${lvPill(gl)}<span class="us">usual ${pct(PM.clim)}</span>${ic('chevd', 's')}`
-    : `<div><small>Signal pressure, all theatres</small><b style="color:${LEVEL[gl]}">${fs(g.score)}</b></div>${lvPill(gl)}${ic('chevd', 's')}`;
+    : `<div><small>This week</small><b style="font-size:13px"><span style="color:${wk.on.length ? 'var(--tell)' : 'var(--ink)'}">${wk.on.length} tell${wk.on.length === 1 ? '' : 's'}</span><span class="gx"> · ${wk.strong.length} strong reading${wk.strong.length === 1 ? '' : 's'}</span></b></div>${ic('chevd', 's')}`;
+  const sb = $('#shadowb'); sb.hidden = !!PM || !D.model;
+  if (D.model && !PM) sb.dataset.tip = shadowWhy();
   const gen = $('#gen').textContent, hm = gen.slice(11, 16), next = (() => { const d = new Date(GEN); const m = d.getUTCMinutes(); d.setUTCMinutes(m < 7 ? 7 : m < 37 ? 37 : 67, 0, 0); return d.toISOString().slice(11, 16); })();
   $('#upd').innerHTML = `Updated ${esc(hm)} UTC<br>next run about ${next}`;
   renderBell();
 }
+$('#sbtn').innerHTML = ic('search');
+$('#top').addEventListener('click', e => {
+  if (e.target.closest('#sbtn')) { $('#top').classList.add('srch'); $('#q').focus(); return; }
+  const n = e.target.closest('.ttl [data-nav]'); if (n) nav(n.dataset.nav);
+});
+$('#q').addEventListener('blur', () => setTimeout(() => $('#top').classList.remove('srch'), 150));
 function popGTI(){
   const g = D.global || {};
   const rows = RANK.filter(hasP).slice(0, 6).map(t => { const th = D.theatres[t]; return `<div class="wf"><span>${dot(th.level)} ${esc(th.name)}</span><span class="bar"><i style="width:${Math.min(100, th.p / Math.max(0.12, D.theatres[RANK[0]].p || 0) * 100)}%;background:${LEVEL[th.level]}"></i></span><b>${pct(th.p)}</b></div>`; }).join('');
   const cnt = {}; THEATRES.forEach(t => { const l = D.theatres[t].level; cnt[l] = (cnt[l] || 0) + 1; });
   const counts = `<div class="row">${['Critical', 'Elevated', 'Watch', 'Normal'].map(l => `<span class="chip" style="height:24px">${dot(l)}${l}<b>${cnt[l] || 0}</b></span>`).join('')}</div>`;
-  if (!PM) return `<div class="ph"><h4>Signal pressure for all theatres</h4><small>0 to 100</small></div><div class="pb"><p class="hint" style="margin:0 0 8px">This index combines the signal pressure of each region. 50 is the Watch line and 90 is the Critical line. The level is the highest region level. The 30-day model runs in shadow mode, so it does not set the levels.</p><div class="sh">Theatres by level</div>${counts}</div>`;
+  if (!PM) return popWeek();
   const G = PM.gates || {};
   return `<div class="ph"><h4>Why ${pct(g.p_any)} for any theatre</h4><small>next 30 days</small></div><div class="pb">
     <p class="hint" style="margin:0 0 8px">This is the chance that at least one theatre has a qualifying event in the next 30 days. The usual value is ${pct(PM.clim)}. The theatres move together, so this is an upper limit. The level compares the value with the usual value.</p>
@@ -802,9 +1095,11 @@ function openPop(key, anchor){
   closePop(); tipHide();
   const p = $('#pop'); p.innerHTML = P[0](); p.style.width = P[2] + 'px'; p.classList.add('on');
   POP = {key, anchor}; anchor.classList.add('on'); placePop();
+  if (anchor.matches(':focus-visible')) { const f = focusables(p); if (f.length) f[0].focus({preventScroll: true}); }
 }
 function placePop(){
-  if (!POP) return; const p = $('#pop'), r = POP.anchor.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight, mode = POPS[POP.key][1];
+  if (!POP) return;
+  if (isPhone()) { $('#pop').style.left = $('#pop').style.top = ''; return; }   // a bottom sheet (CSS) const p = $('#pop'), r = POP.anchor.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight, mode = POPS[POP.key][1];
   let x, y;
   if (mode === 'right') { x = r.right + 10; y = r.top; }
   else if (mode === 'below-right') { x = r.right - w; y = r.bottom + 8; }
@@ -813,7 +1108,7 @@ function placePop(){
   p.style.left = x + 'px'; p.style.top = y + 'px';
 }
 function refreshPop(){ if (!POP) return; const st = $('#pop .pb') ? $('#pop .pb').scrollTop : 0; $('#pop').innerHTML = POPS[POP.key][0](); placePop(); const pb = $('#pop .pb'); if (pb) pb.scrollTop = st; }
-function closePop(){ if (!POP) return; POP.anchor.classList.remove('on'); POP = null; $('#pop').classList.remove('on'); }
+function closePop(){ if (!POP) return; const a = POP.anchor, back = $('#pop').contains(document.activeElement); a.classList.remove('on'); POP = null; $('#pop').classList.remove('on'); if (back && a.isConnected) a.focus({preventScroll: true}); }
 document.addEventListener('click', e => {
   const p = e.target.closest('[data-pop]'); if (p) { openPop(p.dataset.pop, p); return; }
   if (POP && !e.target.closest('#pop')) closePop();
@@ -840,6 +1135,24 @@ function tipShow(el, html){
 }
 function tipAt(e, html){ const t = $('#tip'); t.innerHTML = html; t.style.display = 'block'; const w = t.offsetWidth, h = t.offsetHeight; let x = e.clientX + 14, y = e.clientY + 14; if (x + w > innerWidth - 6) x = e.clientX - w - 12; if (y + h > innerHeight - 6) y = e.clientY - h - 12; t.style.left = x + 'px'; t.style.top = y + 'px'; }
 function tipHide(){ $('#tip').style.display = 'none'; }
+let toastT = null;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => { t.style.display = 'none'; }, 1800); }
+/* share a view: the routes live in the URL, so a link to the current hash (or to a signal's detail) is the view */
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-copy]'); if (!c) return;
+  e.stopPropagation(); e.preventDefault();
+  const url = location.href.split('#')[0] + '#' + (c.dataset.copy === '1' ? location.hash.slice(1) : c.dataset.copy);
+  const done = () => toast('Link copied'), fail = () => { prompt('Copy this link', url); };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(done, fail); else fail();
+}, true);
+/* touch screens have no hover: a tap on an (i) or a badge opens its explanation, the next tap anywhere closes it */
+let tipEl = null;
+document.addEventListener('click', e => {
+  if (!matchMedia('(hover: none)').matches) return;
+  const el = e.target.closest('.info,.shadowb');
+  if (el && el.dataset.tip) { e.stopPropagation(); e.preventDefault(); if (tipEl === el) { tipHide(); tipEl = null; } else { tipShow(el, esc(el.dataset.tip)); tipEl = el; } return; }
+  if (tipEl) { tipHide(); tipEl = null; }
+}, true);
 document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip]'); if (el) tipShow(el, esc(el.dataset.tip)); });
 document.addEventListener('mouseout', e => { const el = e.target.closest('[data-tip]'); if (el && !el.contains(e.relatedTarget)) tipHide(); });
 addEventListener('keydown', e => {
@@ -849,6 +1162,28 @@ addEventListener('keydown', e => {
   if ($('#modal').style.display === 'flex') { if (e.key === 'ArrowRight') stepModal(1); if (e.key === 'ArrowLeft') stepModal(-1); }
 });
 addEventListener('resize', () => { if (POP) placePop(); });
+/* Keyboard access: rows, cards and list items that act on click get tabindex and role=button, and Enter or Space clicks them.
+   Info marks show their explanation on focus. */
+const KB = '[data-id],[data-nav],[data-go],[data-alert],[data-mi],[data-dom],[data-row],[data-open],[data-pop],[data-dtab],[data-pm],.info';
+let kbQ = 0;
+function kbScan(){ kbQ = 0; document.querySelectorAll(KB).forEach(el => { if (el.dataset.kb || el.closest('svg') || el.matches('button,a[href],input,select,textarea,summary')) return; el.dataset.kb = '1'; el.tabIndex = 0; if (!el.classList.contains('info')) el.setAttribute('role', 'button'); }); }
+new MutationObserver(() => { if (!kbQ) kbQ = requestAnimationFrame(kbScan); }).observe(document.body, {childList: true, subtree: true});
+document.addEventListener('keydown', e => {
+  const el = e.target; if (!el.dataset || !el.dataset.kb || (e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault(); if (el.classList.contains('info')) { tipShow(el, esc(el.dataset.tip || '')); return; } el.click();
+});
+document.addEventListener('focusin', e => { const el = e.target.closest && e.target.closest('.info,.shadowb'); if (el && el.dataset.tip) tipShow(el, esc(el.dataset.tip)); });
+document.addEventListener('focusout', e => { if (e.target.closest && e.target.closest('.info,.shadowb')) tipHide(); });
+/* Focus: the detail view and the pop-ups take focus when they open, keep Tab inside the detail view, and give it back on close */
+let modalRet = null;
+const focusables = root => Array.from(root.querySelectorAll('button,a[href],input,select,textarea,summary,[tabindex="0"]')).filter(x => x.offsetParent !== null);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Tab' || $('#modal').style.display !== 'flex') return;
+  const f = focusables($('#mbox')); if (!f.length) return;
+  const i = f.indexOf(document.activeElement);
+  if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); }
+  else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+});
 
 /* ------------------------------------------------------------ map */
 const M = D.map;
@@ -1090,15 +1425,23 @@ function popText(){
   return `<div class="ph"><h4>Label size</h4></div><div class="pb"><span class="seg">${[[0.9, 'Small'], [1, 'Medium'], [1.25, 'Large']].map(([v, n]) => `<button class="${Math.abs(pref.lbl - v) < .01 ? 'on' : ''}" data-sz="${v}">${n}</button>`).join('')}</span></div>`;
 }
 /* map interaction */
-let drag = null, moved = false;
-svg.addEventListener('pointerdown', e => { if (e.button !== 0) return; drag = {x: e.clientX, y: e.clientY, vx: view.x, vy: view.y}; moved = false; });
+let drag = null, moved = false, pinch = null;
+const ptrs = new Map();   // touch points on the map, for pinch zoom
+svg.addEventListener('pointerdown', e => {
+  ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
+  if (ptrs.size === 2) { const [a, b] = Array.from(ptrs.values()); pinch = {d: Math.hypot(a.x - b.x, a.y - b.y)}; drag = null; moved = true; return; }
+  if (e.button !== 0) return; drag = {x: e.clientX, y: e.clientY, vx: view.x, vy: view.y}; moved = false; });
 addEventListener('pointermove', e => {
+  if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
+  if (pinch && ptrs.size === 2) { const [a, b] = Array.from(ptrs.values()), d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (d > 0 && pinch.d > 0) { if (anim) cancelAnimationFrame(anim); zoomAt(d / pinch.d, (a.x + b.x) / 2, (a.y + b.y) / 2); pinch.d = d; } return; }
   if (!drag) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   if (!moved && Math.hypot(dx, dy) > 4) { moved = true; svg.classList.add('drag'); tipHide(); hideHover(); if (anim) cancelAnimationFrame(anim); }
   if (moved) { const [cw] = clientSize(); const s = view.w / cw; view.x = drag.vx - dx * s; view.y = drag.vy - dy * s; clampView(); applyView(); }
 });
-addEventListener('pointerup', () => { drag = null; svg.classList.remove('drag'); });
+const ptrEnd = e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; drag = null; svg.classList.remove('drag'); };
+addEventListener('pointerup', ptrEnd); addEventListener('pointercancel', ptrEnd);
 svg.addEventListener('wheel', e => { e.preventDefault(); if (anim) cancelAnimationFrame(anim); hideHover(); zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY); }, {passive: false});
 $('#zin').onclick = () => { const r = svg.getBoundingClientRect(); zoomAt(1.5, r.left + r.width / 2, r.top + r.height / 2); };
 $('#zout').onclick = () => { const r = svg.getBoundingClientRect(); zoomAt(1 / 1.5, r.left + r.width / 2, r.top + r.height / 2); };
@@ -1185,9 +1528,10 @@ function buildPins(){
   if (!M || !isMapView()) return;
   pinItems().forEach(p => {
     const th = D.theatres[p.th], col = LEVEL[th.level], l = lead(p.th);
-    const d = document.createElement('i'); d.className = 'pdot' + (th.level !== 'Normal' && th.level !== 'insufficient data' ? ' w' : ''); d.style.setProperty('--c', col); d.dataset.pin = p.key;
+    const tl = (p.region ? p.region.kids : [p.th]).some(k => tellsCount(k).on.length);
+    const d = document.createElement('i'); d.className = 'pdot' + ((PM ? th.level !== 'Normal' && th.level !== 'insufficient data' : tl) ? ' w' : ''); d.style.setProperty('--c', tl && !PM ? 'var(--tell)' : col); d.dataset.pin = p.key;
     const b = document.createElement('div'); b.className = 'plab'; b.style.setProperty('--c', col); b.dataset.pin = p.key;
-    b.innerHTML = `<b>${esc(l.txt)}</b><span>${esc(p.name.replace(/ \(.*$/, ''))}</span>`;
+    b.innerHTML = `<b>${esc(l.txt)}</b><span>${esc(p.name.replace(/ \(.*$/, ''))}</span>${tl ? '<i class="tdot" aria-label="timing tell this week"></i>' : ''}`;
     box.appendChild(d); box.appendChild(b);
     PINS.push(Object.assign(p, {dot: d, el: b, rank: RANKL[th.level] * 10 + Math.max(0, l.v)}));
   });
@@ -1217,10 +1561,10 @@ let hoverT = null, hoverKey = null;
 function hideHover(){ clearTimeout(hoverT); hoverKey = null; $('#hcard').style.display = 'none'; $$('.plab.hl').forEach(e => e.classList.remove('hl')); $$('.tr.hl').forEach(e => e.classList.remove('hl')); }
 function summaryLine(t){
   const th = D.theatres[t];
-  const a = th.why && th.why[0] ? `The main push comes from ${esc(lc(shortL(th.why[0][0])))}.` : '';
+  const w = ownWhy(t)[0], a = w ? `The main push of its own comes from ${esc(lc(shortL(w[0])))}.` : '';
   return `${a} ${th.firing.length ? `${th.firing.length} of ${th.scorable} signal groups are unusual.` : 'No signal group is unusual now.'}`;
 }
-function drvBars(t, n){ const th = D.theatres[t], w = (th.why || []).slice(0, n || 3), mx = Math.max(...w.map(x => x[1]), .01);
+function drvBars(t, n){ const w = ownWhy(t).slice(0, n || 3), mx = Math.max(...w.map(x => x[1]), .01);
   return w.length ? `<div class="drv">${w.map(x => `<div><span title="${esc(x[0])}">${esc(shortL(x[0]))}</span><u><i style="width:${x[1] / mx * 100}%"></i></u></div>`).join('')}</div>` : '<p class="hint">No signal family pushes the chance up now.</p>'; }
 function showHover(key){
   const p = PINS.find(x => x.key === key); if (!p || !p.box) return;
@@ -1228,11 +1572,12 @@ function showHover(key){
   const t = p.th, th = D.theatres[t], r = p.region || regOf[t], kids = r && r.kids.length > 1 ? r.kids : null, l = lead(t);
   const target = p.region && kids ? 'region/' + r.id : t;
   let h = `<div class="top"><h3>${esc(p.region ? r.name : th.name)}</h3>${lvPill(th.level)}</div>`;
-  h += `<div class="big"><b style="color:${LEVEL[th.level]}">${esc(l.txt)}</b><small>${leadP() && th.p != null ? `chance in 30 days${p.region && kids ? ', ' + esc(th.name) : ''} · range ${pct(th.plo)} to ${pct(th.phi)}` : 'signal pressure, 0 to 100'}</small></div>`;
+  h += `<div class="big"><b style="color:${PM ? LEVEL[th.level] : 'var(--ink)'}">${esc(l.txt)}</b><small>${leadP() && th.p != null ? `chance in 30 days${p.region && kids ? ', ' + esc(th.name) : ''} · range ${pct(th.plo)} to ${pct(th.phi)}` : `unusual readings, 0 to 100${p.region && kids ? ', ' + esc(th.name) : ''}${th.xu != null ? ` · standing risk ${th.xu.toFixed(1)}× usual, not validated` : ''}`}</small></div>`;
   h += `<p>${summaryLine(t)}</p>`;
   { const tc = tellsCount(t); if (tc.n) h += `<p class="hint" style="margin:-2px 0 6px">Timing tells this week: <b style="color:${tc.on.length ? 'var(--elevated)' : 'var(--ink)'}">${tc.on.length} of ${tc.n}</b>${tc.on.length ? ' · ' + tc.on.map(x => esc(x.n)).join(', ') : ''}</p>`; }
-  h += `<div class="sh">What pushes ${esc(th.name)} up ${inf(PM ? 'The signal families that add most to the 30-day chance. A longer bar adds more.' : 'The signal families that add most to the model\'s 30-day chance. The model has not passed its release checks, so this is for reference only. A longer bar adds more.')}</div>${drvBars(t, 3)}`;
-  if (kids) h += `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">${leadP() ? '30 days' : 'Pressure'}</span><span class="h r">Change</span>${kids.map(k => `<span>${dot(D.theatres[k].level)} ${esc(thName(k))}</span><b class="num r">${esc(lead(k).txt)}</b><span class="r">${changeTxt(k)}</span>`).join('')}</div>`;
+  h += `<div class="sh">What pushes ${esc(th.name)} up ${inf(PM ? 'The signal families of this theatre that add most to the 30-day chance. World tempo, the same for every theatre, is left out. A longer bar adds more.' : 'The signal families of this theatre that add most to the model\'s 30-day chance. World tempo, the same for every theatre, is left out. The model has not passed its release checks, so this is for reference only.')}</div>${drvBars(t, 3)}`;
+  if (kids) h += PM ? `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">${leadP() ? '30 days' : 'Pressure'}</span><span class="h r">Change</span>${kids.map(k => `<span>${dot(D.theatres[k].level)} ${esc(thName(k))}</span><b class="num r">${esc(lead(k).txt)}</b><span class="r">${changeTxt(k)}</span>`).join('')}</div>`
+    : `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">Unusual</span><span class="h r">Tells</span>${kids.map(k => `<span>${dot(D.theatres[k].level)} ${esc(thName(k))}${isSub(k) ? ' <span class="subl">sub</span>' : ''}</span><b class="num r">${fs(D.theatres[k].score)}</b><span class="r">${tellChip(k)}</span>`).join('')}</div>`;
   h += `<div class="row" style="justify-content:space-between;margin-top:6px"><span class="hint">Data coverage ${Math.round((1 - (th.miss || 0)) * 100)}% · confidence ${esc(String(th.confl || '').toLowerCase())}</span><button class="btn pri" data-nav="${target}">Open ${esc(p.region && kids ? r.name : th.name)} ${ic('chev', 's')}</button></div>`;
   const c = $('#hcard'); c.innerHTML = h; c.style.display = 'block';
   const [cw, ch] = clientSize(), w = c.offsetWidth, hh = c.offsetHeight, b = p.box;
@@ -1248,24 +1593,45 @@ $('#hcard').addEventListener('click', e => { const n = e.target.closest('[data-n
 $('#pins').addEventListener('click', e => { const p = e.target.closest('[data-pin]'); if (!p) return; const [k, id] = p.dataset.pin.split(':'); nav(k === 'r' ? (REGBY[id].kids.length > 1 ? 'region/' + id : REGBY[id].kids[0]) : id); });
 
 /* ------------------------------------------------------------ overview dock */
+/* movers: the signals furthest from their own normal, at most two per theatre, stale copies and events left out */
+function moversList(n){
+  const per = {}, out = [];
+  D.series.filter(s => s.z != null && s.t !== 'global' && !s.stale && !isEv(s)).sort((a, b) => b.z - a.z).forEach(s => {
+    if (out.length >= n || (per[s.t] || 0) >= 2) return; per[s.t] = (per[s.t] || 0) + 1; out.push(s); });
+  return out;
+}
+const RANKW = () => THEATRES.slice().sort((a, b) => tellsCount(b).on.length - tellsCount(a).on.length || (D.theatres[b].score || 0) - (D.theatres[a].score || 0));
+function thRowN(t){
+  const th = D.theatres[t];
+  return `<div class="tr tr2" data-th="${t}"><span class="n">${dot(th.level)}${esc(th.name)}${isSub(t) ? '<em>sub</em>' : ''}</span>${tellChip(t)}<span class="bw"><span class="bar6"><i style="width:${Math.min(100, th.score || 0)}%;background:${LEVEL[th.level]}"></i></span><b class="num">${fs(th.score)}</b></span><span class="num xu" data-tip="Standing risk: 30-day chance as a multiple of the usual chance here. Not validated.">${th.xu != null ? th.xu.toFixed(1) + '×' : '–'}</span></div>`;
+}
+let dockTab = store.get('ww_dtab', 'mov');
 function renderDock(){
   const d = $('#dock');
   if (R.v !== 'overview') { d.classList.remove('on'); d.innerHTML = ''; return; }
   const min = pref.dock === 'min';
-  const movers = D.series.filter(s => s.z != null && s.t !== 'global').sort((a, b) => b.z - a.z).slice(0, 12);
+  const movers = moversList(12);
   const mks = D.markets.slice().sort((a, b) => (b.vol || 0) - (a.vol || 0));
   const top = Math.max(0.12, ...THEATRES.map(t => D.theatres[t].p || 0));
   const tog = `<button class="dtog" data-dock="1" aria-label="${min ? 'Show the panels' : 'Hide the panels'}" data-tip="${min ? 'Show the panels' : 'Hide the panels'}">${ic(min ? 'chevu' : 'chevd', 's')}</button>`;
-  d.innerHTML = `<div class="dk"><div class="dh">Theatres, highest first ${inf(leadP() ? 'The chance of a qualifying event in the next 30 days, from the fitted model. Change is in percentage points over the last 7 days.' : 'Signal pressure, 0 to 100. 50 is the Watch line and 90 is the Critical line.')}<small>${leadP() ? '30 days · change' : 'pressure'}</small>${tog}</div><div class="dc">${RANK.map(t => { const th = D.theatres[t], l = lead(t);
-      return `<div class="tr" data-th="${t}"><span class="n">${dot(th.level)}${esc(th.name)}<em>${esc(regOf[t] ? regOf[t].name : '')}</em></span><b class="num" style="text-align:right;color:${LEVEL[th.level]}">${esc(l.txt)}</b><span style="text-align:right;font-size:11.5px">${changeTxt(t)}</span><span class="bar6"><i style="width:${Math.min(100, (leadP() && th.p != null ? th.p / top : (th.score || 0) / 100) * 100)}%;background:${LEVEL[th.level]}"></i></span></div>`; }).join('')}</div></div>
-    <div class="dk"><div class="dh">Biggest movers ${inf('Signals furthest from their own normal level, in standard deviations (SD). 2 SD or more is unusual.')}<small>SD from normal</small>${tog}</div><div class="dc">${movers.map(s => `<div class="mv" data-id="${esc(s.id)}"><span class="n">${esc(shortL(s.l))}<small>${esc(thName(s.t))} · ${GN[s.d]}</small></span><span>${spark(s.pts && s.pts.slice(-30), zcol(s.z), 54, 18)}</span><span class="sdv" style="color:${zcol(s.z)}">${fmtz(s.z)}</span></div>`).join('') || '<div class="empty">No signal has a score yet.</div>'}</div></div>
-    <div class="dk"><div class="dh">Prediction markets ${inf('What traders with money at stake think. Shown for context. Not part of the score.')}<small>odds now</small>${tog}</div><div class="dc">${mks.map(m => `<div class="mv" data-mi="${D.markets.indexOf(m)}"><span class="n">${esc(m.q)}<small>${esc(m.src)} · ${m.theatre ? esc(thName(m.theatre)) : 'Global'}${m.end ? ' · ends ' + esc(m.end) : ''}</small></span><span>${spark(m.h, '#58a6ff', 54, 18)}</span><span class="sdv">${Math.round(m.p * 100)}%</span></div>`).join('') || '<div class="empty">No open war or military markets were found.</div>'}${D.pizza && D.pizza[0] != null ? `<div class="hint" style="padding:6px 6px 0">Pentagon pizza index: <b style="color:var(--ink)">${Math.round(D.pizza[0])}</b>/100, ${D.pizza[1]} active spike${D.pizza[1] === 1 ? '' : 's'}. A weak signal.</div>` : ''}</div></div>`;
+  const thPanel = PM ? `<div class="dk"><div class="dh">Theatres, highest first ${inf(leadP() ? 'The chance of a qualifying event in the next 30 days, from the fitted model. Change is in percentage points over the last 7 days.' : 'Signal pressure, 0 to 100. 50 is the Watch line and 90 is the Critical line.')}<small>${leadP() ? '30 days · change' : 'pressure'}</small>${tog}</div><div class="dc">${RANK.map(t => { const th = D.theatres[t], l = lead(t);
+      return `<div class="tr" data-th="${t}"><span class="n">${dot(th.level)}${esc(th.name)}<em>${esc(regOf[t] ? regOf[t].name : '')}</em></span><b class="num" style="text-align:right;color:${LEVEL[th.level]}">${esc(l.txt)}</b><span style="text-align:right;font-size:11.5px">${changeTxt(t)}</span><span class="bar6"><i style="width:${Math.min(100, (leadP() && th.p != null ? th.p / top : (th.score || 0) / 100) * 100)}%;background:${LEVEL[th.level]}"></i></span></div>`; }).join('')}</div></div>`
+    : `<div class="dk"><div class="dh">Theatres ${inf('Ordered by timing tells this week, then by unusual readings (0 to 100, not a chance). The grey multiple is the standing risk against the usual chance here; it is not validated.')}<small>tells · unusual · risk</small>${tog}</div><div class="dc">${RANKW().map(thRowN).join('')}</div></div>`;
+  const wkPanel = `<div class="dk"><div class="dh">This week ${inf('Timing tells seen, strong readings and new ratings in the last 7 days. Click a line to see the signal.')}<small>last 7 days</small>${tog}</div><div class="dc">${weekKpis()}<div class="feed">${feedRows(weekFeed(), 8)}</div></div></div>`;
+  const movRows = movers.map(s => `<div class="mv" data-id="${esc(s.id)}"><span class="n">${esc(shortL(s.l))}<small>${esc(thName(s.t))} · ${esc(rawTxt(s))}</small></span><span>${spark(s.pts && s.pts.slice(-30), zcol(s.z), 54, 18)}</span><span class="sdv" style="color:${zcol(s.z)}">${fmtz(s.z)}</span></div>`).join('') || '<div class="empty">No signal has a score yet.</div>';
+  const mkRows = mks.map(m => `<div class="mv" data-mi="${D.markets.indexOf(m)}"><span class="n">${esc(m.q)}<small>${esc(m.src)} · ${m.theatre ? esc(thName(m.theatre)) : 'Global'}${m.end ? ' · ends ' + esc(m.end) : ''}</small></span><span>${spark(m.h, '#58a6ff', 54, 18)}</span><span class="sdv">${Math.round(m.p * 100)}%</span></div>`).join('') || '<div class="empty">No open war or military markets were found.</div>';
+  const pizza = D.pizza && D.pizza[0] != null ? `<div class="hint" style="padding:6px 6px 0">Pentagon pizza index: <b style="color:var(--ink)">${Math.round(D.pizza[0])}</b>/100, ${D.pizza[1]} active spike${D.pizza[1] === 1 ? '' : 's'}. A weak signal.</div>` : '';
+  const thirdPanel = `<div class="dk"><div class="dh"><span class="dtabs"><button class="${dockTab === 'mov' ? 'on' : ''}" data-dtab="mov">Biggest movers</button><button class="${dockTab === 'mk' ? 'on' : ''}" data-dtab="mk">Markets <b>${mks.length}</b></button></span>${inf(dockTab === 'mov' ? 'Signals furthest from their own normal level, in standard deviations (SD), with the raw value. At most two per theatre; stale copies and events are left out.' : 'What traders with money at stake think. Shown for context. Not part of the score.')}<small>${dockTab === 'mov' ? 'SD from normal' : 'odds now'}</small>${tog}</div><div class="dc">${dockTab === 'mov' ? movRows : mkRows + pizza}</div></div>`;
+  d.innerHTML = PM ? thPanel + `<div class="dk"><div class="dh">Biggest movers ${inf('Signals furthest from their own normal level, in standard deviations (SD), with the raw value. At most two per theatre.')}<small>SD from normal</small>${tog}</div><div class="dc">${movRows}</div></div><div class="dk"><div class="dh">Prediction markets ${inf('What traders with money at stake think. Shown for context. Not part of the score.')}<small>odds now</small>${tog}</div><div class="dc">${mkRows}${pizza}</div></div>`
+    : thPanel + wkPanel + thirdPanel;
   d.classList.add('on'); d.classList.toggle('min', min);
 }
 $('#dock').addEventListener('click', e => {
+  const dt = e.target.closest('[data-dtab]'); if (dt) { dockTab = dt.dataset.dtab; store.set('ww_dtab', dockTab); renderDock(); return; }
   if (e.target.closest('[data-dock]')) { pref.dock = pref.dock === 'min' ? 'open' : 'min'; store.set('ww_dock', pref.dock); renderDock(); placePins(); layoutLabels(); return; }
   const t = e.target.closest('[data-th]'); if (t) { nav(t.dataset.th); return; }
   const s = e.target.closest('[data-id]'); if (s) { openModal(s.dataset.id); return; }
+  const nv = e.target.closest('[data-nav]'); if (nv) { nav(nv.dataset.nav); return; }
   const m = e.target.closest('[data-mi]'); if (m) openMarket(+m.dataset.mi);
 });
 $('#dock').addEventListener('mouseover', e => { const t = e.target.closest('.tr[data-th]'); if (!t) return; const p = PINS.find(x => x.th === t.dataset.th) || PINS.find(x => x.region && x.region.kids.includes(t.dataset.th)); $$('.plab.hl').forEach(x => x.classList.remove('hl')); if (p) p.el.classList.add('hl'); });
@@ -1283,6 +1649,17 @@ D.order.forEach(t => {
 });
 function steSummary(t){
   const th = D.theatres[t], out = [];
+  if (!PM) {      // shadow mode: lead with the tells, then what is strong, then official signals, then the standing risk
+    const tc = tellsCount(t);
+    if (tc.n) out.push(tc.on.length ? `<b>Timing tells this week: ${tc.on.length} of ${tc.n}</b> (${tc.on.map(x => esc(lc(x.n))).join(', ')}).` : `<b>No timing tell this week</b> (0 of ${tc.n} watched).`);
+    const ss = seriesOf(t).filter(s => s.z != null && !isEv(s) && s.z >= T_SIG), fam = Array.from(new Set(ss.map(s => GN[s.d])));
+    out.push(ss.length ? `${ss.length} reading${ss.length === 1 ? ' is' : 's are'} strong, in ${fam.join(' and ')}.` : 'No reading is strong.');
+    seriesOf(t).filter(s => isEv(s) && s.z > 0).forEach(s => out.push(s.tf === 'event' ? `CrisisWatch: ${esc(evWords(s))}.` : `${esc(shortL(s.l))}: ${esc(evWords(s))}.`));
+    if (th.xu != null) out.push(`Standing risk is ${th.xu.toFixed(1)}× usual and not validated.`);
+    if (th.basis === 'lagging only') out.push('<b>Only late data is unusual. It shows a build-up that already started. It is not an early warning.</b>');
+    if (isSub(t)) out.push(subNote(t));
+    return out.filter(Boolean).join(' ');
+  }
   if (th.p != null && PM) {
     out.push(`The chance of a qualifying event here in the next 30 days is <b>${pct(th.p)}</b>.`);
     out.push({Normal: `This is below the Watch line of ${pct(BANDS[0])}.`, Watch: 'This is up to two times the usual theatre level.', Elevated: 'This is two to five times the usual theatre level.', Critical: `This is ${pct(BANDS[2])} or more.`}[th.level] || '');
@@ -1302,32 +1679,40 @@ function renderPanel(){
   if (R.v === 'overview') { P.innerHTML = ''; return; }
   const r = R.v === 'region' ? REGBY[R.id] : regOf[R.id];
   let h = '';
-  if (r && r.kids.length > 1) h += `<div class="rtabs">${[`<button class="${R.v === 'region' ? 'on' : ''}" data-nav="region/${r.id}" data-tip="${esc(r.name)}: all theatres side by side">Overview</button>`].concat(r.kids.map(k => `<button class="${R.id === k ? 'on' : ''}" data-nav="${k}">${dot(D.theatres[k].level)}${esc(thName(k))}<small>${esc(lead(k).txt)}</small></button>`)).join('')}</div>`;
+  if (r && r.kids.length > 1) { const own = r.kids.filter(k => !isSub(k)), subs = r.kids.filter(isSub), tab = k => `<button class="${R.id === k ? 'on' : ''}" data-nav="${k}">${dot(D.theatres[k].level)}${esc(thName(k))}<small>${esc(lead(k).txt)}</small>${tellsCount(k).on.length ? '<i class="tdot" aria-label="timing tell"></i>' : ''}</button>`;
+    h += `<div class="rtabs" id="rtabs"><button class="${R.v === 'region' ? 'on' : ''}" data-nav="region/${r.id}" data-tip="${esc(r.name)}: all theatres side by side">Overview</button>${own.map(tab).join('')}${subs.length ? `<span class="rdiv" data-tip="Sub-theatres: countries drawn into a neighbour's war"></span>${subs.map(tab).join('')}` : ''}</div>`; }
+  const mapt = `<button class="phonly mapt" data-mapt="1">${ic(mapOpen ? 'chevu' : 'chevd', 's')} ${mapOpen ? 'Hide the map' : 'Show the map'}</button>`;
+  h += mapt;
   if (R.v === 'region') { P.innerHTML = h + regionBody(r); return; }
   const t = R.id, th = D.theatres[t], m = META[t];
-  h += `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}${r ? `<a data-nav="${r.kids.length > 1 ? 'region/' + r.id : r.kids[0]}">${esc(r.name)}</a>${ic('chev', 's')}` : ''}<span>${esc(thName(t))}</span></div><h2>${esc(thName(t))} ${lvPill(th.level)}</h2><p>${steSummary(t)}</p></div>`;
+  h += `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}${r ? `<a data-nav="${r.kids.length > 1 ? 'region/' + r.id : r.kids[0]}">${esc(r.name)}</a>${ic('chev', 's')}` : ''}<span>${esc(thName(t))}</span><button class="cp" data-copy="1" aria-label="Copy a link to this view">${ic('link', 's')} Link</button></div><h2>${esc(thName(t))} ${lvPill(th.level)}${isSub(t) ? '<span class="subl">sub-theatre</span>' : ''}</h2><p>${steSummary(t)}</p></div>`;
   const cov = Math.round((1 - (th.miss || 0)) * 100);
   const xu = th.xu != null ? `${th.xu.toFixed(1)}×` : pct(th.p);
   const k1 = th.p != null && !PM ? `<button class="kp" data-pop="kp-p"><small>Standing risk ${inf('The model\'s chance of a qualifying event in the next 30 days, as a multiple of this theatre\'s usual chance. It has not passed its release checks, so it does not set the level and is shown for reference only. Click to see what drives it.')}</small><b style="color:var(--dim)">${xu}<sub>usual</sub></b><span>not validated</span></button>`
     : th.p != null ? `<button class="kp" data-pop="kp-p"><small>Standing risk ${inf('The chance of a qualifying event in the next 30 days, as a multiple of this theatre\'s usual chance. Click to see what drives it.')}</small><b style="color:${LEVEL[th.level]}">${xu}<sub>usual</sub></b><span>${pct(th.p)} (${pct(th.plo)} to ${pct(th.phi)})</span></button>`
     : `<div class="kp"><small>30-day chance ${inf('The model gives no chance for this view. It covers the 13 theatres only.')}</small><b style="color:var(--dim)">n/a</b><span>no model here</span></div>`;
-  h += `<div class="kpis">${k1}
-    <button class="kp" data-pop="kp-s"><small>Pressure ${inf('How unusual the signals are, all together, from 0 to 100. 50 is the Watch line and 90 is the Critical line. It is not a chance. Click for details.')}</small><b>${fs(th.score)}<sub>/100</sub></b><span>${th.score == null ? 'no score' : th.score >= 90 ? 'above Critical' : th.score >= 50 ? 'above Watch' : 'below Watch'}</span></button>
-    <button class="kp" data-pop="kp-g"><small>Unusual ${inf('Signal groups at 2 SD or more from their normal level. Click to see all five.')}</small><b>${th.firing.length}<sub>/${th.scorable}</sub></b><span>${th.firing.length ? th.firing.map(d => GN[d]).join(', ') : 'none'}</span></button>
+  const tc = tellsCount(t);
+  const kTells = `<button class="kp" data-nav="${t}/drivers"><small>Timing tells ${inf('Costly, hard-to-reverse actions that came days before strikes in past cases. Each is a fixed yes-or-no rule over the last 7 days. They do not set the level.')}</small><b style="color:${tc.on.length ? 'var(--tell)' : 'var(--ink)'}">${tc.on.length}<sub>/${tc.n}</sub></b><span>${tc.n ? 'this week' : 'none watched here'}</span></button>`;
+  const kPress = `<button class="kp" data-pop="kp-s"><small>${PM ? 'Pressure' : 'Unusual readings'} ${inf('How unusual the signals are, all together, from 0 to 100. 50 is the Watch line and 90 is the Critical line. It is not a chance. Click for details.')}</small><b>${fs(th.score)}<sub>/100</sub></b><span>${th.score == null ? 'no score' : PM ? (th.score >= 90 ? 'above Critical' : th.score >= 50 ? 'above Watch' : 'below Watch') : 'not a chance'}</span></button>`;
+  const kGroups = `<button class="kp" data-pop="kp-g"><small>Unusual ${inf('Signal groups at 2 SD or more from their normal level. Click to see all five.')}</small><b>${th.firing.length}<sub>/${th.scorable}</sub></b><span>${th.firing.length ? th.firing.map(d => GN[d]).join(', ') : 'none'}</span></button>`;
+  h += `<div class="kpis">${PM ? k1 + kPress + kGroups : kTells + kPress + k1}
     <button class="kp" data-pop="kp-c"><small>Coverage ${inf('The share of this theatre\'s signals that have a score now. Low coverage makes the result less certain. Click for details.')}</small><b style="color:${cov < 60 ? 'var(--elevated)' : 'var(--ink)'}">${cov}%</b><span>${m.scored} of ${m.n}</span></button></div>`;
   const al = ALERTS.filter(a => t === 'global' ? !a.th : a.th === t), mk = marketsFor(t), hot = al.some(a => a.sev >= 70);
-  const sub = R.sub || 'drivers';
-  h += `<div class="stabs">${[['drivers', 'Drivers'], ['signals', 'Signals', m.n], ['alerts', 'Alerts', al.length], ['markets', 'Markets', mk.length], ['about', 'About']].map(([k, n, c]) => `<button class="${sub === k ? 'on' : ''}" data-nav="${t}/${k}">${n}${c != null ? `<b class="${k === 'alerts' && hot ? 'hot' : ''}">${c}</b>` : ''}</button>`).join('')}</div><div class="pbody" id="pbody">`;
+  const hw = historyItems(t).filter(x => ageH(x.d) != null && ageH(x.d) <= 24 * 7).length;
+  let sub = R.sub || 'drivers'; if (sub === 'markets' && !mk.length) sub = 'drivers';
+  h += `<div class="stabs">${[['drivers', 'Now'], ['signals', 'Signals', m.n], ['history', 'History', hw || null], mk.length ? ['markets', 'Markets', mk.length] : null, ['about', 'About']].filter(Boolean).map(([k, n, c]) => `<button class="${sub === k ? 'on' : ''}" data-nav="${t}/${k}">${n}${c != null ? `<b class="${k === 'history' && hot ? 'hot' : ''}">${c}</b>` : ''}</button>`).join('')}</div><div class="pbody" id="pbody">`;
   if (sub === 'drivers') h += driversBody(t);
   else if (sub === 'signals') h += signalsBody(t);
-  else if (sub === 'alerts') h += alertRows(al);
+  else if (sub === 'history') h += historyBody(t);
   else if (sub === 'markets') h += `<div class="sh">War and military prediction markets<small>context only, not scored</small></div>` + marketRows(mk);
   else h += aboutBody(t);
   P.innerHTML = h + `</div>`;
+  keepTabInView();
 }
+function keepTabInView(){ const rt = $('#rtabs'), on = rt && rt.querySelector('button.on'); if (on && (on.offsetLeft + on.offsetWidth > rt.scrollLeft + rt.clientWidth || on.offsetLeft < rt.scrollLeft)) rt.scrollLeft = on.offsetLeft - 24; }
 function waterfall(t){
   const th = D.theatres[t]; if (th.p == null || th.pb == null) return null;
-  const base = th.pb, why = (th.why || []), L = logit(Math.min(.999, Math.max(.001, th.p))), Lb = logit(base);
+  const base = th.pb, why = (th.why || []).filter(w => !WORLDW(w)).concat((th.why || []).filter(WORLDW)), L = logit(Math.min(.999, Math.max(.001, th.p))), Lb = logit(base);
   const rest = L - Lb - why.reduce((a, w) => a + w[1], 0);
   const steps = []; let cum = Lb;
   if (Math.abs(rest) > 0.004) { const a = sigm(cum); cum += rest; steps.push({n: 'Past conflict here, and smaller signals', d: sigm(cum) - a, a, b: sigm(cum), rest: true}); }
@@ -1343,27 +1728,78 @@ function tellRec(x){
   const ep = r.episodes;
   return `On our history (${r.first.slice(0, 4)} to ${r.last.slice(0, 4)}): fired ${ep} time${ep === 1 ? '' : 's'}, ${r.hits} followed by an event within 7 days; it came before ${r.caught} of ${r.events} events.${x.note ? ' ' + x.note : ''}`;
 }
+function tellRec2(x){ const r = x.rec; return r ? `${r.hits} of ${r.episodes} firing${r.episodes === 1 ? '' : 's'} before an event · caught ${r.caught} of ${r.events}` : 'no history to test it on yet'; }
 function tellsBody(t){
   const L = tellsOf(t); if (!L.length) return '';
   const c = tellsCount(t);
-  let h = `<div class="sh">Timing tells, last 7 days ${inf('Costly, hard-to-reverse actions that came days before strikes in past cases: departures, airlines leaving, tankers parked forward, closures. Each is a fixed rule, yes or no. They do not set the level. Each line gives the rule\'s record on our own history.')}<small>${c.on.length} of ${c.n} seen · rule based</small></div>`;
-  h += L.map(x => { const sid = x.src && SERIES[x.src] ? x.src : null;
-    return `<div class="tl ${x.on ? 'on' : ''}" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''} title="${esc(x.says)}"><span class="mk">${x.on ? '●' : x.on === false ? '○' : '–'}</span><span class="nm">${esc(x.n)}</span><span class="dt">${x.on ? esc(x.date) : x.on === false ? 'not seen' : 'not watched'}</span><span class="rc">${x.on == null ? esc(x.says) : esc(tellRec(x))}<br>Past case: ${esc(x.cases)}</span></div>`; }).join('');
+  let h = `<div class="sh">Timing tells, last 7 days ${inf('Costly, hard-to-reverse actions that came days before strikes in past cases: departures, airlines leaving, tankers parked forward, closures. Each is a fixed rule, yes or no. They do not set the level. The small line is the rule\'s record on our own history: how often a firing came before an event within 7 days, and how many events it caught. Tap a line for the rule and a past case.')}<small>${c.on.length} of ${c.n} seen · rule based</small></div>`;
+  const w = L.filter(x => x.on != null).sort((a, b) => (b.on ? 1 : 0) - (a.on ? 1 : 0)), nw = L.filter(x => x.on == null);
+  h += w.map(x => { const sid = x.src && SERIES[x.src] ? x.src : (x.on ? null : null);
+    return `<details class="tl2 ${x.on ? 'on' : ''}"><summary><span class="mk"></span><span class="nm">${esc(x.n)}</span><span class="dt">${x.on ? esc(x.date ? shortDate(x.date) : 'this week') : 'not seen'}</span><span class="rc">${esc(tellRec2(x))}</span></summary><div class="tx">${esc(x.says)} ${esc(tellRec(x))}<br>Past case: ${esc(x.cases)}${sid ? `<br><a data-id="${esc(sid)}">Open the signal that fired</a>` : ''}</div></details>`; }).join('');
+  if (nw.length) h += `<details class="tl2 nw"><summary><span class="mk"></span><span class="nm">Not watched yet: ${nw.map(x => esc(x.n)).join(', ')}</span><span class="dt">${nw.length}</span></summary><div class="tx">${nw.map(x => `<b>${esc(x.n)}.</b> ${esc(x.says)} Past case: ${esc(x.cases)}`).join('<br>')}</div></details>`;
   return h + '<div style="height:14px"></div>';
 }
+function strongBody(t){
+  const L = D.series.filter(s => s.t === t && s.z != null && !isEv(s) && s.z >= T_WATCH).sort((a, b) => b.z - a.z).slice(0, 5);
+  return `<div class="sh">Strongest readings ${inf('The signals furthest from their own normal now, with the raw value next to the distance in standard deviations (SD). 2 SD or more is unusual; 3 SD or more is strong.')}<small>raw value · SD</small></div>` +
+    (L.map(s => `<div class="sr" data-id="${esc(s.id)}"><span>${esc(causeL(t, s.l))}<small>${esc(rawTxt(s))}${s.lag ? ' · late data' : ''}${s.stale ? ' · stale copy' : ''}</small></span><b style="color:${zcol(s.z)}">${fmtz(s.z)}</b></div>`).join('') || '<p class="hint">No signal here is 2 SD or more from its normal now.</p>') + '<div style="height:14px"></div>';
+}
+function officialBody(t){
+  const O = (D.theatres[t].official || []); if (!O.length) return '';
+  return `<div class="sh">Official signals ${inf('What governments and Crisis Group say now. US advisories rate each country 1 to 4; a raise counts for 14 days. These are actions and ratings, read as what happened, not in SD.')}<small>as published</small></div>` +
+    O.map(o => `<div class="sr" ${SERIES[o.id] ? `data-id="${esc(o.id)}"` : ''}><span>${esc(o.n)}<small>${esc(o.v)}</small></span><time>${o.d ? esc(o.d.length > 7 ? shortDate(o.d) : monthName(o.d)) : ''}</time></div>`).join('') + '<div style="height:14px"></div>';
+}
+function tempoBody(t){
+  const T = (D.tempo || {})[t]; if (!T) return '';
+  let h = `<div class="sh">Tempo: ${esc(T.n)} ${inf('Alert waves in the last 7 days, read once a week for 12 weeks. The dashed mark is the strike-wave rule\'s line on that day: twice the usual count of the 90 days before, and at least 5. A hidden 7-day model reads this tempo; it is logged on the Track record page and is not shown as a chance.')}<small>12 weeks · hidden model input</small></div>`;
+  if (!T.w.length) return h + `<p class="hint">${T.st === 'awaiting_key' ? `Not read yet: it needs the free key ${esc((T.needs || []).join(', '))}.` : 'No reading yet.'}</p><div style="height:10px"></div>`;
+  const now = T.w[T.w.length - 1], mx = Math.max(5, ...T.w.map(w => w[1] || 0), now[2] || 0) * 1.25;   // scaled to the counts and today's line; an older, higher line is left off
+  return h + `<div class="tempo" ${SERIES[T.id] ? `data-id="${esc(T.id)}"` : ''} role="img" aria-label="${esc(T.n)}, last 12 weeks">` + T.w.map(([d, v, thr]) => `<div class="tb ${v != null && thr != null && v >= thr ? 'on' : ''}" data-tip="${esc(shortDate(d))}: ${v == null ? 'no reading' : v + ' waves in 7 days'}${thr != null ? ' · rule line ' + thr : ''}"><i style="height:${(v || 0) / mx * 100}%"></i>${thr != null && thr <= mx ? `<u style="bottom:${thr / mx * 100}%"></u>` : ''}</div>`).join('') +
+    `</div><div class="tempox"><span>${esc(shortDate(T.w[0][0]))}</span><span>now ${now[1] == null ? 'n/a' : now[1]} in 7 days${now[2] != null ? ` · line ${now[2]}` : ''}</span></div>`;
+}
 function driversBody(t){
-  const th = D.theatres[t]; let h = tellsBody(t);
-  const wf = waterfall(t);
+  const th = D.theatres[t]; let h = tellsBody(t) + tempoBody(t) + strongBody(t) + officialBody(t);
+  const wf = PM ? waterfall(t) : null;
+  if (!PM && th.p != null) h += `<p class="hint" style="margin:0 0 4px">What moves the standing risk is in its <a data-pop="kp-p" style="color:var(--accent);cursor:pointer">pop-up</a>, while the model is in shadow.</p>`;
   if (wf) {
     const mx = Math.max(...wf.steps.filter(s => !s.rest).map(s => s.d), .0001);
     h += `<div class="sh">What moves the chance ${inf('Each bar shows how many percentage points one signal family adds to the 30-day chance. Click a row to see the signal.')}<small>${PM ? 'points added' : 'model not validated'}</small></div>`;
     h += wf.steps.filter(s => !s.rest).map(s => { const sid = familySeries(t, s.n); return `<div class="wf" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''}><span title="${esc(s.n)}">${esc(shortL(s.n))}</span><span class="bar"><i style="width:${Math.max(2, s.d / mx * 100)}%;background:var(--accent)"></i></span><b style="color:var(--mute)">${ppt(s.d)}</b></div>`; }).join('') || '<p class="hint">No signal family pushes the chance up now.</p>';
-    h += `<p class="hint" style="margin:6px 0 0">The chance starts from the long-run rate here, ${pct(wf.base)}. Click "30-day chance" above for every step.</p>`;
-  } else if (th.why && th.why.length) h += `<div class="sh">What moves the chance</div>` + drvBars(t, 6);
+    h += `<p class="hint" style="margin:6px 0 0">The chance starts from the long-run rate here, ${pct(wf.base)}. ${PM ? 'Open "30-day chance" above' : 'Open Standing risk above'} for every step.</p>`;
+  } else if (PM && th.why && th.why.length) h += `<div class="sh">What moves the chance</div>` + drvBars(t, 6);
   h += `<div class="sh" style="margin-top:16px">Signal groups ${inf('Each group combines its strongest signals. The ticks mark 2 SD (unusual) and 3 SD (strong). Click a group to see its signals.')}<small>SD from normal · weight</small></div>`;
   h += D.domains.map(d => { const x = th.doms[d.id], z = x.z, w = z == null ? 0 : Math.max(0, Math.min(100, z / 5 * 100));
     const dr = (x.drivers || []).filter(q => q[1] > 0 && SERIES[q[0]]).slice(0, 2);
-    return `<div class="dom" data-dom="${d.id}" data-tip="${esc(d.help)}"><span class="nm">${GN[d.id]}<small>${x.n} signals</small></span><span class="zbar"><span class="trk"></span><i style="width:${w}%;--c:${zcol(z)}"></i><u style="left:${T_WATCH / 5 * 100}%"></u><u style="left:${T_SIG / 5 * 100}%"></u></span><span class="zv" style="color:${zcol(z)}">${fmtz(z)}</span><span class="wt">${Math.round(x.w * 100)}%</span>${dr.length ? `<span class="drow">Led by ${dr.map(q => `<a data-id="${esc(q[0])}">${esc(shortL(SERIES[q[0]].l))}</a> <span class="num" style="color:${zcol(q[1])}">${fmtz(q[1])}</span>`).join(' · ')}</span>` : ''}</div>`; }).join('');
+    return `<div class="dom" data-dom="${d.id}" data-tip="${esc(d.help)}"><span class="nm">${GN[d.id]}<small>${x.n} signals</small></span><span class="zbar"><span class="trk"></span><i style="width:${w}%;--c:${zcol(z)}"></i><u style="left:${T_WATCH / 5 * 100}%"></u><u style="left:${T_SIG / 5 * 100}%"></u></span><span class="zv" style="color:${zcol(z)}">${fmtz(z)}</span><span class="wt">${Math.round(x.w * 100)}%</span>${dr.length ? `<span class="drow">Led by ${dr.map(q => `<a data-id="${esc(q[0])}">${esc(shortL(SERIES[q[0]].l))}</a> <span class="num" style="color:${zcol(q[1])}">${zTxt(SERIES[q[0]])}</span>`).join(' · ')}</span>` : ''}</div>`; }).join('');
+  return h;
+}
+const HK = {tell: ['Timing tell', 'var(--tell)'], wave: ['Strike wave', 'var(--tell)'], advisory: ['US advisory', 'var(--ink)'], advice: ['UK advice', 'var(--mute)'], rating: ['CrisisWatch', 'var(--ink)'], alert: ['Live alert', 'var(--mute)'], event: ['Event in the list', 'var(--ink)']};
+const EVT = {strike: 'strike', onset: 'start of fighting', maritime: 'at sea', exercise: 'exercise', other: 'other'};
+function evFor(t){ const L = (D.events && D.events.list) || []; return t === 'global' ? L.filter(e => e[5]) : L.filter(e => e[1] === t || e[2] === t); }
+function histDate(d){ return String(d).length > 7 ? shortDate(d) : monthName(d); }
+function historyItems(t){
+  const H = (D.hist || {})[t] || {items: []}, out = H.items.map(([d, k, tx, id]) => ({d, k, tx, id}));
+  ALERTS.filter(a => a.th === t).forEach(a => out.push({d: String(a.ts || '').slice(0, 10), k: 'alert', tx: a.title, al: a.id}));
+  const cut = new Date(GEN - 90 * 864e5).toISOString().slice(0, 10);
+  evFor(t).filter(e => e[0] >= cut).forEach(e => out.push({d: e[0], k: 'event', tx: e[4]}));
+  return out.filter(x => x.d).sort((a, b) => String(b.d).localeCompare(String(a.d)));
+}
+function historyBody(t){
+  const it = historyItems(t), H = (D.hist || {})[t] || {risk: []}, ev = evFor(t).slice().reverse(), thr = D.events && D.events.through;
+  const row = x => `<div class="hi" ${x.id && SERIES[x.id] ? `data-id="${esc(x.id)}"` : x.al ? `data-alert="${esc(x.al)}"` : ''}><time>${esc(histDate(x.d))}</time><span class="hk" style="color:${HK[x.k][1]}">${HK[x.k][0]}</span><span class="tx">${esc(x.tx)}</span></div>`;
+  let h = `<div class="sh">Last 90 days ${inf('Tells fired, advisory steps, UK travel-advice updates, CrisisWatch ratings, strike waves and live alerts, newest first. Built from the hash-chained records and the stored series.')}<small>${it.length} item${it.length === 1 ? '' : 's'}</small></div>`;
+  h += it.slice(0, 12).map(row).join('') || '<p class="hint">Nothing recorded here in the last 90 days.</p>';
+  if (it.length > 12) h += `<details class="more"><summary>Show all ${it.length}</summary>${it.slice(12).map(row).join('')}</details>`;
+  if (t !== 'global') {
+    const rk = H.risk.filter(r => r[1] != null);
+    h += `<div class="sh" style="margin-top:16px">Standing risk over time ${inf('The model\'s 30-day chance as a multiple of this theatre\'s usual chance, as logged each day in the forward record before anything happened.')}<small>${PM ? '× usual' : 'not validated'}</small></div>`;
+    h += rk.length >= 2 ? chartBlock(`Times usual, from ${shortDate(rk[0][0])}`, rk.map(r => [r[0], r[1]]), {h: 150, c: PM ? '#58a6ff' : '#8a939c', fy: v => v.toFixed(1) + '×', min: 0, lines: [{y: 1, c: '#7f93a8', t: 'usual', d: '2 3', left: true}]}, null)
+      : `<p class="hint">The forward record has ${rk.length} day${rk.length === 1 ? '' : 's'} here so far; the line appears from the second day.</p>`;
+  }
+  const er = e => `<div class="pe"><time>${esc(e[0])}</time><span>${esc(e[4])}<small>${esc(EVT[e[3]] || e[3])}${e[2] === t && e[1] !== t ? ` · happened here, part of ${esc(thName(e[1]))}'s war` : e[2] && e[2] !== t ? ` · happened in ${esc(thName(e[2]))}` : ''}${e[5] ? ' · moved markets' : ''}</small></span></div>`;
+  h += `<div class="sh" style="margin-top:16px">Past events in the list ${inf('The events the model is fitted and scored on, from 2018. Each counts for the theatre whose war it belongs to; one that happened on another theatre\'s ground says where.')}<small>${ev.length}${thr ? ' · complete to ' + esc(shortDate(thr)) : ''}</small></div>`;
+  h += ev.slice(0, 8).map(er).join('') || '<p class="hint">No event in the list for this theatre.</p>';
+  if (ev.length > 8) h += `<details class="more"><summary>Show all ${ev.length}</summary>${ev.slice(8).map(er).join('')}</details>`;
   return h;
 }
 function familySeries(t, label){ const s = D.series.find(x => (x.t === t || x.t === 'global') && x.l === label); return s ? s.id : null; }
@@ -1382,14 +1818,15 @@ function sigList(list){
   return list.slice().sort((a, b) => (b.z ?? -99) - (a.z ?? -99)).map(s => sigRow(s)).join('');
 }
 function sigVal(s){
+  if (isEv(s) && s.z != null) return s.z > 0 ? '<span class="evb" data-tip="An action or rating, scored as an event, not in SD">event</span>' : '<span style="color:var(--dim)">–</span>';
   if (s.z != null) return `<span style="color:${zcol(s.z)}">${fmtz(s.z)}</span>`;
   if (s.st === 'awaiting_key') return `<span style="color:var(--dim)" data-tip="Needs a free API key">key</span>`;
   if (s.st === 'collecting') return `<span style="color:var(--dim)" data-tip="History is still building: ${s.n} of ${s.need} ${s.kind === 'daily' ? 'days' : 'months'}">${s.n}/${s.need}</span>`;
   return `<span style="color:var(--dim)">${s.st === 'error' ? 'error' : 'n/a'}</span>`;
 }
 function sigRow(s, showTh){
-  const sub = [showTh ? thName(s.t) : '', s.s, GN[s.d]].filter(Boolean).join(' · ') + (s.stale ? ' · stale copy' : '');
-  return `<div class="sig ${isAn(s) ? 'an' : ''}" data-id="${esc(s.id)}"><div><div class="t">${esc(s.l)}</div><div class="s">${esc(sub)}</div></div><div><span class="ty ${s.lag ? '' : 'ld'}" data-tip="${s.lag ? 'Confirms: late data. It shows a build-up that already started.' : 'Leads: fast data. It can move before events.'}">${s.lag ? 'confirms' : 'leads'}</span></div><div>${spark(s.pts && s.pts.slice(-60), s.z == null ? '#6b7280' : zcol(s.z), 64, 20)}</div><div class="sdv">${sigVal(s)}</div></div>`;
+  const sub = [showTh ? thName(s.t) : '', s.s, GN[s.d], rawTxt(s)].filter(Boolean).join(' · ') + (s.stale ? ' · stale copy' : '');
+  return `<div class="sig ${isAn(s) && !isEv(s) ? 'an' : ''}" data-id="${esc(s.id)}"><div><div class="t">${esc(s.l)}</div><div class="s">${esc(sub)}</div></div><div><span class="ty ${s.lag ? '' : 'ld'}" data-tip="${s.lag ? 'Confirms: late data. It shows a build-up that already started.' : 'Leads: fast data. It can move before events.'}">${s.lag ? 'confirms' : 'leads'}</span></div><div>${spark(s.pts && s.pts.slice(-60), s.z == null ? '#6b7280' : zcol(s.z), 64, 20)}</div><div class="sdv">${sigVal(s)}</div></div>`;
 }
 const KIND_ICON = a => `<span class="ib" style="--c:${KIND[a.k][1]}">${ic(KIND[a.k][0], 's')}</span>`;
 function alertRows(list){
@@ -1415,15 +1852,37 @@ function aboutBody(t){
     <p><b>How the chance is made.</b> ${PM ? `A fitted model (v${esc(PM.v)}, fitted ${esc(PM.fitted)}) turns the signals and the conflict history of this theatre into a 30-day chance. The model sets the level: Watch from ${pct(BANDS[0])}, Elevated from ${pct(BANDS[1])}, Critical from ${pct(BANDS[2])}.` : 'The 30-day model runs in shadow mode. The level comes from the signal pressure.'}</p>
     <p><b>Signal pressure.</b> ${fs(th.score)} of 100. ${esc(MEANING_S[th.lvc || th.level] || '')} ${th.lvc && th.lvc !== th.level ? `On pressure alone the level is ${esc(th.lvc)}.` : ''}</p>
     <p><b>Data.</b> ${m.scored} signals have a score. ${st.collecting || 0} are still collecting history, ${st.awaiting_key || 0} need a free key and ${st.error || 0} failed in this run.${m.last ? ` The newest daily value is from ${esc(m.last)} (${esc(ago(m.last))}).` : ''}</p>
+    ${isSub(t) ? `<p><b>Sub-theatre.</b> ${subNote(t)}</p>` : ''}
+    ${marketsFor(t).length ? '' : '<p><b>Prediction markets.</b> No open war or military prediction market matches this theatre now.</p>'}
     <p><a data-nav="settings/method">How the score works</a> · <a data-nav="signals?th=${t}">All signals for ${esc(thName(t))} in the table</a></p></div>`;
 }
+function ownWhy(t){ return (D.theatres[t].why || []).filter(w => !WORLDW(w)); }
+function tellChip(t, short){ const c = tellsCount(t); return c.n ? `<span class="tchip ${c.on.length ? 'on' : ''}" data-tip="${c.on.length ? esc(c.on.map(x => x.n).join(', ')) : 'No timing tell in the last 7 days'}">${c.on.length}/${c.n}${short ? '' : ' tells'}</span>` : '<span class="tchip">–</span>'; }
+/* a family label without the theatre's own name at the end: "Demonstrations per month, Iraq region" -> "Demonstrations per month" */
+function causeL(t, l){ const n = thName(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); const r = shortL(l).replace(new RegExp(`,? (in |to |over |near |around |into )?(the )?${n}( region| waters)?$`, 'i'), ''); return r || shortL(l); }
+function subNote(t){
+  const sp = SUBT[t]; if (!sp) return '';
+  const n = (D.events && D.events.list || []).filter(e => e[2] === t).length;
+  return `${esc(thName(t))} is a sub-theatre: a country drawn into a neighbour's war. Its model reads its own signals and those of ${sp.parents.map(x => esc(thName(x))).join(' and ')}, and its usual rate is pooled with ${sp.pool.map(x => esc(thName(x))).join(', ')}.${n ? ` ${n} past event${n === 1 ? '' : 's'} in the list happened here, too few to test it on its own.` : ''}`;
+}
 function regionBody(r){
-  const kids = r.kids.slice().sort((a, b) => lead(b).v - lead(a).v), top = kids[0], lv = regionLevel(r);
-  let h = `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}<span>${esc(r.name)}</span></div><h2>${esc(r.name)} ${lvPill(lv)}</h2><p>${hasP(top) && leadP() ? `${esc(thName(top))} has the highest chance in this region: <b>${pct(D.theatres[top].p)}</b> in the next 30 days.` : `${esc(thName(top))} has the highest signal pressure in this region: <b>${fs(D.theatres[top].score)}</b>.`} The region level is the highest level of its ${r.kids.length} theatres. Open a tab for the details of one theatre.</p></div><div class="pbody">`;
-  h += `<table class="cmp"><thead><tr><th class="c1">Theatre</th><th class="r cn">${leadP() ? '30 days' : 'Pressure'}</th><th class="r cn">Change</th><th>Main cause</th><th class="r cv" data-tip="Share of signals with a score now">Coverage</th></tr></thead><tbody>` +
-    kids.map(k => { const th = D.theatres[k]; return `<tr data-go="${k}"><td>${dot(th.level)} <b style="font-weight:600">${esc(thName(k))}</b></td><td class="r num" style="color:${LEVEL[th.level]};font-weight:600">${esc(lead(k).txt)}</td><td class="r">${changeTxt(k)}</td><td class="cause" title="${esc(th.why && th.why[0] ? th.why[0][0] : '')}">${esc(th.why && th.why[0] ? shortL(th.why[0][0]) : '–')}</td><td class="r num">${Math.round((1 - (th.miss || 0)) * 100)}%</td></tr>`; }).join('') + `</tbody></table>`;
-  h += `<div class="sh" style="margin-top:16px">Signal groups across the region ${inf('Distance from normal in standard deviations (SD). 2 SD or more is unusual.')}<small>SD from normal</small></div><table class="cmp"><thead><tr><th>Group</th>${kids.map(k => `<th class="r">${esc(thName(k))}</th>`).join('')}</tr></thead><tbody>` +
-    D.domains.map(d => `<tr><td data-tip="${esc(d.help)}">${GN[d.id]}</td>${kids.map(k => { const z = D.theatres[k].doms[d.id].z; return `<td class="r num" style="color:${zcol(z)};background:color-mix(in oklab,${zcol(z)} ${z == null ? 0 : Math.min(32, Math.max(0, z) * 10)}%,transparent)">${fmtz(z)}</td>`; }).join('')}</tr>`).join('') + `</tbody></table>`;
+  const kids = r.kids.slice().sort((a, b) => (isSub(a) - isSub(b)) || tellsCount(b).on.length - tellsCount(a).on.length || lead(b).v - lead(a).v), top = kids[0], lv = regionLevel(r);
+  const subs = r.kids.filter(isSub), tl = r.kids.filter(k => tellsCount(k).on.length);
+  const hot = r.kids.slice().sort((a, b) => (D.theatres[b].score || 0) - (D.theatres[a].score || 0)).filter(k => (D.theatres[k].score || 0) >= 50).slice(0, 2);
+  const sum = PM ? `${hasP(top) && leadP() ? `${esc(thName(top))} has the highest chance in this region: <b>${pct(D.theatres[top].p)}</b> in the next 30 days.` : `${esc(thName(top))} has the highest signal pressure in this region: <b>${fs(D.theatres[top].score)}</b>.`} The region level is the highest level of its ${r.kids.length} theatres.`
+    : `${tl.length ? `<b>Timing tells this week in ${tl.map(k => esc(thName(k))).join(' and ')}.</b>` : '<b>No timing tell this week.</b>'} ${hot.length ? `${hot.map(k => esc(thName(k))).join(' and ')} ${hot.length > 1 ? 'have' : 'has'} the most unusual readings.` : 'No theatre has many unusual readings.'} The region level is the highest level of its theatres.${subs.length ? ` ${subs.map(k => esc(thName(k))).join(' and ')} ${subs.length > 1 ? 'are sub-theatres' : 'is a sub-theatre'}, fitted on top of ${r.kids.filter(k => !isSub(k)).map(k => esc(thName(k))).join(', ')}.` : ''}`;
+  let h = `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}<span>${esc(r.name)}</span></div><h2>${esc(r.name)} ${lvPill(lv)}</h2><p>${sum}</p></div><div class="pbody">`;
+  const nm = k => `<td>${dot(D.theatres[k].level)} <b style="font-weight:600">${esc(thName(k))}</b>${isSub(k) ? ' <span class="subl">sub</span>' : ''}</td>`;
+  const cov = k => `<td class="r num cv">${Math.round((1 - (D.theatres[k].miss || 0)) * 100)}%</td>`;
+  const cause = k => { const w = ownWhy(k)[0]; return `<td class="cause" title="${esc(w ? w[0] : '')}">${esc(w ? causeL(k, w[0]) : '–')}</td>`; };
+  if (PM) h += `<table class="cmp"><thead><tr><th class="c1">Theatre</th><th class="r cn">${leadP() ? '30 days' : 'Pressure'}</th><th class="r cn">Change</th><th>Own main cause</th><th class="r cv" data-tip="Share of signals with a score now">Coverage</th></tr></thead><tbody>` +
+    kids.map(k => `<tr data-go="${k}">${nm(k)}<td class="r num" style="color:${LEVEL[D.theatres[k].level]};font-weight:600">${esc(lead(k).txt)}</td><td class="r">${changeTxt(k)}</td>${cause(k)}${cov(k)}</tr>`).join('') + `</tbody></table>`;
+  else h += `<div class="tw"><table class="cmp rgt"><thead><tr><th class="c1">Theatre</th><th data-tip="Timing tells seen in the last 7 days, of those watched">Tells</th><th class="r" data-tip="Unusual readings, 0 to 100 (signal pressure). Not a chance.">Unusual</th><th class="r" data-tip="Standing risk: the model's 30-day chance as a multiple of this theatre's usual chance. Not validated.">Risk</th><th data-tip="The theatre's own strongest signal family. World tempo, the same for every theatre, is left out.">Own main cause</th><th class="r cv" data-tip="Share of signals with a score now">Cover</th></tr></thead><tbody>` +
+    kids.map(k => { const th = D.theatres[k]; return `<tr data-go="${k}">${nm(k)}<td>${tellChip(k, 1)}</td><td class="r num">${fs(th.score)}</td><td class="r num" style="color:var(--mute)">${th.xu != null ? th.xu.toFixed(1) + '×' : '–'}</td>${cause(k)}${cov(k)}</tr>`; }).join('') + `</tbody></table></div>`;
+  const wt = (D.theatres[top].why || []).find(WORLDW);
+  if (wt) h += `<p class="hint" style="margin:6px 0 0">World tempo (markets, defence orders and tenders) moves every theatre by the same amount, so it is not listed as a theatre's cause.</p>`;
+  h += `<div class="sh" style="margin-top:16px">Signal groups across the region ${inf('Distance from normal in standard deviations (SD). 2 SD or more is unusual.')}<small>SD from normal</small></div><div class="tw"><table class="cmp"><thead><tr><th>Group</th>${kids.map(k => `<th class="r">${esc(thName(k))}</th>`).join('')}</tr></thead><tbody>` +
+    D.domains.map(d => `<tr><td data-tip="${esc(d.help)}">${GN[d.id]}</td>${kids.map(k => { const z = D.theatres[k].doms[d.id].z; return `<td class="r num" style="color:${zcol(z)};background:color-mix(in oklab,${zcol(z)} ${z == null ? 0 : Math.min(32, Math.max(0, z) * 10)}%,transparent)">${fmtz(z)}</td>`; }).join('')}</tr>`).join('') + `</tbody></table></div>`;
   const al = ALERTS.filter(a => r.kids.includes(a.th));
   h += `<div class="sh" style="margin-top:16px">Alerts in the region<small>${al.length}</small></div>` + alertRows(al);
   const mk = D.markets.filter(m => r.kids.includes(m.theatre));
@@ -1433,17 +1892,21 @@ function regionBody(r){
 function popChance(t){
   const th = D.theatres[t], wf = waterfall(t); if (!th || th.p == null) return '';
   const nxt = th.level === 'Normal' ? `Watch starts at ${pct(BANDS[0])}.` : th.level === 'Watch' ? `Elevated starts at ${pct(BANDS[1])}.` : th.level === 'Elevated' ? `Critical starts at ${pct(BANDS[2])}.` : 'This is the highest level.';
-  let h = `<div class="ph"><h4>How we get ${pct(th.p)} for ${esc(th.name)}</h4><small>percentage points</small></div><div class="pb">`;
+  let h = PM ? `<div class="ph"><h4>How we get ${pct(th.p)} for ${esc(th.name)}</h4><small>percentage points</small></div><div class="pb">`
+    : `<div class="ph"><h4>Standing risk, ${esc(th.name)}</h4><span class="shadowb">not validated</span></div><div class="pb"><p class="warnl">Shown for reference. It does not set the level: at the model's last refit ${esc(gateWhy())}.</p>
+      <div class="big" style="margin:0 0 8px"><b style="color:var(--mute)">${th.xu != null ? th.xu.toFixed(1) + '×' : pct(th.p)}</b><small>${th.xu != null ? `this theatre's usual chance · ${pct(th.p)} in 30 days (model range ${pct(th.plo)} to ${pct(th.phi)})` : 'in 30 days'}</small></div>`;
   if (wf) {
     const hi = Math.max(th.phi || th.p, th.p, wf.base, ...wf.steps.map(s => Math.max(s.a, s.b))) * 1.05;
     h += `<div class="wf"><span>Start: the long-run rate here</span><span class="bar"><i style="left:0;width:${wf.base / hi * 100}%;background:#58a6ff"></i></span><b>${pct(wf.base)}</b></div>`;
     h += wf.steps.map(s => { const lo = Math.min(s.a, s.b), w = Math.abs(s.d); const sid = s.rest ? null : familySeries(t, s.n);
-      return `<div class="wf" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''}><span title="${esc(s.n)}">${esc(shortL(s.n))}</span><span class="bar"><i style="left:${lo / hi * 100}%;width:${Math.max(1.5, w / hi * 100)}%;background:${s.d < 0 ? 'var(--normal)' : 'var(--elevated)'}"></i></span><b>${ppt(s.d)}</b></div>`; }).join('');
+      return `<div class="wf ${WORLDW([s.n]) ? 'wd' : ''}" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''}><span title="${esc(s.n)}">${esc(WORLDW([s.n]) ? 'World tempo, the same for every theatre' : shortL(s.n))}</span><span class="bar"><i style="left:${lo / hi * 100}%;width:${Math.max(1.5, w / hi * 100)}%;background:${!PM ? 'var(--mute)' : s.d < 0 ? 'var(--normal)' : 'var(--elevated)'}"></i></span><b>${ppt(s.d)}</b></div>`; }).join('');
     h += `<div class="wf t"><span>Chance now</span><span class="bar"><i style="left:0;width:${th.p / hi * 100}%;background:${LEVEL[th.level]}"></i></span><b style="color:${LEVEL[th.level]}">${pct(th.p)}</b></div>`;
     h += `<p class="hint" style="margin:10px 0 0">The model starts from the long-run rate for ${esc(th.name)}. The conflict history of the theatre and each signal family then move the chance. The steps add up in log-odds, so the same push adds more points when the chance is higher.</p>`;
   } else h += `<p class="hint" style="margin:0 0 8px">The largest causes:</p>` + drvBars(t, 6);
-  h += `<p class="hint" style="margin:8px 0 0">The range ${pct(th.plo)} to ${pct(th.phi)} shows how much the result changes when the model is fitted again on other samples of past years.</p><p class="hint" style="margin:6px 0 0"><b style="color:var(--ink)">Next level:</b> ${nxt}</p>`;
-  if (th.pd) h += `<p class="hint" style="margin:6px 0 0"><b style="color:var(--ink)">Change:</b> ${Math.abs(th.pd[0]) < 0.0005 ? 'no change' : ppt(th.pd[0]) + ' points'} in ${th.pd[1]} day${th.pd[1] === 1 ? '' : 's'}.</p>`;
+  h += `<p class="hint" style="margin:8px 0 0">The range ${pct(th.plo)} to ${pct(th.phi)} shows how much the result changes when the model is fitted again on other samples of past years.</p>`;
+  if (PM) h += `<p class="hint" style="margin:6px 0 0"><b style="color:var(--ink)">Next level:</b> ${nxt}</p>`;
+  if (PM && th.pd) h += `<p class="hint" style="margin:6px 0 0"><b style="color:var(--ink)">Change:</b> ${Math.abs(th.pd[0]) < 0.0005 ? 'no change' : ppt(th.pd[0]) + ' points'} in ${th.pd[1]} day${th.pd[1] === 1 ? '' : 's'}.</p>`;
+  if (!PM) h += `<p class="hint" style="margin:6px 0 0">"Next level" and "change" return once the model passes its checks. World tempo lifts every theatre by the same amount, so it says nothing about this theatre in particular.</p>`;
   return h + `</div>`;
 }
 function popPressure(t){
@@ -1456,7 +1919,7 @@ function popPressure(t){
     ${th.p != null && th.lvc && th.lvc !== th.level ? `<p class="hint" style="margin:0 0 8px"><b style="color:var(--ink)">Why the level is ${esc(th.level)}:</b> the model sets the level from the 30-day chance, ${pct(th.p)}. The signals are unusual, but in the past signals like these did not often come before events here.</p>` : ''}
     <div class="kv"><span>Index (100 is normal) ${inf('A weighted Mazziotta-Pareto index of the five groups. 100 is normal; each 10 points is about 1 SD.')}</span><b class="num">${th.index == null ? '–' : th.index.toFixed(1)}</b></div>
     <div class="kv"><span>Imbalance ${inf('The spread between the groups. A high value means that one group does most of the work.')}</span><b class="num">${th.imb == null ? '–' : th.imb.toFixed(1)}</b></div>
-    <div class="kv"><span>Strongest signal</span><b>${th.worst && SERIES[th.worst.id] ? `<a data-id="${esc(th.worst.id)}" style="cursor:pointer;color:var(--ink)">${esc(shortL(SERIES[th.worst.id].l))}</a> <span class="num" style="color:${zcol(th.worst.z)}">${fmtz(th.worst.z)}</span>` : '–'}</b></div>
+    <div class="kv"><span>Strongest signal</span><b>${th.worst && SERIES[th.worst.id] ? `<a data-id="${esc(th.worst.id)}" style="cursor:pointer;color:var(--ink)">${esc(shortL(SERIES[th.worst.id].l))}</a> <span class="num" style="color:${zcol(th.worst.z)}">${zTxt(SERIES[th.worst.id])}</span>` : '–'}</b></div>
     <div class="kv"><span>Basis</span><b>${esc(th.basis || '–')}</b></div></div>`;
 }
 function popGroups(t){
@@ -1473,6 +1936,7 @@ function popCoverage(t){
     `<p class="hint" style="margin:8px 0 0">Coverage counts the signals that have a score now. When it is low, the result is less certain.</p><div class="row" style="margin-top:8px"><button class="btn" data-nav="settings/health">Open data health ${ic('chev', 's')}</button></div></div>`;
 }
 $('#panel').addEventListener('click', e => {
+  if (e.target.closest('[data-mapt]')) { mapOpen = !mapOpen; syncPhoneMap(); renderPanel(); if (mapOpen && M) { syncLayers(); buildPins(); fitTab(false); window.scrollTo(0, 0); } return; }
   const n = e.target.closest('[data-nav]'); if (n && !e.target.closest('[data-pop]')) { nav(n.dataset.nav); return; }
   const g = e.target.closest('[data-go]'); if (g) { nav(g.dataset.go); return; }
   const a = e.target.closest('[data-alert]'); if (a) { openAlert(ALERTS.find(x => x.id === a.dataset.alert)); return; }
@@ -1492,7 +1956,7 @@ function searchAll(q){
   const out = [];
   [['overview', 'World overview'], ['signals', 'Signals'], ['activity', 'Activity'], ['settings', 'Settings']].concat(REG.filter(r => r.kids.length > 1).map(r => ['region/' + r.id, r.name]), D.order.map(t => [t, thName(t)]))
     .forEach(([id, n]) => { if (n.toLowerCase().includes(q)) out.push({g: 'Go to', t: n, s: '', run: () => nav(id)}); });
-  D.series.filter(s => (s.l + ' ' + s.s + ' ' + s.id).toLowerCase().includes(q)).slice(0, 8).forEach(s => out.push({g: 'Signals', t: s.l, s: (s.z != null ? fmtz(s.z) + ' SD · ' : '') + thName(s.t), run: () => openModal(s.id)}));
+  D.series.filter(s => (s.l + ' ' + s.s + ' ' + s.id).toLowerCase().includes(q)).slice(0, 8).forEach(s => out.push({g: 'Signals', t: s.l, s: (s.z != null ? (isEv(s) ? zTxt(s) : fmtz(s.z) + ' SD') + ' · ' : '') + thName(s.t), run: () => openModal(s.id)}));
   if (M) {
     M.mil.forEach(a => { if ((a.call + ' ' + a.hex + ' ' + (a.o || '') + ' ' + (a.ct || '') + ' ' + (a.t || '') + ' ' + (a.r || '')).toLowerCase().includes(q)) out.push({g: 'Aircraft', t: (a.call || a.hex) + ' ' + (a.t || ''), s: (a.o || (CLS[a.c] || CLS.other)[0]) + (a.th ? ' · ' + thName(a.th) : ''), run: () => { nav(a.th || 'overview'); setTimeout(() => { focusXY(a.xy, 300); openCard('mil', a); }, 80); }}); });
     (M.ships || []).forEach(a => { if ((a.n + ' ' + (a.g || '') + ' ' + (a.loc || '')).toLowerCase().includes(q)) out.push({g: 'Ships', t: a.n, s: (a.loc || '') + (a.th ? ' · ' + thName(a.th) : ''), run: () => { nav(a.th || 'overview'); setTimeout(() => { focusXY(a.xy, 700); openCard('ships', a); }, 80); }}); });
@@ -1534,6 +1998,12 @@ function areaChart(pts, o){
   (o.bands || []).forEach(b => { const y0 = Y(Math.min(b.b, hi)), y1 = Y(Math.max(b.a, lo)); s += `<rect x="${L}" y="${y0}" width="${W - L - Rm}" height="${Math.max(0, y1 - y0)}" fill="${b.c}"/>`; });
   for (let i = 0; i <= 4; i++) { const v = lo + pad + (hi - lo - 2 * pad) * i / 4; s += `<line x1="${L}" x2="${W - Rm}" y1="${Y(v)}" y2="${Y(v)}" stroke="#1c2b39"/><text x="${L - 7}" y="${Y(v) + 4}" text-anchor="end" fill="#7d93a8" font-size="${fsz}">${o.fy ? o.fy(v) : fmtv(v)}</text>`; }
   (o.lines || []).forEach((l, k) => { if (l.y >= lo && l.y <= hi) s += `<line x1="${L}" x2="${W - Rm}" y1="${Y(l.y)}" y2="${Y(l.y)}" stroke="${l.c}" stroke-dasharray="${l.d || '5 4'}" stroke-width="1.3"/>${l.t ? `<text x="${l.left ? L + 6 : W - Rm - 4}" y="${Y(l.y) + (l.below ? 13 : -5)}" text-anchor="${l.left ? 'start' : 'end'}" fill="${l.c}" font-size="${fsz - 0.5}" paint-order="stroke" stroke="#0e0e10" stroke-width="3">${esc(l.t)}</text>` : ''}`; });
+  if (o.ev && n > 1) {   // events from the list: a dashed line and a marker at the top, named on hover
+    const labs = pts.map(p => String(p[0])), f = labs[0], l = labs[n - 1]; CH[id].ev = {};
+    o.ev.forEach(e => { const d = String(e[0]).slice(0, f.length); if (d < f || d > l) return; const i = labs.findIndex(x => x >= d); if (i < 0) return;
+      const x = X(i); CH[id].ev[i] = (CH[id].ev[i] ? CH[id].ev[i] + ' · ' : '') + e[4];
+      s += `<g class="evm"><line x1="${x}" x2="${x}" y1="${T}" y2="${H - B}" stroke="#e8ecf0" stroke-opacity=".3" stroke-dasharray="2 3"/><path d="M${x - 4.5},${T - 2} L${x + 4.5},${T - 2} L${x},${T + 5} Z" fill="#e8ecf0" fill-opacity=".8"><title>${esc(e[0] + ': ' + e[4])}</title></path></g>`; });
+  }
   const line = pts.map((p, i) => X(i).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' ');
   const col = o.c || '#58a6ff', y0 = Y(lo < 0 && hi > 0 ? 0 : lo);
   if (o.area !== false) s += `<polygon points="${L},${y0} ${line} ${X(n - 1)},${y0}" fill="${col}" fill-opacity=".13"/>`;
@@ -1557,15 +2027,25 @@ function chartHover(e){
   const hl = sv.querySelector('.hl'), hd = sv.querySelector('.hd');
   hl.setAttribute('x1', xx); hl.setAttribute('x2', xx); hl.style.display = ''; hd.setAttribute('cx', xx); hd.setAttribute('cy', yy); hd.style.display = '';
   const wrap = sv.closest('.cwrap'); if (!wrap) return; const bub = wrap.querySelector('.cbub'); const wr = wrap.getBoundingClientRect();
-  bub.innerHTML = `<b>${esc(c.pts[i][0])}</b> &nbsp;${c.fy ? c.fy(c.pts[i][1]) : fmtv(c.pts[i][1])}${c.unit ? ' ' + c.unit : ''}`; bub.style.display = 'block';
+  bub.innerHTML = `<b>${esc(c.pts[i][0])}</b> &nbsp;${c.fy ? c.fy(c.pts[i][1]) : fmtv(c.pts[i][1])}${c.unit ? ' ' + c.unit : ''}${c.ev && c.ev[i] ? `<br><span style="color:var(--ink)">▼ ${esc(c.ev[i])}</span>` : ''}`; bub.style.display = 'block';
   let left = e.clientX - wr.left + 14; if (left + bub.offsetWidth > wr.width - 6) left = e.clientX - wr.left - bub.offsetWidth - 14; bub.style.left = left + 'px'; bub.style.top = (yy / c.H * r.height + 30) + 'px';
 }
 function chartOut(e){ const sv = e.target.closest('svg[data-ch]'); if (sv && !sv.contains(e.relatedTarget)) { sv.querySelector('.hl').style.display = 'none'; sv.querySelector('.hd').style.display = 'none'; const w = sv.closest('.cwrap'); if (w) w.querySelector('.cbub').style.display = 'none'; } }
 function chartRange(rg){ const blk = rg.closest('.cwrap'), c = CH[blk.dataset.blk]; const k = rg.dataset.rng; const pts = k === 'all' ? c.pts : c.pts.slice(-(+k)); blk.querySelector('.cbody').innerHTML = areaChart(pts, c.o); blk.querySelectorAll('[data-rng]').forEach(b => b.classList.toggle('on', b === rg)); }
-['#mbox', '#pg-signals'].forEach(sel => { $(sel).addEventListener('mousemove', chartHover); $(sel).addEventListener('mouseout', chartOut); });
+['#mbox', '#pg-signals', '#panel'].forEach(sel => { $(sel).addEventListener('mousemove', chartHover); $(sel).addEventListener('mouseout', chartOut); });
 let modalId = null, modalList = [];
 function pctRank(vals, v){ let b = 0; vals.forEach(x => { if (x <= v) b++; }); return Math.round(100 * b / vals.length); }
+/* the percentile on the same measure as the score: a daily score reads the 7-day average, so rank the latest 7-day average
+   among the 7-day averages held; a monthly score reads the latest month */
+function pctNow(s){
+  const v = (s.pts || []).map(p => p[1]);
+  if (v.length <= 8 || isEv(s)) return null;
+  if (s.kind !== 'daily') return {p: pctRank(v, v[v.length - 1]), of: `of the last ${v.length} months`};
+  const m = []; for (let i = 6; i < v.length; i++) m.push((v[i] + v[i - 1] + v[i - 2] + v[i - 3] + v[i - 4] + v[i - 5] + v[i - 6]) / 7);
+  return m.length > 8 ? {p: pctRank(m, m[m.length - 1]), of: `of the last ${m.length} 7-day averages`} : null;
+}
 function methodTxt(s){
+  if (isEv(s)) return s.tf === 'event' ? 'Each monthly CrisisWatch issue is read as it is published: 2 for a conflict-risk alert, plus 1 for a deteriorated situation.' : 'An advisory level holds for months, so it is scored on its step: the change in the last 14 days.';
   if (s.kind === 'monthly') return 'Monthly data is put on a log scale and the usual month-to-month pattern is removed. Then it is compared with the previous 36 months.';
   return /year/.test(s.method || '') ? 'The latest 7-day average is compared with the 7-day averages of the previous year. The last 30 days are left out of that comparison, so a slow build-up does not hide itself.' : 'The latest 7-day average is compared with the previous 90 days. The year comparison starts when 120 days of history are available.';
 }
@@ -1584,28 +2064,30 @@ function statusBox(s){
   if (s.st === 'collecting') h += `<div class="warnbox">History is still building: <b>${s.n}</b> of the <b>${s.need}</b> ${s.kind === 'daily' ? 'days' : 'months'} needed. The signal gets a score when the history is complete.</div>`;
   return h;
 }
-function openModal(id, list){
+function openModal(id, list){ if (FULL) return openModal0(id, list); loadFull().then(() => openModal0(id, list)); }
+function openModal0(id, list){
   const s = SERIES[id]; if (!s) return; modalId = id; closePop(); hideHover();
   if (list) modalList = list; else if (!modalList.includes(id)) modalList = seriesOf(s.t, s.d).sort((a, b) => (b.z ?? -99) - (a.z ?? -99)).map(x => x.id);
   const th = thName(s.t), idx = modalList.indexOf(id);
   let h = `<button class="x" aria-label="Close">&times;</button><div class="nav"><a data-nav="overview">World</a>&rsaquo;<a data-nav="${s.t}">${esc(th)}</a>&rsaquo;<a data-nav="${s.t}/signals" data-dom="${s.d}">${GN[s.d]}</a><span class="sp"></span>` +
     (modalList.length > 1 ? `<a data-step="-1" title="Previous (left arrow)">&lsaquo; Previous</a><span>${idx + 1} / ${modalList.length}</span><a data-step="1" title="Next (right arrow)">Next &rsaquo;</a>` : '') + `</div>` +
     `<h2>${esc(s.l)}</h2><div class="chips"><span>${esc(th)}</span><span>${GN[s.d]}</span>${s.s ? `<span>${esc(s.s)}</span>` : ''}<span style="color:${s.lag ? 'var(--elevated)' : 'var(--normal)'}">${s.lag ? 'Confirms: late data' : 'Leads: fast data'}</span><span>${s.kind === 'daily' ? 'Daily data' : 'Monthly data'}</span></div>` + statusBox(s);
-  const vals = (s.pts || []).map(p => p[1]), last = vals.length ? vals[vals.length - 1] : null;
+  const vals = (s.pts || []).map(p => p[1]), last = vals.length ? vals[vals.length - 1] : null, pn = pctNow(s);
   let vs = '';
   if (s.z != null && s.base && s.base.med) { const dv = (s.val - s.base.med) / Math.abs(s.base.med) * 100; vs = (dv >= 0 ? '+' : '') + dv.toFixed(Math.abs(dv) < 10 ? 1 : 0) + '%'; }
-  h += `<div class="mk5"><div class="kp"><small>${s.kind === 'daily' ? '7-day average' : 'Latest month'}</small><b>${s.z != null ? fmtv(s.val) : last != null ? fmtv(last) : 'n/a'}</b><span>${esc(s.last ? 'to ' + s.last : '')}</span></div>` +
+  if (isEv(s)) h += `<div class="mk5 ev3"><div class="kp" style="grid-column:span 2"><small>What happened</small><b style="font-size:15px;white-space:normal">${esc(evWords(s))}</b><span>${s.tf === 'event' ? 'the latest monthly CrisisWatch issue' : 'a decision, scored when it is made'}</span></div><div class="kp"><small>Reading</small><b>${s.z > 0 ? '<span class="evb">event</span>' : '–'}</b><span>${s.z > 0 ? 'counts as a strong signal' : 'nothing new'}</span></div><div class="kp"><small>Last value</small><b>${last != null ? fmtv(last) : 'n/a'}</b><span>${esc(s.last || '')}</span></div></div>`;
+  else h += `<div class="mk5"><div class="kp"><small>${s.kind === 'daily' ? '7-day average' : 'Latest month'}</small><b>${s.z != null ? fmtv(s.val) : last != null ? fmtv(last) : 'n/a'}</b><span>${esc(s.last ? 'to ' + s.last : '')}</span></div>` +
     `<div class="kp"><small>Normal level</small><b>${s.base ? fmtv(s.base.med) : 'n/a'}</b><span>${s.base ? 'median of ' + s.base.n + ' readings' : s.kind === 'monthly' ? 'seasonal baseline' : ''}</span></div>` +
     `<div class="kp"><small>Compared with normal</small><b style="color:${zcol(s.z)}">${vs || 'n/a'}</b><span>${s.base ? '1 SD = ' + fmtv(s.base.sd) : ''}</span></div>` +
     `<div class="kp"><small>Standard deviations ${inf('How far the value is from its own normal level. 2 SD or more is unusual; 3 SD or more is a strong signal.')}</small><b style="color:${zcol(s.z)}">${fmtz(s.z)}</b><span>${esc(verdict(s))}</span></div>` +
-    `<div class="kp"><small>Percentile</small><b>${vals.length > 8 ? pctRank(vals, last) + '%' : 'n/a'}</b><span>of the last ${vals.length} readings</span></div></div>`;
-  if (s.z != null) {
+    `<div class="kp"><small>Percentile ${inf('Where the current reading sits among the readings held, on the same measure as the score (the 7-day average for daily data).')}</small><b>${pn ? pn.p + '%' : 'n/a'}</b><span>${pn ? pn.of : ''}</span></div></div>`;
+  if (s.z != null && !isEv(s)) {
     const lo = -3, hi = 6, X = z => 4 + (Math.max(lo, Math.min(hi, z)) - lo) / (hi - lo) * 92;
     h += `<div class="gauge"><div class="gt"><span>Distance from normal (standard deviations)</span><span>unusual from ${T_WATCH.toFixed(0)} · strong from ${T_SIG.toFixed(0)}</span></div><svg viewBox="0 0 100 14" preserveAspectRatio="none"><rect x="4" y="5" width="${X(T_WATCH) - 4}" height="4" fill="#1f5a3a"/><rect x="${X(T_WATCH)}" y="5" width="${X(T_SIG) - X(T_WATCH)}" height="4" fill="#8a4d12"/><rect x="${X(T_SIG)}" y="5" width="${96 - X(T_SIG)}" height="4" fill="#8a2a2d"/><rect x="${X(s.z) - .6}" y="1" width="1.2" height="12" fill="${zcol(s.z)}"/></svg></div>`;
   }
-  h += `<p class="say"><b>${esc(s.why)}</b><br><span style="color:var(--mute)">${dirTxt(s)} ${trigTxt(s)}</span></p>`;
+  h += `<p class="say"><b>${esc(s.why)}</b><br><span style="color:var(--mute)">${isEv(s) ? (s.tf === 'event' ? 'A conflict-risk alert counts 2 and a deteriorated situation 1; the newest issue is the reading.' : 'A raise in the advisory level counts when it is made and goes quiet after 14 days.') : dirTxt(s) + ' ' + trigTxt(s)}</span></p>`;
   if (s.pts && s.pts.length > 1) {
-    const vo = {h: 200, c: '#58a6ff'};
+    const vo = {h: 200, c: '#58a6ff', ev: evFor(s.t)};
     if (s.base) { vo.bands = [{a: s.base.med - 2 * s.base.sd, b: s.base.med + 2 * s.base.sd, c: 'rgba(88,166,255,.13)'}, {a: s.base.med - 3 * s.base.sd, b: s.base.med + 3 * s.base.sd, c: 'rgba(88,166,255,.07)'}];
       vo.lines = [{y: s.base.med, c: '#7f93a8', t: 'normal', d: '2 3', left: true}, {y: s.base.med + 3 * s.base.sd, c: '#ff8a1f', t: '+3 SD'}, {y: s.base.med - 3 * s.base.sd, c: '#ff8a1f', t: '−3 SD', below: true}];
       vo.extra = [s.base.med + 3 * s.base.sd, s.base.med - 3 * s.base.sd]; }
@@ -1613,7 +2095,7 @@ function openModal(id, list){
   }
   if (s.zh && s.zh.length > 1) {
     h += chartBlock('Score history in standard deviations (what the dashboard showed each day)', s.zh,
-      {h: 170, c: '#e6edf3', min: -3, max: 6, fy: v => v.toFixed(0), unit: 'SD', dots: v => v >= T_WATCH, area: false,
+      {h: 170, c: '#e6edf3', min: -3, max: 6, fy: v => v.toFixed(0), unit: 'SD', dots: v => v >= T_WATCH, area: false, ev: evFor(s.t),
        bands: [{a: T_SIG, b: 99, c: 'rgba(255,77,79,.15)'}, {a: T_WATCH, b: T_SIG, c: 'rgba(255,138,31,.13)'}],
        lines: [{y: T_SIG, c: '#ff4d4f', t: 'strong ' + T_SIG.toFixed(0) + ' SD'}, {y: T_WATCH, c: '#ff8a1f', t: 'unusual ' + T_WATCH.toFixed(0) + ' SD', left: true, below: true}, {y: 0, c: '#52667a', t: '', d: '2 3'}]}, null);
   }
@@ -1623,11 +2105,12 @@ function openModal(id, list){
   if (s.z != null) { h += row('Method', esc(s.method)); if (s.base) h += row('Baseline spread (1 SD)', esc(fmtv(s.base.sd))); }
   h += row('Values held', s.n + (s.pts && s.pts.length ? ` (${esc(s.pts[0][0])} to ${esc(s.last || '')})` : '')) + row('Last value', esc(s.last || 'none') + (s.last ? ' (' + esc(ago(s.last)) + ')' : '')) + row('Needed for a score', s.need + (s.kind === 'daily' ? ' days' : ' months'));
   h += `</table><p style="margin:8px 0 0;color:var(--mute);font-size:12.5px">${methodTxt(s)} The score is limited to ±5 SD, so one bad value cannot control the result.</p><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">${s.url ? `<a class="btn" target="_blank" rel="noopener" href="${esc(s.url)}">Open the data source ${ic('ext', 's')}</a>` : ''}<a class="btn" data-nav="${s.t}/signals" data-dom="${s.d}">Show in ${esc(th)} ${ic('chev', 's')}</a></div></div>`;
-  h += `<div><h3 class="mh">Other signals in this group</h3><div class="rel">${rel.map(r => `<div data-open="${esc(r.id)}"><span title="${esc(r.l)}">${esc(shortL(r.l))}</span><b class="num" style="color:${zcol(r.z)}">${fmtz(r.z)}</b></div>`).join('') || '<span style="color:var(--dim)">No other signals in this group.</span>'}</div></div></div>`;
-  $('#mbox').innerHTML = h; $('#modal').style.display = 'flex'; $('#mbox').scrollTop = 0;
+  h += `<div><h3 class="mh">Other signals in this group</h3><div class="rel">${rel.map(r => `<div data-open="${esc(r.id)}"><span title="${esc(r.l)}">${esc(shortL(r.l))}</span><b class="num" style="color:${isEv(r) ? 'var(--ink)' : zcol(r.z)}">${zTxt(r)}</b></div>`).join('') || '<span style="color:var(--dim)">No other signals in this group.</span>'}</div></div></div>`;
+  $('#mbox').innerHTML = h; $('#modal').style.display = 'flex'; $('#mbox').scrollTop = 0; modalFocus();
 }
 function stepModal(d){ if (!modalList.length) return; const i = (modalList.indexOf(modalId) + d + modalList.length) % modalList.length; openModal(modalList[i]); }
-function closeModal(){ $('#modal').style.display = 'none'; tipHide(); }
+function closeModal(){ if ($('#modal').style.display !== 'flex') return; $('#modal').style.display = 'none'; tipHide(); const r = modalRet; modalRet = null; if (r && r.isConnected) r.focus({preventScroll: true}); }
+function modalFocus(){ if (!modalRet || !modalRet.isConnected) modalRet = document.activeElement && document.activeElement !== document.body && !$('#mbox').contains(document.activeElement) ? document.activeElement : modalRet; const h = $('#mbox h2'); if (h) $('#modal').setAttribute('aria-label', h.textContent); const x = $('#mbox .x'); if (x) x.focus({preventScroll: true}); }
 function openMarket(i){
   const m = D.markets[i]; if (!m) return; closePop(); hideHover();
   const hh = m.h || [];
@@ -1639,7 +2122,7 @@ function openMarket(i){
   if (hh.length > 2) h += chartBlock('Odds over time (the chance the market gives, %)', hh, {h: 240, c: '#58a6ff', fy: v => Math.round(v * 100) + '%', min: 0, max: 1}, hh.length > 40 ? [['30', '30'], ['90', '90'], ['all', 'All']] : null);
   else h += `<div class="warnbox">The market gave no price history.</div>`;
   h += `<p class="say" style="color:var(--mute)">Prediction markets give context. They are not part of the score. They show what traders with money at stake think, and they react to news as much as they predict it.</p><div class="row" style="margin-top:10px"><a class="btn" target="_blank" rel="noopener" href="${esc(m.url)}">Open on ${esc(m.src)} ${ic('ext', 's')}</a></div>`;
-  modalList = []; $('#mbox').innerHTML = h; $('#modal').style.display = 'flex'; $('#mbox').scrollTop = 0;
+  modalList = []; $('#mbox').innerHTML = h; $('#modal').style.display = 'flex'; $('#mbox').scrollTop = 0; modalFocus();
 }
 $('#modal').addEventListener('click', e => {
   if (e.target.id === 'modal' || e.target.closest('.x')) { closeModal(); return; }
@@ -1673,15 +2156,15 @@ function renderSignals(first){
   const rows = D.series.filter(s => sfPass(s));
   const key = {z: s => s.z ?? -99, l: s => s.l.toLowerCase(), t: s => thName(s.t), d: s => GN[s.d], lag: s => s.lag ? 1 : 0, last: s => s.last || ''}[SF.sk];
   rows.sort((a, b) => { const x = key(a), y = key(b); return (x < y ? -1 : x > y ? 1 : 0) * SF.sd || ((b.z ?? -99) - (a.z ?? -99)); });
-  const facet = (title, k, items) => `<h5>${title}${SF[k].length ? `<a data-fclear="${k}">clear</a>` : ''}</h5>` + items.map(([v, n]) => { const c = D.series.filter(s => sfPass(s, k) && ({st: s.st, dom: s.d, th: s.t, spd: s.lag ? 'conf' : 'lead'})[k] === v).length;
-    return `<label><input type="checkbox" data-f="${k}" value="${v}" ${SF[k].includes(v) ? 'checked' : ''}>${esc(n)}<b>${c}</b></label>`; }).join('');
+  const facet = (title, k, items) => `<h5>${title}${SF[k].length ? `<a data-fclear="${k}">clear</a>` : ''}</h5>` + items.map(([v, n, cls]) => { if (v === '__h') return `<div class="fgh">${esc(n)}</div>`; const c = D.series.filter(s => sfPass(s, k) && ({st: s.st, dom: s.d, th: s.t, spd: s.lag ? 'conf' : 'lead'})[k] === v).length;
+    return `<label class="${cls || ''}"><input type="checkbox" data-f="${k}" value="${v}" ${SF[k].includes(v) ? 'checked' : ''}>${esc(n)}<b>${c}</b></label>`; }).join('');
   const groupKey = {th: s => s.t, dom: s => s.d, src: s => s.s || 'Other', st: s => s.st, none: () => ''}[SF.group];
   const groupName = {th: k => thName(k), dom: k => GN[k], src: k => k, st: k => STN[k] || k, none: () => ''}[SF.group];
   const groups = {}; rows.forEach(s => (groups[groupKey(s)] = groups[groupKey(s)] || []).push(s));
   const order = Object.keys(groups).sort((a, b) => Math.max(...groups[b].map(s => s.z ?? -99)) - Math.max(...groups[a].map(s => s.z ?? -99)) || a.localeCompare(b));
   const showTh = SF.group !== 'th', cols = (showTh ? 6 : 5) - (SF.sel ? 2 : 0);
   const hd = (k, n, al, c) => `<th data-sort="${k}" class="${SF.sk === k ? 'on' : ''} ${c || ''}" ${al ? 'style="text-align:right"' : ''}>${n}${SF.sk === k ? (SF.sd < 0 ? ' ▼' : ' ▲') : ''}</th>`;
-  const tr = s => `<tr data-row="${esc(s.id)}" class="${SF.sel === s.id ? 'sel' : ''}"><td class="n">${esc(s.l)}<small>${esc([s.s, s.lag ? 'confirms' : 'leads'].filter(Boolean).join(' · '))}</small>${s.stale ? ' <span class="ty" style="color:var(--watch)">stale</span>' : ''}</td>${showTh ? `<td class="w">${esc(thName(s.t))}</td>` : ''}<td class="hsel">${GN[s.d]}</td><td class="num" style="color:var(--mute)" title="${esc(s.last || '')}">${esc(s.last ? (s.last.length > 7 ? s.last.slice(5) : s.last) : '–')}</td><td class="hsel">${spark(s.pts && s.pts.slice(-30), s.z == null ? '#6b7a8a' : zcol(s.z), 60, 18)}</td><td><div class="sdb">${s.z != null ? `<u><i style="width:${Math.min(100, Math.max(0, s.z) / 5 * 100)}%;background:${zcol(s.z)}"></i></u>` : ''}<b class="num" style="color:${s.z == null ? 'var(--dim)' : zcol(s.z)}">${sigVal(s)}</b></div></td></tr>`;
+  const tr = s => `<tr data-row="${esc(s.id)}" class="${SF.sel === s.id ? 'sel' : ''}"><td class="n">${esc(s.l)}<small>${esc([s.s, s.lag ? 'confirms' : 'leads', rawTxt(s)].filter(Boolean).join(' · '))}</small>${s.stale ? ' <span class="ty" style="color:var(--watch)">stale</span>' : ''}</td>${showTh ? `<td class="w">${esc(thName(s.t))}</td>` : ''}<td class="hsel">${GN[s.d]}</td><td class="num" style="color:var(--mute)" title="${esc(s.last || '')}">${esc(s.last ? (s.last.length > 7 ? s.last.slice(5) : s.last) : '–')}</td><td class="hsel">${spark(s.pts && s.pts.slice(-30), s.z == null ? '#6b7a8a' : zcol(s.z), 60, 18)}</td><td><div class="sdb">${s.z != null && !isEv(s) ? `<u><i style="width:${Math.min(100, Math.max(0, s.z) / 5 * 100)}%;background:${zcol(s.z)}"></i></u>` : ''}<b class="num" style="color:${s.z == null ? 'var(--dim)' : zcol(s.z)}">${sigVal(s)}</b></div></td></tr>`;
   let body = '';
   if (!rows.length) body = `<tr><td colspan="${cols}" class="empty">No signal matches. <a data-sfreset="1">Clear all filters</a>.</td></tr>`;
   else if (SF.group === 'none') body = rows.map(tr).join('');
@@ -1689,15 +2172,17 @@ function renderSignals(first){
     body += `<tr class="g" data-grp="${esc(g)}"><td colspan="${cols}">${ic(closed ? 'chev' : 'chevd', 's')} ${esc(groupName(g))}<small>${list.length} signal${list.length === 1 ? '' : 's'}${mx > -99 ? ' · highest ' + fmtz(mx) + ' SD' : ''}${SF.group === 'th' && hasP(g) && PM ? ' · 30-day chance ' + pct(D.theatres[g].p) : ''}</small></td></tr>`;
     if (!closed) body += list.map(tr).join(''); });
   const sel = SF.sel && SERIES[SF.sel];
-  P.innerHTML = `<div class="toolbar"><label class="inp" style="flex:0 1 300px;min-width:170px">${ic('search', 's')}<input id="sq" type="search" placeholder="Search name, source or theatre" value="${esc(SF.q)}" aria-label="Search signals"></label>
+  const nf = SF.st.length + SF.dom.length + SF.th.length + SF.spd.length;
+  P.innerHTML = `<div class="toolbar"><button class="chip phonly ${nf ? 'on' : ''}" data-ftog="1">${ic('group', 's')} Filters${nf ? ` · ${nf}` : ''}</button><label class="inp" style="flex:0 1 300px;min-width:170px">${ic('search', 's')}<input id="sq" type="search" placeholder="Search name, source or theatre" value="${esc(SF.q)}" aria-label="Search signals"></label>
       ${[['an', 'Unusual', D.series.filter(isAn).length, 'Signals at 2 SD or more from their normal level'], ['lead', 'Leads only', D.series.filter(s => !s.lag).length, 'Fast data that can move before events'], ['today', 'Changed today', D.series.filter(s => s.last === today).length, 'Signals with a new value today']].map(([k, n, c, tip]) => `<button class="chip ${SF.quick === k ? 'on' : ''}" data-quick="${k}" data-tip="${tip}">${n}<b>${c}</b></button>`).join('')}
       ${SF.q || SF.quick || SF.st.length || SF.dom.length || SF.th.length || SF.spd.length ? `<button class="chip" data-sfreset="1">${ic('x', 's')} Clear all</button>` : ''}
       <span class="sp"></span><span class="hint">${rows.length} of ${D.series.length} signals</span>
       <label class="inp">${ic('group', 's')} Group by <select id="sgroup">${[['th', 'Theatre'], ['dom', 'Signal group'], ['src', 'Source'], ['st', 'Status'], ['none', 'No grouping']].map(([v, n]) => `<option value="${v}" ${SF.group === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>
-    <div class="intel ${sel ? 'sel' : ''}">
-      <div class="facets">${facet('Status', 'st', [['ok', 'Has a score'], ['collecting', 'Collecting history'], ['awaiting_key', 'Needs a key'], ['error', 'Failed']])}
+    <div class="intel ${sel ? 'sel' : ''} ${SF.fopen ? 'fopen' : ''}">
+      <div class="facets"><button class="btn pri phonly" data-ftog="1" style="width:100%;justify-content:center;margin-bottom:10px">Show ${rows.length} signal${rows.length === 1 ? '' : 's'}</button>${facet('Status', 'st', [['ok', 'Has a score'], ['collecting', 'Collecting history'], ['awaiting_key', 'Needs a key'], ['error', 'Failed']])}
         ${facet('Signal group', 'dom', D.domains.map(d => [d.id, GN[d.id]]))}
-        ${facet('Theatre', 'th', D.order.map(t => [t, thName(t)]))}
+        ${facet('Theatre', 'th', REG.flatMap(r => { const own = r.kids.filter(k => !isSub(k)), sub = r.kids.filter(isSub), cl = r.kids.length > 1 ? 'in' : '';
+          return (r.kids.length > 1 ? [['__h', r.name]] : []).concat(own.map(k => [k, thName(k), cl]), sub.length ? [['__h', r.name + ' sub-theatres']] : [], sub.map(k => [k, thName(k), cl])); }).concat(D.theatres.global ? [['global', thName('global')]] : []))}
         ${facet('Data speed', 'spd', [['lead', 'Leads (fast data)'], ['conf', 'Confirms (late data)']])}</div>
       <div class="tbl" id="stbl"><table class="t"><thead><tr>${hd('l', 'Signal')}${showTh ? hd('t', 'Theatre') : ''}${hd('d', 'Group', 0, 'hsel')}${hd('last', 'Last')}<th class="hsel tr">Trend</th>${hd('z', 'SD', 1)}</tr></thead><tbody>${body}</tbody></table></div>
       ${sel ? drawer(sel) : ''}</div>`;
@@ -1706,7 +2191,7 @@ function renderSignals(first){
 function drawer(s){
   const vals = (s.pts || []).map(p => p[1]), last = vals.length ? vals[vals.length - 1] : null;
   return `<div class="drawer"><div class="dhh"><div class="row" style="justify-content:space-between"><span class="hint">${esc(thName(s.t))} · ${GN[s.d]}</span><button class="x" data-dclose="1" aria-label="Close">&times;</button></div><h3>${esc(s.l)}</h3><div class="row" style="margin-top:6px"><span class="ty ${s.lag ? '' : 'ld'}">${s.lag ? 'confirms' : 'leads'}</span><span class="hint">${esc(s.s || '')} · ${s.kind}</span></div></div>
-    <div class="db">${statusBox(s)}<div class="k3"><div class="kp"><small>Now ${inf(s.kind === 'daily' ? 'The 7-day average' : 'The latest month')}</small><b>${s.z != null ? fmtv(s.val) : last != null ? fmtv(last) : 'n/a'}</b></div><div class="kp"><small>SD ${inf('Distance from its own normal level, in standard deviations')}</small><b style="color:${zcol(s.z)}">${fmtz(s.z)}</b></div><div class="kp"><small>Percentile</small><b>${vals.length > 8 ? pctRank(vals, last) + '%' : 'n/a'}</b></div></div>
+    <div class="db">${statusBox(s)}<div class="k3"><div class="kp"><small>Now ${inf(s.kind === 'daily' ? 'The 7-day average' : 'The latest month')}</small><b>${s.z != null ? fmtv(s.val) : last != null ? fmtv(last) : 'n/a'}</b></div><div class="kp"><small>SD ${inf('Distance from its own normal level, in standard deviations')}</small><b style="color:${zcol(s.z)}">${fmtz(s.z)}</b></div><div class="kp"><small>Percentile</small><b>${pctNow(s) ? pctNow(s).p + '%' : 'n/a'}</b></div></div>
     ${s.pts && s.pts.length > 2 ? `<div class="cwrap" style="padding:6px 8px">${areaChart(s.pts.slice(-120), {w: 330, h: 120, fs: 10, c: s.z == null ? '#6b7a8a' : '#58a6ff', bands: s.base ? [{a: s.base.med - 2 * s.base.sd, b: s.base.med + 2 * s.base.sd, c: 'rgba(88,166,255,.13)'}] : null})}<div class="cbub"></div></div>` : ''}
     <p class="hint">${s.z != null ? `This value is ${({'strong signal': 'a strong signal', 'unusual': 'unusual', 'a little high': 'a little high', 'normal range': 'in the normal range'})[verdict(s)]}.` : ''} ${dirTxt(s)} ${s.lag ? 'It is late data, so it confirms a build-up.' : 'It is fast data, so it can move before events.'}</p>
     ${kv('Normal level', s.base ? `<span class="num">${fmtv(s.base.med)}</span>` : 'n/a')}${s.base ? kv('Strong signal from', `<span class="num">${fmtv(s.dir === 'down' ? s.base.med - T_SIG * s.base.sd : s.base.med + T_SIG * s.base.sd)}</span>`) : ''}${kv('Method', esc(s.method || 'no score yet'))}${kv('Last value', esc(s.last || 'none') + (s.last ? ' · ' + esc(ago(s.last)) : ''))}
@@ -1716,6 +2201,8 @@ $('#pg-signals').addEventListener('click', e => {
   const t = e.target;
   const so = t.closest('th[data-sort]'); if (so) { const k = so.dataset.sort; if (SF.sk === k) SF.sd = -SF.sd; else { SF.sk = k; SF.sd = k === 'z' || k === 'last' ? -1 : 1; } renderSignals(false); return; }
   const g = t.closest('tr.g'); if (g) { const k = g.dataset.grp; SF.closed = SF.closed.includes(k) ? SF.closed.filter(x => x !== k) : SF.closed.concat(k); renderSignals(false); return; }
+  if (t.closest('[data-ftog]')) { SF.fopen = !SF.fopen; renderSignals(false); return; }
+  const rw0 = t.closest('tr[data-row]'); if (rw0 && isPhone()) { openModal(rw0.dataset.row, Array.from($$('#stbl tr[data-row]')).map(r => r.dataset.row)); return; }
   const rw = t.closest('tr[data-row]'); if (rw) { SF.sel = SF.sel === rw.dataset.row ? null : rw.dataset.row; const st = $('#stbl').scrollTop; renderSignals(false); $('#stbl').scrollTop = st; return; }
   const q = t.closest('[data-quick]'); if (q) { SF.quick = SF.quick === q.dataset.quick ? '' : q.dataset.quick; renderSignals(false); return; }
   if (t.closest('[data-sfreset]')) { SF = Object.assign(SF, {q: '', quick: '', st: [], dom: [], th: [], spd: []}); renderSignals(false); return; }
@@ -1742,27 +2229,45 @@ function renderActivity(){
   const fw = (Mm.fires || []).filter(f => { const h = ageH(f.ts || f.d); return h == null || h <= pref.win; }), fu = fw.filter(f => !f.r).length;
   const win = pref.win >= 168 ? '7 days' : pref.win + ' h';
   const sq = (Mm.sqk || [])[0];
+  const lastV = id => { const x = SERIES[id]; return x && x.pts && x.pts.length ? x.pts[x.pts.length - 1][1] : null; };
+  const med30 = id => { const x = SERIES[id]; return x && x.pts && x.pts.length > 10 ? median(x.pts.slice(-31, -1).map(p => p[1])) : null; };
+  const seaOf = t => ['nga_', 'msa_', 'jcg_'].reduce((a, k) => { const v = lastV(k + t), m = med30(k + t); return {v: a.v + (v || 0), m: a.m + (m || 0), n: a.n + (v != null ? 1 : 0)}; }, {v: 0, m: 0, n: 0});
+  const sea = {sum: Math.round(THEATRES.reduce((a, t) => a + seaOf(t).v, 0))};
+  const TP = D.tempo || {}, wvl = Object.entries(TP).map(([t, x]) => { const w = x.w[x.w.length - 1]; return {t, v: w ? w[1] : null, thr: w ? w[2] : null, st: x.st}; });
+  const wv = {sum: Math.round(wvl.reduce((a, x) => a + (x.v || 0), 0)), hot: wvl.some(x => x.v != null && x.thr != null && x.v >= x.thr),
+    txt: wvl.map(x => `${thName(x.t)} ${x.v != null ? x.v : x.st === 'awaiting_key' ? 'no key' : 'n/a'}`).join(' · ')};
   const ks = (t, v, s, col, tip) => `<div class="ks"><small>${t}${tip ? inf(tip) : ''}</small><b style="color:${col || 'var(--ink)'}">${v}</b><span>${s}</span></div>`;
   let h = `<div class="kstrip">${ks('Military aircraft now', tot, usual ? `48 h median: ${Math.round(usual)}` : 'building history', tot && usual && tot > usual * 1.2 ? 'var(--watch)' : null, 'Aircraft that broadcast a military address or call sign over the watched theatres. Many military aircraft fly with transponders off, so this is a lower limit.')}
     ${ks('Emergency squawks', (Mm.sqk || []).length, sq ? `${esc(sq.call || sq.hex)} ${sq.sq}${sq.th ? ' · ' + esc(thName(sq.th)) : ''}` : 'none now', (Mm.sqk || []).length ? 'var(--critical)' : null)}
     ${ks('Warships tracked', warships.length, `${carriers} carrier${carriers === 1 ? '' : 's'} · USNI, weekly`)}
     ${ks('Sea incidents · 7 days', inc7.length, inc7.length ? Array.from(new Set(inc7.map(n => n.th ? thName(n.th) : n.loc))).slice(0, 2).join(', ') : 'none reported', inc7.length ? 'var(--watch)' : null)}
-    ${ks('Fires · ' + win, fw.length, `${fu} unusual · ${fw.length - fu} routine`, fu ? 'var(--elevated)' : null, 'NASA satellite heat detections in the theatre boxes. Routine sources burn on most days: gas flares and industry.')}</div><div class="grid4">`;
+    ${ks('Fires · ' + win, fw.length, `${fu} unusual · ${fw.length - fu} routine`, fu ? 'var(--elevated)' : null, 'NASA satellite heat detections in the theatre boxes. Routine sources burn on most days: gas flares and industry.')}
+    ${ks('Alert waves · 7 days', wv.sum, wv.txt, wv.hot ? 'var(--tell)' : null, 'Alert waves counted by Tzeva Adom (Israel) and alerts.in.ua (Ukraine) over the last 7 days.')}
+    ${ks('Sea warnings · 30 days', sea.sum, 'firing and launch areas', null, 'Navigational warnings for firing, missile or launch areas in force over the last 30 days, across the watched waters.')}</div><div class="grid4">`;
+  const cards = [], quiet = [];
   RANK.forEach(t => {
     const th = D.theatres[t], mil = Mm.mil.filter(a => a.th === t), n = mil.length, by = {}; mil.forEach(a => { const k = roleOf(a.c); by[k] = (by[k] || 0) + 1; });
     const hist = ((A[t] || {}).mil || []).map(p => p[1]);
     const fires = fw.filter(f => f.th === t), unus = fires.filter(f => !f.r).length;
     const warn = (Mm.nga || []).filter(x => x.th === t).length + (Mm.czib || []).filter(x => x.th === t).length;
     const ships = (Mm.ships || []).filter(x => x.th === t && ['carrier', 'amphib', 'navy'].includes(x.k)).length, incs = inc7.filter(x => x.th === t).length;
-    h += `<button class="ac" data-nav="${t}" style="--c:${LEVEL[th.level]}"><h4><span>${esc(th.name)}</span><small>${esc(lead(t).txt)}</small></h4>
-      <div class="ln"><span>${ic('plane', 's')} Military aircraft</span><b>${n}</b></div>
-      <div class="stk">${roles.map(([k, nm]) => by[k] ? `<i style="width:${by[k] / n * 100}%;background:${(CLS[k] || CLS.other)[1]}" data-tip="${nm}: ${by[k]}"></i>` : '').join('')}</div>
-      <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span class="hint" style="font-size:11px">${hist.length > 2 ? 'last 48 h' : 'no history yet'}</span>${spark(hist, LEVEL[th.level], 150, 24, 1)}</div>
-      <div class="ln"><span>${ic('fire', 's')} Fires, unusual of all</span><b>${unus}<span style="color:var(--dim);font-weight:400"> / ${fires.length}</span></b></div>
-      <div class="ln"><span>${ic('warn', 's')} Warnings and bulletins</span><b>${warn}</b></div>
-      <div class="ln"><span>${ic('ship', 's')} Warships · incidents (7 d)</span><b>${ships} · ${incs}</b></div></button>`;
+    const um = median(hist), sw = seaOf(t), tw = wvl.find(x => x.t === t);
+    // how unusual now: each line against its own recent normal (48-hour median for aircraft, 30-day median for warnings at sea)
+    const rat = [um ? n / um : n ? 2 : 0, sw.m > 0 ? sw.v / sw.m : sw.v ? 2 : 0, unus ? 1 + unus / 5 : 0, incs ? 2 : 0, tw && tw.v != null && tw.thr ? tw.v / (tw.thr / 2) : 0];
+    const u = Math.max(...rat);
+    const lines = [n ? `<div class="ln"><span>${ic('plane', 's')} Military aircraft${um ? ` · usual ${Math.round(um)}` : ''}</span><b>${n}</b></div><div class="stk">${roles.map(([k, nm]) => by[k] ? `<i style="width:${by[k] / n * 100}%;background:${(CLS[k] || CLS.other)[1]}" data-tip="${nm}: ${by[k]}"></i>` : '').join('')}</div>` : '',
+      hist.some(v => v > 0) ? `<div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span class="hint" style="font-size:11px;white-space:nowrap">aircraft, 48 h</span>${spark(hist, '#8a939c', 150, 24, 1)}</div>` : '',
+      tw && tw.v ? `<div class="ln"><span>${ic('warn', 's')} Alert waves, 7 days${tw.thr != null ? ` · line ${tw.thr}` : ''}</span><b style="${tw.thr != null && tw.v >= tw.thr ? 'color:var(--tell)' : ''}">${tw.v}</b></div>` : '',
+      sw.v ? `<div class="ln"><span>${ic('anchor', 's')} Warnings at sea, 30 days${sw.m ? ` · usual ${Math.round(sw.m)}` : ''}</span><b>${Math.round(sw.v)}</b></div>` : '',
+      fires.length ? `<div class="ln"><span>${ic('fire', 's')} Fires, unusual of all</span><b>${unus}<span style="color:var(--dim);font-weight:400"> / ${fires.length}</span></b></div>` : '',
+      warn ? `<div class="ln"><span>${ic('warn', 's')} Warnings and bulletins</span><b>${warn}</b></div>` : '',
+      ships || incs ? `<div class="ln"><span>${ic('ship', 's')} Warships · incidents (7 d)</span><b>${ships} · ${incs}</b></div>` : ''].filter(Boolean);
+    if (!lines.length) { quiet.push(t); return; }
+    cards.push({t, u, h: `<button class="ac" data-nav="${t}" style="--c:${PM ? LEVEL[th.level] : u >= 1.5 ? 'var(--tell)' : 'var(--line2)'}"><h4><span>${esc(th.name)}</span><small>${u >= 1.2 ? u.toFixed(1) + '× usual' : 'about usual'}</small></h4>${lines.join('')}</button>`});
   });
-  h += `</div><div class="row" style="margin-top:8px;flex:none">${roles.map(([k, n]) => `<span class="hint"><span class="dot" style="--c:${(CLS[k] || CLS.other)[1]};margin-right:5px"></span>${n}</span>`).join('')}<span class="sp"></span><span class="hint">Click a card to open the theatre map. Fires use the map time window (${win}).</span></div>`;
+  cards.sort((a, b) => b.u - a.u);
+  h += cards.map(c => c.h).join('');
+  h += `</div>${quiet.length ? `<div class="quiet">Quiet now: ${quiet.map(t => `<button class="chip" data-nav="${t}">${esc(thName(t))}</button>`).join('')}</div>` : ''}<div class="row" style="margin-top:8px;flex:none">${roles.map(([k, n]) => `<span class="hint"><span class="dot" style="--c:${(CLS[k] || CLS.other)[1]};margin-right:5px"></span>${n}</span>`).join('')}<span class="sp"></span><span class="hint">Cards are ordered by how unusual their activity is against its own recent normal. Click a card to open the theatre. Fires use the map time window (${win}).</span></div>`;
   P.innerHTML = h;
 }
 $('#pg-activity').addEventListener('click', e => { const n = e.target.closest('[data-nav]'); if (n) nav(n.dataset.nav); });
@@ -1780,11 +2285,38 @@ function issues(){
   (D.errors || []).forEach(e => out.push({s: null, k: 'error', iss: 'Map layer failed', det: e, fix: 'The next run tries again.'}));
   return out;
 }
+function addDays(d, n){ const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); }
+function longDate(d){ const x = new Date(String(d).slice(0, 10) + 'T00:00:00Z'); return isNaN(x) ? d : x.toLocaleString('en-GB', {day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'}); }
+function renderRecord(){
+  const P = $('#pg-record'), F = D.forward || [], G = (D.model || {}).gates || {}, thr = D.events && D.events.through;
+  let h = `<div class="rec"><div class="prose"><p>Every day the build logs each target's chance for every theatre before anything happens, in a hash-chained record nobody can edit later. A forecast is scored once its window has passed and the outcome is known. A target passes when its forecasts beat each theatre's usual rate (Brier skill above 0) and the low end of its AUC range is above 0.5, over at least 90 scored days. Until a target passes, the page shows no chance as a forecast.</p></div>`;
+  if (thr) h += `<div class="note"><b>Events are complete to ${esc(longDate(thr))}.</b> Forecasts for the 30-day targets after that date cannot be scored until the event list is brought up to date.</div>`;
+  if (D.model) {
+    const g = (ok, what, val) => `<div class="gr"><span class="${ok ? 'ok' : 'no'}">${ok ? '✓' : '✗'}</span><span>${what}</span><b>${val}</b></div>`;
+    h += `<div class="gates"><h4>The page's model at its last refit (${esc(D.model.fitted)})</h4>
+      ${g(G.auc_lo > 0.5, 'Ranks past theatre-months better than a coin flip (AUC, low end above 0.5)', G.auc != null ? `${G.auc.toFixed(2)} (${G.auc_lo.toFixed(2)} to ${G.auc_hi.toFixed(2)})` : 'n/a')}
+      ${g(G.bss > 0, 'Beats each theatre\'s usual rate (Brier skill above 0)', G.bss != null ? (G.bss >= 0 ? '+' : '') + G.bss.toFixed(4) : 'n/a')}
+      ${g(!!G.beats_shuffled, 'Beats the same signals with their timing shuffled (p below 0.05)', G.shuffle_p_auc != null ? 'p ' + G.shuffle_p_auc.toFixed(2) : 'n/a')}
+      <p class="hint" style="margin:8px 0 0">${G.pass ? 'It passes these checks, so the model sets the levels.' : 'It does not pass all three, so it runs in shadow: its chance is shown as standing risk, for reference, and sets no level or colour.'} These checks are on past years; the forward record below is the test on days that had not happened yet.</p></div>`;
+  }
+  h += `<div class="rgrid">` + (F.map(r => {
+    const pc = Math.min(100, (r.days || 0) / (r.need || 90) * 100), due = r.first ? addDays(r.first, (r.need || 90) - 1 + (r.h || 0)) : null;
+    const st = r.err ? `not available: ${esc(r.err)}` : !r.chain ? '<span style="color:var(--critical)">record broken</span>' : r.ready ? (r.pass ? 'passes' : 'does not pass yet') : `${r.days} of ${r.need} days scored`;
+    return `<div class="rcard"><h4>${esc(r.name)}</h4><div class="prog" role="progressbar" aria-valuenow="${r.days || 0}" aria-valuemax="${r.need || 90}"><i style="width:${pc}%"></i></div>
+      <div class="kv"><span>Status</span><b>${st}</b></div>
+      <div class="kv"><span>Logged since</span><b>${r.first ? esc(shortDate(r.first)) + ` · ${r.logged} day${r.logged === 1 ? '' : 's'}` : '–'}</b></div>
+      <div class="kv"><span>Outcomes known to</span><b>${r.through ? esc(shortDate(r.through)) : '–'}</b></div>
+      ${r.ready ? `<div class="kv"><span>Brier skill · AUC (low end)</span><b>${r.bss != null ? (r.bss >= 0 ? '+' : '') + r.bss.toFixed(3) : '–'} · ${r.auc != null ? r.auc.toFixed(2) + ' (' + r.auc_lo.toFixed(2) + ')' : '–'}</b></div>`
+        : due ? `<div class="kv"><span>90 scored days about</span><b>${esc(longDate(due))}</b></div><p class="hint" style="margin:0">${r.h >= 30 ? 'If the event list is kept up to date.' : 'Scored on the alert feeds themselves, so it needs no event list.'}</p>` : ''}</div>`; }).join('') || '<p class="hint">No forward record in this build.</p>') + `</div>`;
+  h += `<p class="hint">The hidden targets are never shown as a chance. They are logged and scored here so a later version can be judged on days it had not seen. <a data-nav="settings/method" style="color:var(--accent);cursor:pointer">How the score works</a></p></div>`;
+  P.innerHTML = h;
+}
+$('#pg-record').addEventListener('click', e => { const n = e.target.closest('[data-nav]'); if (n) nav(n.dataset.nav); });
 function renderSettings(){
   const P = $('#pg-settings'), sub = R.sub || 'health', iss = issues(), cnt = {}; iss.forEach(i => cnt[i.k] = (cnt[i.k] || 0) + 1);
   const st = {}; D.series.forEach(s => st[s.st] = (st[s.st] || 0) + 1);
   const bad = (cnt.error || 0) + (cnt.stale || 0);
-  const tabs = [['display', 'Display', 'eye'], ['health', 'Data health', 'health', bad || iss.length, bad > 0], ['sources', 'Sources and schedule', 'clock'], ['method', 'How the score works', 'book'], ['record', 'Track record', 'table'], ['gaps', 'Data we cannot get', 'gap', D.unavailable.length]];
+  const tabs = [['display', 'Display', 'eye'], ['health', 'Data health', 'health', bad, bad > 0], ['sources', 'Sources and schedule', 'clock'], ['method', 'How the score works', 'book'], ['gaps', 'Data we cannot get', 'gap', D.unavailable.length]];
   let body = '';
   if (sub === 'display') {
     const seg = (k, opts, cur) => `<span class="seg">${opts.map(([v, n]) => `<button class="${String(cur) === String(v) ? 'on' : ''}" data-set="${k}" data-v="${v}">${n}</button>`).join('')}</span>`;
@@ -1803,26 +2335,24 @@ function renderSettings(){
     body = `<div class="hs">${ks('Have a score', st.ok || 0, 'of ' + D.series.length + ' signals', 'var(--normal)')}${ks('Collecting history', st.collecting || 0, 'they get a score later', 'var(--watch)')}${ks('Need a key', st.awaiting_key || 0, keys.length + ' free key' + (keys.length === 1 ? '' : 's') + ' missing', st.awaiting_key ? 'var(--elevated)' : null)}${ks('Failed this run', (st.error || 0) + (D.errors || []).length, 'the next run tries again', st.error || (D.errors || []).length ? 'var(--critical)' : null)}${ks('Stale copy', cnt.stale || 0, 'last good copy shown', cnt.stale ? 'var(--watch)' : null)}</div>
       <div class="toolbar" style="margin:0">${[['all', 'All issues', iss.length], ['error', 'Failed', cnt.error || 0], ['stale', 'Stale', cnt.stale || 0], ['awaiting_key', 'Need a key', cnt.awaiting_key || 0], ['collecting', 'Collecting', cnt.collecting || 0]].map(([k, n, c]) => `<button class="chip ${HF.chip === k ? 'on' : ''}" data-hchip="${k}">${n}<b>${c}</b></button>`).join('')}<span class="sp"></span><label class="inp" style="width:240px">${ic('search', 's')}<input id="hq" type="search" placeholder="Filter issues" value="${esc(HF.q)}" aria-label="Filter issues"></label></div>
       <div class="tbl" style="flex:1"><table class="t"><thead><tr><th>Signal</th><th>Theatre</th><th>Issue</th><th>Detail</th><th>What to do</th></tr></thead><tbody>${list.map(i => `<tr ${i.s ? `data-open="${esc(i.s.id)}"` : ''}><td class="n">${i.s ? esc(i.s.l) + (i.s.s ? `<small>${esc(i.s.s)}</small>` : '') : 'Map layer'}</td><td>${i.s ? esc(thName(i.s.t)) : '–'}</td><td><span class="ty" style="color:${col[i.k]}">${esc(i.iss)}</span></td><td style="white-space:normal;color:var(--mute);max-width:280px">${esc(i.det)}</td><td style="white-space:normal;color:var(--mute);max-width:300px">${esc(i.fix)}</td></tr>`).join('') || `<tr><td colspan="5" class="empty">No issue matches.</td></tr>`}</tbody></table></div>`;
-  } else if (sub === 'record') {
-    const R = D.forward || [];
-    const cell = r => r.err ? `<span style="color:var(--mute)">not available: ${esc(r.err)}</span>`
-      : !r.chain ? '<span class="ty" style="color:var(--critical)">record broken</span>'
-      : r.ready ? `<span class="ty" style="color:${r.pass ? 'var(--normal)' : 'var(--watch)'}">${r.pass ? 'passes' : 'does not pass yet'}</span>`
-      : `${r.days} of ${r.need} days matured`;
-    body = `<div class="prose" style="flex:0 0 auto;margin-bottom:12px"><p>Every day the build logs each target's chance for every theatre before anything happens, in a hash-chained record nobody can edit later. A forecast is scored once its window has passed: 30 days for the first two targets, 7 for the strike-wave one. The numbers appear here once ${(R[0] || {}).need || 90} days of forecasts have been scored. A target passes when its forecasts beat each theatre's usual rate (Brier skill above 0) and the low end of its AUC range is above 0.5. The first target to pass is the one to put on the page; until then the page keeps its current reading. The 30-day targets are scored only up to the date the event list is complete to, so their count moves when the list is brought up to date.</p></div>
-      <div class="tbl" style="flex:1"><table class="t"><thead><tr><th>What is predicted</th><th>Logged since</th><th>Outcomes known to</th><th>Brier skill</th><th>AUC (low end)</th><th>Forward check</th></tr></thead><tbody>${R.map(r => `<tr style="cursor:default"><td class="n" style="white-space:normal">${esc(r.name)}</td><td>${r.first ? esc(r.first) + `<span style="color:var(--mute)"> · ${r.logged} day${r.logged === 1 ? '' : 's'}</span>` : '–'}</td><td>${r.through ? esc(r.through) : '–'}</td><td>${r.bss != null ? (r.bss >= 0 ? '+' : '') + r.bss.toFixed(3) : '–'}</td><td>${r.auc != null ? r.auc.toFixed(2) + ` (${r.auc_lo.toFixed(2)})` : '–'}</td><td>${cell(r)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">No forward record in this build.</td></tr>'}</tbody></table></div>`;
   } else if (sub === 'sources') {
     body = `<div class="tbl" style="flex:1"><table class="t"><thead><tr><th>Source</th><th>How often</th><th>Why that is enough, and the free limit</th></tr></thead><tbody>${(D.updates || []).map(u => `<tr style="cursor:default"><td class="n"><b style="font-weight:600">${esc(u.s)}</b></td><td>${esc(u.e)}</td><td style="white-space:normal;color:var(--mute)">${esc(u.l)}</td></tr>`).join('')}</tbody></table></div>`;
   } else if (sub === 'method') {
     const G = (D.model || {}).gates || {};
-    body = `<div class="setscroll prose"><h3>1. Each signal against its own history</h3><p>WarWatch compares each signal with its own past. For daily data, the latest 7-day average is compared with the 7-day averages of the previous year. The last 30 days are left out of that comparison, so a slow build-up does not hide itself. When less than 120 days of history are available, the last 90 days are used. Monthly data is compared with the previous 36 months, with the usual month-to-month pattern removed.</p>
+    const subs = Object.keys(SUBT || {}), FN = (D.forward || []).map(r => esc(r.name.replace(/ \(.*\)$/, '').toLowerCase()));
+    body = `<div class="setscroll prose"><h3>What you can trust today</h3><p>${PM ? 'The 30-day model passed its checks at its last refit and sets the levels. Its forecasts are scored on the Track record page as they mature.'
+      : 'The readings are facts about each source: how far it sits from its own normal, and what governments and Crisis Group have published. The timing tells are fixed rules, shown with their record on our own history. The 30-day model has not passed its checks, so its chance is shown only as standing risk, for reference, and sets no level or colour. The Track record page shows how its forecasts score as they mature.'}</p>
+      <h3>1. Each signal against its own history</h3><p>WarWatch compares each signal with its own past. For daily data, the latest 7-day average is compared with the 7-day averages of the previous year. The last 30 days are left out of that comparison, so a slow build-up does not hide itself. When less than 120 days of history are available, the last 90 days are used. Monthly data is compared with the previous 36 months, with the usual month-to-month pattern removed.</p>
       <h3>2. Distance from normal</h3><p>The distance is a modified z-score: <span class="kw">0.6745 × (value − median) / MAD</span>. It is limited to ±5, so one bad value cannot control the result. Only movement in the warning direction counts. A calm signal never cancels an alarm in another signal. 2 SD or more is unusual; 3 SD or more is a strong signal.</p>
       <h3>3. One event counts one time</h3><p>Signals that move together (their recent changes correlate above 0.8) are averaged into one. Late data (published weeks or months after the fact) counts at 25%, because the aim is early warning.</p>
       <h3>4. Signal groups and signal pressure</h3><p>Each of the five groups (Logistics, Markets, People, Physical, News) combines its strongest signals with an ordered weighted average (orness 0.7). The strongest evidence gets the most weight. The groups are combined with the theatre's weights into one index (Mazziotta-Pareto). A profile where one group is very high reads higher than an even profile. This gives the <b>signal pressure</b> from 0 to 100: 50 is the Watch line and 90 is the Critical line. These lines are the top 10% and the top 1% of a simulated calm world.</p>
       <h3>5. The 30-day chance</h3><p>${D.model ? `A fitted model (v${esc(D.model.v)}, fitted ${esc(D.model.fitted)}) turns the signals and the conflict history of each theatre into the chance of a qualifying event in the next 30 days. It starts from the long-run rate of the theatre. Each signal family then moves the chance. ${PM ? `The model sets the levels: <b>Watch</b> from ${pct(BANDS[0])}, <b>Elevated</b> from ${pct(BANDS[1])}, <b>Critical</b> from ${pct(BANDS[2])}.` : 'The model runs in shadow mode now. The levels come from the signal pressure.'} On past theatre-months the model has a test AUC of ${G.auc != null ? G.auc.toFixed(2) : 'n/a'}${G.auc_lo != null ? ` (range ${G.auc_lo.toFixed(2)} to ${G.auc_hi.toFixed(2)})` : ''}. 0.5 is a coin flip.` : 'No fitted model is available in this build. The levels come from the signal pressure.'}</p>
       <h3>6. Why the chance and the pressure can disagree</h3><p>Signal pressure shows how unusual the signals are. The chance also asks whether signals like these came before events in the past. A theatre can have high pressure and a low chance. When this occurs, the theatre page tells you.</p>
       <h3>7. Regions and the world</h3><p>A region shows the highest level of its theatres, so one crisis is not averaged away. The chance for any theatre combines all theatres. The theatres move together, so this value is an upper limit.</p>
-      <h3>8. Labels</h3><ul><li><b>Lagging only:</b> only late data is unusual. It shows a build-up that already started. It is not an early warning.</li><li><b>Coverage:</b> the share of signals that have a score now. Low coverage makes the result less certain.</li></ul>
+      <h3>8. Timing tells</h3><p>A timing tell is a fixed yes-or-no rule over the last 7 days on a costly, hard-to-reverse action: a US departure order, an advisory raise with a UK advice change, airliners thinning out, tankers parked forward, airspace closures, firing warnings at sea, strike waves. Each shows how often it fired on our history, how often an event followed within 7 days, and how many events it caught. Tells never set a level or enter the model.</p>
+      ${subs.length ? `<h3>9. Sub-theatres</h3><p>${subs.map(k => esc(thName(k))).join(' and ')} ${subs.length > 1 ? 'are countries' : 'is a country'} drawn into a neighbour's war. ${subs.map(k => `${esc(thName(k))} reads its own signals and those of ${SUBT[k].parents.map(x => esc(thName(x))).join(' and ')}`).join('; ')}. Too few past events happened on their ground to fit them alone, so their usual rate is pooled with ${SUBT[subs[0]].pool.map(x => esc(thName(x))).join(', ')}.</p>` : ''}
+      ${FN.length ? `<h3>${subs.length ? 10 : 9}. What is forecast</h3><p>${FN.length} targets are logged every day: ${FN.join('; ')}. Only the first is the page's model; the others are hidden and never shown as a chance. All are scored on the <a data-nav="record">Track record</a> page.</p>` : ''}
+      <h3>Labels</h3><ul><li><b>Lagging only:</b> only late data is unusual. It shows a build-up that already started. It is not an early warning.</li><li><b>Coverage:</b> the share of signals that have a score now. Low coverage makes the result less certain.</li></ul>
       <p>The full method: <a href="https://github.com/khourix/warwatch/blob/main/docs/METHODOLOGY.md" target="_blank" rel="noopener">METHODOLOGY.md</a> and <a href="https://github.com/khourix/warwatch/blob/main/docs/MODEL.md" target="_blank" rel="noopener">MODEL.md</a>.</p>
       <h3>Reading the map</h3><ul><li>Hover a pin to see the chance and its causes. Click it to open the theatre.</li><li>Click an aircraft, ship, incident, fire or warning for details. Click a country to open its theatre.</li><li>Use the buttons at the top left of the map for layers, the legend, the time window and the label size.</li><li>Press <span class="kw">/</span> to search everything.</li></ul></div>`;
   } else {
@@ -1846,10 +2376,13 @@ $('#pg-settings').addEventListener('click', e => {
 });
 $('#pg-settings').addEventListener('input', e => { if (e.target.id === 'hq') { HF.q = e.target.value; const pos = e.target.selectionStart; renderSettings(); const q = $('#hq'); q.focus(); q.setSelectionRange(pos, pos); } });
 
+matchMedia('(max-width:900px)').addEventListener('change', () => render());
+
 /* ------------------------------------------------------------ start */
 if (D.demo) $('#demo').hidden = false;
 buildMap(); renderRail();
 route(true);
+setTimeout(() => loadFull().then(() => { if (R.v === 'signals' && SF.sel) renderSignals(false); }), 1200);
 </script>
 <script>
 // pick up the 30-minute rebuilds without a manual reload (only when the tab is visible and no detail view or pop-up is open)
