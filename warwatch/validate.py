@@ -5,6 +5,7 @@
     python3 warwatch/validate.py report   # rolling-origin test, gates, shuffled-timing control -> docs/MODEL.md
     python3 warwatch/validate.py fit      # report, then fit on all history and write warwatch/data/model_weights.json
     python3 warwatch/validate.py fit-armed  # the same on armed-force events only -> model_weights_armed.json, docs/MODEL_ARMED.md (hidden shadow model)
+    python3 warwatch/validate.py fit-wave   # a new strike wave within 7 days, wars under way -> model_weights_wave.json, docs/MODEL_WAVE.md (hidden shadow model)
 
 Unlike the live build this needs numpy, pandas and scipy. It reads only committed data: backtest/history (prices, transits, advisories,
 procurement, trade, conflict counts, GDELT and GPSJam histories) and warwatch/data/events.csv (the labels, see docs/EVENTS.md).
@@ -32,6 +33,7 @@ sys.path.insert(0, HERE)
 import backtest as B  # noqa: E402
 import catalog  # noqa: E402
 import config as C  # noqa: E402
+import model  # noqa: E402
 import sources as S  # noqa: E402
 import stats  # noqa: E402
 
@@ -61,12 +63,17 @@ KEEP = 450                    # points of history a point-in-time score may see 
 BOOT = 40
 EVENT_TYPES = None            # set by `fit-armed`: train and label on these event types only (the hidden armed-force model)
 REPORT = "MODEL.md"
+WAVE = None                   # set by `fit-wave`: the theatres whose strike-wave onsets (model.wave_events) are the labels, 7 days ahead
 
 
 # ------------------------------------------------------------------ data
 def read_events():
     """The labels, plus one copy of each event filed under the sub-theatre where it happened (site_theatre, marked dup):
     the copy labels the sub-theatre, the original still labels its theatre, so the theatres' labels do not change."""
+    if WAVE:
+        ev = pd.DataFrame([{"date": pd.Timestamp(d), "theatre": t, "type": "wave", "description": "strike wave starts", "market_moving": 0, "site_theatre": ""}
+                           for t, d in model.wave_events(theatres=WAVE)], columns=["date", "theatre", "type", "description", "market_moving", "site_theatre"])
+        return ev.assign(dup=False)
     ev = pd.read_csv(os.path.join(DATA, "events.csv"), parse_dates=["date"], keep_default_na=False)
     if EVENT_TYPES:
         ev = ev[ev["type"].isin(EVENT_TYPES)].reset_index(drop=True)
@@ -76,6 +83,8 @@ def read_events():
 
 
 def events_through():
+    if WAVE:      # the wave feeds are read every day: labels are complete through the oldest feed's newest day
+        return pd.Timestamp(min(model.wave_points(model.WAVE_FEEDS[t])[-1][0][:10] for t in WAVE))
     with open(os.path.join(DATA, "events_through.txt")) as f:
         return pd.Timestamp(f.read().strip())
 
@@ -483,6 +492,8 @@ def prepare(refresh=False, subs=False):
         ev = ev[~ev["dup"]].reset_index(drop=True)
     through = events_through()
     P, meta = panel(H, end=through, subs=subs)
+    if WAVE:
+        P = P[P["theatre"].isin(WAVE)].reset_index(drop=True)
     y, excl, unk, eid = labels(P, ev, through)
     core = P["theatre"].isin(TH).values
     fams = [c for c in P.columns if c in meta and P.loc[core, c].notna().sum() > 200]
@@ -524,7 +535,7 @@ def sub_report(P, y, pub, base, ok0, eid):
 
 
 def run(write):
-    P, meta, fams, X, y, lab, eid, ev, through = prepare(subs=True)
+    P, meta, fams, X, y, lab, eid, ev, through = prepare(subs=not WAVE)
     yr = P["date"].dt.year.values
     core = P["theatre"].isin(TH).values
     ok0 = lab & (yr >= TEST_YEARS[0])
@@ -628,8 +639,8 @@ def final(o):
     p_any = float(byday[labday].mean())
     pub_max = float(np.nanmax(o["pub"][o["lab"] & core & ~np.isnan(o["pub"])]))
     model = {"version": "1.0.0", "p_cap": round(min(0.95, math.ceil(max(pub_max, 0.3) / 0.05) * 0.05), 2), "fitted": dt.date.today().isoformat(), "data_through": str(P["date"].max().date()), "events_through": str(o["through"].date()),
-             "n_events": int((~ev["dup"]).sum()), "lambda_w": o["lam"], "gamma": gam, "phi": phi, "bands": list(BANDS), "levels": list(LEVELS),
-             "base": {t: round(float(b[t]), 5) for t in cols if t in b}, "pooled_base": round(float(g), 5), "p_any_clim": round(p_any, 4),
+             "n_events": int((~ev["dup"]).sum()), "horizon": HORIZON, "theatres": sorted(set(P["theatre"])), "lambda_w": o["lam"], "gamma": gam, "phi": phi, "bands": list(BANDS), "levels": list(LEVELS),
+             "base": {t: round(float(b[t]), 5) for t in cols if t in b and (not WAVE or t in WAVE)}, "pooled_base": round(float(g), 5), "p_any_clim": round(p_any, 4),
              "mm_share": {t: round(float(mm.loc[t, "sum"] / mm.loc[t, "count"]), 3) if t in mm.index else 0.0 for t in cols},
              "theta": pack(theta), "boot": [pack(bt) for bt in boots], "gates": o["gates"], "active": bool(o["gates"]["pass"]),
              "sub": {t: {"parents": C.SUBTHEATRES[t]["parents"], "events": v["events"], "gates": v["gates"], "active": bool(o["gates"]["pass"] and v["pass"])}
@@ -652,24 +663,27 @@ def fit_shrink_all(o):
 
 def write_report(o):
     g = o["gates"]
-    L = ["# Probability model: validation report", "",
-         f"Generated by `warwatch/validate.py`. Labels: `warwatch/data/events.csv` ({len(o['ev'])} events, complete through {o['through'].date()}); definition in `docs/EVENTS.md`. "
-         f"A theatre-day is positive when an event in that theatre follows within 1 to 30 days; the 30 days after each event are left out.", "",
+    labels_txt = (f"Labels: the start of each strike wave on the alert-wave feeds of {', '.join(C.THEATRES[t]['name'] for t in WAVE)} ({len(o['ev'])} waves, "
+                  f"feeds complete through {o['through'].date()}): the day the strike-wave tell turns on after 7 days off (`tells.wave_onsets`). Only those theatres' days are in the fit. "
+                  if WAVE else f"Labels: `warwatch/data/events.csv` ({len(o['ev'])} events, complete through {o['through'].date()}); definition in `docs/EVENTS.md`. ")
+    L = ["# Probability model: validation report" + (", 7-day strike-wave model (hidden from the page)" if WAVE else ""), "",
+         f"Generated by `warwatch/validate.py`. " + labels_txt +
+         f"A theatre-day is positive when {'a wave' if WAVE else 'an event'} in that theatre follows within 1 to {HORIZON} days; the {POST} days after each are left out.", "",
          "## Gates", "",
          "Nothing the model says reaches the live page until all three pass on out-of-sample data (rolling origin: each test year is scored by a model fitted on earlier years only, with a 30-day embargo).", "",
          "| Gate | Result | Pass |", "|---|---|---|",
          f"| Brier skill against each theatre's own base rate is positive | {g['bss']:+.4f} (before the shrink: {o['bss_raw']:+.4f}) | {'yes' if g['bss_positive'] else 'NO'} |",
          f"| Lower end of the AUC interval is above 0.5 | AUC {g['auc']:.3f}, 95% interval {g['auc_lo']:.3f} to {g['auc_hi']:.3f} (resampling theatre-years) | {'yes' if g['auc_lo_above_half'] else 'NO'} |",
          f"| Beats a shuffled-timing control | p = {g['shuffle_p_auc']:.3f} on AUC, {g['shuffle_p_bss']:.3f} on Brier skill (300 circular shifts per theatre; shifted AUC median {o['shuf_auc'][0]:.3f}, 95th percentile {o['shuf_auc'][1]:.3f}) | {'yes' if g['beats_shuffled'] else 'NO'} |",
-         "", f"**Overall: {'PASS. The model drives the levels on the live page.' if g['pass'] else 'FAIL. The model runs in shadow (probabilities are logged to the forward record but the page keeps the composite levels).'}**", "",
+         "", f"**Overall: {('PASS on the backtest. A hidden model: it is a candidate for the page once its forward record passes too.' if WAVE or EVENT_TYPES else 'PASS. The model drives the levels on the live page.') if g['pass'] else 'FAIL. The model runs in shadow (probabilities are logged to the forward record but the page keeps the composite levels).'}**", "",
          f"Test years {TEST_YEARS[0]} to {TEST_YEARS[-1]}: {o['n']:,} theatre-days, {o['pos']:,} positive, {o['events']} events. Ridge strength chosen from {list(LAMBDAS)} by out-of-sample Brier "
          f"(lambda = {o['lam']}); this one choice used the same test years, so treat the gates as a little optimistic. The forward record is the clean test. "
          f"Shrink toward the base rate (gamma, phi) is refitted each year on earlier test years only: " + ", ".join(f"{y}: {a:.1f}/{b:.2f}" for y, (a, b) in o["gp"].items()) + ".", "",
          "| Ridge strength | OOS Brier |", "|---|---|"] + [f"| {k} | {v:.5f} |" for k, v in o["sel"].items()]
     L += ["", "## What it buys", "",
-          f"On its top 10% of days an event follows within 30 days {o['top_rate']:.1%} of the time, against a base rate of {o['base']:.1%} ({o['lift']:.2f} times). "
+          f"On its top 10% of days {'a wave' if WAVE else 'an event'} follows within {HORIZON} days {o['top_rate']:.1%} of the time, against a base rate of {o['base']:.1%} ({o['lift']:.2f} times). "
           f"At a 10% false-alarm rate it flags {o['rec10'][0]} of {o['rec10'][1]} events.", "",
-          "### Probability bands", "", "| Level | 30-day probability | Share of theatre-days | Event rate that followed | Mean published probability |", "|---|---|---|---|---|"]
+          "### Probability bands", "", f"| Level | {HORIZON}-day probability | Share of theatre-days | Event rate that followed | Mean published probability |", "|---|---|---|---|---|"]
     for nm, rng_, share, real, mean, n in o["bands"]:
         L.append(f"| {nm} | {rng_} | {share:.1%} | {real:.1%} | {mean:.1%} |" if n else f"| {nm} | {rng_} | 0% | n/a | n/a |")
     L += ["", "### Reliability of the published probability", "", "| Predicted from | to | Days | Mean predicted | Event rate that followed |", "|---|---|---|---|---|"]
@@ -703,8 +717,8 @@ def write_report(o):
         L += ["", f"Conflict-history terms (log-odds per full-scale term): events in the last year {h[0]:+.2f}, in the last three years {h[1]:+.2f}, log days since the latest event {h[2]:+.2f}. "
               "They are correlated, so read them together: risk is higher where events are recent and frequent, and a theatre is lower in the weeks right after the 30 days left out of the labels.",
               f"Published probabilities are capped at {m['p_cap']:.0%}, the highest the model produced out of sample, rounded up: it is not shown claiming more than it was tested on."]
-        L += ["", "Theatre base rates (30-day probability on a quiet day with no history): " + ", ".join(f"{C.THEATRES[t]['name']} {v:.1%}" for t, v in m["base"].items()) + ".",
-              f"Shrink toward the base rate gamma = {m['gamma']}, floor phi = {m['phi']}. Chance of an event somewhere within 30 days, climatological: {m['p_any_clim']:.0%}."]
+        L += ["", f"Theatre base rates ({HORIZON}-day probability on a quiet day with no history): " + ", ".join(f"{C.THEATRES[t]['name']} {v:.1%}" for t, v in m["base"].items()) + ".",
+              f"Shrink toward the base rate gamma = {m['gamma']}, floor phi = {m['phi']}. Chance of {'a wave' if WAVE else 'an event'} somewhere within {HORIZON} days, climatological: {m['p_any_clim']:.0%}."]
     with open(os.path.join(ROOT, "docs", REPORT), "w") as f:
         f.write("\n".join(L) + "\n")
     print("wrote docs/" + REPORT)
@@ -716,6 +730,12 @@ if __name__ == "__main__":
         zhistory(refresh=True)
     elif cmd in ("report", "fit"):
         run(write=cmd == "fit")
+    elif cmd == "fit-wave":      # hidden shadow model: a new strike wave within 7 days, on the theatres with a long enough wave feed; never drives the page
+        HORIZON, POST = model.WAVE_HORIZON, model.WAVE_HORIZON
+        WAVE = [t for t, sid in model.WAVE_FEEDS.items() if len(model.wave_points(sid)) >= model.WAVE_MIN]
+        MODEL_PATH = model.WAVE_MODEL
+        REPORT = "MODEL_WAVE.md"
+        run(write=True)
     elif cmd == "fit-armed":     # hidden shadow model: armed-force events only (onset, strike, maritime); never drives the page
         EVENT_TYPES = ("onset", "strike", "maritime")
         MODEL_PATH = os.path.join(DATA, "model_weights_armed.json")

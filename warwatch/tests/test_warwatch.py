@@ -1113,6 +1113,31 @@ class ArmedShadow(unittest.TestCase):
         self.assertEqual(model.load_events(types=model.ARMED_TYPES) != [], True)
 
 
+    def test_wave_shadow_logs_only_its_theatres_and_forward_gates_wait(self):
+        import demo
+        import forward_score
+        import model
+        import tells
+        res = run.evaluate(demo.scenario("buildup"))
+        res = model.apply(res, today=dt.date(2026, 10, 8), forward_path=os.devnull)
+        levels = {t: v["level"] for t, v in res["theatres"].items()}
+        m = model.load(model.WAVE_MODEL)
+        self.assertEqual(m["horizon"], 7)
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "log_wave.csv")
+            n = model.shadow_wave(res, today=dt.date(2026, 10, 8), log_path=log)
+            self.assertEqual(n, len([t for t in m["theatres"] if t in res["theatres"]]) + 1)
+            ok, _, rows = model.forward_verify(log)
+            self.assertTrue(ok)
+            self.assertEqual({r["theatre"] for r in rows} - {"_any"}, set(m["theatres"]))
+        self.assertEqual(levels, {t: v["level"] for t, v in res["theatres"].items()})
+        # a wave starts when the 7-day count doubles its usual level (and reaches 5), and again only after 7 quiet days
+        day = lambda k: (dt.date(2026, 1, 1) + dt.timedelta(days=k)).isoformat()
+        pts = [(day(k), 2.0) for k in range(120)] + [(day(120 + k), 9.0) for k in range(3)] + [(day(123 + k), 2.0) for k in range(4)] + [(day(127), 9.0)]
+        self.assertEqual(tells.wave_onsets(pts), [dt.date(2026, 1, 1) + dt.timedelta(days=120)])
+        g = forward_score.gates([(0.1, 0.1, k % 7 == 0, {"date": day(k), "theatre": "israel"}) for k in range(30)])
+        self.assertFalse(g["ready"])      # read only once 90 days have matured
+
 
 class TestTells(unittest.TestCase):
     @staticmethod
