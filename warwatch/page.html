@@ -174,6 +174,7 @@ header#top{height:52px;flex:none;display:flex;align-items:center;gap:12px;paddin
 .nl .ib{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:color-mix(in oklab,var(--c) 22%,transparent);color:var(--c)}
 .nl b{font-weight:500;font-size:12.5px;display:block}
 .nl.read b{color:var(--mute)}
+.nl.old .ib{filter:grayscale(.85);opacity:.5}.nl.old b{color:var(--mute);font-weight:400}.al.old>:first-child{filter:grayscale(.85);opacity:.5}.al.old b,.al.old div{color:var(--mute)}
 .nl small{color:var(--dim);font-size:11.5px;display:block}
 .nl time{font-size:11px;color:var(--dim);white-space:nowrap;text-align:right}
 .nl time span{display:block;color:var(--mute)}
@@ -256,7 +257,7 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .plab{position:absolute;left:0;top:0;display:flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:999px;background:rgba(14,16,19,.93);border:1px solid var(--c);white-space:nowrap;font-size:12px;pointer-events:auto;cursor:pointer;box-shadow:0 2px 10px #0008}
 .plab:hover,.plab.hl{background:#1d2228;box-shadow:0 0 0 3px color-mix(in oklab,var(--c) 35%,transparent);z-index:2}
 .plab b{font:600 12.5px var(--mono)}
-.plab span{color:var(--mute)}
+.plab span{color:var(--mute)}.plab .tnm{color:var(--ink)}
 .pline{position:absolute;left:0;top:0;height:1px;background:var(--c);transform-origin:0 50%;opacity:.7}
 #hcard{position:absolute;z-index:20;width:350px;background:var(--glass);border:1px solid var(--line2);border-radius:12px;box-shadow:0 18px 50px #000b;backdrop-filter:blur(8px);padding:12px 14px;display:none}
 #hcard .top{display:flex;align-items:center;gap:8px}
@@ -293,7 +294,7 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .lkey{display:grid;grid-template-columns:20px 1fr;gap:5px 8px;align-items:center;font-size:12px;color:var(--mute);padding:4px 14px 8px}
 .lkey .off{opacity:.35;text-decoration:line-through}
 .lkey [data-cls]{cursor:pointer}
-.ramp{height:8px;border-radius:4px;background:linear-gradient(90deg,#fff3b0,#ffb340 25%,#ff6a2b 55%,#b3261e 80%,#5a1612);margin:6px 0 3px}
+.ramp{height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(255,236,140,1),rgba(255,190,70,.97) 25%,rgba(240,135,55,.85) 55%,rgba(160,95,62,.5) 80%,rgba(105,78,68,.25));margin:6px 0 3px}
 .rampl{display:flex;justify-content:space-between;font:10.5px var(--mono);color:var(--dim)}
 #card{position:absolute;right:12px;top:12px;width:340px;max-height:calc(100% - 24px);overflow:auto;background:var(--glass);border:1px solid var(--line2);border-radius:12px;padding:12px 14px;display:none;font-size:13px;z-index:15;box-shadow:0 18px 50px #000b}
 #card h3{margin:0 24px 2px 0;font-size:15px}
@@ -339,6 +340,8 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .rtabs::-webkit-scrollbar{display:none}
 .rdiv{width:1px;height:20px;background:var(--line2);margin:0 6px 10px;flex:none}
 .tdot{width:7px;height:7px;border-radius:50%;background:var(--tell);display:inline-block;flex:none}
+/* theatre name tinted by its level, underlined when a timing tell is on: no separate dots */
+.tnm.tt{text-decoration:underline;text-decoration-color:var(--tell);text-decoration-thickness:2px;text-underline-offset:3px}
 .rtabs button{padding:12px 10px 10px;font-size:13px;color:var(--mute);border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:7px;white-space:nowrap;flex:none}
 .rtabs button:hover{color:var(--ink)}
 .rtabs button.on{color:var(--ink);border-color:var(--accent);font-weight:600}
@@ -776,6 +779,9 @@ function loadFull(){
 }
 const thName = t => t === 'global' ? 'Global markets' : (D.theatres[t] ? D.theatres[t].name : t || 'Outside the theatres');
 const GEN = Date.parse(($('#gen').textContent || '').replace(' UTC', 'Z').replace(' ', 'T')) || Date.now();
+/* clock times are shown in the viewer's own timezone */
+const TZN = (() => { try { return new Intl.DateTimeFormat([], {timeZoneName: 'short'}).formatToParts(new Date()).find(p => p.type === 'timeZoneName').value; } catch (e) { return 'UTC'; } })();
+const locHM = d => { try { return d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}); } catch (e) { return d.toISOString().slice(11, 16); } };
 const pref = {lead: store.get('ww_lead', 'p'), lbl: +store.get('ww_lbl', 1) || 1, win: +store.get('ww_win', 48) || 48, dock: store.get('ww_dock', 'open'), sb: store.get('ww_sb', '')};
 function ago(d, short){
   if (!d) return '';
@@ -826,6 +832,7 @@ const ic = (n, c) => `<svg class="ic ${c || ''}" viewBox="0 0 24 24" aria-hidden
 const inf = t => `<i class="info" data-tip="${esc(t)}">i</i>`;
 const lvPill = l => `<span class="lv ${PM ? '' : 'n'}" style="--c:${LEVEL[l]}">${esc(String(l).toUpperCase())}</span>`;
 const dot = l => `<span class="dot" style="--c:${LEVEL[l]}"></span>`;
+const tnm = (name, level, tell) => `<span class="tnm${tell ? ' tt' : ''}"${tell ? ' title="Timing tell this week"' : ''}${level && level !== 'Normal' && LEVEL[level] ? ` style="color:${LEVEL[level]}"` : ''}>${esc(name)}</span>`;
 $('#zhome').innerHTML = ic('home', 's');
 
 /* ------------------------------------------------------------ numbers that lead */
@@ -1015,8 +1022,8 @@ function renderPList(){
   const el = $('#plist'); if (R.v !== 'overview') { el.innerHTML = ''; return; }
   const seg = `<div class="mseg" role="tablist"><button class="${pref.pm !== 'map' ? 'on' : ''}" data-pm="list" role="tab">List</button><button class="${pref.pm === 'map' ? 'on' : ''}" data-pm="map" role="tab">Map</button></div>`;
   if (pref.pm === 'map') { el.innerHTML = seg; return; }
-  const gen = $('#gen').textContent.slice(11, 16);
-  let h = `<div class="pmeta">Updated ${esc(gen)} UTC${D.model && !PM ? ' · <span class="shadowb" data-tip="' + esc(shadowWhy()) + '">model in shadow</span>' : ''}</div>`;
+  const gen = locHM(new Date(GEN));
+  let h = `<div class="pmeta">Updated ${esc(gen)} ${esc(TZN)}${D.model && !PM ? ' · <span class="shadowb" data-tip="' + esc(shadowWhy()) + '">model in shadow</span>' : ''}</div>`;
   h += `<div class="pcard"><div class="dh">This week<small>last 7 days</small></div>${weekKpis()}<div class="feed">${feedRows(weekFeed(), 3)}</div><button class="more" data-pop="gti">All of this week</button></div>${seg}`;
   REG.forEach(r => { h += `<div class="prg">${esc(r.name)}</div>` + r.kids.filter(k => !isSub(k)).concat(r.kids.filter(isSub)).map(pRow).join(''); });
   if (D.theatres.global) h += `<div class="prg">World</div><button class="prow" data-nav="global"><span class="tn"><b>${esc(thName('global'))}</b><small>markets and procurement worldwide</small></span><span class="bw"><span class="bar6"><i style="width:${Math.min(100, D.theatres.global.score || 0)}%;background:${LEVEL[D.theatres.global.level]}"></i></span><b>${fs(D.theatres.global.score)}</b></span><span class="r"></span></button>`;
@@ -1046,8 +1053,8 @@ function renderTop(){
     : `<div><small>This week</small><b style="font-size:13px"><span style="color:${wk.on.length ? 'var(--tell)' : 'var(--ink)'}">${wk.on.length} tell${wk.on.length === 1 ? '' : 's'}</span><span class="gx"> · ${wk.strong.length} strong reading${wk.strong.length === 1 ? '' : 's'}</span></b></div>${ic('chevd', 's')}`;
   const sb = $('#shadowb'); sb.hidden = !!PM || !D.model;
   if (D.model && !PM) sb.dataset.tip = shadowWhy();
-  const gen = $('#gen').textContent, hm = gen.slice(11, 16), next = (() => { const d = new Date(GEN); const m = d.getUTCMinutes(); d.setUTCMinutes(m < 7 ? 7 : m < 37 ? 37 : 67, 0, 0); return d.toISOString().slice(11, 16); })();
-  $('#upd').innerHTML = `Updated ${esc(hm)} UTC<br>next run about ${next}`;
+  const hm = locHM(new Date(GEN)), next = (() => { const d = new Date(GEN); const m = d.getUTCMinutes(); d.setUTCMinutes(m < 7 ? 7 : m < 37 ? 37 : 67, 0, 0); return locHM(d); })();
+  $('#upd').innerHTML = `Updated ${esc(hm)} ${esc(TZN)}<br>next run about ${esc(next)}`;
   renderBell();
 }
 $('#sbtn').innerHTML = ic('search');
@@ -1077,7 +1084,7 @@ function popBell(){
   const tabs = [['all', 'All'], ['Air', 'Air'], ['Sea', 'Sea'], ['Warnings', 'Warnings'], ['Ground', 'Ground']].filter(([k]) => k === 'all' || ALERTS.some(a => KIND[a.k][2] === k));
   const list = ALERTS.filter(a => bellTab === 'all' || KIND[a.k][2] === bellTab);
   const day = a => a.live || ageH(a.ts) < 24;
-  const row = a => { const [icn, col] = KIND[a.k], rd = READ.has(a.id); return `<div class="nl ${rd ? 'read' : ''}" data-alert="${esc(a.id)}"><span class="ib" style="--c:${col}">${ic(icn, 's')}</span><div><b>${rd ? '' : '<span class="unread"></span>'}${esc(a.title)}</b><small>${esc(a.sub)}</small></div><time title="${esc(a.ts || '')}">${esc(alertTime(a))}<span>${esc(a.th ? thName(a.th) : 'Outside the theatres')}</span></time></div>`; };
+  const row = a => { const [icn, col] = KIND[a.k], rd = READ.has(a.id); return `<div class="nl ${rd ? 'read' : ''} ${day(a) ? '' : 'old'}" data-alert="${esc(a.id)}"><span class="ib" style="--c:${col}">${ic(icn, 's')}</span><div><b>${rd ? '' : '<span class="unread"></span>'}${esc(a.title)}</b><small>${esc(a.sub)}</small></div><time title="${esc(a.ts || '')}">${esc(alertTime(a))}<span>${esc(a.th ? thName(a.th) : 'Outside the theatres')}</span></time></div>`; };
   const today = list.filter(day), older = list.filter(a => !day(a));
   return `<div class="ph"><h4>Notifications</h4>${unread() ? `<button class="hint" style="color:var(--accent)" data-readall="1">Mark all as read</button>` : '<small>all read</small>'}</div>
     <div class="tabsm">${tabs.map(([k, n]) => `<button class="${bellTab === k ? 'on' : ''}" data-btab="${k}">${n} ${k === 'all' ? ALERTS.length : ALERTS.filter(a => KIND[a.k][2] === k).length}</button>`).join('')}</div>
@@ -1099,7 +1106,9 @@ function openPop(key, anchor){
 }
 function placePop(){
   if (!POP) return;
-  if (isPhone()) { $('#pop').style.left = $('#pop').style.top = ''; return; }   // a bottom sheet (CSS) const p = $('#pop'), r = POP.anchor.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight, mode = POPS[POP.key][1];
+  const p = $('#pop');
+  if (isPhone()) { p.style.left = p.style.top = ''; return; }   // a bottom sheet (CSS)
+  const r = POP.anchor.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight, mode = POPS[POP.key][1];
   let x, y;
   if (mode === 'right') { x = r.right + 10; y = r.top; }
   else if (mode === 'below-right') { x = r.right - w; y = r.bottom + 8; }
@@ -1301,12 +1310,14 @@ const AIR = (trk, col) => `<path d="M0,-7L4.6,6L0,3.6L-4.6,6Z" fill="${col}" str
 function shipSvg(k){ const c = (SHIPK[k] || SHIPK.other)[1]; const big = k === 'carrier' || k === 'amphib';
   return big ? `<path d="M-13,3L-9,-3L9,-3L13,0L9,5L-9,5Z" fill="${c}" stroke="url(#gInk)" stroke-width="1.4"/><rect x="-5" y="-6" width="6" height="3" fill="${c}" stroke="#04080c" stroke-width="1"/>`
     : `<path d="M-7,2L-4,-3L5,-3L8,0L5,4L-5,4Z" fill="${c}" stroke="url(#gInk)" stroke-width="1.2"/>`; }
-/* fires: colour = time since the satellite pass, size = radiative power, hollow grey ring = a routine source (burns on most days) */
-const FIRE_STOPS = [[0, [255, 243, 176]], [6, [255, 179, 64]], [24, [255, 106, 43]], [72, [179, 38, 30]], [168, [90, 22, 18]]];
+/* recency reads as brightness everywhere on the map: new = bright, solid, on top; old = dim, translucent, underneath.
+   fires: brightness = time since the satellite pass, size = radiative power, hollow grey ring = a routine source (burns on most days) */
+const FIRE_STOPS = [[0, [255, 236, 140]], [6, [255, 190, 70]], [24, [240, 135, 55]], [72, [160, 95, 62]], [168, [105, 78, 68]]];
+const fireOp = h => h == null ? .5 : h < 24 ? 1 - h / 24 * .12 : Math.max(.22, .88 - (h - 24) / 144 * .66);
 function fireCol(h){
   if (h == null) h = 36;
   for (let i = 1; i < FIRE_STOPS.length; i++) { const [h1, c1] = FIRE_STOPS[i], [h0, c0] = FIRE_STOPS[i - 1]; if (h <= h1) { const f = (h - h0) / (h1 - h0); return `rgb(${c0.map((v, k) => Math.round(v + (c1[k] - v) * f)).join(',')})`; } }
-  return 'rgb(90,22,18)';
+  return 'rgb(105,78,68)';
 }
 const fireAge = f => ageH(f.ts || f.d);
 const fireR = f => 2.6 + Math.min(5, Math.sqrt(f.p || 0) / 2.6);
@@ -1322,40 +1333,42 @@ function buildMap(){
   M.countries.forEach(c => { const t = mk('text', {class: 'lab'}, lab); t.textContent = c.name; labs.push({el: t, kind: 'country', x: c.cx, y: c.cy, area: c.area, text: c.name, th: thOfCountry[c.name] || ''}); });
   (M.seas || []).forEach(s => { const t = mk('text', {class: 'lab sea'}, lab); t.textContent = s.n; labs.push({el: t, kind: 'sea', x: s.xy[0], y: s.xy[1], area: 0, text: s.n, th: ''}); });
   const L = id => mk('g', {id: 'L' + id}, svg);
+  /* a finger is wider than a 7 px dot: on touch screens every marker gets an invisible 22 px target */
+  const scg = m => { const s = mk('g', {class: 'sc'}, m); if (matchMedia('(pointer:coarse)').matches) mk('circle', {r: 11, fill: 'transparent'}, s); return s; };
   const gh = L('hubs'); M.hubs.forEach((h, i) => { mk('circle', {cx: h.xy[0], cy: h.xy[1], r: h.r, class: 'hub', 'data-k': 'hub:' + i}, gh); OBJ.hub.push(h); });
   const gf = L('fires');
   (M.fires || []).map((f, i) => [f, i]).sort((a, b) => (fireAge(b[0]) || 0) - (fireAge(a[0]) || 0)).forEach(([f, i]) => {
-    const m = mk('g', {transform: `translate(${f.xy[0]},${f.xy[1]})`, class: 'mk', 'data-k': 'fires:' + i}, gf); const s = mk('g', {class: 'sc'}, m);
+    const m = mk('g', {transform: `translate(${f.xy[0]},${f.xy[1]})`, class: 'mk', 'data-k': 'fires:' + i}, gf); const s = scg(m);
     const h = fireAge(f), r = fireR(f);
     if (f.r) mk('circle', {r, fill: 'none', stroke: '#8a949e', 'stroke-width': 1.3, 'stroke-dasharray': '2 1.6', opacity: .8}, s);
-    else mk('circle', {r, fill: fireCol(h), 'fill-opacity': h != null && h < 24 ? .95 : .75, stroke: h != null && h < 24 && (f.p || 0) >= 10 ? '#fff' : '#2b0f05', 'stroke-width': h != null && h < 24 && (f.p || 0) >= 10 ? 1.4 : .8}, s);
+    else mk('circle', {r, fill: fireCol(h), 'fill-opacity': fireOp(h), 'stroke-opacity': h != null && h < 24 ? 1 : .35, stroke: h != null && h < 24 && (f.p || 0) >= 10 ? '#fff' : '#1a1008', 'stroke-width': h != null && h < 24 && (f.p || 0) >= 10 ? 1.4 : .8}, s);
     f._el = m; f._h = h; OBJ.fires[i] = f; scaleEls.push(s); });
   const gc = L('choke');
-  M.choke.forEach((c, i) => { const m = mk('g', {transform: `translate(${c.xy[0]},${c.xy[1]})`, class: 'mk', 'data-k': 'choke:' + i}, gc); const s = mk('g', {class: 'sc'}, m);
+  M.choke.forEach((c, i) => { const m = mk('g', {transform: `translate(${c.xy[0]},${c.xy[1]})`, class: 'mk', 'data-k': 'choke:' + i}, gc); const s = scg(m);
     mk('circle', {r: 9, fill: 'none', stroke: '#58a6ff', 'stroke-width': 2}, s); mk('circle', {r: 3.5, fill: '#58a6ff'}, s); OBJ.choke.push(c); scaleEls.push(s);
     const t = mk('text', {class: 'lab'}, lab); t.textContent = c.n; labs.push({el: t, kind: 'choke', x: c.xy[0], y: c.xy[1] - 14, area: 0, text: c.n, th: c.t}); });
   const gn = L('nga');
-  M.nga.forEach((n, i) => { const fresh = isFresh(n.iss, 48); const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'nga:' + i}, gn); const s = mk('g', {class: 'sc'}, m);
-    mk('path', {d: 'M0,-9L9,7L-9,7Z', fill: fresh ? '#ff9f43' : 'rgba(255,159,67,.18)', stroke: fresh ? '#2b1500' : '#ff9f43', 'stroke-width': 1.4}, s); mk('rect', {x: -1.2, y: -3, width: 2.4, height: 5.5, fill: fresh ? '#2b1500' : '#ff9f43'}, s); OBJ.nga.push(n); scaleEls.push(s); });
+  M.nga.forEach((n, i) => { const fresh = isFresh(n.iss, 48); const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'nga:' + i}, gn); const s = scg(m);
+    mk('path', {d: 'M0,-9L9,7L-9,7Z', fill: fresh ? '#ff9f43' : 'rgba(255,159,67,.1)', stroke: fresh ? '#2b1500' : '#ff9f43', 'stroke-width': fresh ? 1.4 : 1, 'stroke-opacity': fresh ? 1 : .4}, s); if (fresh) mk('rect', {x: -1.2, y: -3, width: 2.4, height: 5.5, fill: '#2b1500'}, s); OBJ.nga.push(n); scaleEls.push(s); });
   const gz = L('czib');
-  M.czib.forEach((n, i) => { const fresh = isFresh(n.u, 48); const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'czib:' + i}, gz); const s = mk('g', {class: 'sc'}, m);
-    mk('path', {d: 'M0,-9L9,0L0,9L-9,0Z', fill: fresh ? '#d68cff' : 'rgba(214,140,255,.16)', stroke: fresh ? '#20082a' : '#d68cff', 'stroke-width': 1.4}, s); OBJ.czib.push(n); scaleEls.push(s); });
+  M.czib.forEach((n, i) => { const fresh = isFresh(n.u, 48); const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'czib:' + i}, gz); const s = scg(m);
+    mk('path', {d: 'M0,-9L9,0L0,9L-9,0Z', fill: fresh ? '#d68cff' : 'rgba(214,140,255,.08)', stroke: fresh ? '#20082a' : '#d68cff', 'stroke-width': fresh ? 1.4 : 1, 'stroke-opacity': fresh ? 1 : .4}, s); OBJ.czib.push(n); scaleEls.push(s); });
   const gi = L('inc');
-  (M.inc || []).forEach((n, i) => { const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'inc:' + i}, gi); const s = mk('g', {class: 'sc'}, m);
-    mk('circle', {r: 9, fill: '#f5c518', stroke: '#2b2200', 'stroke-width': 1.5}, s); const t = mk('text', {y: 4.5, 'text-anchor': 'middle', style: 'font-size:12px;font-weight:800;fill:#2b2200'}, s); t.textContent = '!'; n._el = m; OBJ.inc.push(n); scaleEls.push(s); });
+  (M.inc || []).forEach((n, i) => { const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'inc:' + i}, gi); const s = scg(m);
+    const fr = isFresh(n.d, 24); mk('circle', {r: 9, fill: fr ? '#f5c518' : 'rgba(245,197,24,.12)', stroke: fr ? '#2b2200' : '#f5c518', 'stroke-width': fr ? 1.5 : 1, 'stroke-opacity': fr ? 1 : .4}, s); const t = mk('text', {y: 4.5, 'text-anchor': 'middle', style: 'font-size:12px;font-weight:800;fill:' + (fr ? '#2b2200' : 'rgba(245,197,24,.45)')}, s); t.textContent = '!'; n._el = m; OBJ.inc.push(n); scaleEls.push(s); });
   const gs = L('ships');
-  (M.ships || []).forEach((n, i) => { const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'ships:' + i, opacity: isFresh(n.d, 24 * 8) || !n.d ? 1 : .55}, gs); const s = mk('g', {class: 'sc'}, m);
+  (M.ships || []).forEach((n, i) => { const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'ships:' + i, opacity: isFresh(n.d, 24 * 8) || !n.d ? 1 : .4}, gs); const s = scg(m);
     s.innerHTML = shipSvg(n.k); OBJ.ships.push(n); scaleEls.push(s);
     if (n.k === 'carrier' || n.k === 'amphib') { const t = mk('text', {class: 'lab city'}, lab); t.textContent = n.n; labs.push({el: t, kind: 'ship', x: n.xy[0], y: n.xy[1], area: 0, text: n.n, th: n.th}); } });
   const gm = L('mil');
-  M.mil.forEach((a, i) => { const m = mk('g', {transform: `translate(${a.xy[0]},${a.xy[1]})`, class: 'mk', 'data-k': 'mil:' + i}, gm); const s = mk('g', {class: 'sc'}, m);
+  M.mil.forEach((a, i) => { const m = mk('g', {transform: `translate(${a.xy[0]},${a.xy[1]})`, class: 'mk', 'data-k': 'mil:' + i}, gm); const s = scg(m);
     s.innerHTML = AIR(a.trk, (CLS[a.c] || CLS.other)[1]); OBJ.mil.push(a); a._el = m; scaleEls.push(s); });
   const gq = L('sqk');
-  (M.sqk || []).forEach((a, i) => { const col = a.sq === '7600' ? '#f08a3c' : '#f2545b'; const m = mk('g', {transform: `translate(${a.xy[0]},${a.xy[1]})`, class: 'mk', 'data-k': 'sqk:' + i}, gq); const s = mk('g', {class: 'sc'}, m);
+  (M.sqk || []).forEach((a, i) => { const col = a.sq === '7600' ? '#f08a3c' : '#f2545b'; const m = mk('g', {transform: `translate(${a.xy[0]},${a.xy[1]})`, class: 'mk', 'data-k': 'sqk:' + i}, gq); const s = scg(m);
     if (a.sq !== '7600') mk('circle', {r: 15, fill: col, class: 'pulse'}, s); mk('circle', {r: 10, fill: col, stroke: '#fff', 'stroke-width': 2}, s);
     const t = mk('text', {y: 4, 'text-anchor': 'middle', style: 'font-size:9.5px;font-weight:800;fill:#fff;font-family:var(--mono)'}, s); t.textContent = a.sq; OBJ.sqk.push(a); scaleEls.push(s); });
   const gy = L('cities');
-  M.cities.forEach((c, i) => { const m = mk('g', {transform: `translate(${c.xy[0]},${c.xy[1]})`, 'data-k': 'city:' + i}, gy); const s = mk('g', {class: 'sc'}, m);
+  M.cities.forEach((c, i) => { const m = mk('g', {transform: `translate(${c.xy[0]},${c.xy[1]})`, 'data-k': 'city:' + i}, gy); const s = scg(m);
     mk('circle', {r: 3.4, class: 'cityd'}, s); OBJ.city.push(c); scaleEls.push(s);
     const t = mk('text', {class: 'lab city'}, lab); t.textContent = c.n; labs.push({el: t, kind: 'city', x: c.xy[0], y: c.xy[1], area: 0, text: c.n, th: c.t}); });
   mk('g', {id: 'Lhover', 'pointer-events': 'none'}, svg);
@@ -1410,10 +1423,10 @@ function popLegend(){
   if (layerState.mil) h += `<div class="lgrp">Aircraft · colour = role · click to hide</div><div class="lkey">${Object.keys(CLS).map(k => `<svg width="14" height="14" viewBox="-7 -7 14 14"><path d="M0,-6L4,5L0,3L-4,5Z" fill="${CLS[k][1]}"/></svg><span data-cls="${k}" class="${classOff[k] ? 'off' : ''}">${CLS[k][0]} <span style="color:var(--dim)">${M.mil.filter(a => a.c === k).length}</span></span>`).join('')}</div>`;
   if (layerState.sqk) h += `<div class="lgrp">Emergency squawks</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#f2545b" stroke="#fff" stroke-width="1.5"/></svg><span>7500 hijack · 7700 emergency (pulsing)</span><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#f08a3c" stroke="#fff" stroke-width="1.5"/></svg><span>7600 radio failure</span></div>`;
   if (layerState.ships) h += `<div class="lgrp">Ships</div><div class="lkey">${['carrier', 'amphib', 'navy', 'tanker'].map(k => `<svg width="16" height="12" viewBox="-9 -6 18 12"><path d="M-8,2L-5,-3L6,-3L8,0L6,4L-5,4Z" fill="${SHIPK[k][1]}"/></svg><span>${SHIPK[k][0]}</span>`).join('')}<span></span><span style="color:var(--dim)">Faded: position more than 8 days old</span></div>`;
-  if (layerState.fires) h += `<div class="lgrp">Fires · colour = time since the pass</div><div style="padding:0 14px"><div class="ramp"></div><div class="rampl"><span>now</span><span>6 h</span><span>24 h</span><span>3 d</span><span>7 d</span></div></div>
+  if (layerState.fires) h += `<div class="lgrp">Fires · brighter = newer</div><div style="padding:0 14px"><div class="ramp"></div><div class="rampl"><span>new</span><span>6 h</span><span>24 h</span><span>3 d</span><span>7 d old</span></div></div>
     <div class="lkey" style="margin-top:6px"><svg width="16" height="16"><circle cx="8" cy="8" r="5" fill="#ff8a3a" stroke="#fff" stroke-width="1.5"/></svg><span>Unusual: new place, last 24 h, strong</span><svg width="16" height="16"><circle cx="8" cy="8" r="5" fill="none" stroke="#8a949e" stroke-width="1.5" stroke-dasharray="2 1.6"/></svg><span>Routine: burns on most days (gas flare, industry)</span><span></span><span style="color:var(--dim)">Larger dot: more heat (MW)</span></div>`;
-  if (layerState.inc) h += `<div class="lgrp">Maritime</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#f5c518"/></svg><span>Maritime incident (UKMTO, news)</span></div>`;
-  if (layerState.nga || layerState.czib) h += `<div class="lgrp">Warnings · solid = new in 48 h</div><div class="lkey">${layerState.nga ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,6L-8,6Z" fill="#ff9f43"/></svg><span>Hazard warning (NGA)</span>` : ''}${layerState.czib ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,0L0,8L-8,0Z" fill="#d68cff"/></svg><span>Airspace bulletin (EASA)</span>` : ''}</div>`;
+  if (layerState.inc) h += `<div class="lgrp">Maritime</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#f5c518"/></svg><span>Maritime incident (UKMTO, news)</span><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="rgba(245,197,24,.12)" stroke="#f5c518" stroke-opacity=".4"/></svg><span>Older than 24 h: faint</span></div>`;
+  if (layerState.nga || layerState.czib) h += `<div class="lgrp">Warnings · solid = new in 48 h, faint outline = older</div><div class="lkey">${layerState.nga ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,6L-8,6Z" fill="#ff9f43"/></svg><span>Hazard warning (NGA)</span>` : ''}${layerState.czib ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,0L0,8L-8,0Z" fill="#d68cff"/></svg><span>Airspace bulletin (EASA)</span>` : ''}</div>`;
   if (layerState.choke) h += `<div class="lgrp">Shipping</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="#58a6ff" stroke-width="2"/><circle cx="8" cy="8" r="2.5" fill="#58a6ff"/></svg><span>Chokepoint (daily transits)</span></div>`;
   if (layerState.adv) h += `<div class="lgrp">US travel advice · denser = higher</div><div class="lkey">${[2, 3, 4].map(l => `<svg width="16" height="16"><rect width="16" height="16" fill="url(#pA${l})" stroke="#8fa1b0"/></svg><span>Level ${l}${l === 4 ? ': do not travel' : l === 3 ? ': reconsider travel' : ': more caution'}</span>`).join('')}</div>`;
   return h + `</div>`;
@@ -1499,7 +1512,7 @@ function openCard(type, o){
   else if (type === 'nga') h = `<h3>Hazard warning ${esc(o.id)}</h3><div class="sub">Issued ${esc(o.iss || 'n/a')} · ${esc(ago(o.iss))}</div><p>${esc(o.tx)}</p><p style="color:var(--dim)">An active navigational warning from the US National Geospatial-Intelligence Agency.</p><div class="btns"><a class="btn" target="_blank" rel="noopener" href="https://msi.nga.mil/NavWarnings">All warnings ${ic('ext', 's')}</a>${goBtn(o.th)}</div>`;
   else if (type === 'czib') h = `<h3>EASA airspace bulletin</h3><div class="sub">${esc(o.n)}</div>` + kv('Last revised', esc(o.u || 'n/a') + (o.u ? ' (' + esc(ago(o.u)) + ')' : '')) + `<p>EASA tells European airlines about the risk in conflict zones. A new revision means that the risk assessment changed.</p><div class="btns"><a class="btn" target="_blank" rel="noopener" href="https://www.easa.europa.eu/en/domains/air-operations/czibs">All bulletins ${ic('ext', 's')}</a>${goBtn(o.th)}</div>`;
   else if (type === 'fires') { const hh = ageH(o.ts || o.d);
-    h = `<h3>${o.r ? 'Routine heat source' : 'Fire or heat detection'}</h3><div class="sub">${o.ts ? esc(o.ts.replace('T', ' ').replace('Z', ' UTC')) + ' · ' + esc(ago(o.ts)) : esc(o.d || '')}</div>` +
+    h = `<h3>${o.r ? 'Routine heat source' : 'Fire or heat detection'}</h3><div class="sub">${o.ts ? esc(isNaN(Date.parse(o.ts)) ? o.ts : new Date(o.ts).toLocaleString([], {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short'})) + ' · ' + esc(ago(o.ts)) : esc(o.d || '')}</div>` +
       `<div class="agebar"><i style="background:${o.r ? 'transparent;border:1.5px dashed #8a949e' : fireCol(hh)}"></i><span class="hint">${o.r ? 'This place burns on most days.' : hh != null && hh < 24 ? 'New in the last 24 hours.' : 'Seen in the last 7 days.'}</span></div>` +
       kv('Heat (radiative power)', Math.round(o.p || 0) + ' MW') + kv('Theatre', esc(o.th ? thName(o.th) : '')) +
       `<p>${o.r ? 'A NASA satellite sees heat at this place on most days. Gas flares, refineries and steel works look like this. It is probably not related to fighting.' : 'A NASA satellite saw heat at this place. It does not burn here every day. In a conflict zone, groups of fires like this often come from shelling, strikes or burning depots. Farm fires also occur.'}</p><div class="btns">${goBtn(o.th)}</div>`; }
@@ -1531,7 +1544,7 @@ function buildPins(){
     const tl = (p.region ? p.region.kids : [p.th]).some(k => tellsCount(k).on.length);
     const d = document.createElement('i'); d.className = 'pdot' + ((PM ? th.level !== 'Normal' && th.level !== 'insufficient data' : tl) ? ' w' : ''); d.style.setProperty('--c', tl && !PM ? 'var(--tell)' : col); d.dataset.pin = p.key;
     const b = document.createElement('div'); b.className = 'plab'; b.style.setProperty('--c', col); b.dataset.pin = p.key;
-    b.innerHTML = `<b>${esc(l.txt)}</b><span>${esc(p.name.replace(/ \(.*$/, ''))}</span>${tl ? '<i class="tdot" aria-label="timing tell this week"></i>' : ''}`;
+    b.innerHTML = `<b>${esc(l.txt)}</b>${tnm(p.name.replace(/ \(.*$/, ''), th.level, tl)}`;
     box.appendChild(d); box.appendChild(b);
     PINS.push(Object.assign(p, {dot: d, el: b, rank: RANKL[th.level] * 10 + Math.max(0, l.v)}));
   });
@@ -1679,7 +1692,7 @@ function renderPanel(){
   if (R.v === 'overview') { P.innerHTML = ''; return; }
   const r = R.v === 'region' ? REGBY[R.id] : regOf[R.id];
   let h = '';
-  if (r && r.kids.length > 1) { const own = r.kids.filter(k => !isSub(k)), subs = r.kids.filter(isSub), tab = k => `<button class="${R.id === k ? 'on' : ''}" data-nav="${k}">${dot(D.theatres[k].level)}${esc(thName(k))}<small>${esc(lead(k).txt)}</small>${tellsCount(k).on.length ? '<i class="tdot" aria-label="timing tell"></i>' : ''}</button>`;
+  if (r && r.kids.length > 1) { const own = r.kids.filter(k => !isSub(k)), subs = r.kids.filter(isSub), tab = k => `<button class="${R.id === k ? 'on' : ''}" data-nav="${k}">${tnm(thName(k), D.theatres[k].level, tellsCount(k).on.length)}<small>${esc(lead(k).txt)}</small></button>`;
     h += `<div class="rtabs" id="rtabs"><button class="${R.v === 'region' ? 'on' : ''}" data-nav="region/${r.id}" data-tip="${esc(r.name)}: all theatres side by side">Overview</button>${own.map(tab).join('')}${subs.length ? `<span class="rdiv" data-tip="Sub-theatres: countries drawn into a neighbour's war"></span>${subs.map(tab).join('')}` : ''}</div>`; }
   const mapt = `<button class="phonly mapt" data-mapt="1">${ic(mapOpen ? 'chevu' : 'chevd', 's')} ${mapOpen ? 'Hide the map' : 'Show the map'}</button>`;
   h += mapt;
@@ -1831,7 +1844,7 @@ function sigRow(s, showTh){
 const KIND_ICON = a => `<span class="ib" style="--c:${KIND[a.k][1]}">${ic(KIND[a.k][0], 's')}</span>`;
 function alertRows(list){
   if (!list.length) return `<div class="empty">No live alerts here now. There are no emergency squawks, maritime incidents, carriers or fresh warnings.</div>`;
-  return list.map(a => `<div class="al" data-alert="${esc(a.id)}">${KIND_ICON(a)}<div><div style="font-size:12.5px">${esc(a.title)}</div><small>${esc(a.sub)}</small></div><time title="${esc(a.ts || '')}">${esc(alertTime(a))}</time></div>`).join('');
+  return list.map(a => `<div class="al${a.live || ageH(a.ts) < 24 ? '' : ' old'}" data-alert="${esc(a.id)}">${KIND_ICON(a)}<div><div style="font-size:12.5px">${esc(a.title)}</div><small>${esc(a.sub)}</small></div><time title="${esc(a.ts || '')}">${esc(alertTime(a))}</time></div>`).join('');
 }
 function marketsFor(t){ return D.markets.filter(m => t === 'global' ? !m.theatre : m.theatre === t); }
 function mchg(m){
