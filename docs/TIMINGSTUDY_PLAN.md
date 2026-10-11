@@ -43,6 +43,15 @@ Each is the baseline plus one change. Settings are fixed here, not tuned. Every 
 | L1 | Sharper target for the weights | Stage 1 fits the family weights on "an event within 1 to 10 days" (training years only). Stage 2 fits the theatre intercepts, history terms and one coefficient on the stage-1 family index on the 30-day label. Then the usual shrink. |
 | L2 | Dense proxy target for the weights | Stage 1 fits the family weights on a proxy with many more positive days: the theatre's 7-day count of GDELT assault and fight events, at any point in the next 30 days, above the 90th percentile of that count over the year before the day. GDELT families are left out of stage 1 so the proxy cannot predict itself. Stage 2 as in L1. |
 
+### Cleaning the inputs (added 2026-10-11 07:30, at the owner's request, before any candidate had been run)
+
+| Id | Change | Detail |
+|---|---|---|
+| K1 | One-day glitches removed | A family's evidence on a day is the smaller of that day's and the day before's, so a reading that is back to normal the next day never counts. Past days only. |
+| K2 | Standing drift removed | Each family's evidence minus its own median over the 365 days before (floored at 0), so a series that sits above its baseline for a year because it trends (EU tenders, procurement) stops adding risk every day. Past days only. |
+| K3 | Late data dropped | Families published too late to warn (the `confirming` ones in MODEL.md, mostly monthly procurement and trade) are taken out of the fit. |
+| K4 | Duplicates merged | Families whose daily evidence correlates above 0.8 over all theatre-days are averaged into one (greedy, strongest pair first), as the composite already does for series. This looks only at the inputs, never at the events. |
+
 ### Combination
 
 C1: the baseline plus every candidate above that passes the three gates at the uncorrected 0.05 line, run once. If none does, C1 is not run.
@@ -51,7 +60,7 @@ C1: the baseline plus every candidate above that passes the three gates at the u
 
 The three gates as in `validate.py`, unchanged: Brier skill against each theatre's base rate above 0, the low end of the theatre-year bootstrap AUC interval above 0.5, and the shuffled-timing p below 0.05.
 
-Because nine candidates are tried (eight plus the combination), a candidate counts as **validated** only if its shuffled-timing p is below 0.05 / 9 = 0.0056. The shuffle uses 2,000 circular shifts per candidate instead of 300 so a p that small can be measured; this makes the gate stricter, not looser. A candidate that passes at 0.05 but not at 0.0056 is reported as **promising, not proven**, and gets no place on the page: the forward record decides.
+Because thirteen candidates are tried (twelve plus the combination), a candidate counts as **validated** only if its shuffled-timing p is below 0.05 / 13 = 0.0038. The shuffle uses 2,000 circular shifts per candidate instead of 300 so a p that small can be measured; this makes the gate stricter, not looser. A candidate that passes at 0.05 but not at 0.0038 is reported as **promising, not proven**, and gets no place on the page: the forward record decides.
 
 A validated candidate is also checked, as information, on the 78 original events and on the 83 added ones, and year by year.
 
@@ -66,4 +75,4 @@ A validated candidate is also checked, as information, on the 78 original events
 
 - The ridge strength is chosen on the test years for every candidate, as for the baseline, so all of them are a little optimistic in the same way.
 - Earlier studies (FEATURESTUDY, IMPROVEMENTS, CALIBRATION, GDELTWIDE, WIKISTUDY, OUTSIDE) looked at some of these sources one at a time, so the author knew which looked weak. None of the candidates above was run in the fit before this plan.
-- About 98 scorable events. The check above says the gap to close is large; a pass by one candidate at 0.0056 would be the first.
+- About 98 scorable events. The check above says the gap to close is large; a pass by one candidate at 0.0038 would be the first.
