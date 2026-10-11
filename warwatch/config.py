@@ -26,7 +26,7 @@ THEATRES = {
                     "countries": ["Poland", "Lithuania", "Latvia", "Estonia", "Finland", "Romania"]},
     "iran": {"name": "Iran", "view": (42, 70, 11, 40), "countries": ["Iran"]},
     "iraq": {"name": "Iraq", "view": (36, 52, 27, 39), "countries": ["Iraq"]},
-    "gulf": {"name": "Gulf states", "view": (34, 62, 14, 32),
+    "gulf": {"name": "GCC", "view": (34, 62, 14, 32),
              "countries": ["Saudi Arabia", "United Arab Emirates", "Qatar", "Bahrain", "Kuwait", "Oman"]},
     "yemen": {"name": "Yemen", "view": (34, 60, 8, 22),
               "countries": ["Yemen", "Saudi Arabia", "Oman", "Djibouti", "Eritrea", "Somalia"]},

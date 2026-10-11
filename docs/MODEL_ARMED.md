@@ -72,12 +72,12 @@ On its top 10% of days an event follows within 30 days 24.4% of the time, agains
 
 ### Sub-theatres
 
-Iraq and the Gulf states are fitted on top of the theatres, not in their fit: they share its family weights and history terms, read the stronger of their own and their parents' evidence in each family, and get their own offset, pulled toward the mean of the Middle East theatres (ridge as for the theatres). Their labels are the events that happened there (`site_theatre` in the event list), which still count for the parent too, so they are left out of the gates above. Each must pass the same three gates on its own rows before its chance is shown as validated.
+Iraq and the GCC are fitted on top of the theatres, not in their fit: they share its family weights and history terms, read the stronger of their own and their parents' evidence in each family, and get their own offset, pulled toward the mean of the Middle East theatres (ridge as for the theatres). Their labels are the events that happened there (`site_theatre` in the event list), which still count for the parent too, so they are left out of the gates above. Each must pass the same three gates on its own rows before its chance is shown as validated.
 
 | Sub-theatre | Reads also | Test events | Positive days | Brier skill | AUC (95% interval) | Shuffle p | Validated |
 |---|---|---|---|---|---|---|---|
 | Iraq | Iran | 5 | 150 | +0.013 | 0.525 (0.143 to 0.719) | 0.467 | no |
-| Gulf states | Iran, Yemen | 5 | 150 | -0.005 | 0.448 (0.258 to 0.583) | 0.707 | no |
+| GCC | Iran, Yemen | 5 | 150 | -0.005 | 0.448 (0.258 to 0.583) | 0.707 | no |
 
 ## Indicator families ranked by noise-to-signal
 
@@ -196,5 +196,5 @@ Fitted 2026-10-10 on data through 2026-09-30. Family weights (log-odds per full-
 Conflict-history terms (log-odds per full-scale term): events in the last year +0.61, in the last three years +0.56, log days since the latest event +0.25. They are correlated, so read them together: risk is higher where events are recent and frequent, and a theatre is lower in the weeks right after the 30 days left out of the labels.
 Published probabilities are capped at 60%, the highest the model produced out of sample, rounded up: it is not shown claiming more than it was tested on.
 
-Theatre base rates (30-day probability on a quiet day with no history): Ukraine 9.1%, Eastern flank 4.4%, Iran 21.4%, Yemen 14.5%, Israel 15.7%, Taiwan Strait 1.9%, South China Sea 9.4%, Korea 3.6%, South Asia (India-Pakistan) 3.6%, Libya 3.6%, Sudan 5.3%, DR Congo 4.4%, Americas (Venezuela and Caribbean) 3.6%, Iraq 11.9%, Gulf states 11.9%.
+Theatre base rates (30-day probability on a quiet day with no history): Ukraine 9.1%, Eastern flank 4.4%, Iran 21.4%, Yemen 14.5%, Israel 15.7%, Taiwan Strait 1.9%, South China Sea 9.4%, Korea 3.6%, South Asia (India-Pakistan) 3.6%, Libya 3.6%, Sudan 5.3%, DR Congo 4.4%, Americas (Venezuela and Caribbean) 3.6%, Iraq 11.9%, GCC 11.9%.
 Shrink toward the base rate gamma = 0.7, floor phi = 0.75. Chance of an event somewhere within 30 days, climatological: 57%.
