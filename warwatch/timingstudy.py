@@ -380,6 +380,18 @@ def write_report(df, combo):
         L.append(f"| {r.candidate} | " + " | ".join(r.auc_by_year.split(";")) + " |")
     L += ["", f"Combination (C1): {'run with ' + ', '.join(combo) if combo else 'not run, since no candidate passed the gates at the uncorrected 0.05 line'}.", "",
           f"Baseline for reference: within-theatre AUC {b.within_auc:.3f}. The plan's check puts the pass line at a within-theatre AUC of about 0.58 to 0.63."]
+    c = df[df.candidate != "base"]
+    top = c.loc[c.within_auc.idxmax()]
+    L += ["", "## What it means", "",
+          f"- The best within-theatre AUC of any candidate is {top.within_auc:.3f} ({top.candidate}), against {b.within_auc:.3f} for the baseline. "
+          f"Across all {len(c)} candidates it moves by {c.within_auc.min() - b.within_auc:+.3f} to {c.within_auc.max() - b.within_auc:+.3f}. Passing needs roughly +0.05 to +0.10.",
+          "- Adding data, reshaping it, cleaning it and training on other targets all leave the timing where it was. The held data says which theatres are risky; "
+          "it does not say when. That is a limit of the information, not of how it is processed, and it agrees with the six earlier studies.",
+          "- Changes that cut the number of weights or drop inputs (T3, K3) or move the target away from the events (L2) lose timing skill: what little timing there is "
+          "is spread thinly over many inputs.",
+          "- The honest routes to a validated number are the forward record (scored on days the model had not seen) and inputs that time events within days "
+          "(the timing tells and the 7-day strike-wave target), whose histories are still short. Keeping the event list's \"complete through\" date current "
+          "is what lets the 30-day forward record mature."]
     with open(OUT_MD, "w") as f:
         f.write("\n".join(L) + "\n")
     print("wrote", OUT_MD)
