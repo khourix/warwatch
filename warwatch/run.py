@@ -128,6 +128,10 @@ def main():
                 print("armed-force shadow record: appended", model.shadow(res), "rows")
             except Exception as e:
                 print("shadow model skipped:", str(e)[:200])
+            try:   # hidden 7-day strike-wave model, own record, never shown
+                print("strike-wave shadow record: appended", model.shadow_wave(res), "rows")
+            except Exception as e:
+                print("strike-wave model skipped:", str(e)[:200])
         except Exception as e:
             print("model skipped:", str(e)[:200])
     try:   # the timing tells never set a level; like the model they must never break the build

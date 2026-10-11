@@ -68,6 +68,22 @@ def surge(points, day, mult, floor, recent=3, base=90, need=30):
     return m >= floor and m >= mult * statistics.median(b)
 
 
+def wave_onsets(points, gap=7):
+    """Days a strike wave starts: the strike-wave tell's rule (alert waves in the last 7 days at least double the median of the 90 days
+    before, and at least 5) turning on after `gap` days off. points: a 7-day alert-wave count. The labels of the 7-day strike-wave model."""
+    if not points:
+        return []
+    out, off = [], gap
+    d, last = dt.date.fromisoformat(points[0][0][:10]), dt.date.fromisoformat(points[-1][0][:10])
+    while d <= last:
+        on = surge(points, d.isoformat(), 2, 5, recent=1)
+        if on and off >= gap:
+            out.append(d)
+        off = 0 if on else off + 1
+        d += dt.timedelta(days=1)
+    return out
+
+
 def slump(points, day, frac, recent=7, base=60, need=30):
     """Mean of the last `recent` days at most `frac` of the median of the `base` days before them."""
     r = _before(points, day, 0, recent - 1)

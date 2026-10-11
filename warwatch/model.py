@@ -42,6 +42,28 @@ def load(path=None):
 ARMED_TYPES = ("onset", "strike", "maritime")
 ARMED_MODEL = os.path.join(DATA, "model_weights_armed.json")
 FORWARD_ARMED = os.path.join(ROOT, "forward", "log_armed.csv")
+# The 7-day strike-wave model: for wars already under way, the chance a new strike wave starts within 7 days. Its labels are the strike-wave
+# tell's rule (tells.wave_onsets) on each theatre's alert-wave feed; a theatre enters its fit once the feed holds WAVE_MIN days.
+WAVE_FEEDS = {"israel": "tzeva_israel", "ukraine": "uaair_ukraine"}
+WAVE_MIN = 365
+WAVE_HORIZON = 7
+WAVE_MODEL = os.path.join(DATA, "model_weights_wave.json")
+FORWARD_WAVE = os.path.join(ROOT, "forward", "log_wave.csv")
+
+
+def wave_points(sid, series=None):
+    """A wave feed's 7-day alert-wave count: from the build's series when given, else the build's last cache, else the archive."""
+    for s in series or []:
+        if s["id"] == sid and s.get("points"):
+            return s["points"]
+    import store
+    return store.cache_load(sid) or store.backfill(sid)
+
+
+def wave_events(series=None, theatres=None):
+    """[(theatre, onset date)] for every wave feed (or those in theatres): what the strike-wave model calls an event."""
+    import tells
+    return [(t, d) for t, sid in WAVE_FEEDS.items() if theatres is None or t in theatres for d in tells.wave_onsets(wave_points(sid, series))]
 
 
 def load_events(path=None, types=None):
@@ -249,6 +271,19 @@ def shadow(res, today=None, model_path=None, log_path=None):
     per = {t: predict(m, res["series"], t, events, today) for t in TH if t in res["theatres"]}
     fake = {"model": {"theatres": per, "global": global_view(m, per), "active": False, "version": m["version"] + "-armed"}, "theatres": res["theatres"]}
     return forward_append(fake, path=log_path or FORWARD_ARMED)
+
+
+def shadow_wave(res, today=None, model_path=None, log_path=None):
+    """Hidden 7-day strike-wave model: predicts the theatres it was fitted on and appends to its own forward record (forward/log_wave.csv).
+    Like the armed-force model it never touches the page, the levels or the main record. Returns rows appended."""
+    m = load(model_path or WAVE_MODEL)
+    if not m or "model" not in res:
+        return 0
+    today = today or dt.date.today()
+    events = wave_events(res["series"], m["theatres"])
+    per = {t: predict(m, res["series"], t, events, today) for t in m["theatres"] if t in res["theatres"]}
+    fake = {"model": {"theatres": per, "global": global_view(m, per), "active": False, "version": m["version"] + "-wave"}, "theatres": res["theatres"]}
+    return forward_append(fake, path=log_path or FORWARD_WAVE)
 
 
 # ------------------------------------------------------------------ forward record
