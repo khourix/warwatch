@@ -1138,6 +1138,19 @@ class ArmedShadow(unittest.TestCase):
         g = forward_score.gates([(0.1, 0.1, k % 7 == 0, {"date": day(k), "theatre": "israel"}) for k in range(30)])
         self.assertFalse(g["ready"])      # read only once 90 days have matured
 
+    def test_track_record_reads_gates_after_90_days(self):
+        import forward_score
+        day = lambda k: (dt.date(2026, 1, 1) + dt.timedelta(days=k)).isoformat()
+        good = [(0.3 if k % 10 == 0 else 0.05, 0.08, k % 10 == 0, {"date": day(k), "theatre": th}) for k in range(120) for th in ("israel", "iran")]
+        g = forward_score.gates(good)
+        self.assertTrue(g["ready"] and g["pass"])
+        self.assertGreater(g["bss"], 0)
+        flat = [(0.08, 0.08, y, r) for _, _, y, r in good]
+        self.assertFalse(forward_score.gates(flat)["pass"])     # the base rate itself has no skill
+        card = forward_score.scorecard()
+        self.assertEqual([c["k"] for c in card], ["main", "armed", "wave"])
+        self.assertIsNone(dashboard.build_data(run.evaluate(demo.scenario("calm")), "now", True, None, None)["forward"])
+
 
 class TestTells(unittest.TestCase):
     @staticmethod
