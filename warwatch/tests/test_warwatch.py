@@ -108,6 +108,23 @@ class TestStats(unittest.TestCase):
         self.assertIn("fetch_market", backtest.LONG)
         self.assertIn("fetch_market", backtest.LAG)
 
+    def test_steps_and_events_are_scored_as_actions(self):
+        day = lambda k: (dt.date(2026, 1, 1) + dt.timedelta(days=k)).isoformat()
+        flat = [(day(k), 7.0) for k in range(300)]
+        raised = flat + [(day(300 + k), 8.0) for k in range(40)]
+        self.assertEqual(stats.score_series(flat, "daily", transform="step")["z"], 0.0)
+        self.assertEqual(stats.score_series(raised[:305], "daily", transform="step")["z"], 3.0)   # one level up in the last 14 days
+        self.assertEqual(stats.score_series(raised[:325], "daily", transform="step")["z"], 0.0)   # quiet again once the step is older
+        self.assertEqual(stats.score_series(raised[:325], "daily")["z"], 5.0)                    # a level score would still read +5
+        self.assertIsNone(stats.score_series([(day(0), 7.0), (day(100), 8.0)], "daily", transform="step"))   # no point to compare with
+        self.assertEqual(stats.score_series([("2026-09", 0.0), ("2026-10", 2.0)], "monthly", transform="event")["z"], 5.0)
+        self.assertEqual(stats.score_series([("2026-10", 1.0)], "monthly", transform="event")["z"], 2.5)
+        self.assertEqual(stats.min_points("monthly", "event"), 1)
+        cat = {s["id"]: s for s in catalog.SERIES}
+        self.assertEqual(cat["state_iran"]["transform"], "step")
+        self.assertEqual(cat["crisiswatch_iran"]["transform"], "event")
+        self.assertNotIn("transform", cat["state_dep_iran"])
+
     def test_false_alarm_rate_on_pure_noise_is_low(self):
         for kind in ("monthly", "daily"):
             zs = [stats.score_series(demo.monthly(s, 0) if kind == "monthly" else demo.daily(s, 0), kind)["z"]

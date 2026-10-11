@@ -60,10 +60,11 @@ def series_json(s):
     kind = s["kind"]
     pts = stats.transformed(s["points"], kind, s.get("transform"))    # a price scored on its change is charted as that change
     sc = s.get("score") or {}
-    label = s["label"] + (f", {stats.CHANGE_LAG[kind]}-{'day' if kind == 'daily' else 'month'} % change" if s.get("transform") else "")
+    label = s["label"] + {"chg": f", {stats.CHANGE_LAG[kind]}-{'day' if kind == 'daily' else 'month'} % change",
+                          "step": f", scored on its change over {stats.STEP_DAYS} days" if kind == "daily" else ", scored on its change"}.get(s.get("transform"), "")
     d = {"id": s["id"], "l": label, "d": s["domain"], "s": s.get("sub", ""), "t": s["theatre"], "lag": bool(s["lag"]),
          "dir": s["direction"], "why": s["why"], "url": s.get("url", ""), "st": s["status"], "er": s.get("error", ""),
-         "stale": s.get("stale", ""), "kind": kind, "n": len(pts), "need": 40 if kind == "monthly" else stats.MIN_DAILY,
+         "stale": s.get("stale", ""), "kind": kind, "n": len(pts), "need": stats.min_points(kind, s.get("transform")),
          "needs": s.get("needs", []), "z": None, "w0": not s.get("scored", True)}
     if pts:
         d["pts"] = [[lab, round(v, 3)] for lab, v in pts[-MAXPTS[kind]:]]
@@ -75,7 +76,7 @@ def series_json(s):
         d["method"] = sc["method"]
         if "base_med" in sc:
             d["base"] = {"med": round(sc["base_med"], 3), "sd": round(sc["base_sd"], 3), "n": sc["base_n"]}
-        raw = stats.history_z(pts, kind, ZH_N, scale=None if s.get("transform") else s.get("scale"))
+        raw = stats.history_z(s["points"], kind, ZH_N, transform=s.get("transform"), scale=s.get("scale"))
         d["zh"] = _directed_pts(raw, s["direction"])
     return d
 

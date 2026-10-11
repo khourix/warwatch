@@ -83,6 +83,53 @@ YEAR_MIN = 120    # rolling means needed in the year baseline; shorter histories
 CHANGE_LAG = {"daily": 20, "monthly": 3}   # transform "chg": prices are scored on their % change over this many points
 
 
+STEP_DAYS = 14     # transform "step": a level that moves in steps (advisory levels) is scored on its change over this many days
+STEP_GAP = 30      # how much older than that the point compared with may be
+STEP_Z = 3.0       # z per unit of a step: one advisory level of one country, so a single raise reaches the signal line
+EVENT_Z = 2.5      # z per unit of an event reading: a CrisisWatch alert (2) reads +5, a deteriorated situation (1) +2.5
+
+
+def min_points(kind, transform=None):
+    """Fewest points a series needs before it can be scored."""
+    if transform == "event":
+        return 1
+    if transform == "step":
+        return 2
+    return 40 if kind == "monthly" else MIN_DAILY
+
+
+def _step(points, kind):
+    """Latest value minus the value STEP_DAYS days earlier (the previous point for a monthly series). A daily series with no
+    point in the STEP_GAP days before that is not scored, so a gap in the record is not read as a fresh step."""
+    import datetime as dt
+    if len(points) < 2:
+        return None
+    if kind == "monthly":
+        return points[-1][1] - points[-2][1]
+    last = dt.date.fromisoformat(points[-1][0][:10])
+    cut = (last - dt.timedelta(days=STEP_DAYS)).isoformat()
+    floor = (last - dt.timedelta(days=STEP_DAYS + STEP_GAP)).isoformat()
+    before = [v for l, v in points if floor <= l[:10] <= cut]
+    return None if not before else points[-1][1] - before[-1]
+
+
+def _scored_as_event(points, kind, transform):
+    """transform "step": z = STEP_Z per unit of change in the last STEP_DAYS days (an advisory raised a level reads +3,
+    two levels +5); "event": z = EVENT_Z per unit of the newest value (a CrisisWatch alert, rated 2, reads +5)."""
+    if not points:
+        return None
+    if transform == "step":
+        d = _step(points, kind)
+        if d is None:
+            return None
+        raw = STEP_Z * d
+        method = f"step: change in the last {STEP_DAYS} days, {STEP_Z:g} per level" if kind == "daily" else f"step: change on the previous month, {STEP_Z:g} per point"
+    else:
+        raw = EVENT_Z * points[-1][1]
+        method = f"event: {EVENT_Z:g} per point of the newest reading"
+    return {"z": max(-WINSOR, min(WINSOR, raw)), "z_raw": raw, "method": method, "value": points[-1][1], "label": points[-1][0], "miss": 0.0, "filled": 0}
+
+
 def transformed(points, kind, transform=None):
     """The points a series is scored on. transform "chg" turns a price into its % change over CHANGE_LAG points: a price
     that trends sits above its own yearly baseline for months, so its level reads as a warning on 20-34% of calm days
@@ -163,8 +210,11 @@ def score_series(points, kind, base_days=None, transform=None, scale=None):
     daily: the latest 7-day mean against the 7-day means of the year before the newest 30 days (gaps <=2 days
     carried forward, longer gaps left missing; needs YEAR_MIN such means and 4 of the last 7 days). Series with
     less history than that, and any call with an explicit base_days, use the plain trailing window of base_days
-    days (needs half of those baseline means). transform: see transformed(). scale: see noise_floor()
+    days (needs half of those baseline means). transform: see transformed(); "step" and "event" are actions, not levels, and
+    are scored as such (_scored_as_event), with no baseline. scale: see noise_floor()
     (daily series only; ignored with a transform, whose values are % changes)."""
+    if transform in ("step", "event"):
+        return _scored_as_event(points, kind, transform)
     if transform:
         r = score_series(transformed(points, kind, transform), kind, base_days)
         if r:
