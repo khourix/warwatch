@@ -32,10 +32,11 @@ BACKFILL = os.path.join(ROOT, "backfill", "data")
 OUT_MD = os.path.join(ROOT, "docs", "TIMINGSTUDY.md")
 OUT_CSV = os.path.join(ROOT, "backtest", "timingstudy.csv")
 TH = V.TH
-CANDIDATES = ["D1", "D2", "D3", "T1", "T2", "T3", "L1", "L2"]
+CANDIDATES = ["D1", "D2", "D3", "T1", "T2", "T3", "L1", "L2", "K1", "K2", "K3", "K4"]
 NAMES = {"base": "Baseline (published model)", "D1": "Archive feeds in the fit", "D2": "Newly held series", "D3": "Iraq and GCC rows in training",
          "T1": "Hot-state level (GDELT violence)", "T2": "Acceleration (GDELT, 7 days against 60)", "T3": "Fewer weights (own families + world tempo)",
-         "L1": "Weights trained on a 10-day target", "L2": "Weights trained on a dense violence proxy", "C1": "Combination"}
+         "L1": "Weights trained on a 10-day target", "L2": "Weights trained on a dense violence proxy", "K1": "Cleaning: one-day glitches removed",
+         "K2": "Cleaning: standing drift removed", "K3": "Cleaning: late data dropped", "K4": "Cleaning: duplicate families merged", "C1": "Combination"}
 N_TRIED = len(CANDIDATES) + 1           # the combination counts as a try whether or not it runs
 ALPHA = 0.05 / N_TRIED
 SHIFTS = 2000
@@ -151,6 +152,22 @@ def proxy_L2(P):
 FAMS = {"D2": fam_D2, "T1": fam_T1, "T2": fam_T2}
 
 
+def merge_duplicates(P, fams, cut=0.8):
+    """K4: families whose evidence correlates above cut over all theatre-days, averaged in pairs, strongest pair first."""
+    R = P[fams].corr(min_periods=200)
+    pairs = sorted(((R.iloc[i, j], fams[i], fams[j]) for i in range(len(fams)) for j in range(i + 1, len(fams)) if R.iloc[i, j] > cut), reverse=True)
+    used, P = set(), P.copy()
+    out = list(fams)
+    for _, a, b in pairs:
+        if a in used or b in used:
+            continue
+        used |= {a, b}
+        P[f"{a}+{b}"] = P[[a, b]].mean(axis=1, skipna=True)
+        out = [f for f in out if f not in (a, b)] + [f"{a}+{b}"]
+    print(f"K4 merged {len(used) // 2} pairs: " + ", ".join(f"{a}+{b} ({r:.2f})" for r, a, b in pairs if f"{a}+{b}" in out), flush=True)
+    return P, out
+
+
 # ------------------------------------------------------------------ labels with another horizon (L1)
 def labels_h(P, ev, through, horizon):
     saved = V.HORIZON
@@ -176,9 +193,13 @@ class Study:
         self.ev = FS.read_events(True)
         self.H = V.zhistory()
         self.new = {}
-        for c, f in FAMS.items():
-            self.new[c] = f()
-            print(f"{c}: {', '.join(self.new[c])} built ({time.time() - t0:.0f}s)", flush=True)
+        self.t0 = t0
+
+    def fams_of(self, c):
+        if c not in self.new:
+            self.new[c] = FAMS[c]()
+            print(f"{c}: {', '.join(self.new[c])} built ({time.time() - self.t0:.0f}s)", flush=True)
+        return self.new[c]
 
     def H_for(self, cands):
         if "D1" not in cands:
@@ -200,9 +221,23 @@ class Study:
         fams = [c for c in P.columns if c in meta and P.loc[core, c].notna().sum() > 200]
         for c in cands:
             if c in FAMS:
-                add = {k: v for k, v in self.new[c].items() if v}
+                add = {k: v for k, v in self.fams_of(c).items() if v}
                 P = FS.attach(P, add)
                 fams += [f for f in add if P.loc[core, f].notna().sum() > 200]
+        if "K3" in cands:
+            fams = [f for f in fams if not meta.get(f, ("", False))[1]]
+        if "K4" in cands:
+            P, fams = merge_duplicates(P, fams)
+        if "K1" in cands or "K2" in cands:
+            P = P.copy()
+            for t in set(P["theatre"]):
+                m = P["theatre"].values == t
+                E = P.loc[m, fams]
+                if "K1" in cands:
+                    E = E.where(E.isna(), np.minimum(E, E.shift(1).fillna(0)))
+                if "K2" in cands:
+                    E = (E - E.shift(1).rolling(365, min_periods=180).median().fillna(0)).clip(lower=0)
+                P.loc[m, fams] = E.values
         if "T3" in cands:
             glob_ = {V.family(sid) for sid, s in H.items() if s["theatre"] == "global"}
             g = [f for f in fams if f in glob_]
