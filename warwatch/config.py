@@ -120,7 +120,7 @@ HUBS = {   # civil-traffic samples for GNSS-jamming and airspace-closure signals
     "ukraine": [(46.8, 26.5, 250)],
     "europe_east": [(55.0, 22.5, 250)],
     "iran": [(26.0, 52.0, 250), (36.0, 44.0, 250)],
-    "iraq": [(33.3, 44.4, 200)],
+    "iraq": [(30.5, 47.8, 250), (36.2, 44.0, 250)],   # Basra and Erbil: public ADS-B receivers see no aircraft within 250 nm of Baghdad (checked 11 Oct, adsb.lol and adsb.fi), so the hubs sit on its southern and northern edges
     "gulf": [(25.2, 55.4, 200), (24.7, 46.7, 200)],
     "yemen": [(18.0, 41.0, 250), (13.0, 48.0, 250)],
     "israel": [(32.0, 35.5, 250)],
