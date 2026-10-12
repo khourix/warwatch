@@ -256,8 +256,10 @@ def _gnss(theatre):
 NGA = "https://msi.nga.mil/"
 # Too little civil traffic is visible in public ADS-B near these hubs (Yemen's airspace is nearly empty, Venezuela's is thin),
 # so the ADS-B GPS and airliner counts cannot be measured there; GPSJam, ports and Radar cover those theatres instead.
-NO_GNSS = {"yemen", "venezuela"}
-NO_CIVIL = {"yemen"}
+# Iraq has no feeders: adsb.lol and adsb.fi returned zero aircraft within 200 nm of Baghdad (adsb.lol also none within 150 nm
+# of Erbil) on 12 October 2026 while OpenSky showed traffic over Iraq, so both series failed on every run. GPSJam covers Iraq's GPS.
+NO_GNSS = {"yemen", "venezuela", "iraq"}
+NO_CIVIL = {"yemen", "iraq"}
 for th in C.HUBS:
     nm = TH[th]
     if th not in NO_GNSS:
