@@ -1,7 +1,9 @@
 name: warwatch
 on:
   schedule:
-    - cron: "0,30 * * * *"
+    # GitHub drops or delays most scheduled runs (top-of-the-hour slots worst): this fired every 3 to 8 hours.
+    # The cadence comes from the "next" job below; this cron only restarts the chain if it ever breaks.
+    - cron: "17,47 * * * *"
   workflow_dispatch:
     inputs:
       only:
@@ -13,6 +15,7 @@ on:
     paths: ["warwatch/**/*.py", "warwatch/page.html", ".github/workflows/warwatch.yml"]
 permissions:
   contents: write
+  actions: write      # the "next" job dispatches the following run
   pages: write
   id-token: write
 concurrency:
@@ -88,3 +91,23 @@ jobs:
     steps:
       - id: d
         uses: actions/deploy-pages@v4
+  next:
+    # Self-scheduling: queue the next full run 30 minutes after this one started (straight away if the build ran longer).
+    # A run dispatched with the workflow token is allowed to start a workflow, unlike a push made with it.
+    needs: [build, deploy]
+    if: always() && github.event.inputs.only == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          R: ${{ github.repository }}
+        run: |
+          started=$(gh api "repos/$R/actions/runs/${{ github.run_id }}" --jq .run_started_at)
+          wait=$(( $(date -d "$started" +%s) + 1800 - $(date +%s) ))
+          if [ "$wait" -gt 0 ]; then sleep "$wait"; fi
+          # one chain only: a cron or push run already queued or running carries it on instead
+          others=$(gh run list -R "$R" -w warwatch.yml -L 20 --json databaseId,status \
+            --jq '[.[] | select(.databaseId != ${{ github.run_id }} and .status != "completed")] | length')
+          if [ "$others" -gt 0 ]; then echo "another run is already queued or running"; exit 0; fi
+          gh workflow run warwatch.yml -R "$R" --ref main
