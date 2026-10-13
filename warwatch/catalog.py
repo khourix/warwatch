@@ -173,7 +173,7 @@ for sid, label, why, kw, sub in (
 
 # DoD spending by place of performance: where the money lands moves before the forces do
 POP = {"europe_east": ("POL", "LTU", "LVA", "EST", "ROU"), "israel": ("ISR",), "iran": ("KWT", "QAT", "BHR", "ARE", "SAU", "JOR", "OMN", "IRQ"),
-       "iraq": ("IRQ",), "gulf": ("KWT", "QAT", "BHR", "ARE", "SAU", "OMN"),
+       "iraq": ("IRQ",), "gulf": ("KWT", "QAT", "BHR", "ARE", "SAU", "OMN"), "lebanon": ("LBN",), "syria": ("SYR",),
        "yemen": ("DJI", "SAU", "OMN"), "ukraine": ("UKR", "MDA", "ROU"),
        "taiwan": ("TWN", "JPN"), "korea": ("KOR",), "scs": ("PHL", "SGP", "THA"), "venezuela": ("COL", "PAN", "HND", "CUB", "GUY")}
 BUILD = ["236220", "237990", "237310", "238910", "236210", "238120"]
@@ -293,7 +293,7 @@ for frag, th in C.CHOKEPOINTS.items():
         "A fall in transits signals disruption or avoidance; data posts weekly.",
         (lambda f=frag: S.fetch_portwatch(f)), direction="down", url="https://portwatch.imf.org/", sub="Sea")
 
-IODA = {"iran": "IR", "ukraine": "UA", "israel": "IL", "yemen": "YE", "europe_east": "PL", "taiwan": "TW", "scs": "PH", "korea": "KR",
+IODA = {"iran": "IR", "ukraine": "UA", "israel": "IL", "lebanon": "LB", "syria": "SY", "yemen": "YE", "europe_east": "PL", "taiwan": "TW", "scs": "PH", "korea": "KR",
         "southasia": "IN", "libya": "LY", "sudan": "SD", "drc": "CD", "venezuela": "VE"}
 for th, cc in IODA.items():
     u = f"https://ioda.inetintel.cc.gatech.edu/country/{cc}"
@@ -369,6 +369,8 @@ PORTS = {   # theatre: (ISO3, port-name fragments, label)
     "iraq": ("IRQ", ("Umm Qasr", "Basra"), "Umm Qasr and Basra"),
     "gulf": (("ARE", "SAU", "QAT"), ("Jebel Ali", "Fujairah", "Ras Tanura", "Ras Laffan", "Hamad"), "Jebel Ali, Fujairah, Ras Tanura, Ras Laffan and Hamad"),
     "israel": ("ISR", ("Haifa", "Ashdod"), "Haifa and Ashdod"),
+    "lebanon": ("LBN", ("Beirut",), "Beirut"),
+    "syria": ("SYR", ("Lattakia", "Latakia", "Tartus", "Tartous"), "Latakia and Tartus"),
     "yemen": ("YEM", ("Aden", "Hodeidah"), "Aden and Hodeidah"),
     "taiwan": ("TWN", ("Kaohsiung",), "Kaohsiung"),
     "korea": ("KOR", ("Busan",), "Busan"),
@@ -719,7 +721,7 @@ for th in extras.KEYS:
 
 # ============ ACLED conflict-event counts via HDX HAPI (the open route to ACLED data; ~2 months behind) ============
 HAPI_LOC = {"ukraine": ("UKR",), "europe_east": ("POL", "LTU", "LVA", "EST"), "iran": ("IRN",), "yemen": ("YEM",), "israel": ("ISR", "PSE", "LBN"),
-            "iraq": ("IRQ",), "gulf": ("SAU", "ARE", "QAT", "BHR", "KWT", "OMN"),
+            "iraq": ("IRQ",), "gulf": ("SAU", "ARE", "QAT", "BHR", "KWT", "OMN"), "lebanon": ("LBN",), "syria": ("SYR",),
             "scs": ("PHL",), "southasia": ("IND", "PAK"), "libya": ("LBY",), "sudan": ("SDN", "SSD"), "drc": ("COD",), "venezuela": ("VEN", "COL")}
 for th, locs in HAPI_LOC.items():
     add(f"acled_demo_{th}", f"Demonstrations per month, {TH[th]} region (ACLED via HDX HAPI)", "behavioral", th, "monthly", True,

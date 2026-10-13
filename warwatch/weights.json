@@ -49,6 +49,20 @@
      "geospatial": 0.25,
      "information": 0.15
     },
+    "lebanon": {
+     "logistics": 0.1,
+     "financial": 0.1,
+     "behavioral": 0.25,
+     "geospatial": 0.3,
+     "information": 0.25
+    },
+    "syria": {
+     "logistics": 0.1,
+     "financial": 0.05,
+     "behavioral": 0.2,
+     "geospatial": 0.35,
+     "information": 0.3
+    },
     "yemen": {
      "logistics": 0.3,
      "financial": 0.1,
@@ -133,6 +147,8 @@
     "iran": "Oil and shipping risk transmit fast to markets; aviation and GNSS activity show posture.",
     "iraq": "Militia rocket and drone campaigns against US sites: embassy drawdowns, airspace and aircraft movements show first; Iraq has no market of its own to watch.",
     "gulf": "Strikes on oil sites, bases and LNG plants: Gulf equities and port calls price it, air defence and airspace show it.",
+    "lebanon": "Israeli strikes on Hezbollah and its replies: evacuation advice, airspace and drone activity and the news flow show first; Lebanon has no market of its own to watch.",
+    "syria": "Strikes by Israel, the US and Turkey and attacks on US sites: aircraft, jamming and the event record carry it; advisories have sat at the top level for years.",
     "yemen": "Red Sea war is a shipping story: transits and vessel presence (logistics, geospatial) matter most.",
     "israel": "Dense airspace, advisory and news flow; strong information and geospatial signals.",
     "taiwan": "Brief's example: information 0.30, geospatial 0.25, logistics 0.20, financial 0.15, human 0.10.",

@@ -33,6 +33,8 @@ THEATRES = {
     "iraq": {"name": "Iraq", "view": (36, 52, 27, 39), "countries": ["Iraq"]},
     "gulf": {"name": "GCC", "view": (34, 62, 14, 32),
              "countries": ["Saudi Arabia", "United Arab Emirates", "Qatar", "Bahrain", "Kuwait", "Oman"]},
+    "lebanon": {"name": "Lebanon", "view": (32, 40, 31, 36), "countries": ["Lebanon"]},
+    "syria": {"name": "Syria", "view": (33, 45, 30.5, 38.5), "countries": ["Syria"]},
     "yemen": {"name": "Yemen", "view": (34, 60, 8, 22),
               "countries": ["Yemen", "Saudi Arabia", "Oman", "Djibouti", "Eritrea", "Somalia"]},
     "israel": {"name": "Israel", "view": (28, 42, 26, 36),
@@ -50,10 +52,9 @@ THEATRES = {
 # Main tabs: the market-moving theatres. A region with several sub-theatres shows them as a secondary tab row;
 # a region with one sub-theatre is that theatre. Region level = the highest sub-theatre level.
 REGIONS = [
-    ("mideast", "Middle East", ["iran", "israel", "yemen", "iraq", "gulf"]),
-    ("ukraine_r", "Ukraine", ["ukraine", "europe_east"]),
-    ("taiwan_r", "Taiwan", ["taiwan", "scs"]),
-    ("korea_r", "Korea", ["korea"]),
+    ("mideast", "Middle East", ["iran", "israel", "yemen", "iraq", "gulf", "lebanon", "syria"]),
+    ("europe_r", "Europe", ["ukraine", "europe_east"]),
+    ("eastasia_r", "East Asia", ["taiwan", "scs", "korea"]),
     ("southasia_r", "South Asia", ["southasia"]),
     ("africa_r", "Africa", ["libya", "sudan", "drc"]),
     ("americas_r", "Americas", ["venezuela"]),
@@ -64,7 +65,20 @@ REGIONS = [
 # parents' (the stronger of the two per family), shares the family weights, and pools its base rate toward the region's
 # own theatres (validate.py). Region level stays the worst child.
 SUBTHEATRES = {"iraq": {"parents": ["iran"], "pool": ["iran", "israel", "yemen"]},
-               "gulf": {"parents": ["iran", "yemen"], "pool": ["iran", "israel", "yemen"]}}
+               "gulf": {"parents": ["iran", "yemen"], "pool": ["iran", "israel", "yemen"]},
+               "lebanon": {"parents": ["israel"], "pool": ["iran", "israel", "yemen"]},
+               "syria": {"parents": ["israel", "iran"], "pool": ["iran", "israel", "yemen"]}}
+# Spillover theatres: no war of their own, at risk because a neighbour's war reaches them. A description for the page,
+# the same rule in every region; it does not change the fit (Eastern flank has enough events of its own to keep its own).
+SPILLOVER = {"iraq": ["iran", "israel", "yemen"], "gulf": ["iran", "israel", "yemen"], "lebanon": ["israel"], "syria": ["israel", "iran"],
+             "europe_east": ["ukraine"]}
+
+
+def sites(v):
+    """The sub-theatres an event happened in: events.csv `site_theatre`, several joined by ';' when it struck more than one."""
+    return [t for t in (v or "").split(";") if t]
+
+
 THRESH_SIGNAL = 3.0   # a group fires at or above this robust z (calibrated: ~5% Watch on pure noise)
 THRESH_WATCH = 2.0
 USER_AGENT = "warwatch/0.3 (public-data research; github.com/khourix/warwatch)"
@@ -98,12 +112,16 @@ BOXES = {   # lat_min, lat_max, lon_min, lon_max for military ADS-B counts and h
     # Last, so a point already in a theatre's box keeps that theatre (osint.theatre_at takes the first box that holds it):
     "iraq": (29, 37.5, 38.5, 48.7),      # all of Iraq, Ain al-Asad (42.4E) included; the Iran box cuts Iraq at 44E
     "gulf": (16, 30.5, 34.5, 60),        # Saudi Arabia, Kuwait, Bahrain, Qatar, the UAE and Oman
+    # The Levant boxes sit inside Israel's (and Syria's east inside Iraq's), so a point there stays with Israel or Iraq
+    "lebanon": (33.0, 34.7, 35.0, 36.7),
+    "syria": (32.3, 37.4, 35.6, 42.5),
 }
 THEATRE_BOX = BOXES
 FIRS = {   # flight information regions queried in the FAA NOTAM service for each theatre
     "ukraine": ["UKBV", "UKLV", "UKOV", "UKDV", "UKXX"], "europe_east": ["EPWW", "EVRR", "EYVL", "EETT", "UMMV"],
     "iran": ["OIIX", "ORBB"], "iraq": ["ORBB"], "gulf": ["OKAC", "OBBB", "OTDF", "OMAE", "OEJD", "OOMM"],   # Iran keeps Baghdad, as it keeps Iraq's advisories
     "yemen": ["OYSC"], "israel": ["LLLL", "OLBB", "OSTT"], "taiwan": ["RCAA"],
+    "lebanon": ["OLBB"], "syria": ["OSTT"],   # Israel keeps Beirut and Damascus
     "scs": ["RPHI", "VHHK"], "korea": ["RKRR", "ZKKP"], "southasia": ["OPKR", "OPLR", "VIDF", "VABF"],
     "libya": ["HLLL"], "sudan": ["HSSS"], "drc": ["FZZA"], "venezuela": ["SVZM"],
 }
@@ -122,6 +140,8 @@ HUBS = {   # civil-traffic samples for GNSS-jamming and airspace-closure signals
     "iran": [(26.0, 52.0, 250), (36.0, 44.0, 250)],
     "iraq": [(30.5, 47.8, 250), (36.2, 44.0, 250)],   # Basra and Erbil: public ADS-B receivers see no aircraft within 250 nm of Baghdad (checked 11 Oct, adsb.lol and adsb.fi), so the hubs sit on its southern and northern edges
     "gulf": [(25.2, 55.4, 200), (24.7, 46.7, 200)],
+    "lebanon": [(33.8, 35.5, 120)],
+    "syria": [(33.5, 36.3, 150), (36.2, 37.2, 150)],   # Damascus and Aleppo
     "yemen": [(18.0, 41.0, 250), (13.0, 48.0, 250)],
     "israel": [(32.0, 35.5, 250)],
     "taiwan": [(25.0, 121.2, 250)],
@@ -137,6 +157,7 @@ FCDO = {   # UK travel-advice slugs per theatre
     "iran": ["iran", "iraq"],
     "iraq": ["iraq"],
     "gulf": ["saudi-arabia", "united-arab-emirates", "qatar", "bahrain", "kuwait", "oman"],
+    "lebanon": ["lebanon"], "syria": ["syria"],
     "yemen": ["yemen", "saudi-arabia", "oman", "djibouti"],
     "israel": ["israel", "lebanon", "jordan", "egypt"],
     "taiwan": ["taiwan"], "scs": ["philippines", "vietnam"], "korea": ["south-korea", "north-korea"],
@@ -148,6 +169,7 @@ STATE_ISO = {"ukraine": ["UP", "BO", "MD"],
              "iran": ["IR", "IZ"],
              "iraq": ["IZ"],
              "gulf": ["SA", "AE", "QA", "BA", "KU", "MU"],
+             "lebanon": ["LE"], "syria": ["SY"],
              "yemen": ["YM", "SA", "MU", "DJ"],
              "israel": ["IS", "LE", "JO", "EG"],   # FIPS codes, as the feed uses
              "taiwan": ["TW"], "scs": ["RP", "VM"], "korea": ["KS", "KN"], "southasia": ["IN", "PK"],
@@ -157,7 +179,7 @@ STATE_ISO = {"ukraine": ["UP", "BO", "MD"],
 # while the archived pages the history is rebuilt from carry one level per country.
 STATE_NAME = {"UP": "Ukraine", "BO": "Belarus", "MD": "Moldova", "PL": "Poland", "LH": "Lithuania", "LG": "Latvia",
               "EN": "Estonia", "FI": "Finland", "IR": "Iran", "IZ": "Iraq", "YM": "Yemen", "SA": "Saudi Arabia",
-              "MU": "Oman", "AE": "United Arab Emirates", "QA": "Qatar", "BA": "Bahrain", "KU": "Kuwait", "DJ": "Djibouti", "IS": "Israel", "LE": "Lebanon", "JO": "Jordan", "EG": "Egypt",
+              "MU": "Oman", "AE": "United Arab Emirates", "QA": "Qatar", "BA": "Bahrain", "KU": "Kuwait", "DJ": "Djibouti", "IS": "Israel", "LE": "Lebanon", "SY": "Syria", "JO": "Jordan", "EG": "Egypt",
               "TW": "Taiwan", "RP": "Philippines", "VM": "Vietnam", "KS": "South Korea", "KN": "North Korea",
               "IN": "India", "PK": "Pakistan", "LY": "Libya", "SU": "Sudan", "OD": "South Sudan",
               "CG": "Democratic Republic of the Congo", "VE": "Venezuela", "CO": "Colombia", "CU": "Cuba"}
@@ -167,6 +189,7 @@ GDELT_CC = {   # FIPS country codes whose events count toward a theatre
     "iran": ["IR"],
     "iraq": ["IZ"],
     "gulf": ["SA", "AE", "QA", "BA", "KU", "MU"],
+    "lebanon": ["LE"], "syria": ["SY"],
     "yemen": ["YM"],
     "israel": ["IS", "LE"],
     "taiwan": ["TW"], "scs": ["RP", "VM"], "korea": ["KS", "KN"], "southasia": ["IN", "PK"],
@@ -178,6 +201,8 @@ GNEWS = {   # theatre -> headline search for warning-class language (Google News
     "iran": '(Iran OR IRGC OR Hormuz) (strike OR mobilization OR evacuate OR "airspace closed" OR "internet shutdown" OR "carrier strike group")',
     "iraq": '(Iraq OR Baghdad OR Erbil OR "Ain al-Asad" OR "Islamic Resistance in Iraq" OR "Kataib Hezbollah") (attack OR rocket OR drone OR strike OR "US forces" OR embassy)',
     "gulf": '("Saudi Arabia" OR UAE OR Qatar OR Bahrain OR Kuwait OR Oman OR "Al Udeid" OR Aramco) (attack OR missile OR drone OR strike OR intercepted OR "air defense")',
+    "lebanon": '(Lebanon OR Beirut OR Hezbollah OR "southern Lebanon" OR "Bekaa") (strike OR airstrike OR rocket OR drone OR evacuate OR "airspace closed" OR embassy)',
+    "syria": '(Syria OR Damascus OR Aleppo OR "Deir ez-Zor" OR Latakia) (strike OR airstrike OR rocket OR drone OR "US forces" OR offensive OR clashes)',
     "yemen": '(Houthi OR Yemen OR "Red Sea") (attack OR missile OR ship OR drone OR strike)',
     "israel": '(Israel OR Hezbollah OR Lebanon OR Gaza) (mobilization OR reservists OR evacuate OR "airspace closed" OR embassy)',
     "taiwan": '(Taiwan OR "Taiwan Strait" OR PLA) (drills OR blockade OR "air defense identification zone" OR "live-fire" OR invasion OR "coast guard")',
@@ -207,6 +232,9 @@ CITIES = {   # theatre -> [(name, lat, lon)] reference points drawn on the map
     "iraq": [("Baghdad", 33.31, 44.36), ("Erbil", 36.19, 44.01), ("Basra", 30.51, 47.81), ("Ain al-Asad", 33.79, 42.44), ("Kirkuk", 35.47, 44.39)],
     "gulf": [("Riyadh", 24.71, 46.68), ("Abqaiq", 25.94, 49.68), ("Ras Tanura", 26.64, 50.16), ("Kuwait City", 29.38, 47.99), ("Manama", 26.23, 50.59),
              ("Al Udeid", 25.12, 51.32), ("Ras Laffan", 25.91, 51.55), ("Abu Dhabi", 24.45, 54.38), ("Fujairah", 25.13, 56.33), ("Muscat", 23.59, 58.41)],
+    "lebanon": [("Beirut", 33.89, 35.5), ("Tyre", 33.27, 35.2), ("Nabatieh", 33.38, 35.48), ("Baalbek", 34.0, 36.21), ("Tripoli, Lebanon", 34.44, 35.85)],
+    "syria": [("Damascus", 33.51, 36.29), ("Aleppo", 36.2, 37.16), ("Homs", 34.73, 36.71), ("Latakia", 35.52, 35.78), ("Deir ez-Zor", 35.34, 40.14),
+              ("Al-Tanf", 33.5, 38.62), ("Idlib", 35.93, 36.63)],
     "yemen": [("Sanaa", 15.37, 44.19), ("Hodeidah", 14.8, 42.95), ("Aden", 12.78, 45.04), ("Riyadh", 24.71, 46.68),
               ("Djibouti", 11.59, 43.15), ("Jeddah", 21.5, 39.2)],
     "israel": [("Tel Aviv", 32.09, 34.78), ("Jerusalem", 31.77, 35.21), ("Haifa", 32.79, 34.99), ("Beirut", 33.89, 35.5),

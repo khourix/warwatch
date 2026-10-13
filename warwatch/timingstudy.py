@@ -181,7 +181,7 @@ def labels_h(P, ev, through, horizon):
 
 # ------------------------------------------------------------------ the runner
 def site_copies(ev):
-    s = ev[ev["site_theatre"] != ""].assign(theatre=lambda d: d["site_theatre"], added=False)
+    s = ev[ev["site_theatre"] != ""].assign(theatre=lambda d: d["site_theatre"].str.split(";"), added=False).explode("theatre")
     return pd.concat([ev, s], ignore_index=True)
 
 

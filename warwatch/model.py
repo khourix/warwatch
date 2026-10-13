@@ -76,8 +76,7 @@ def load_events(path=None, types=None):
                     continue
                 d = dt.date.fromisoformat(r["date"])
                 out.append((r["theatre"], d))
-                if r.get("site_theatre"):
-                    out.append((r["site_theatre"], d))
+                out += [(s, d) for s in C.sites(r.get("site_theatre"))]
     except OSError:
         pass
     return out
