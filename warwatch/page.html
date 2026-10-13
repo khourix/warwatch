@@ -245,8 +245,8 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .c{fill:var(--land);stroke:var(--border);stroke-width:.8px;vector-effect:non-scaling-stroke;stroke-linejoin:round;cursor:pointer}
 .c.th{fill:var(--land-th);stroke:var(--border-th);stroke-width:1.4px}
 .c:hover{fill:url(#gHover)}
-.c.a2{fill:url(#pA2)}.c.a3{fill:url(#pA3)}.c.a4{fill:url(#pA4)}
-.c.th.a2{fill:url(#pTA2)}.c.th.a3{fill:url(#pTA3)}.c.th.a4{fill:url(#pTA4)}
+.c.a2{fill:#242435}.c.a3{fill:#2d2a45}.c.a4{fill:#383158}
+.c.th.a2{fill:#2e3245}.c.th.a3{fill:#363553}.c.th.a4{fill:#413a66}
 .lab{font-weight:600;fill:#b9c3cc;paint-order:stroke;stroke:url(#gInk);stroke-linejoin:round;pointer-events:none;text-anchor:middle;letter-spacing:.01em}
 .lab.city{text-anchor:start;fill:#e6d9ae;font-weight:500}
 .lab.sea{fill:#5f7b93;font-style:italic;font-weight:500}
@@ -719,14 +719,7 @@ table.st td:last-child{text-align:right;font-weight:600}
 <linearGradient id="gLandTh"><stop offset="0" stop-color="#27313b"/><stop offset="1" stop-color="#27313b"/></linearGradient>
 <linearGradient id="gHover"><stop offset="0" stop-color="#2c3640"/><stop offset="1" stop-color="#2c3640"/></linearGradient>
 <linearGradient id="gInk"><stop offset="0" stop-color="#050506"/><stop offset="1" stop-color="#050506"/></linearGradient>
-<!-- US travel advice: the reference family (a third party's judgement), a low-chroma violet hatch. It never reads as a WarWatch level
-     or an observation, and stays quiet under the markers. Denser and lighter lines = higher advisory level. -->
-<pattern id="pA2" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="16" height="16" fill="#1b2128"/><line x1="0" y1="0" x2="0" y2="16" stroke="#776c9c" stroke-width="2"/></pattern>
-<pattern id="pA3" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" fill="#1b2128"/><line x1="0" y1="0" x2="0" y2="9" stroke="#9687c4" stroke-width="2.4"/></pattern>
-<pattern id="pA4" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#1b2128"/><line x1="0" y1="0" x2="0" y2="6" stroke="#b5a4ea" stroke-width="2.6"/></pattern>
-<pattern id="pTA2" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="16" height="16" fill="#27313b"/><line x1="0" y1="0" x2="0" y2="16" stroke="#7d71a2" stroke-width="2"/></pattern>
-<pattern id="pTA3" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" fill="#27313b"/><line x1="0" y1="0" x2="0" y2="9" stroke="#9c8dca" stroke-width="2.4"/></pattern>
-<pattern id="pTA4" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#27313b"/><line x1="0" y1="0" x2="0" y2="6" stroke="#bcabf1" stroke-width="2.6"/></pattern>
+<!-- US travel advice: the reference family (a third party's judgement), a muted violet tint that steps up by level. It never reads as a WarWatch level or an observation, and stays quiet under the markers. -->
 </defs></svg>
 <div id="app">
 <aside id="sb"></aside>
@@ -1585,7 +1578,7 @@ function popLegend(){
   if (layerState.nga || layerState.czib) h += `<div class="lgrp">Warnings</div><div class="lkey">${layerState.nga ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,6L-8,6Z" fill="#b6bec6"/></svg><span>Hazard warning (NGA)</span>` : ''}${layerState.czib ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,0L0,8L-8,0Z" fill="#b6bec6"/></svg><span>Airspace bulletin (EASA)</span>` : ''}</div>`;
   if (layerState.inc || layerState.nga || layerState.czib || layerState.ships) h += `<div class="lgrp">Age · incidents, warnings, bulletins and ships</div><div class="lkey">${AGE_TIERS.map((b, t) => `<svg width="16" height="16" class="agek t${t}"><circle cx="8" cy="8" r="${t ? 5 : 4.6}"${t ? '' : ' stroke-width="4"'}/>${t ? '' : '<circle cx="8" cy="8" r="4.6"/>'}</svg><span>${b[2]}</span>`).join('')}<span></span><span style="color:var(--dim)">Aircraft and squawks are live positions.</span></div>`;
   if (layerState.choke) h += `<div class="lgrp">Shipping</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="#2bb8ca" stroke-width="2"/><circle cx="8" cy="8" r="2.5" fill="#2bb8ca"/></svg><span>Chokepoint (daily transits)</span></div>`;
-  if (layerState.adv) h += `<div class="lgrp">US travel advice · denser = higher</div><div class="lkey">${[2, 3, 4].map(l => `<svg width="16" height="16"><rect width="16" height="16" fill="url(#pA${l})" stroke="#8fa1b0"/></svg><span>Level ${l}${l === 4 ? ': do not travel' : l === 3 ? ': reconsider travel' : ': more caution'}</span>`).join('')}</div>`;
+  if (layerState.adv) h += `<div class="lgrp">US travel advice · stronger = higher</div><div class="lkey">${[2, 3, 4].map(l => `<svg width="16" height="16"><rect width="16" height="16" class="c a${l}"/></svg><span>Level ${l}${l === 4 ? ': do not travel' : l === 3 ? ': reconsider travel' : ': more caution'}</span>`).join('')}</div>`;
   return h + `</div>`;
 }
 function popTime(){

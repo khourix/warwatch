@@ -7,7 +7,7 @@ The dashboard uses one colour system with three families and one reference colou
 | Neutral | `n1` #3b4148 · `n2` #5a636c · `n3` #8a939c · `n4` #b6bec6 · `n5` #e8ecf0 | Structure, anything not validated (the shadow model), data quality (stale, collecting, needs a key), Normal |
 | Evidence (brand cyan) | `e1` #2b6d7c · `e2` #2992a4 · `e3` #2bb8ca · `e4` #3bdfef | Everything observed: unusual readings (brighter = further from normal), timing tells (`e4`, diamond), map layers, the theatre in focus on comparison charts |
 | Risk | `r1` #f4d846 Watch · `r2` #fb8e22 Elevated · `r3` #f0405a Critical | The level of a validated model, nothing else. `r3` with an icon also marks a failure or an emergency squawk |
-| Reference | violet hatch, #776c9c to #bcabf1 | Third-party judgements on the map (US travel advisory levels 2 to 4). Subdued so it sits under the other layers |
+| Reference | muted violet tint: #242435, #2d2a45, #383158 (#2e3245, #363553, #413a66 on theatre land) | Third-party judgements on the map (US travel advisory levels 2 to 4). Subdued so it sits under the other layers |
 
 Rules:
 
