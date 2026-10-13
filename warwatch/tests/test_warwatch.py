@@ -825,7 +825,13 @@ class TestRegions(unittest.TestCase):
         r = {x["id"]: x for x in dashboard.regions_json(reg)}
         self.assertEqual(r["mideast"]["level"], "Elevated")
         self.assertEqual(gti["level"], "Elevated")
-        self.assertEqual(r["korea_r"]["level"], "Normal")
+        self.assertEqual(r["eastasia_r"]["level"], "Normal")
+
+    def test_spillover_theatres_exist_and_point_at_theatres(self):
+        for t, wars in C.SPILLOVER.items():
+            self.assertIn(t, C.THEATRES)
+            self.assertTrue(wars and all(w in C.THEATRES and w not in C.SPILLOVER for w in wars))
+        self.assertTrue(set(C.SUBTHEATRES) <= set(C.SPILLOVER))
 
     def test_theatre_configs_complete(self):
         for t in C.BOXES:

@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="darkreader-lock">
 <title>WarWatch: war early-warning dashboard</title>
-<meta name="description" content="Timing tells and unusual readings for 13 theatres and 2 sub-theatres, from 600+ public signals. Updated every 30 minutes.">
+<meta name="description" content="Timing tells and unusual readings for 15 theatres in 6 regions, from 600+ public signals. Updated every 30 minutes.">
 <meta name="theme-color" content="#0e1217">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
@@ -16,7 +16,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="WarWatch">
 <meta property="og:title" content="WarWatch: war early-warning dashboard">
-<meta property="og:description" content="Timing tells and unusual readings for 13 theatres and 2 sub-theatres, from 600+ public signals. Updated every 30 minutes.">
+<meta property="og:description" content="Timing tells and unusual readings for 15 theatres in 6 regions, from 600+ public signals. Updated every 30 minutes.">
 <link rel="alternate" type="application/rss+xml" title="WarWatch: this week" href="feed.xml">
 <meta property="og:url" content="https://khourix.github.io/warwatch/">
 <meta property="og:image" content="https://khourix.github.io/warwatch/og.jpg">
@@ -26,7 +26,7 @@
 <meta property="og:image:alt" content="WarWatch logo over a dark world map with the watched theatres marked">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="WarWatch: war early-warning dashboard">
-<meta name="twitter:description" content="Timing tells and unusual readings for 13 theatres and 2 sub-theatres, from 600+ public signals. Updated every 30 minutes.">
+<meta name="twitter:description" content="Timing tells and unusual readings for 15 theatres in 6 regions, from 600+ public signals. Updated every 30 minutes.">
 <meta name="twitter:image" content="https://khourix.github.io/warwatch/og.jpg">
 <link rel="preload" href="inter-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="jbmono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
@@ -40,10 +40,16 @@
   color-scheme:dark;
   --bg:oklch(0.15 0 0); --panel:oklch(0.185 0.004 260); --panel2:oklch(0.225 0.005 260); --panel3:oklch(0.265 0.006 260);
   --line:oklch(0.3 0.006 260); --line2:oklch(0.4 0.01 255); --ink:oklch(0.96 0.004 250); --mute:oklch(0.74 0.01 255); --dim:oklch(0.64 0.01 255);
-  --sel:oklch(0.27 0.03 215); --accent:oklch(0.83 0.13 205); --accent-ink:#04222b;
+  --sel:oklch(0.27 0.03 215); --accent:#3bdfef; --accent-ink:#04222b;
   --ocean:#0b0d11; --land:url(#gLand); --land-th:url(#gLandTh); --border:#3d4853; --border-th:#8fa1b0;
-  --normal:#46c28a; --watch:#e5c04b; --elevated:#f08a3c; --critical:#f2545b; --na:#6b7280;
-  --glass:rgba(22,24,28,.95); --tell:#f08a3c;
+  /* One colour system, three families (docs/COLOUR.md). Neutral: structure, anything not validated, data quality.
+     Evidence (the brand cyan): everything observed, brighter = further from normal. Risk: the level of a validated model, nothing else;
+     the one exception is r3 with an icon for a failure or an emergency. Reference: third-party judgements drawn on the map. */
+  --n1:#3b4148; --n2:#5a636c; --n3:#8a939c; --n4:#b6bec6; --n5:#e8ecf0;
+  --e1:#2b6d7c; --e2:#2992a4; --e3:#2bb8ca; --e4:#3bdfef;
+  --r1:#f4d846; --r2:#fb8e22; --r3:#f0405a;
+  --normal:var(--n3); --watch:var(--r1); --elevated:var(--r2); --critical:var(--r3); --na:var(--n2);
+  --glass:rgba(22,24,28,.95); --tell:var(--e4);
   --mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --dh:200px;
@@ -81,7 +87,7 @@ a{color:var(--accent)}
 .info{display:inline-flex;width:15px;height:15px;border-radius:50%;border:1px solid var(--line2);color:var(--dim);font:600 9.5px/1 var(--sans);align-items:center;justify-content:center;cursor:help;flex:none;font-style:normal;text-transform:none;letter-spacing:0}
 .info:hover{color:var(--ink);border-color:var(--accent)}
 .hint{color:var(--mute);font-size:12px;line-height:1.5}
-.up{color:var(--elevated)}.dn{color:var(--normal)}
+.up{color:var(--ink)}.dn{color:var(--ink)}
 .sp{flex:1}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:8px;padding:5px 10px;font-size:12.5px;background:var(--panel2);text-decoration:none;color:var(--ink);white-space:nowrap}
@@ -155,7 +161,7 @@ header#top{height:52px;flex:none;display:flex;align-items:center;gap:12px;paddin
 .upd{font-size:11px;color:var(--dim);text-align:right;line-height:1.3;white-space:nowrap}
 .iconbtn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);display:flex;align-items:center;justify-content:center;position:relative;color:var(--mute);flex:none}
 .iconbtn:hover,.iconbtn.on{color:var(--ink);border-color:var(--line2)}
-.badge{position:absolute;top:-6px;right:-6px;min-width:19px;height:19px;border-radius:10px;background:var(--critical);color:#fff;font:700 10.5px/15px var(--mono);text-align:center;padding:0 4px;border:2px solid var(--panel)}
+.badge{position:absolute;top:-6px;right:-6px;min-width:19px;height:19px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font:700 10.5px/15px var(--mono);text-align:center;padding:0 4px;border:2px solid var(--panel)}
 .demo{background:#5b1e1e;color:#ffd6d6;border-radius:4px;padding:1px 7px;font-weight:700;font-size:11px}
 
 /* pop-ups and tooltips */
@@ -213,18 +219,18 @@ details.more>summary{cursor:pointer;color:var(--accent);font-size:12px;padding:8
 .gates{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
 .gates h4{margin:0 0 6px;font-size:13.5px}
 .gr{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line);font-size:12.5px}
-.gr:last-of-type{border-bottom:0}.gr .ok{color:var(--normal)}.gr .no{color:var(--critical)}.gr b{font:600 12px var(--mono);white-space:nowrap}
+.gr:last-of-type{border-bottom:0}.gr .ok{color:var(--n4)}.gr .no{color:var(--critical)}.gr b{font:600 12px var(--mono);white-space:nowrap}
 .ac .qt{font-size:11.5px;color:var(--dim)}
 .quiet{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;font-size:12px;color:var(--dim)}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel3);border:1px solid var(--line2);border-radius:9px;padding:8px 14px;font-size:12.5px;z-index:90;display:none}
 .thd .crumb .cp{margin-left:auto;background:none;border:0;color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:4px;font-size:11.5px}.thd .crumb .cp:hover{color:var(--ink)}
 .tl{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:2px 8px;align-items:baseline;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--line)}
-.tl .mk{font:600 12px var(--mono);color:var(--dim)}.tl.on .mk{color:var(--elevated)}.tl.on .nm{color:var(--ink);font-weight:600}
+.tl .mk{font:600 12px var(--mono);color:var(--dim)}.tl.on .mk{color:var(--tell)}.tl.on .nm{color:var(--ink);font-weight:600}
 .tl .nm{color:var(--mute)}.tl .dt{font:11px var(--mono);color:var(--dim);text-align:right}
 .tl .rc{grid-column:2/4;font-size:11px;color:var(--dim);line-height:1.4}
 .wf>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wf .bar{height:8px;background:var(--panel3);border-radius:3px;position:relative;overflow:hidden}
-.wf .bar i{position:absolute;top:0;bottom:0;border-radius:3px;background:var(--elevated)}
+.wf .bar i{position:absolute;top:0;bottom:0;border-radius:3px;background:var(--n3)}
 .wf b{text-align:right;font:600 12px var(--mono)}
 .wf.t{border-top:1px solid var(--line);margin-top:4px;padding-top:7px;font-weight:600}
 .wf.wd{border-top:1px dashed var(--line);margin-top:3px;padding-top:6px;color:var(--mute)}
@@ -713,13 +719,14 @@ table.st td:last-child{text-align:right;font-weight:600}
 <linearGradient id="gLandTh"><stop offset="0" stop-color="#27313b"/><stop offset="1" stop-color="#27313b"/></linearGradient>
 <linearGradient id="gHover"><stop offset="0" stop-color="#2c3640"/><stop offset="1" stop-color="#2c3640"/></linearGradient>
 <linearGradient id="gInk"><stop offset="0" stop-color="#050506"/><stop offset="1" stop-color="#050506"/></linearGradient>
-<!-- US travel advice: a hatch, so it never reads as a WarWatch level colour. Denser lines = higher advisory level. -->
-<pattern id="pA2" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="16" height="16" fill="#1b2128"/><line x1="0" y1="0" x2="0" y2="16" stroke="#6d7f91" stroke-width="2"/></pattern>
-<pattern id="pA3" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" fill="#1b2128"/><line x1="0" y1="0" x2="0" y2="9" stroke="#8a9cae" stroke-width="2.4"/></pattern>
-<pattern id="pA4" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#1b2128"/><line x1="0" y1="0" x2="0" y2="6" stroke="#b3c2d0" stroke-width="2.6"/></pattern>
-<pattern id="pTA2" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="16" height="16" fill="#27313b"/><line x1="0" y1="0" x2="0" y2="16" stroke="#7d90a3" stroke-width="2"/></pattern>
-<pattern id="pTA3" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" fill="#27313b"/><line x1="0" y1="0" x2="0" y2="9" stroke="#9aacbe" stroke-width="2.4"/></pattern>
-<pattern id="pTA4" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#27313b"/><line x1="0" y1="0" x2="0" y2="6" stroke="#c3d0dc" stroke-width="2.6"/></pattern>
+<!-- US travel advice: the reference family (a third party's judgement), a low-chroma violet hatch. It never reads as a WarWatch level
+     or an observation, and stays quiet under the markers. Denser and lighter lines = higher advisory level. -->
+<pattern id="pA2" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="16" height="16" fill="#1b2128"/><line x1="0" y1="0" x2="0" y2="16" stroke="#776c9c" stroke-width="2"/></pattern>
+<pattern id="pA3" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" fill="#1b2128"/><line x1="0" y1="0" x2="0" y2="9" stroke="#9687c4" stroke-width="2.4"/></pattern>
+<pattern id="pA4" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#1b2128"/><line x1="0" y1="0" x2="0" y2="6" stroke="#b5a4ea" stroke-width="2.6"/></pattern>
+<pattern id="pTA2" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="16" height="16" fill="#27313b"/><line x1="0" y1="0" x2="0" y2="16" stroke="#7d71a2" stroke-width="2"/></pattern>
+<pattern id="pTA3" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" fill="#27313b"/><line x1="0" y1="0" x2="0" y2="9" stroke="#9c8dca" stroke-width="2.4"/></pattern>
+<pattern id="pTA4" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#27313b"/><line x1="0" y1="0" x2="0" y2="6" stroke="#bcabf1" stroke-width="2.6"/></pattern>
 </defs></svg>
 <div id="app">
 <aside id="sb"></aside>
@@ -766,10 +773,10 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp
 const store = {get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }, set(k, v){ try { localStorage.setItem(k, v); } catch (e) {} }};
 const PM = D.model && D.model.active ? D.model : null;
 /* Nothing is coloured by a measure that has not passed its release checks (part 3 of the review). While the model runs in
-   shadow mode the level keeps its word and gets a grey intensity; orange is kept for a fired timing tell, red for a data failure. */
-const LEVEL = PM ? {'Critical':'#f2545b','Elevated':'#f08a3c','Watch':'#e5c04b','Normal':'#46c28a','insufficient data':'#6b7280'}
+   shadow mode the level keeps its word and gets the neutral ramp; warm colours mean a validated level and nothing else. */
+const LEVEL = PM ? {'Critical':'#f0405a','Elevated':'#fb8e22','Watch':'#f4d846','Normal':'#8a939c','insufficient data':'#5a636c'}
   : {'Critical':'#e8ecf0','Elevated':'#b6bec6','Watch':'#8a939c','Normal':'#5a636c','insufficient data':'#3b4148'};
-const TELLC = '#f08a3c';
+const TELLC = '#3bdfef';
 const RANKL = {'insufficient data':0, 'Normal':1, 'Watch':2, 'Elevated':3, 'Critical':4};
 const T_WATCH = D.thresholds[0], T_SIG = D.thresholds[1];
 const BANDS = (D.model && D.model.bands) || [0.05, 0.1, 0.25];
@@ -789,7 +796,7 @@ function pct(p){ return p == null ? '–' : (p < 0.1 ? (100 * p).toFixed(1) : Ma
 const ppt = d => (d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(100 * d).toFixed(1);
 const fs = s => s == null ? '–' : Math.round(s);
 const fmtz = z => z == null ? 'n/a' : (z > 0 ? '+' : '') + z.toFixed(1);
-const zcol = z => z == null ? '#6b7280' : z >= T_SIG ? '#f2545b' : z >= T_WATCH ? '#f08a3c' : z >= 1 ? '#e5c04b' : '#5db391';
+const zcol = z => z == null ? '#5a636c' : z >= T_SIG ? '#3bdfef' : z >= T_WATCH ? '#2bb8ca' : z >= 1 ? '#2992a4' : '#2b6d7c';   // evidence ramp: how unusual, never a risk level
 const lc = s => String(s).replace(/^([A-Z])([a-z])/, (m, a, b) => a.toLowerCase() + b);
 const shortL = s => String(s || '').replace(/ \([^()]*\)$/, '');
 /* Advisory steps and CrisisWatch ratings are actions or judgements, not levels: they read as what happened and when, never as SD. */
@@ -830,7 +837,7 @@ const GN = {logistics:'Logistics', financial:'Markets', behavioral:'People', geo
 const DOM = {}; D.domains.forEach(d => DOM[d.id] = d);
 const THEATRES = D.order.filter(t => t !== 'global');
 const REG = D.regions, REGBY = {}, regOf = {}; REG.forEach(r => { REGBY[r.id] = r; r.kids.forEach(k => regOf[k] = r); });
-const CODE = {mideast:'MEA', ukraine_r:'UKR', taiwan_r:'TWN', korea_r:'KOR', southasia_r:'SAS', africa_r:'AFR', americas_r:'AMR'};
+const CODE = {mideast:'MEA', europe_r:'EUR', eastasia_r:'EAS', southasia_r:'SAS', africa_r:'AFR', americas_r:'AMR'};
 const SERIES = {}; D.series.forEach(s => SERIES[s.id] = s);
 /* Speed: the page carries the last 60 points of each series. The full histories and score histories (series.json, next to
    the page) load after the first paint, or when a detail view first opens. Opened from disk, the page keeps the 60 points. */
@@ -924,9 +931,12 @@ function changeTxt(t, cls){
   return `<span class="num ${up ? 'up' : dn ? 'dn' : ''} ${cls || ''}" ${up || dn ? '' : 'style="color:var(--dim)"'} data-tip="Change in the 30-day chance over ${n} day${n === 1 ? '' : 's'}, in percentage points">${up ? '▲' : dn ? '▼' : ''}${Math.abs(100 * d).toFixed(1)}</span>`;
 }
 
-/* sub-theatres (config.SUBTHEATRES): countries drawn into a parent's war, fitted on top of the region's own theatres */
-const SUBT = D.sub || {};
-const isSub = t => !!SUBT[t];
+/* Every theatre is a peer inside its region. Spillover theatres (config.SPILLOVER) have no war of their own and are at risk
+   because a neighbour's war reaches them; the tag is the same in every region. SUBT (config.SUBTHEATRES) is only how some of
+   them are fitted: pooled with their region's theatres because too few events happened on their ground. */
+const SUBT = D.sub || {}, SPILL = D.spill || {};
+const isSpill = t => !!SPILL[t];
+const spillTag = (cls) => `<span class="${cls || 'subl'}" data-tip="No war of its own: at risk because a neighbour's war reaches it">spillover</span>`;
 function gateWhy(){
   const G = (D.model || {}).gates || {}, why = [];
   if (G.bss_positive === false) why.push('it does not beat the base rates');
@@ -968,7 +978,7 @@ function popWeek(){
 }
 
 /* ------------------------------------------------------------ alerts (the bell) */
-const KIND = {sqk:['plane','#f2545b','Air'], inc:['anchor','#f5c518','Sea'], ships:['ship','#ff6fb5','Sea'], nga:['warn','#ff9f43','Warnings'], czib:['diamond','#d68cff','Warnings'], fires:['fire','#ff6a2b','Ground']};
+const KIND = {sqk:['plane','#f0405a','Air'], inc:['anchor','#3bdfef','Sea'], ships:['ship','#2bb8ca','Sea'], nga:['warn','#b6bec6','Warnings'], czib:['diamond','#b6bec6','Warnings'], fires:['fire','#2bb8ca','Ground']};
 function buildAlerts(){
   const out = [], M = D.map;
   if (!M) return out;
@@ -1120,7 +1130,7 @@ $('#bnav').addEventListener('click', e => { const n = e.target.closest('[data-na
 pref.pm = store.get('ww_pm', 'list');
 function pRow(t){
   const th = D.theatres[t], sc = seriesOf(t).filter(s => s.z != null && !isEv(s)), st = sc.filter(s => s.z >= T_SIG).length;
-  return `<button class="prow ${isSub(t) ? 'sub' : ''}" data-nav="${t}"><span class="tn"><b>${thn(t, th.name, false)}</b><small>${st} strong of ${sc.length} scored${isSub(t) ? ' · sub-theatre' : ''}</small></span><span class="bw"><span class="bar6"><i style="width:${Math.min(100, th.score || 0)}%;background:${LEVEL[th.level]}"></i></span><b>${PM && leadP() ? esc(lead(t).txt) : fs(th.score)}</b></span><span class="r">${tellChip(t)}<span class="xu">${th.xu != null ? th.xu.toFixed(1) + '× usual' : ''}</span></span></button>`;
+  return `<button class="prow" data-nav="${t}"><span class="tn"><b>${thn(t, th.name, false)}</b><small>${st} strong of ${sc.length} scored${isSpill(t) ? ' · spillover' : ''}</small></span><span class="bw"><span class="bar6"><i style="width:${Math.min(100, th.score || 0)}%;background:${LEVEL[th.level]}"></i></span><b>${PM && leadP() ? esc(lead(t).txt) : fs(th.score)}</b></span><span class="r">${tellChip(t)}<span class="xu">${th.xu != null ? th.xu.toFixed(1) + '× usual' : ''}</span></span></button>`;
 }
 function renderPList(){
   const el = $('#plist'); if (R.v !== 'overview') { el.innerHTML = ''; return; }
@@ -1129,7 +1139,7 @@ function renderPList(){
   const gen = locHM(new Date(GEN));
   let h = `<div class="pmeta">Updated ${esc(gen)} ${esc(TZN)}${D.model && !PM ? ' · <span class="shadowb" data-tip="' + esc(shadowWhy()) + '">model in shadow</span>' : ''}</div>`;
   h += `<div class="pcard"><div class="dh">This week<small>last 7 days</small></div>${weekKpis()}<div class="feed">${feedRows(weekFeed(), 3)}</div><button class="more" data-pop="gti">All of this week</button></div>${seg}`;
-  REG.forEach(r => { h += `<div class="prg">${esc(r.name)}</div>` + r.kids.filter(k => !isSub(k)).concat(r.kids.filter(isSub)).map(pRow).join(''); });
+  REG.forEach(r => { h += `<div class="prg">${esc(r.name)}</div>` + r.kids.filter(k => !isSpill(k)).concat(r.kids.filter(isSpill)).map(pRow).join(''); });
   if (D.theatres.global) h += `<div class="prg">World</div><button class="prow" data-nav="global"><span class="tn"><b>${esc(thName('global'))}</b><small>markets and procurement worldwide</small></span><span class="bw"><span class="bar6"><i style="width:${Math.min(100, D.theatres.global.score || 0)}%;background:${LEVEL[D.theatres.global.level]}"></i></span><b>${fs(D.theatres.global.score)}</b></span><span class="r"></span></button>`;
   el.innerHTML = h;
 }
@@ -1142,8 +1152,8 @@ $('#plist').addEventListener('click', e => {
 
 /* ------------------------------------------------------------ top bar */
 function renderTop(){
-  const nsub = THEATRES.filter(isSub).length;
-  const titles = {overview: ['World overview', `${THEATRES.length - nsub} theatres${nsub ? ` and ${nsub} sub-theatres` : ''}`], signals: ['Signals', `${D.series.length} indicators · ${D.series.filter(s => s.z != null).length} with a score`],
+  const nsp = THEATRES.filter(isSpill).length;
+  const titles = {overview: ['World overview', `${THEATRES.length} theatres in ${REG.length} regions${nsp ? `, ${nsp} of them spillover` : ''}`], signals: ['Signals', `${D.series.length} indicators · ${D.series.filter(s => s.z != null).length} with a score`],
     activity: ['Activity', 'Aircraft, ships, fires and warnings now'], record: ['Track record', 'Forecasts logged before the fact, and how they score'], settings: ['Settings', 'Display, data health, sources and method']};
   let t = titles[R.v];
   if (R.v === 'region') t = [REGBY[R.id].name, 'Region overview'];
@@ -1320,8 +1330,9 @@ const LAYERS = [
   ['Air and sea', [['mil', 'Military aircraft', 'plane'], ['sqk', 'Emergency squawks', 'warn'], ['ships', 'Warships and tracked ships', 'ship'], ['inc', 'Maritime incidents', 'anchor']]],
   ['Warnings and ground', [['nga', 'Hazard warnings (NGA)', 'warn'], ['czib', 'Airspace bulletins (EASA)', 'diamond'], ['fires', 'Fires and heat (NASA)', 'fire'], ['choke', 'Chokepoints', 'pin']]],
   ['Background', [['zones', 'Theatre areas', 'zones'], ['adv', 'US travel advice', 'hatch'], ['hubs', 'GPS-jamming sample zones', 'jam'], ['cities', 'Cities', 'city'], ['labels', 'Country names', 'text']]]];
-const CLS = {lift:['Airlift','#4cc9f0'], tanker:['Air refuelling','#f4d35e'], isr:['Surveillance','#c77dff'], fighter:['Fighter','#ff6fb5'],
-  bomber:['Bomber','#ff9b54'], uav:['Drone','#7ee081'], heli:['Helicopter','#9fd3ff'], other:['Other military','#9fb3c8']};
+/* aircraft and ships: e4 combat roles and warships, e2 support roles, n3 the rest; the role is in the legend and the card */
+const CLS = {lift:['Airlift','#2992a4'], tanker:['Air refuelling','#2992a4'], isr:['Surveillance','#2992a4'], fighter:['Fighter','#3bdfef'],
+  bomber:['Bomber','#3bdfef'], uav:['Drone','#3bdfef'], heli:['Helicopter','#2992a4'], other:['Other military','#8a939c']};
 const CLSWHY = {
   lift:'Airlifters move troops and equipment. A surge, followed by empty return flights, shows a deployment.',
   tanker:'Tankers refuel fighters and bombers in the air. Tankers, fighters and surveillance aircraft together can show a strike package.',
@@ -1331,7 +1342,7 @@ const CLSWHY = {
   uav:'Long-endurance drones collect intelligence and can strike.',
   heli:'Military helicopters: local operations, rescue and special forces.',
   other:'Other military aircraft: trainers, liaison, VIP and special missions.'};
-const SHIPK = {carrier:['Aircraft carrier','#ff6fb5'], amphib:['Amphibious group','#c77dff'], navy:['Naval vessel','#58a6ff'], tanker:['Oil tanker','#d9c04a'], cargo:['Cargo ship','#9fb3c8'], other:['Vessel','#9fb3c8']};
+const SHIPK = {carrier:['Aircraft carrier','#3bdfef'], amphib:['Amphibious group','#3bdfef'], navy:['Naval vessel','#3bdfef'], tanker:['Oil tanker','#8a939c'], cargo:['Cargo ship','#8a939c'], other:['Vessel','#8a939c']};
 const OBJ = {mil:[], sqk:[], ships:[], inc:[], nga:[], czib:[], fires:[], choke:[], city:[], hub:[], country:[]};
 const classOff = {};
 const thOfCountry = {};
@@ -1434,9 +1445,9 @@ function shipSvg(k){ const c = (SHIPK[k] || SHIPK.other)[1]; const big = k === '
   return big ? `<path d="M-13,3L-9,-3L9,-3L13,0L9,5L-9,5Z" fill="${c}" stroke="url(#gInk)" stroke-width="1.4"/><rect x="-5" y="-6" width="6" height="3" fill="${c}" stroke="#04080c" stroke-width="1"/>`
     : `<path d="M-7,2L-4,-3L5,-3L8,0L5,4L-5,4Z" fill="${c}" stroke="url(#gInk)" stroke-width="1.2"/>`; }
 /* recency reads the same way everywhere on the map: new = bright, solid, on top; old = faded, translucent, underneath.
-   fires come in three age bands (red-hot = last 24 h, amber = 1 to 3 days, grey ash = 3 to 7 days), size = radiative power,
+   fires come in three age bands (bright cyan = last 24 h, darker cyan = 1 to 3 days, grey = 3 to 7 days), size = radiative power,
    a hollow grey ring = a routine source (burns on most days). City dots are neutral grey so a fire never reads as a city. */
-const FIRE_BANDS = [[24, '#ff4f2e', 1, 'Last 24 hours'], [72, '#e3a548', .6, '1 to 3 days ago'], [Infinity, '#8f8079', .38, '3 to 7 days ago']];
+const FIRE_BANDS = [[24, '#3bdfef', 1, 'Last 24 hours'], [72, '#2992a4', .6, '1 to 3 days ago'], [Infinity, '#5a636c', .38, '3 to 7 days ago']];
 const fireBand = h => FIRE_BANDS.find(b => (h == null ? 36 : h) <= b[0]);
 const fireCol = h => fireBand(h)[1];
 const fireOp = h => fireBand(h)[2];
@@ -1482,17 +1493,17 @@ function buildMap(){
     if (!f.r) ping(s, f.ts || f.d, r + 2); f._el = m; f._h = h; OBJ.fires[i] = f; scaleEls.push(s); });
   const gc = L('choke');
   M.choke.forEach((c, i) => { const m = mk('g', {transform: `translate(${c.xy[0]},${c.xy[1]})`, class: 'mk', 'data-k': 'choke:' + i}, gc); const s = scg(m);
-    mk('circle', {r: 9, fill: 'none', stroke: '#58a6ff', 'stroke-width': 2}, s); mk('circle', {r: 3.5, fill: '#58a6ff'}, s); OBJ.choke.push(c); scaleEls.push(s);
+    mk('circle', {r: 9, fill: 'none', stroke: '#2bb8ca', 'stroke-width': 2}, s); mk('circle', {r: 3.5, fill: '#2bb8ca'}, s); OBJ.choke.push(c); scaleEls.push(s);
     const t = mk('text', {class: 'lab'}, lab); t.textContent = c.n; labs.push({el: t, kind: 'choke', x: c.xy[0], y: c.xy[1] - 14, area: 0, text: c.n, th: c.t}); });
   const gn = L('nga');
   byAge(M.nga, n => n.iss).forEach(([n, i, h]) => { const t = ageTier(h); const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'nga:' + i, opacity: ageOp(t)}, gn); const s = scg(m);
-    ageShape(s, 'path', {d: 'M0,-9L9,7L-9,7Z'}, '#ff9f43', '#2b1500', t); if (t < 2) mk('rect', {x: -1.2, y: -3, width: 2.4, height: 5.5, fill: '#2b1500'}, s); ping(s, n.iss, 10); OBJ.nga[i] = n; scaleEls.push(s); });
+    ageShape(s, 'path', {d: 'M0,-9L9,7L-9,7Z'}, '#b6bec6', '#15181b', t); if (t < 2) mk('rect', {x: -1.2, y: -3, width: 2.4, height: 5.5, fill: '#15181b'}, s); ping(s, n.iss, 10); OBJ.nga[i] = n; scaleEls.push(s); });
   const gz = L('czib');
   byAge(M.czib, n => n.u).forEach(([n, i, h]) => { const t = ageTier(h); const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'czib:' + i, opacity: ageOp(t)}, gz); const s = scg(m);
-    ageShape(s, 'path', {d: 'M0,-9L9,0L0,9L-9,0Z'}, '#d68cff', '#20082a', t); ping(s, n.u, 10); OBJ.czib[i] = n; scaleEls.push(s); });
+    ageShape(s, 'path', {d: 'M0,-9L9,0L0,9L-9,0Z'}, '#b6bec6', '#15181b', t); ping(s, n.u, 10); OBJ.czib[i] = n; scaleEls.push(s); });
   const gi = L('inc');
   byAge(M.inc, n => n.d).forEach(([n, i, h]) => { const t = ageTier(h); const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'inc:' + i, opacity: ageOp(t)}, gi); const s = scg(m);
-    ageShape(s, 'circle', {r: 9}, '#f5c518', '#2b2200', t); const tx = mk('text', {y: 4.5, 'text-anchor': 'middle', style: 'font-size:12px;font-weight:800;fill:' + (t < 2 ? '#2b2200' : 'rgba(245,197,24,.45)')}, s); tx.textContent = '!'; ping(s, n.d, 10); n._el = m; OBJ.inc[i] = n; scaleEls.push(s); });
+    ageShape(s, 'circle', {r: 9}, '#3bdfef', '#04222b', t); const tx = mk('text', {y: 4.5, 'text-anchor': 'middle', style: 'font-size:12px;font-weight:800;fill:' + (t < 2 ? '#04222b' : 'rgba(59,223,239,.45)')}, s); tx.textContent = '!'; ping(s, n.d, 10); n._el = m; OBJ.inc[i] = n; scaleEls.push(s); });
   const gs = L('ships');
   byAge(M.ships, n => n.d).forEach(([n, i, h]) => { const t = n.d ? ageTier(h) : 0; const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'ships:' + i, opacity: [1, .72, .4][t]}, gs); const s = scg(m);
     s.innerHTML = shipSvg(n.k); ping(s, n.d, 11); OBJ.ships[i] = n; scaleEls.push(s);
@@ -1501,7 +1512,7 @@ function buildMap(){
   M.mil.forEach((a, i) => { const m = mk('g', {transform: `translate(${a.xy[0]},${a.xy[1]})`, class: 'mk', 'data-k': 'mil:' + i}, gm); const s = scg(m);
     s.innerHTML = AIR(a.trk, (CLS[a.c] || CLS.other)[1]); OBJ.mil.push(a); a._el = m; scaleEls.push(s); });
   const gq = L('sqk');
-  (M.sqk || []).forEach((a, i) => { const col = a.sq === '7600' ? '#f08a3c' : '#f2545b'; const m = mk('g', {transform: `translate(${a.xy[0]},${a.xy[1]})`, class: 'mk', 'data-k': 'sqk:' + i}, gq); const s = scg(m);
+  (M.sqk || []).forEach((a, i) => { const col = a.sq === '7600' ? '#5a636c' : '#f0405a'; const m = mk('g', {transform: `translate(${a.xy[0]},${a.xy[1]})`, class: 'mk', 'data-k': 'sqk:' + i}, gq); const s = scg(m);
     if (a.sq !== '7600') mk('circle', {r: 15, fill: col, class: 'pulse'}, s); mk('circle', {r: 10, fill: col, stroke: '#fff', 'stroke-width': 2}, s);
     const t = mk('text', {y: 4, 'text-anchor': 'middle', style: 'font-size:9.5px;font-weight:800;fill:#fff;font-family:var(--mono)'}, s); t.textContent = a.sq; OBJ.sqk.push(a); scaleEls.push(s); });
   const gy = L('cities');
@@ -1567,13 +1578,13 @@ function popLegend(){
   let h = `<div class="ph"><h4>Legend</h4><small>layers that are on</small></div><div class="pb" style="padding:0 0 6px">`;
   h += PM ? `<div class="lgrp">Theatre level · 30-day chance</div><div class="lkey">${['Normal', 'Watch', 'Elevated', 'Critical'].map((l, i) => `${dot(l).replace('class="dot"', 'class="dot" style="width:12px;height:12px;--c:' + LEVEL[l] + '"')}<span><b style="color:var(--ink)">${l}</b> · ${[`below ${pct(BANDS[0])}`, `${pct(BANDS[0])} to ${pct(BANDS[1])}`, `${pct(BANDS[1])} to ${pct(BANDS[2])}`, `${pct(BANDS[2])} or more`][i]}</span>`).join('')}</div>` : `<div class="lgrp">Theatre labels</div><div class="lkey"><svg width="16" height="16"><rect x="1" y="3" width="14" height="10" rx="5" fill="none" stroke="#5a636c"/></svg><span>Number = signal pressure (0 to 100)</span><svg width="16" height="16"><rect x="1" y="3" width="14" height="10" rx="5" fill="none" stroke="${TELLC}" stroke-width="1.5"/></svg><span>Orange outline = a timing tell fired this week</span><span></span><span style="color:var(--dim)">Levels stay uncoloured while the model is in shadow.</span></div>`;
   if (layerState.mil) h += `<div class="lgrp">Aircraft · colour = role · click to hide</div><div class="lkey">${Object.keys(CLS).filter(k => classOff[k] || M.mil.some(a => a.c === k)).map(k => `<svg width="14" height="14" viewBox="-7 -7 14 14"><path d="M0,-6L4,5L0,3L-4,5Z" fill="${CLS[k][1]}"/></svg><span data-cls="${k}" class="${classOff[k] ? 'off' : ''}">${CLS[k][0]} <span style="color:var(--dim)">${M.mil.filter(a => a.c === k).length}</span></span>`).join('')}</div>`;
-  if (layerState.sqk) h += `<div class="lgrp">Emergency squawks</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#f2545b" stroke="#fff" stroke-width="1.5"/></svg><span>7500 hijack · 7700 emergency (pulsing)</span><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#f08a3c" stroke="#fff" stroke-width="1.5"/></svg><span>7600 radio failure</span></div>`;
+  if (layerState.sqk) h += `<div class="lgrp">Emergency squawks</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#f0405a" stroke="#fff" stroke-width="1.5"/></svg><span>7500 hijack · 7700 emergency (pulsing)</span><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#5a636c" stroke="#fff" stroke-width="1.5"/></svg><span>7600 radio failure</span></div>`;
   if (layerState.ships) h += `<div class="lgrp">Ships</div><div class="lkey">${['carrier', 'amphib', 'navy', 'tanker'].map(k => `<svg width="16" height="12" viewBox="-9 -6 18 12"><path d="M-8,2L-5,-3L6,-3L8,0L6,4L-5,4Z" fill="${SHIPK[k][1]}"/></svg><span>${SHIPK[k][0]}</span>`).join('')}</div>`;
   if (layerState.fires) h += `<div class="lgrp">Fires and heat · colour = how long ago</div><div class="lkey">${FIRE_BANDS.map(([, c, o, n], k) => `<svg width="16" height="16"><circle cx="8" cy="8" r="${k ? 4.3 : 5}" fill="${c}" fill-opacity="${o}"${k ? '' : ' stroke="#ffd9c7" stroke-width="1"'}/>${k ? '' : `<circle cx="8" cy="8" r="7.6" fill="${c}" fill-opacity=".22"/>`}</svg><span>${k ? n : '<b style="color:var(--ink)">' + n + '</b>'}</span>`).join('')}<svg width="16" height="16"><circle cx="8" cy="8" r="5" fill="none" stroke="#8a949e" stroke-width="1.5" stroke-dasharray="2 1.6"/></svg><span>Routine: burns on most days (gas flare, industry)</span><span></span><span style="color:var(--dim)">Larger dot: more heat (MW)</span></div>`;
-  if (layerState.inc) h += `<div class="lgrp">Maritime</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#f5c518"/></svg><span>Maritime incident (UKMTO, news)</span></div>`;
-  if (layerState.nga || layerState.czib) h += `<div class="lgrp">Warnings</div><div class="lkey">${layerState.nga ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,6L-8,6Z" fill="#ff9f43"/></svg><span>Hazard warning (NGA)</span>` : ''}${layerState.czib ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,0L0,8L-8,0Z" fill="#d68cff"/></svg><span>Airspace bulletin (EASA)</span>` : ''}</div>`;
+  if (layerState.inc) h += `<div class="lgrp">Maritime</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#3bdfef"/></svg><span>Maritime incident (UKMTO, news)</span></div>`;
+  if (layerState.nga || layerState.czib) h += `<div class="lgrp">Warnings</div><div class="lkey">${layerState.nga ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,6L-8,6Z" fill="#b6bec6"/></svg><span>Hazard warning (NGA)</span>` : ''}${layerState.czib ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,0L0,8L-8,0Z" fill="#b6bec6"/></svg><span>Airspace bulletin (EASA)</span>` : ''}</div>`;
   if (layerState.inc || layerState.nga || layerState.czib || layerState.ships) h += `<div class="lgrp">Age · incidents, warnings, bulletins and ships</div><div class="lkey">${AGE_TIERS.map((b, t) => `<svg width="16" height="16" class="agek t${t}"><circle cx="8" cy="8" r="${t ? 5 : 4.6}"${t ? '' : ' stroke-width="4"'}/>${t ? '' : '<circle cx="8" cy="8" r="4.6"/>'}</svg><span>${b[2]}</span>`).join('')}<span></span><span style="color:var(--dim)">Aircraft and squawks are live positions.</span></div>`;
-  if (layerState.choke) h += `<div class="lgrp">Shipping</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="#58a6ff" stroke-width="2"/><circle cx="8" cy="8" r="2.5" fill="#58a6ff"/></svg><span>Chokepoint (daily transits)</span></div>`;
+  if (layerState.choke) h += `<div class="lgrp">Shipping</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="#2bb8ca" stroke-width="2"/><circle cx="8" cy="8" r="2.5" fill="#2bb8ca"/></svg><span>Chokepoint (daily transits)</span></div>`;
   if (layerState.adv) h += `<div class="lgrp">US travel advice · denser = higher</div><div class="lkey">${[2, 3, 4].map(l => `<svg width="16" height="16"><rect width="16" height="16" fill="url(#pA${l})" stroke="#8fa1b0"/></svg><span>Level ${l}${l === 4 ? ': do not travel' : l === 3 ? ': reconsider travel' : ': more caution'}</span>`).join('')}</div>`;
   return h + `</div>`;
 }
@@ -1690,7 +1701,7 @@ function sheetSwipe(el, close){
 $('#card').addEventListener('click', e => { if (e.target.closest('.x')) closeCard(); const g = e.target.closest('[data-go]'); if (g) nav(g.dataset.go); });
 
 /* ------------------------------------------------------------ chance pins on the map */
-/* Overview: one pin per region, coloured by its highest sub-theatre level. Zoomed in, or in a region view: one pin per theatre.
+/* Overview: one pin per region, coloured by its highest theatre level. Zoomed in, or in a region view: one pin per theatre.
    Each pin is a dot at the true place plus a label placed beside it where it does not cover another label. */
 let PINS = [], pinZoom = false;
 function pinItems(){
@@ -1755,10 +1766,10 @@ function showHover(key){
   let h = `<div class="top"><h3>${esc(p.region ? r.name : th.name)}</h3>${lvPill(th.level)}</div>`;
   h += `<div class="big"><b style="color:${PM ? LEVEL[th.level] : 'var(--ink)'}">${esc(l.txt)}</b><small>${leadP() && th.p != null ? `chance in 30 days${p.region && kids ? ', ' + esc(th.name) : ''} · range ${pct(th.plo)} to ${pct(th.phi)}` : `unusual readings, 0 to 100${p.region && kids ? ', ' + esc(th.name) : ''}${th.xu != null ? ` · standing risk ${th.xu.toFixed(1)}× usual, not validated` : ''}`}</small></div>`;
   h += `<p>${summaryLine(t)}</p>`;
-  { const tc = tellsCount(t); if (tc.n) h += `<p class="hint" style="margin:-2px 0 6px">Timing tells this week: <b style="color:${tc.on.length ? 'var(--elevated)' : 'var(--ink)'}">${tc.on.length} of ${tc.n}</b>${tc.on.length ? ' · ' + tc.on.map(x => esc(x.n)).join(', ') : ''}</p>`; }
+  { const tc = tellsCount(t); if (tc.n) h += `<p class="hint" style="margin:-2px 0 6px">Timing tells this week: <b style="color:${tc.on.length ? 'var(--tell)' : 'var(--ink)'}">${tc.on.length} of ${tc.n}</b>${tc.on.length ? ' · ' + tc.on.map(x => esc(x.n)).join(', ') : ''}</p>`; }
   h += `<div class="sh">What pushes ${esc(th.name)} up ${inf(PM ? 'The signal families of this theatre that add most to the 30-day chance. World tempo, the same for every theatre, is left out. A longer bar adds more.' : 'The signal families of this theatre that add most to the model\'s 30-day chance. World tempo, the same for every theatre, is left out. The model has not passed its release checks, so this is for reference only.')}</div>${drvBars(t, 3)}`;
   if (kids) h += PM ? `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">${leadP() ? '30 days' : 'Pressure'}</span><span class="h r">Change</span>${kids.map(k => `<span>${thn(k)}</span><b class="num r">${esc(lead(k).txt)}</b><span class="r">${changeTxt(k)}</span>`).join('')}</div>`
-    : `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">Unusual</span><span class="h r">Tells</span>${kids.map(k => `<span>${thn(k, null, false)}${isSub(k) ? ' <span class="subl">sub</span>' : ''}</span><b class="num r">${fs(D.theatres[k].score)}</b><span class="r">${tellChip(k)}</span>`).join('')}</div>`;
+    : `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">Unusual</span><span class="h r">Tells</span>${kids.map(k => `<span>${thn(k, null, false)}${isSpill(k) ? ' ' + spillTag() : ''}</span><b class="num r">${fs(D.theatres[k].score)}</b><span class="r">${tellChip(k)}</span>`).join('')}</div>`;
   h += `<div class="row" style="justify-content:space-between;margin-top:6px"><span class="hint">Data coverage ${Math.round((1 - (th.miss || 0)) * 100)}% · confidence ${esc(String(th.confl || '').toLowerCase())}</span><button class="btn pri" data-nav="${target}">Open ${esc(p.region && kids ? r.name : th.name)} ${ic('chev', 's')}</button></div>`;
   const c = $('#hcard'); c.innerHTML = h; c.style.display = 'block';
   const [cw, ch] = clientSize(), w = c.offsetWidth, hh = c.offsetHeight, b = p.box;
@@ -1784,7 +1795,7 @@ function moversList(n){
 const RANKW = () => THEATRES.slice().sort((a, b) => tellsCount(b).on.length - tellsCount(a).on.length || (D.theatres[b].score || 0) - (D.theatres[a].score || 0));
 function thRowN(t){
   const th = D.theatres[t];
-  return `<div class="tr tr2" data-th="${t}"><span class="n">${thn(t, th.name, false)}${isSub(t) ? '<em>sub</em>' : ''}</span>${tellChip(t)}<span class="bw"><span class="bar6"><i style="width:${Math.min(100, th.score || 0)}%;background:${LEVEL[th.level]}"></i></span><b class="num">${fs(th.score)}</b></span><span class="num xu" data-tip="Standing risk: 30-day chance as a multiple of the usual chance here. Not validated.">${th.xu != null ? th.xu.toFixed(1) + '×' : '–'}</span></div>`;
+  return `<div class="tr tr2" data-th="${t}"><span class="n">${thn(t, th.name, false)}${isSpill(t) ? '<em>spillover</em>' : ''}</span>${tellChip(t)}<span class="bw"><span class="bar6"><i style="width:${Math.min(100, th.score || 0)}%;background:${LEVEL[th.level]}"></i></span><b class="num">${fs(th.score)}</b></span><span class="num xu" data-tip="Standing risk: 30-day chance as a multiple of the usual chance here. Not validated.">${th.xu != null ? th.xu.toFixed(1) + '×' : '–'}</span></div>`;
 }
 let dockTab = store.get('ww_dtab', 'mov');
 function renderDock(){
@@ -1800,7 +1811,7 @@ function renderDock(){
     : `<div class="dk"><div class="dh">Theatres ${inf('Ordered by timing tells this week, then by unusual readings (0 to 100, not a chance). The grey multiple is the standing risk against the usual chance here; it is not validated.')}<small>tells · unusual · risk</small>${tog}</div><div class="dc">${RANKW().map(thRowN).join('')}</div></div>`;
   const wkPanel = `<div class="dk"><div class="dh">This week ${inf('Timing tells seen, strong readings and new ratings in the last 7 days. Click a line to see the signal.')}<small>last 7 days</small>${tog}</div><div class="dc">${weekKpis()}<div class="feed">${feedRows(weekFeed(), 8)}</div></div></div>`;
   const movRows = movers.map(s => `<div class="mv" data-id="${esc(s.id)}"><span class="n">${esc(shortL(s.l))}<small>${esc(thName(s.t))} · ${esc(rawTxt(s))}</small></span><span>${spark(s.pts && s.pts.slice(-30), zcol(s.z), 54, 18)}</span><span class="sdv" style="color:${zcol(s.z)}">${fmtz(s.z)}</span></div>`).join('') || '<div class="empty">No signal has a score yet.</div>';
-  const mkRows = mks.map(m => `<div class="mv" data-mi="${D.markets.indexOf(m)}"><span class="n">${esc(m.q)}<small>${esc(m.src)} · ${m.theatre ? esc(thName(m.theatre)) : 'Global'}${m.end ? ' · ends ' + esc(m.end) : ''}</small></span><span>${spark(m.h, '#58a6ff', 54, 18)}</span><span class="sdv">${Math.round(m.p * 100)}%</span></div>`).join('') || '<div class="empty">No open war or military markets were found.</div>';
+  const mkRows = mks.map(m => `<div class="mv" data-mi="${D.markets.indexOf(m)}"><span class="n">${esc(m.q)}<small>${esc(m.src)} · ${m.theatre ? esc(thName(m.theatre)) : 'Global'}${m.end ? ' · ends ' + esc(m.end) : ''}</small></span><span>${spark(m.h, '#2bb8ca', 54, 18)}</span><span class="sdv">${Math.round(m.p * 100)}%</span></div>`).join('') || '<div class="empty">No open war or military markets were found.</div>';
   const pizza = D.pizza && D.pizza[0] != null ? `<div class="hint" style="padding:6px 6px 0">Pentagon pizza index: <b style="color:var(--ink)">${Math.round(D.pizza[0])}</b>/100, ${D.pizza[1]} active spike${D.pizza[1] === 1 ? '' : 's'}. A weak signal.</div>` : '';
   const thirdPanel = `<div class="dk"><div class="dh"><span class="dtabs"><button class="${dockTab === 'mov' ? 'on' : ''}" data-dtab="mov">Biggest movers</button><button class="${dockTab === 'mk' ? 'on' : ''}" data-dtab="mk">Markets <b>${mks.length}</b></button></span>${inf(dockTab === 'mov' ? 'Signals furthest from their own normal level, in standard deviations (SD), with the raw value. At most two per theatre; stale copies and events are left out.' : 'What traders with money at stake think. Shown for context. Not part of the score.')}<small>${dockTab === 'mov' ? 'SD from normal' : 'odds now'}</small>${tog}</div><div class="dc">${dockTab === 'mov' ? movRows : mkRows + pizza}</div></div>`;
   d.innerHTML = PM ? thPanel + `<div class="dk"><div class="dh">Biggest movers ${inf('Signals furthest from their own normal level, in standard deviations (SD), with the raw value. At most two per theatre.')}<small>SD from normal</small>${tog}</div><div class="dc">${movRows}</div></div><div class="dk"><div class="dh">Prediction markets ${inf('What traders with money at stake think. Shown for context. Not part of the score.')}<small>odds now</small>${tog}</div><div class="dc">${mkRows}${pizza}</div></div>`
@@ -1838,7 +1849,7 @@ function steSummary(t){
     seriesOf(t).filter(s => isEv(s) && s.z > 0).forEach(s => out.push(s.tf === 'event' ? `CrisisWatch: ${esc(evWords(s))}.` : `${esc(shortL(s.l))}: ${esc(evWords(s))}.`));
     if (th.xu != null) out.push(`Standing risk is ${th.xu.toFixed(1)}× usual and not validated.`);
     if (th.basis === 'lagging only') out.push('<b>Only late data is unusual. It shows a build-up that already started. It is not an early warning.</b>');
-    if (isSub(t)) out.push(subNote(t));
+    if (isSpill(t)) out.push(subNote(t));
     return out.filter(Boolean).join(' ');
   }
   if (th.p != null && PM) {
@@ -1851,7 +1862,7 @@ function steSummary(t){
   const tc = tellsCount(t);
   if (tc.n) out.push(tc.on.length ? `Timing tells this week: <b>${tc.on.length} of ${tc.n}</b> (${tc.on.map(x => esc(lc(x.n))).join(', ')}).` : `No timing tell this week (0 of ${tc.n} watched).`);
   if (th.p != null && PM && th.lvc && th.lvc !== th.level) out.push(`On signal pressure alone the level is ${esc(th.lvc)}. Click Pressure to see why the two differ.`);
-  if (th.basis === 'lagging only') out.push('<b style="color:var(--elevated)">Only late data is unusual. It shows a build-up that already started. It is not an early warning.</b>');
+  if (th.basis === 'lagging only') out.push('<b style="color:var(--ink)">Only late data is unusual. It shows a build-up that already started. It is not an early warning.</b>');
   if (th.aft) out.push('An event occurred here in the last 30 days. The model was not tested on this condition, so use the value with care.');
   return out.filter(Boolean).join(' ');
 }
@@ -1860,13 +1871,13 @@ function renderPanel(){
   if (R.v === 'overview') { P.innerHTML = ''; return; }
   const r = R.v === 'region' ? REGBY[R.id] : regOf[R.id];
   let h = '';
-  if (r && r.kids.length > 1) { const own = r.kids.filter(k => !isSub(k)), subs = r.kids.filter(isSub), tab = k => `<button class="${R.id === k ? 'on' : ''}${tellsCount(k).on.length ? ' tt' : ''}" data-nav="${k}"${tellsCount(k).on.length ? ' title="Timing tell this week"' : ''}>${tnm(thName(k), D.theatres[k].level, false)}<small>${esc(lead(k).txt)}</small></button>`;
-    h += `<div class="rtabs" id="rtabs" data-k="${r.id}"><button class="${R.v === 'region' ? 'on' : ''}" data-nav="region/${r.id}" data-tip="${esc(r.name)}: all theatres side by side">Overview</button>${own.map(tab).join('')}${subs.length ? `<span class="rdiv" data-tip="Sub-theatres: countries drawn into a neighbour's war"></span>${subs.map(tab).join('')}` : ''}</div>`; }
+  if (r && r.kids.length > 1) { const own = r.kids.filter(k => !isSpill(k)), subs = r.kids.filter(isSpill), tab = k => `<button class="${R.id === k ? 'on' : ''}${tellsCount(k).on.length ? ' tt' : ''}" data-nav="${k}"${tellsCount(k).on.length ? ' title="Timing tell this week"' : ''}>${tnm(thName(k), D.theatres[k].level, false)}<small>${esc(lead(k).txt)}</small></button>`;
+    h += `<div class="rtabs" id="rtabs" data-k="${r.id}"><button class="${R.v === 'region' ? 'on' : ''}" data-nav="region/${r.id}" data-tip="${esc(r.name)}: all theatres side by side">Overview</button>${own.map(tab).join('')}${subs.length ? `<span class="rdiv" data-tip="Spillover: no war of its own, at risk because a neighbour's war reaches it"></span>${subs.map(tab).join('')}` : ''}</div>`; }
   const mapt = `<button class="phonly mapt" data-mapt="1">${ic(mapOpen ? 'chevu' : 'chevd', 's')} ${mapOpen ? 'Hide the map' : 'Show the map'}</button>`;
   h += mapt;
   if (R.v === 'region') { P.innerHTML = h + regionBody(r); tabInd(); countNums(P); return; }
   const t = R.id, th = D.theatres[t], m = META[t];
-  h += `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}${r ? `<a data-nav="${r.kids.length > 1 ? 'region/' + r.id : r.kids[0]}">${esc(r.name)}</a>${ic('chev', 's')}` : ''}<span>${esc(thName(t))}</span><button class="cp" data-copy="1" aria-label="Copy a link to this view">${ic('link', 's')} Link</button></div><h2>${esc(thName(t))} ${lvPill(th.level)}${isSub(t) ? '<span class="subl">sub-theatre</span>' : ''}</h2><p>${steSummary(t)}</p></div>`;
+  h += `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}${r ? `<a data-nav="${r.kids.length > 1 ? 'region/' + r.id : r.kids[0]}">${esc(r.name)}</a>${ic('chev', 's')}` : ''}<span>${esc(thName(t))}</span><button class="cp" data-copy="1" aria-label="Copy a link to this view">${ic('link', 's')} Link</button></div><h2>${esc(thName(t))} ${lvPill(th.level)}${isSpill(t) ? spillTag() : ''}</h2><p>${steSummary(t)}</p></div>`;
   const cov = Math.round((1 - (th.miss || 0)) * 100);
   const xu = th.xu != null ? `${th.xu.toFixed(1)}×` : pct(th.p);
   const k1 = th.p != null && !PM ? `<button class="kp" data-pop="kp-p"><small>Standing risk ${inf('The model\'s chance of a qualifying event in the next 30 days, as a multiple of this theatre\'s usual chance. It has not passed its release checks, so it does not set the level and is shown for reference only. Click to see what drives it.')}</small><b style="color:var(--dim)">${xu}<sub>usual</sub></b><span>not validated</span></button>`
@@ -1877,7 +1888,7 @@ function renderPanel(){
   const kPress = `<button class="kp" data-pop="kp-s"><small>${PM ? 'Pressure' : 'Unusual readings'} ${inf('How unusual the signals are, all together, from 0 to 100. 50 is the Watch line and 90 is the Critical line. It is not a chance. Click for details.')}</small><b><span data-n="sc:${t}">${fs(th.score)}</span><sub>/100</sub></b><span>${th.score == null ? 'no score' : PM ? (th.score >= 90 ? 'above Critical' : th.score >= 50 ? 'above Watch' : 'below Watch') : 'not a chance'}</span></button>`;
   const kGroups = `<button class="kp" data-pop="kp-g"><small>Unusual ${inf('Signal groups at 2 SD or more from their normal level. Click to see all five.')}</small><b>${th.firing.length}<sub>/${th.scorable}</sub></b><span>${th.firing.length ? th.firing.map(d => GN[d]).join(', ') : 'none'}</span></button>`;
   h += `<div class="kpis">${PM ? k1 + kPress + kGroups : kTells + kPress + k1}
-    <button class="kp" data-pop="kp-c"><small>Coverage ${inf('The share of this theatre\'s signals that have a score now. Low coverage makes the result less certain. Click for details.')}</small><b style="color:${cov < 60 ? 'var(--elevated)' : 'var(--ink)'}">${cov}%</b><span>${m.scored} of ${m.n}</span></button></div>`;
+    <button class="kp" data-pop="kp-c"><small>Coverage ${inf('The share of this theatre\'s signals that have a score now. Low coverage makes the result less certain. Click for details.')}</small><b style="color:${'var(--ink)'}">${cov}%</b><span>${m.scored} of ${m.n}</span></button></div>`;
   const al = ALERTS.filter(a => t === 'global' ? !a.th : a.th === t), mk = marketsFor(t), hot = al.some(a => a.sev >= 70);
   const hw = historyItems(t).filter(x => ageH(x.d) != null && ageH(x.d) <= 24 * 7).length;
   let sub = R.sub || 'drivers'; if (sub === 'markets' && !mk.length) sub = 'drivers';
@@ -1991,7 +2002,7 @@ function historyBody(t){
   if (t !== 'global') {
     const rk = H.risk.filter(r => r[1] != null);
     h += `<div class="sh" style="margin-top:16px">Standing risk over time ${inf('The model\'s 30-day chance as a multiple of this theatre\'s usual chance, as logged each day in the forward record before anything happened.')}<small>${PM ? '× usual' : 'not validated'}</small></div>`;
-    h += rk.length >= 2 ? chartBlock(`Times usual, from ${shortDate(rk[0][0])}`, rk.map(r => [r[0], r[1]]), {h: 150, c: PM ? '#58a6ff' : '#8a939c', fy: v => v.toFixed(1) + '×', min: 0, lines: [{y: 1, c: '#7f93a8', t: 'usual', d: '2 3', left: true}]}, null)
+    h += rk.length >= 2 ? chartBlock(`Times usual, from ${shortDate(rk[0][0])}`, rk.map(r => [r[0], r[1]]), {h: 150, c: PM ? '#2bb8ca' : '#8a939c', fy: v => v.toFixed(1) + '×', min: 0, lines: [{y: 1, c: '#7f93a8', t: 'usual', d: '2 3', left: true}]}, null)
       : `<p class="hint">The forward record has ${rk.length} day${rk.length === 1 ? '' : 's'} here so far; the line appears from the second day.</p>`;
   }
   const er = e => `<div class="pe"><time>${esc(e[0])}</time><span>${esc(e[4])}<small>${esc(EVT[e[3]] || e[3])}${e[2] === t && e[1] !== t ? ` · happened here, part of ${esc(thName(e[1]))}'s war` : e[2] && e[2] !== t ? ` · happened in ${esc(thName(e[2]))}` : ''}${e[5] ? ' · moved markets' : ''}</small></span></div>`;
@@ -2041,7 +2052,7 @@ function mchg(m){
 }
 function marketRows(list){
   if (!list.length) return `<div class="empty">No open war or military prediction market matches this theatre.</div>`;
-  return list.map(m => `<div class="mk2" data-mi="${D.markets.indexOf(m)}"><span>${esc(m.q)}<small>${esc(m.src)} · volume $${fmtv(m.vol)}${m.end ? ' · ends ' + esc(m.end) : ''} · ${esc(mchg(m))}</small></span><span>${spark(m.h, '#58a6ff', 60, 18)}</span><b style="color:${m.p >= .5 ? 'var(--elevated)' : 'var(--ink)'}">${Math.round(m.p * 100)}%</b></div>`).join('');
+  return list.map(m => `<div class="mk2" data-mi="${D.markets.indexOf(m)}"><span>${esc(m.q)}<small>${esc(m.src)} · volume $${fmtv(m.vol)}${m.end ? ' · ends ' + esc(m.end) : ''} · ${esc(mchg(m))}</small></span><span>${spark(m.h, '#2bb8ca', 60, 18)}</span><b style="color:${m.p >= .5 ? 'var(--e4)' : 'var(--ink)'}">${Math.round(m.p * 100)}%</b></div>`).join('');
 }
 function aboutBody(t){
   const th = D.theatres[t], m = META[t], st = m.st;
@@ -2050,7 +2061,7 @@ function aboutBody(t){
     <p><b>How the chance is made.</b> ${PM ? `A fitted model (v${esc(PM.v)}, fitted ${esc(PM.fitted)}) turns the signals and the conflict history of this theatre into a 30-day chance. The model sets the level: Watch from ${pct(BANDS[0])}, Elevated from ${pct(BANDS[1])}, Critical from ${pct(BANDS[2])}.` : 'The 30-day model runs in shadow mode. The level comes from the signal pressure.'}</p>
     <p><b>Signal pressure.</b> ${fs(th.score)} of 100. ${esc(MEANING_S[th.lvc || th.level] || '')} ${th.lvc && th.lvc !== th.level ? `On pressure alone the level is ${esc(th.lvc)}.` : ''}</p>
     <p><b>Data.</b> ${m.scored} signals have a score. ${st.collecting || 0} are still collecting history, ${st.awaiting_key || 0} need a free key and ${st.error || 0} failed in this run.${m.last ? ` The newest daily value is from ${esc(m.last)} (${esc(ago(m.last))}).` : ''}</p>
-    ${isSub(t) ? `<p><b>Sub-theatre.</b> ${subNote(t)}</p>` : ''}
+    ${isSpill(t) ? `<p><b>Spillover.</b> ${subNote(t)}</p>` : ''}
     ${marketsFor(t).length ? '' : '<p><b>Prediction markets.</b> No open war or military prediction market matches this theatre now.</p>'}
     <p><a data-nav="settings/method">How the score works</a> · <a data-nav="signals?th=${t}">All signals for ${esc(thName(t))} in the table</a></p></div>`;
 }
@@ -2059,19 +2070,22 @@ function tellChip(t, short){ const c = tellsCount(t); return c.n ? `<span class=
 /* a family label without the theatre's own name at the end: "Demonstrations per month, Iraq region" -> "Demonstrations per month" */
 function causeL(t, l){ const n = thName(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); const r = shortL(l).replace(new RegExp(`,? (in |to |over |near |around |into )?(the )?${n}( region| waters)?$`, 'i'), ''); return r || shortL(l); }
 function subNote(t){
-  const sp = SUBT[t]; if (!sp) return '';
+  const wars = SPILL[t]; if (!wars) return '';
+  const sp = SUBT[t], names = xs => xs.map(x => esc(thName(x))).join(', ').replace(/, ([^,]*)$/, ' and $1');
   const n = (D.events && D.events.list || []).filter(e => e[2] === t).length;
-  return `${esc(thName(t))} is a sub-theatre: a country drawn into a neighbour's war. Its model reads its own signals and those of ${sp.parents.map(x => esc(thName(x))).join(' and ')}, and its usual rate is pooled with ${sp.pool.map(x => esc(thName(x))).join(', ')}.${n ? ` ${n} past event${n === 1 ? '' : 's'} in the list happened here, too few to test it on its own.` : ''}`;
+  const head = `${esc(thName(t))} is a spillover theatre: it has no war of its own and is at risk because the war${wars.length > 1 ? 's' : ''} in ${names(wars)} reach${wars.length > 1 ? '' : 'es'} it.`;
+  if (!sp) return head + ' Its model is fitted on its own events, like any theatre.';
+  return `${head} Its model reads its own signals and those of ${names(sp.parents)}, and its usual rate is pooled with ${names(sp.pool)}.${n ? ` ${n} past event${n === 1 ? '' : 's'} in the list happened here, too few to test it on its own.` : ''}`;
 }
 function regionBody(r){
-  const kids = r.kids.slice().sort((a, b) => (isSub(a) - isSub(b)) || tellsCount(b).on.length - tellsCount(a).on.length || lead(b).v - lead(a).v), top = kids[0], lv = regionLevel(r);
-  const subs = r.kids.filter(isSub), tl = r.kids.filter(k => tellsCount(k).on.length);
+  const kids = r.kids.slice().sort((a, b) => (isSpill(a) - isSpill(b)) || tellsCount(b).on.length - tellsCount(a).on.length || lead(b).v - lead(a).v), top = kids[0], lv = regionLevel(r);
+  const subs = r.kids.filter(isSpill), tl = r.kids.filter(k => tellsCount(k).on.length);
   const hot = r.kids.slice().sort((a, b) => (D.theatres[b].score || 0) - (D.theatres[a].score || 0)).filter(k => (D.theatres[k].score || 0) >= 50).slice(0, 2);
   const sum = PM ? `${hasP(top) && leadP() ? `${esc(thName(top))} has the highest chance in this region: <b>${pct(D.theatres[top].p)}</b> in the next 30 days.` : `${esc(thName(top))} has the highest signal pressure in this region: <b>${fs(D.theatres[top].score)}</b>.`} The region level is the highest level of its ${r.kids.length} theatres.`
-    : `${tl.length ? `<b>Timing tells this week in ${tl.map(k => esc(thName(k))).join(' and ')}.</b>` : '<b>No timing tell this week.</b>'} ${hot.length ? `${hot.map(k => esc(thName(k))).join(' and ')} ${hot.length > 1 ? 'have' : 'has'} the most unusual readings.` : 'No theatre has many unusual readings.'} The region level is the highest level of its theatres.${subs.length ? ` ${subs.map(k => esc(thName(k))).join(' and ')} ${subs.length > 1 ? 'are sub-theatres' : 'is a sub-theatre'}, fitted on top of ${r.kids.filter(k => !isSub(k)).map(k => esc(thName(k))).join(', ')}.` : ''}`;
+    : `${tl.length ? `<b>Timing tells this week in ${tl.map(k => esc(thName(k))).join(' and ')}.</b>` : '<b>No timing tell this week.</b>'} ${hot.length ? `${hot.map(k => esc(thName(k))).join(' and ')} ${hot.length > 1 ? 'have' : 'has'} the most unusual readings.` : 'No theatre has many unusual readings.'} The region level is the highest level of its theatres.${subs.length ? ` ${subs.map(k => esc(thName(k))).join(' and ')} ${subs.length > 1 ? 'are spillover theatres' : 'is a spillover theatre'}, at risk from the wars of ${r.kids.filter(k => !isSpill(k)).map(k => esc(thName(k))).join(', ')}.` : ''}`;
   let h = `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}<span>${esc(r.name)}</span></div><h2>${esc(r.name)} ${lvPill(lv)}</h2><p>${sum}</p></div><div class="pbody">`;
   const czx = k => { const w = ownWhy(k)[0]; return w ? `<div class="cz">${esc(causeL(k, w[0]))}</div>` : ''; };
-  const nm = k => `<td><b style="font-weight:600">${thn(k, null, false)}</b>${isSub(k) ? ' <span class="subl">sub</span>' : ''}${czx(k)}</td>`;
+  const nm = k => `<td><b style="font-weight:600">${thn(k, null, false)}</b>${isSpill(k) ? ' ' + spillTag() : ''}${czx(k)}</td>`;
   const cov = k => `<td class="r num cv">${Math.round((1 - (D.theatres[k].miss || 0)) * 100)}%</td>`;
   const cause = k => { const w = ownWhy(k)[0]; return `<td class="cause" title="${esc(w ? w[0] : '')}">${esc(w ? causeL(k, w[0]) : '–')}</td>`; };
   if (PM) h += `<table class="cmp"><thead><tr><th class="c1">Theatre</th><th class="r cn">${leadP() ? '30 days' : 'Pressure'}</th><th class="r cn">Change</th><th class="cause">Own main cause</th><th class="r cv" data-tip="Share of signals with a score now">Coverage</th></tr></thead><tbody>` +
@@ -2096,9 +2110,9 @@ function popChance(t){
       <div class="big" style="margin:0 0 8px"><b style="color:var(--mute)">${th.xu != null ? th.xu.toFixed(1) + '×' : pct(th.p)}</b><small>${th.xu != null ? `this theatre's usual chance · ${pct(th.p)} in 30 days (model range ${pct(th.plo)} to ${pct(th.phi)})` : 'in 30 days'}</small></div>`;
   if (wf) {
     const hi = Math.max(th.phi || th.p, th.p, wf.base, ...wf.steps.map(s => Math.max(s.a, s.b))) * 1.05;
-    h += `<div class="wf"><span>Start: the long-run rate here</span><span class="bar"><i style="left:0;width:${wf.base / hi * 100}%;background:#58a6ff"></i></span><b>${pct(wf.base)}</b></div>`;
+    h += `<div class="wf"><span>Start: the long-run rate here</span><span class="bar"><i style="left:0;width:${wf.base / hi * 100}%;background:#2bb8ca"></i></span><b>${pct(wf.base)}</b></div>`;
     h += wf.steps.map(s => { const lo = Math.min(s.a, s.b), w = Math.abs(s.d); const sid = s.rest ? null : familySeries(t, s.n);
-      return `<div class="wf ${WORLDW([s.n]) ? 'wd' : ''}" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''}><span title="${esc(s.n)}">${esc(WORLDW([s.n]) ? 'World tempo, the same for every theatre' : shortL(s.n))}</span><span class="bar"><i style="left:${lo / hi * 100}%;width:${Math.max(1.5, w / hi * 100)}%;background:${!PM ? 'var(--mute)' : s.d < 0 ? 'var(--normal)' : 'var(--elevated)'}"></i></span><b>${ppt(s.d)}</b></div>`; }).join('');
+      return `<div class="wf ${WORLDW([s.n]) ? 'wd' : ''}" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''}><span title="${esc(s.n)}">${esc(WORLDW([s.n]) ? 'World tempo, the same for every theatre' : shortL(s.n))}</span><span class="bar"><i style="left:${lo / hi * 100}%;width:${Math.max(1.5, w / hi * 100)}%;background:${s.d < 0 ? 'var(--n2)' : 'var(--n4)'}"></i></span><b>${ppt(s.d)}</b></div>`; }).join('');
     h += `<div class="wf t"><span>Chance now</span><span class="bar"><i style="left:0;width:${th.p / hi * 100}%;background:${LEVEL[th.level]}"></i></span><b style="color:${LEVEL[th.level]}">${pct(th.p)}</b></div>`;
     h += `<p class="hint" style="margin:10px 0 0">The model starts from the long-run rate for ${esc(th.name)}. The conflict history of the theatre and each signal family then move the chance. The steps add up in log-odds, so the same push adds more points when the chance is higher.</p>`;
   } else h += `<p class="hint" style="margin:0 0 8px">The largest causes:</p>` + drvBars(t, 6);
@@ -2113,7 +2127,7 @@ function popPressure(t){
   const pos = th.score == null ? 0 : Math.max(0, Math.min(100, th.score));
   return `<div class="ph"><h4>Signal pressure ${fs(th.score)}/100</h4><small>${esc(th.lvc || th.level)} on pressure alone</small></div><div class="pb">
     <p class="hint" style="margin:0 0 8px">Signal pressure shows how unusual all the signals are together. It is not a chance. 50 is the Watch line and 90 is the Critical line.</p>
-    <svg viewBox="0 0 100 12" preserveAspectRatio="none" style="width:100%;height:14px;display:block"><rect x="0" y="4" width="50" height="4" fill="#244a39"/><rect x="50" y="4" width="40" height="4" fill="#6b4a17"/><rect x="90" y="4" width="10" height="4" fill="#6b2326"/><rect x="${pos - .6}" y="0" width="1.2" height="12" fill="#fff"/></svg>
+    <svg viewBox="0 0 100 12" preserveAspectRatio="none" style="width:100%;height:14px;display:block"><rect x="0" y="4" width="50" height="4" fill="#1d2a2e"/><rect x="50" y="4" width="40" height="4" fill="#6b4a17"/><rect x="90" y="4" width="10" height="4" fill="#6b2326"/><rect x="${pos - .6}" y="0" width="1.2" height="12" fill="#fff"/></svg>
     <div class="rampl" style="margin-bottom:8px"><span>0</span><span>50 Watch</span><span>90 Critical</span><span>100</span></div>
     ${th.p != null && th.lvc && th.lvc !== th.level ? `<p class="hint" style="margin:0 0 8px"><b style="color:var(--ink)">Why the level is ${esc(th.level)}:</b> the model sets the level from the 30-day chance, ${pct(th.p)}. The signals are unusual, but in the past signals like these did not often come before events here.</p>` : ''}
     <div class="kv"><span>Index (100 is normal) ${inf('A weighted Mazziotta-Pareto index of the five groups. 100 is normal; each 10 points is about 1 SD.')}</span><b class="num">${th.index == null ? '–' : th.index.toFixed(1)}</b></div>
@@ -2204,7 +2218,7 @@ function areaChart(pts, o){
       s += `<g class="evm"><line x1="${x}" x2="${x}" y1="${T}" y2="${H - B}" stroke="#e8ecf0" stroke-opacity=".3" stroke-dasharray="2 3"/><path d="M${x - 4.5},${T - 2} L${x + 4.5},${T - 2} L${x},${T + 5} Z" fill="#e8ecf0" fill-opacity=".8"><title>${esc(e[0] + ': ' + e[4])}</title></path></g>`; });
   }
   const line = pts.map((p, i) => X(i).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' ');
-  const col = o.c || '#58a6ff', y0 = Y(lo < 0 && hi > 0 ? 0 : lo);
+  const col = o.c || '#2bb8ca', y0 = Y(lo < 0 && hi > 0 ? 0 : lo);
   if (o.area !== false) s += `<polygon points="${L},${y0} ${line} ${X(n - 1)},${y0}" fill="${col}" fill-opacity=".13"/>`;
   s += `<polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" points="${line}"/>`;
   if (o.dots) pts.forEach((p, i) => { if (o.dots(p[1])) s += `<circle cx="${X(i)}" cy="${Y(p[1])}" r="3.2" fill="${zcol(p[1])}"/>`; });
@@ -2270,7 +2284,7 @@ function openModal0(id, list){
   const th = thName(s.t), idx = modalList.indexOf(id);
   let h = `<button class="x" aria-label="Close">&times;</button><div class="nav"><a data-nav="overview">World</a>&rsaquo;<a data-nav="${s.t}">${esc(th)}</a>&rsaquo;<a data-nav="${s.t}/signals" data-dom="${s.d}">${GN[s.d]}</a><span class="sp"></span>` +
     (modalList.length > 1 ? `<a data-step="-1" title="Previous (left arrow)">&lsaquo; Previous</a><span>${idx + 1} / ${modalList.length}</span><a data-step="1" title="Next (right arrow)">Next &rsaquo;</a>` : '') + `</div>` +
-    `<h2>${esc(s.l)}</h2><div class="chips"><span>${esc(th)}</span><span>${GN[s.d]}</span>${s.s ? `<span>${esc(s.s)}</span>` : ''}<span style="color:${s.lag ? 'var(--elevated)' : 'var(--normal)'}">${s.lag ? 'Confirms: late data' : 'Leads: fast data'}</span><span>${s.kind === 'daily' ? 'Daily data' : 'Monthly data'}</span></div>` + statusBox(s);
+    `<h2>${esc(s.l)}</h2><div class="chips"><span>${esc(th)}</span><span>${GN[s.d]}</span>${s.s ? `<span>${esc(s.s)}</span>` : ''}<span style="color:${s.lag ? 'var(--mute)' : 'var(--ink)'}">${s.lag ? 'Confirms: late data' : 'Leads: fast data'}</span><span>${s.kind === 'daily' ? 'Daily data' : 'Monthly data'}</span></div>` + statusBox(s);
   const vals = (s.pts || []).map(p => p[1]), last = vals.length ? vals[vals.length - 1] : null, pn = pctNow(s);
   let vs = '';
   if (s.z != null && s.base && s.base.med) { const dv = (s.val - s.base.med) / Math.abs(s.base.med) * 100; vs = (dv >= 0 ? '+' : '') + dv.toFixed(Math.abs(dv) < 10 ? 1 : 0) + '%'; }
@@ -2282,13 +2296,13 @@ function openModal0(id, list){
     `<div class="kp"><small>Percentile ${inf('Where the current reading sits among the readings held, on the same measure as the score (the 7-day average for daily data).')}</small><b>${pn ? pn.p + '%' : 'n/a'}</b><span>${pn ? pn.of : ''}</span></div></div>`;
   if (s.z != null && !isEv(s)) {
     const lo = -3, hi = 6, X = z => 4 + (Math.max(lo, Math.min(hi, z)) - lo) / (hi - lo) * 92;
-    h += `<div class="gauge"><div class="gt"><span>Distance from normal (standard deviations)</span><span>unusual from ${T_WATCH.toFixed(0)} · strong from ${T_SIG.toFixed(0)}</span></div><svg viewBox="0 0 100 14" preserveAspectRatio="none"><rect x="4" y="5" width="${X(T_WATCH) - 4}" height="4" fill="#1f5a3a"/><rect x="${X(T_WATCH)}" y="5" width="${X(T_SIG) - X(T_WATCH)}" height="4" fill="#8a4d12"/><rect x="${X(T_SIG)}" y="5" width="${96 - X(T_SIG)}" height="4" fill="#8a2a2d"/><rect x="${X(s.z) - .6}" y="1" width="1.2" height="12" fill="${zcol(s.z)}"/></svg></div>`;
+    h += `<div class="gauge"><div class="gt"><span>Distance from normal (standard deviations)</span><span>unusual from ${T_WATCH.toFixed(0)} · strong from ${T_SIG.toFixed(0)}</span></div><svg viewBox="0 0 100 14" preserveAspectRatio="none"><rect x="4" y="5" width="${X(T_WATCH) - 4}" height="4" fill="#1d2a2e"/><rect x="${X(T_WATCH)}" y="5" width="${X(T_SIG) - X(T_WATCH)}" height="4" fill="#1f3a40"/><rect x="${X(T_SIG)}" y="5" width="${96 - X(T_SIG)}" height="4" fill="#245560"/><rect x="${X(s.z) - .6}" y="1" width="1.2" height="12" fill="${zcol(s.z)}"/></svg></div>`;
   }
   h += `<p class="say"><b>${esc(s.why)}</b><br><span style="color:var(--mute)">${isEv(s) ? (s.tf === 'event' ? 'A conflict-risk alert counts 2 and a deteriorated situation 1; the newest issue is the reading.' : 'A raise in the advisory level counts when it is made and goes quiet after 14 days.') : dirTxt(s) + ' ' + trigTxt(s)}</span></p>`;
   if (s.pts && s.pts.length > 1) {
-    const vo = {h: 200, c: '#58a6ff', ev: evFor(s.t)};
-    if (s.base) { vo.bands = [{a: s.base.med - 2 * s.base.sd, b: s.base.med + 2 * s.base.sd, c: 'rgba(88,166,255,.13)'}, {a: s.base.med - 3 * s.base.sd, b: s.base.med + 3 * s.base.sd, c: 'rgba(88,166,255,.07)'}];
-      vo.lines = [{y: s.base.med, c: '#7f93a8', t: 'normal', d: '2 3', left: true}, {y: s.base.med + 3 * s.base.sd, c: '#ff8a1f', t: '+3 SD'}, {y: s.base.med - 3 * s.base.sd, c: '#ff8a1f', t: '−3 SD', below: true}];
+    const vo = {h: 200, c: '#2bb8ca', ev: evFor(s.t)};
+    if (s.base) { vo.bands = [{a: s.base.med - 2 * s.base.sd, b: s.base.med + 2 * s.base.sd, c: 'rgba(43,184,202,.13)'}, {a: s.base.med - 3 * s.base.sd, b: s.base.med + 3 * s.base.sd, c: 'rgba(43,184,202,.07)'}];
+      vo.lines = [{y: s.base.med, c: '#7f93a8', t: 'normal', d: '2 3', left: true}, {y: s.base.med + 3 * s.base.sd, c: '#2bb8ca', t: '+3 SD'}, {y: s.base.med - 3 * s.base.sd, c: '#2bb8ca', t: '−3 SD', below: true}];
       vo.extra = [s.base.med + 3 * s.base.sd, s.base.med - 3 * s.base.sd]; }
     h += chartBlock((s.kind === 'daily' ? 'Daily values' : 'Monthly values') + (s.base ? ' and the normal range (shaded: ±2 and ±3 SD)' : ''), s.pts, vo, s.pts.length > 40 ? [['30', '30'], ['90', '90'], ['all', 'All']] : null);
   }
@@ -2296,7 +2310,7 @@ function openModal0(id, list){
     h += chartBlock('Score history in standard deviations (what the dashboard showed each day)', s.zh,
       {h: 170, c: '#e6edf3', min: -3, max: 6, fy: v => v.toFixed(0), unit: 'SD', dots: v => v >= T_WATCH, area: false, ev: evFor(s.t),
        bands: [{a: T_SIG, b: 99, c: 'rgba(255,77,79,.15)'}, {a: T_WATCH, b: T_SIG, c: 'rgba(255,138,31,.13)'}],
-       lines: [{y: T_SIG, c: '#ff4d4f', t: 'strong ' + T_SIG.toFixed(0) + ' SD'}, {y: T_WATCH, c: '#ff8a1f', t: 'unusual ' + T_WATCH.toFixed(0) + ' SD', left: true, below: true}, {y: 0, c: '#52667a', t: '', d: '2 3'}]}, null);
+       lines: [{y: T_SIG, c: '#3bdfef', t: 'strong ' + T_SIG.toFixed(0) + ' SD'}, {y: T_WATCH, c: '#2bb8ca', t: 'unusual ' + T_WATCH.toFixed(0) + ' SD', left: true, below: true}, {y: 0, c: '#52667a', t: '', d: '2 3'}]}, null);
   }
   const rel = modalList.filter(x => x !== id).slice(0, 8).map(x => SERIES[x]);
   const row = (a, b) => `<tr><td>${a}</td><td>${b}</td></tr>`;
@@ -2321,9 +2335,9 @@ function openMarket(i){
   let h = `<button class="x" aria-label="Close">&times;</button><h2>${esc(m.q)}</h2><div class="chips"><span>${esc(m.src)}</span>${m.theatre ? `<span>${esc(thName(m.theatre))}</span>` : ''}<span>volume $${fmtv(m.vol)}</span>${m.end ? `<span>ends ${esc(m.end)}</span>` : ''}</div>`;
   h += `<div class="mk5"><div class="kp"><small>Odds now</small><b>${Math.round(m.p * 100)}%</b><span>the chance the market gives</span></div>` +
     (hh.length > 2 ? [['1 day', 1], ['7 days', 7], ['30 days', 30]].map(([n, d]) => { const t = Date.parse(hh[hh.length - 1][0]); let ref = null; for (const p of hh) { if (Date.parse(p[0]) <= t - d * 864e5) ref = p; }
-      const c = ref ? Math.round((hh[hh.length - 1][1] - ref[1]) * 100) : null; return `<div class="kp"><small>Change, ${n}</small><b style="color:${c > 0 ? 'var(--elevated)' : c < 0 ? 'var(--normal)' : 'var(--ink)'}">${c == null ? 'n/a' : (c > 0 ? '+' : '') + c + ' pts'}</b><span>${ref ? 'was ' + Math.round(ref[1] * 100) + '%' : 'not enough history'}</span></div>`; }).join('') : '') +
+      const c = ref ? Math.round((hh[hh.length - 1][1] - ref[1]) * 100) : null; return `<div class="kp"><small>Change, ${n}</small><b style="color:${'var(--ink)'}">${c == null ? 'n/a' : (c > 0 ? '+' : '') + c + ' pts'}</b><span>${ref ? 'was ' + Math.round(ref[1] * 100) + '%' : 'not enough history'}</span></div>`; }).join('') : '') +
     (hh.length > 2 ? `<div class="kp"><small>Highest / lowest</small><b>${Math.round(Math.max(...hh.map(p => p[1])) * 100)}% / ${Math.round(Math.min(...hh.map(p => p[1])) * 100)}%</b><span>in the period shown</span></div>` : '') + `</div>`;
-  if (hh.length > 2) h += chartBlock('Odds over time (the chance the market gives, %)', hh, {h: 240, c: '#58a6ff', fy: v => Math.round(v * 100) + '%', min: 0, max: 1}, hh.length > 40 ? [['30', '30'], ['90', '90'], ['all', 'All']] : null);
+  if (hh.length > 2) h += chartBlock('Odds over time (the chance the market gives, %)', hh, {h: 240, c: '#2bb8ca', fy: v => Math.round(v * 100) + '%', min: 0, max: 1}, hh.length > 40 ? [['30', '30'], ['90', '90'], ['all', 'All']] : null);
   else h += `<div class="warnbox">The market gave no price history.</div>`;
   h += `<p class="say" style="color:var(--mute)">Prediction markets give context. They are not part of the score. They show what traders with money at stake think, and they react to news as much as they predict it.</p><div class="row" style="margin-top:10px"><a class="btn" target="_blank" rel="noopener" href="${esc(m.url)}">Open on ${esc(m.src)} ${ic('ext', 's')}</a></div>`;
   clearTimeout(modalT); $('#modal').classList.remove('out');
@@ -2369,7 +2383,7 @@ function renderSignals(first){
   const order = Object.keys(groups).sort((a, b) => Math.max(...groups[b].map(s => s.z ?? -99)) - Math.max(...groups[a].map(s => s.z ?? -99)) || a.localeCompare(b));
   const showTh = SF.group !== 'th', cols = (showTh ? 6 : 5) - (SF.sel ? 2 : 0);
   const hd = (k, n, al, c) => `<th data-sort="${k}" class="${SF.sk === k ? 'on' : ''} ${c || ''}" ${al ? 'style="text-align:right"' : ''}>${n}${SF.sk === k ? (SF.sd < 0 ? ' ▼' : ' ▲') : ''}</th>`;
-  const tr = s => `<tr data-row="${esc(s.id)}" class="${SF.sel === s.id ? 'sel' : ''}"><td class="n">${esc(s.l)}<small>${esc([s.s, s.lag ? 'confirms' : 'leads', rawTxt(s)].filter(Boolean).join(' · '))}</small>${s.stale ? ' <span class="ty" style="color:var(--watch)">stale</span>' : ''}</td>${showTh ? `<td class="w">${esc(thName(s.t))}</td>` : ''}<td class="hsel">${GN[s.d]}</td><td class="num" style="color:var(--mute)" title="${esc(s.last || '')}">${esc(s.last ? (s.last.length > 7 ? s.last.slice(5) : s.last) : '–')}</td><td class="hsel">${spark(s.pts && s.pts.slice(-30), s.z == null ? '#6b7a8a' : zcol(s.z), 60, 18)}</td><td><div class="sdb">${s.z != null && !isEv(s) ? `<u><i style="width:${Math.min(100, Math.max(0, s.z) / 5 * 100)}%;background:${zcol(s.z)}"></i></u>` : ''}<b class="num" style="color:${s.z == null ? 'var(--dim)' : zcol(s.z)}">${sigVal(s)}</b></div></td></tr>`;
+  const tr = s => `<tr data-row="${esc(s.id)}" class="${SF.sel === s.id ? 'sel' : ''}"><td class="n">${esc(s.l)}<small>${esc([s.s, s.lag ? 'confirms' : 'leads', rawTxt(s)].filter(Boolean).join(' · '))}</small>${s.stale ? ' <span class="ty" style="color:var(--n4)">stale</span>' : ''}</td>${showTh ? `<td class="w">${esc(thName(s.t))}</td>` : ''}<td class="hsel">${GN[s.d]}</td><td class="num" style="color:var(--mute)" title="${esc(s.last || '')}">${esc(s.last ? (s.last.length > 7 ? s.last.slice(5) : s.last) : '–')}</td><td class="hsel">${spark(s.pts && s.pts.slice(-30), s.z == null ? '#6b7a8a' : zcol(s.z), 60, 18)}</td><td><div class="sdb">${s.z != null && !isEv(s) ? `<u><i style="width:${Math.min(100, Math.max(0, s.z) / 5 * 100)}%;background:${zcol(s.z)}"></i></u>` : ''}<b class="num" style="color:${s.z == null ? 'var(--dim)' : zcol(s.z)}">${sigVal(s)}</b></div></td></tr>`;
   let body = '';
   if (!rows.length) body = `<tr><td colspan="${cols}" class="empty">No signal matches. <a data-sfreset="1">Clear all filters</a>.</td></tr>`;
   else if (SF.group === 'none') body = rows.map(tr).join('');
@@ -2386,8 +2400,8 @@ function renderSignals(first){
     <div class="intel ${sel ? 'sel' : ''} ${SF.fopen ? 'fopen' : ''}">
       <div class="facets"><button class="btn pri phonly" data-ftog="1" style="width:100%;justify-content:center;margin-bottom:10px">Show ${rows.length} signal${rows.length === 1 ? '' : 's'}</button>${facet('Status', 'st', [['ok', 'Has a score'], ['collecting', 'Collecting history'], ['awaiting_key', 'Needs a key'], ['error', 'Failed']])}
         ${facet('Signal group', 'dom', D.domains.map(d => [d.id, GN[d.id]]))}
-        ${facet('Theatre', 'th', REG.flatMap(r => { const own = r.kids.filter(k => !isSub(k)), sub = r.kids.filter(isSub), cl = r.kids.length > 1 ? 'in' : '';
-          return (r.kids.length > 1 ? [['__h', r.name]] : []).concat(own.map(k => [k, thName(k), cl]), sub.length ? [['__h', r.name + ' sub-theatres']] : [], sub.map(k => [k, thName(k), cl])); }).concat(D.theatres.global ? [['global', thName('global')]] : []))}
+        ${facet('Theatre', 'th', REG.flatMap(r => { const cl = r.kids.length > 1 ? 'in' : '';
+          return (r.kids.length > 1 ? [['__h', r.name]] : []).concat(r.kids.map(k => [k, thName(k), cl])); }).concat(D.theatres.global ? [['global', thName('global')]] : []))}
         ${facet('Data speed', 'spd', [['lead', 'Leads (fast data)'], ['conf', 'Confirms (late data)']])}</div>
       <div class="tbl" id="stbl"><table class="t"><thead><tr>${hd('l', 'Signal')}${showTh ? hd('t', 'Theatre') : ''}${hd('d', 'Group', 0, 'hsel')}${hd('last', 'Last')}<th class="hsel tr">Trend</th>${hd('z', 'SD', 1)}</tr></thead><tbody>${body}</tbody></table></div>
       ${sel ? drawer(sel) : ''}</div>`;
@@ -2397,7 +2411,7 @@ function drawer(s){
   const vals = (s.pts || []).map(p => p[1]), last = vals.length ? vals[vals.length - 1] : null;
   return `<div class="drawer"><div class="dhh"><div class="row" style="justify-content:space-between"><span class="hint">${esc(thName(s.t))} · ${GN[s.d]}</span><button class="x" data-dclose="1" aria-label="Close">&times;</button></div><h3>${esc(s.l)}</h3><div class="row" style="margin-top:6px"><span class="ty ${s.lag ? '' : 'ld'}">${s.lag ? 'confirms' : 'leads'}</span><span class="hint">${esc(s.s || '')} · ${s.kind}</span></div></div>
     <div class="db">${statusBox(s)}<div class="k3"><div class="kp"><small>Now ${inf(s.kind === 'daily' ? 'The 7-day average' : 'The latest month')}</small><b>${s.z != null ? fmtv(s.val) : last != null ? fmtv(last) : 'n/a'}</b></div><div class="kp"><small>SD ${inf('Distance from its own normal level, in standard deviations')}</small><b style="color:${zcol(s.z)}">${fmtz(s.z)}</b></div><div class="kp"><small>Percentile</small><b>${pctNow(s) ? pctNow(s).p + '%' : 'n/a'}</b></div></div>
-    ${s.pts && s.pts.length > 2 ? `<div class="cwrap" style="padding:6px 8px">${areaChart(s.pts.slice(-120), {w: 330, h: 120, fs: 10, c: s.z == null ? '#6b7a8a' : '#58a6ff', bands: s.base ? [{a: s.base.med - 2 * s.base.sd, b: s.base.med + 2 * s.base.sd, c: 'rgba(88,166,255,.13)'}] : null})}<div class="cbub"></div></div>` : ''}
+    ${s.pts && s.pts.length > 2 ? `<div class="cwrap" style="padding:6px 8px">${areaChart(s.pts.slice(-120), {w: 330, h: 120, fs: 10, c: s.z == null ? '#6b7a8a' : '#2bb8ca', bands: s.base ? [{a: s.base.med - 2 * s.base.sd, b: s.base.med + 2 * s.base.sd, c: 'rgba(43,184,202,.13)'}] : null})}<div class="cbub"></div></div>` : ''}
     <p class="hint">${s.z != null ? `This value is ${({'strong signal': 'a strong signal', 'unusual': 'unusual', 'a little high': 'a little high', 'normal range': 'in the normal range'})[verdict(s)]}.` : ''} ${dirTxt(s)} ${s.lag ? 'It is late data, so it confirms a build-up.' : 'It is fast data, so it can move before events.'}</p>
     ${kv('Normal level', s.base ? `<span class="num">${fmtv(s.base.med)}</span>` : 'n/a')}${s.base ? kv('Strong signal from', `<span class="num">${fmtv(s.dir === 'down' ? s.base.med - T_SIG * s.base.sd : s.base.med + T_SIG * s.base.sd)}</span>`) : ''}${kv('Method', esc(s.method || 'no score yet'))}${kv('Last value', esc(s.last || 'none') + (s.last ? ' · ' + esc(ago(s.last)) : ''))}
     <div class="row" style="margin-top:10px"><button class="btn pri" data-open="${esc(s.id)}">Open full detail</button><button class="btn" data-nav="${s.t}/signals" data-dom="${s.d}">Show in ${esc(thName(s.t))}</button>${s.url ? `<a class="btn" target="_blank" rel="noopener" href="${esc(s.url)}">Source ${ic('ext', 's')}</a>` : ''}</div></div></div>`;
@@ -2442,11 +2456,11 @@ function renderActivity(){
   const wv = {sum: Math.round(wvl.reduce((a, x) => a + (x.v || 0), 0)), hot: wvl.some(x => x.v != null && x.thr != null && x.v >= x.thr),
     txt: wvl.map(x => `${thName(x.t)} ${x.v != null ? x.v : x.st === 'awaiting_key' ? 'no key' : 'n/a'}`).join(' · ')};
   const ks = (t, v, s, col, tip) => `<div class="ks"><small>${t}${tip ? inf(tip) : ''}</small><b style="color:${col || 'var(--ink)'}">${v}</b><span>${s}</span></div>`;
-  let h = `<div class="kstrip">${ks('Military aircraft now', tot, usual ? `48 h median: ${Math.round(usual)}` : 'building history', tot && usual && tot > usual * 1.2 ? 'var(--watch)' : null, 'Aircraft that broadcast a military address or call sign over the watched theatres. Many military aircraft fly with transponders off, so this is a lower limit.')}
+  let h = `<div class="kstrip">${ks('Military aircraft now', tot, usual ? `48 h median: ${Math.round(usual)}` : 'building history', tot && usual && tot > usual * 1.2 ? 'var(--e3)' : null, 'Aircraft that broadcast a military address or call sign over the watched theatres. Many military aircraft fly with transponders off, so this is a lower limit.')}
     ${ks('Emergency squawks', (Mm.sqk || []).length, sq ? `${esc(sq.call || sq.hex)} ${sq.sq}${sq.th ? ' · ' + esc(thName(sq.th)) : ''}` : 'none now', (Mm.sqk || []).length ? 'var(--critical)' : null)}
     ${ks('Warships tracked', warships.length, `${carriers} carrier${carriers === 1 ? '' : 's'} · USNI, weekly`)}
-    ${ks('Sea incidents · 7 days', inc7.length, inc7.length ? Array.from(new Set(inc7.map(n => n.th ? thName(n.th) : n.loc))).slice(0, 2).join(', ') : 'none reported', inc7.length ? 'var(--watch)' : null)}
-    ${ks('Fires · ' + win, fw.length, `${fu} unusual · ${fw.length - fu} routine`, fu ? 'var(--elevated)' : null, 'NASA satellite heat detections in the theatre boxes. Routine sources burn on most days: gas flares and industry.')}
+    ${ks('Sea incidents · 7 days', inc7.length, inc7.length ? Array.from(new Set(inc7.map(n => n.th ? thName(n.th) : n.loc))).slice(0, 2).join(', ') : 'none reported', inc7.length ? 'var(--e4)' : null)}
+    ${ks('Fires · ' + win, fw.length, `${fu} unusual · ${fw.length - fu} routine`, fu ? 'var(--e3)' : null, 'NASA satellite heat detections in the theatre boxes. Routine sources burn on most days: gas flares and industry.')}
     ${ks('Alert waves · 7 days', wv.sum, wv.txt, wv.hot ? 'var(--tell)' : null, 'Alert waves counted by Tzeva Adom (Israel) and alerts.in.ua (Ukraine) over the last 7 days.')}
     ${ks('Sea warnings · 30 days', sea.sum, 'firing and launch areas', null, 'Navigational warnings for firing, missile or launch areas in force over the last 30 days, across the watched waters.')}</div><div class="grid4">`;
   const cards = [], quiet = [];
@@ -2525,7 +2539,7 @@ function guideBody(){
   const qa = (q, a) => `<li><b>${q}</b> ${a}</li>`;
   return `<div class="setscroll prose">
     <h3>WarWatch in one minute</h3>
-    <p>WarWatch watches public data for signs that a war or a military strike is coming: governments telling their people to leave, military aircraft and ships, warnings at sea, news about threats and troop moves, procurement, prices and markets. It covers ${THEATRES.filter(t => !isSub(t)).length} theatres and ${THEATRES.filter(isSub).length} sub-theatres, grouped in regions.</p>
+    <p>WarWatch watches public data for signs that a war or a military strike is coming: governments telling their people to leave, military aircraft and ships, warnings at sea, news about threats and troop moves, procurement, prices and markets. It covers ${THEATRES.length} theatres in ${REG.length} regions. ${THEATRES.filter(isSpill).length} of them are spillover theatres: places with no war of their own that a neighbour's war reaches.</p>
     <p>It gives you three kinds of answer, from most to least direct:</p>
     <ol><li><b>Timing tells.</b> Costly actions that came before past attacks within days, such as a departure order or airspace closing. Each is a yes or no for the last 7 days, with its record on our history.</li>
       <li><b>Unusual readings.</b> How far each signal sits from its own normal, in standard deviations (SD). 2 SD is unusual, 3 SD is strong. It says something changed, not that an attack is coming.</li>
@@ -2582,8 +2596,8 @@ function renderSettings(){
     const ks = (t, v, s, col) => `<div class="ks"><small>${t}</small><b style="color:${col || 'var(--ink)'}">${v}</b><span>${s}</span></div>`;
     const keys = Array.from(new Set(D.series.filter(s => s.st === 'awaiting_key').flatMap(s => s.needs || [])));
     const list = iss.filter(i => (HF.chip === 'all' || i.k === HF.chip) && (!HF.q || ((i.s ? i.s.l + ' ' + thName(i.s.t) : '') + ' ' + i.det).toLowerCase().includes(HF.q.toLowerCase())));
-    const col = {error: 'var(--critical)', stale: 'var(--watch)', awaiting_key: 'var(--elevated)', collecting: 'var(--mute)'};
-    body = `<div class="hs">${ks('Have a score', st.ok || 0, 'of ' + D.series.length + ' signals', 'var(--normal)')}${ks('Collecting history', st.collecting || 0, 'they get a score later', 'var(--watch)')}${ks('Need a key', st.awaiting_key || 0, keys.length + ' free key' + (keys.length === 1 ? '' : 's') + ' missing', st.awaiting_key ? 'var(--elevated)' : null)}${ks('Failed this run', (st.error || 0) + (D.errors || []).length, 'the next run tries again', st.error || (D.errors || []).length ? 'var(--critical)' : null)}${ks('Stale copy', cnt.stale || 0, 'last good copy shown', cnt.stale ? 'var(--watch)' : null)}</div>
+    const col = {error: 'var(--critical)', stale: 'var(--n4)', awaiting_key: 'var(--n4)', collecting: 'var(--n3)'};
+    body = `<div class="hs">${ks('Have a score', st.ok || 0, 'of ' + D.series.length + ' signals', null)}${ks('Collecting history', st.collecting || 0, 'they get a score later', null)}${ks('Need a key', st.awaiting_key || 0, keys.length + ' free key' + (keys.length === 1 ? '' : 's') + ' missing', st.awaiting_key ? 'var(--n4)' : null)}${ks('Failed this run', (st.error || 0) + (D.errors || []).length, 'the next run tries again', st.error || (D.errors || []).length ? 'var(--critical)' : null)}${ks('Stale copy', cnt.stale || 0, 'last good copy shown', cnt.stale ? 'var(--n4)' : null)}</div>
       <div class="toolbar" style="margin:0">${[['all', 'All issues', iss.length], ['error', 'Failed', cnt.error || 0], ['stale', 'Stale', cnt.stale || 0], ['awaiting_key', 'Need a key', cnt.awaiting_key || 0], ['collecting', 'Collecting', cnt.collecting || 0]].map(([k, n, c]) => `<button class="chip ${HF.chip === k ? 'on' : ''}" data-hchip="${k}">${n}<b>${c}</b></button>`).join('')}<span class="sp"></span><label class="inp" style="width:240px">${ic('search', 's')}<input id="hq" type="search" placeholder="Filter issues" value="${esc(HF.q)}" aria-label="Filter issues"></label></div>
       <div class="tbl" style="flex:1"><table class="t"><thead><tr><th>Signal</th><th>Theatre</th><th>Issue</th><th>Detail</th><th>What to do</th></tr></thead><tbody>${list.map(i => `<tr ${i.s ? `data-open="${esc(i.s.id)}"` : ''}><td class="n">${i.s ? esc(i.s.l) + (i.s.s ? `<small>${esc(i.s.s)}</small>` : '') : 'Map layer'}</td><td>${i.s ? esc(thName(i.s.t)) : '–'}</td><td><span class="ty" style="color:${col[i.k]}">${esc(i.iss)}</span></td><td style="white-space:normal;color:var(--mute);max-width:280px">${esc(i.det)}</td><td style="white-space:normal;color:var(--mute);max-width:300px">${esc(i.fix)}</td></tr>`).join('') || `<tr><td colspan="5" class="empty">No issue matches.</td></tr>`}</tbody></table></div>`;
   } else if (sub === 'sources') {
@@ -2601,7 +2615,7 @@ function renderSettings(){
       <h3>6. Why the chance and the pressure can disagree</h3><p>Signal pressure shows how unusual the signals are. The chance also asks whether signals like these came before events in the past. A theatre can have high pressure and a low chance. When this occurs, the theatre page tells you.</p>
       <h3>7. Regions and the world</h3><p>A region shows the highest level of its theatres, so one crisis is not averaged away. The chance for any theatre combines all theatres. The theatres move together, so this value is an upper limit.</p>
       <h3>8. Timing tells</h3><p>A timing tell is a fixed yes-or-no rule over the last 7 days on a costly, hard-to-reverse action: a US departure order, an advisory raise with a UK advice change, airliners thinning out, tankers parked forward, airspace closures, firing warnings at sea, strike waves. Each shows how often it fired on our history, how often an event followed within 7 days, and how many events it caught. Tells never set a level or enter the model.</p>
-      ${subs.length ? `<h3>9. Sub-theatres</h3><p>${subs.map(k => esc(thName(k))).join(' and ')} ${subs.length > 1 ? 'are countries' : 'is a country'} drawn into a neighbour's war. ${subs.map(k => `${esc(thName(k))} reads its own signals and those of ${SUBT[k].parents.map(x => esc(thName(x))).join(' and ')}`).join('; ')}. Too few past events happened on their ground to fit them alone, so their usual rate is pooled with ${SUBT[subs[0]].pool.map(x => esc(thName(x))).join(', ')}.</p>` : ''}
+      ${subs.length ? `<h3>9. Spillover theatres</h3><p>${Object.keys(SPILL).map(k => esc(thName(k))).join(', ')} have no war of their own and are at risk because a neighbour's war reaches them. ${subs.map(k => esc(thName(k))).join(' and ')} ${subs.length > 1 ? 'are' : 'is'} also fitted differently. ${subs.map(k => `${esc(thName(k))} reads its own signals and those of ${SUBT[k].parents.map(x => esc(thName(x))).join(' and ')}`).join('; ')}. Too few past events happened on their ground to fit them alone, so their usual rate is pooled with ${SUBT[subs[0]].pool.map(x => esc(thName(x))).join(', ')}.</p>` : ''}
       ${FN.length ? `<h3>${subs.length ? 10 : 9}. What is forecast</h3><p>${FN.length} targets are logged every day: ${FN.join('; ')}. Only the first is the page's model; the others are hidden and never shown as a chance. All are scored on the <a data-nav="record">Track record</a> page.</p>` : ''}
       <h3>Labels</h3><ul><li><b>Lagging only:</b> only late data is unusual. It shows a build-up that already started. It is not an early warning.</li><li><b>Coverage:</b> the share of signals that have a score now. Low coverage makes the result less certain.</li></ul>
       <p>The full method: <a href="https://github.com/khourix/warwatch/blob/main/docs/METHODOLOGY.md" target="_blank" rel="noopener">METHODOLOGY.md</a> and <a href="https://github.com/khourix/warwatch/blob/main/docs/MODEL.md" target="_blank" rel="noopener">MODEL.md</a>.</p>

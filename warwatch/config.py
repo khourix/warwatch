@@ -51,9 +51,8 @@ THEATRES = {
 # a region with one sub-theatre is that theatre. Region level = the highest sub-theatre level.
 REGIONS = [
     ("mideast", "Middle East", ["iran", "israel", "yemen", "iraq", "gulf"]),
-    ("ukraine_r", "Ukraine", ["ukraine", "europe_east"]),
-    ("taiwan_r", "Taiwan", ["taiwan", "scs"]),
-    ("korea_r", "Korea", ["korea"]),
+    ("europe_r", "Europe", ["ukraine", "europe_east"]),
+    ("eastasia_r", "East Asia", ["taiwan", "scs", "korea"]),
     ("southasia_r", "South Asia", ["southasia"]),
     ("africa_r", "Africa", ["libya", "sudan", "drc"]),
     ("americas_r", "Americas", ["venezuela"]),
@@ -65,6 +64,9 @@ REGIONS = [
 # own theatres (validate.py). Region level stays the worst child.
 SUBTHEATRES = {"iraq": {"parents": ["iran"], "pool": ["iran", "israel", "yemen"]},
                "gulf": {"parents": ["iran", "yemen"], "pool": ["iran", "israel", "yemen"]}}
+# Spillover theatres: no war of their own, at risk because a neighbour's war reaches them. A description for the page,
+# the same rule in every region; it does not change the fit (Eastern flank has enough events of its own to keep its own).
+SPILLOVER = {"iraq": ["iran", "israel", "yemen"], "gulf": ["iran", "israel", "yemen"], "europe_east": ["ukraine"]}
 THRESH_SIGNAL = 3.0   # a group fires at or above this robust z (calibrated: ~5% Watch on pure noise)
 THRESH_WATCH = 2.0
 USER_AGENT = "warwatch/0.3 (public-data research; github.com/khourix/warwatch)"

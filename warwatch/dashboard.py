@@ -213,7 +213,7 @@ def build_data(res, generated, demo, ex, topo):
         "theatres": {t: theatre_json(t, v, res["series"], ((res.get("model") or {}).get("theatres") or {}).get(t, {}).get("base"), chg.get(t),
                                      (res.get("tells") or {}).get(t))
                      for t, v in res["theatres"].items()},
-        "order": list(C.THEATRES), "sub": C.SUBTHEATRES,
+        "order": list(C.THEATRES), "sub": C.SUBTHEATRES, "spill": C.SPILLOVER,
         "regions": regions_json(res["regions"]), "global": res["global"], "weights": res["weights_version"],
         "model": model_json(res.get("model")),
         "series": [series_json(s) for s in res["series"]],
@@ -432,7 +432,7 @@ def feed_xml(data, site="https://khourix.github.io/warwatch/"):
         f"<guid isPermaLink=\"false\">{escape(f['t'] + '|' + f['d'] + '|' + f['title'])}</guid><pubDate>{when(f['d'])}</pubDate></item>"
         for f in feed_items(data))
     return ('<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>WarWatch: this week</title>'
-            f"<link>{escape(site)}</link><description>Timing tells, official steps and strong readings for 13 theatres and 2 sub-theatres. "
+            f"<link>{escape(site)}</link><description>Timing tells, official steps and strong readings for 15 theatres in 6 regions. "
             f"Built {escape(data['generated'])}.</description>{items}</channel></rss>\n")
 
 
