@@ -41,7 +41,7 @@ ROOT = os.path.dirname(HERE)
 DATA = os.path.join(HERE, "data")
 CACHE = os.path.join(ROOT, "backtest", "cache")
 MODEL_PATH = os.path.join(DATA, "model_weights.json")
-SUB = list(C.SUBTHEATRES)     # Iraq and the GCC: fitted on top of the theatres, never in their fit or their gates
+SUB = list(C.SUBTHEATRES)     # Iraq, the GCC, Lebanon and Syria: fitted on top of the theatres, never in their fit or their gates
 TH = [t for t in C.THEATRES if t not in ("global", *SUB)]
 ALL = TH + SUB
 HORIZON, POST = 30, 30        # label window; days after an event left out so an ongoing war is not a success
@@ -78,7 +78,7 @@ def read_events():
     if EVENT_TYPES:
         ev = ev[ev["type"].isin(EVENT_TYPES)].reset_index(drop=True)
     ev["dup"] = False
-    site = ev[ev["site_theatre"] != ""].assign(theatre=lambda d: d["site_theatre"], dup=True)
+    site = ev[ev["site_theatre"] != ""].assign(theatre=lambda d: d["site_theatre"].str.split(";"), dup=True).explode("theatre")   # one copy per site
     return pd.concat([ev, site], ignore_index=True)
 
 
@@ -693,7 +693,7 @@ def write_report(o):
     for t, n, b_, a_ in o["per"]:
         L.append(f"| {C.THEATRES[t]['name']} | {n} | {'n/a' if b_ != b_ else f'{b_:+.3f}'} | {'n/a' if a_ != a_ else f'{a_:.3f}'} |")
     L += ["", "### Sub-theatres", "",
-          "Iraq and the GCC are fitted on top of the theatres, not in their fit: they share its family weights and history terms, read the stronger of their own "
+          f"The sub-theatres ({', '.join(C.THEATRES[t]['name'] for t in SUB[:-1])} and {C.THEATRES[SUB[-1]]['name']}) are fitted on top of the theatres, not in their fit: they share its family weights and history terms, read the stronger of their own "
           "and their parents' evidence in each family, and get their own offset, pulled toward the mean of the Middle East theatres (ridge as for the theatres). "
           "Their labels are the events that happened there (`site_theatre` in the event list), which still count for the parent too, so they are left out of "
           "the gates above. Each must pass the same three gates on its own rows before its chance is shown as validated.", "",

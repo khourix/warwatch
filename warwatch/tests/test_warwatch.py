@@ -743,7 +743,7 @@ class TestOsint(unittest.TestCase):
         import osint
         n, hits = osint.bsky_tally([("Missiles hit Kharkiv, Ukraine says", ["en"]), ("Ukraine is lovely in spring", ["en"]),
                                     ("Iran war talk", ["fa"]), ("Israeli strikes in Lebanon", ["en", "ar"]), ("no langs", None)])
-        self.assertEqual((n, hits), (3, {"ukraine": 1, "israel": 1}))
+        self.assertEqual((n, hits), (3, {"ukraine": 1, "israel": 1, "lebanon": 1}))   # a post counts for every theatre it names
         osint._BS["rows"] = [["2026-10-09T00:00", "8000", "ukraine:4 iran:1"], ["2026-10-09T00:30", "4000", "ukraine:2"], ["2026-10-10T00:00", "500", "ukraine:5"]]
         try:
             self.assertEqual(osint.bsky_series("ukraine"), [("2026-10-09", 5.0)])   # 6 per 12,000; the thin day is left out
@@ -1029,8 +1029,27 @@ class TestModel(unittest.TestCase):
         import csv
         with open(os.path.join(model.DATA, "events.csv"), newline="") as f:
             rows = list(csv.DictReader(f))
-        self.assertTrue(all(r["site_theatre"] in ("", *C.SUBTHEATRES) for r in rows))
-        self.assertEqual(len(ev), len(rows) + sum(1 for r in rows if r["site_theatre"]))
+        self.assertTrue(all(set(C.sites(r["site_theatre"])) <= set(C.SUBTHEATRES) for r in rows))
+        self.assertEqual(len(ev), len(rows) + sum(len(C.sites(r["site_theatre"])) for r in rows))
+
+    def test_levant_sub_theatres_and_their_events(self):
+        for t, parents in (("lebanon", ["israel"]), ("syria", ["israel", "iran"])):
+            self.assertEqual(C.SUBTHEATRES[t]["parents"], parents)
+            self.assertEqual(C.SUBTHEATRES[t]["pool"], C.SUBTHEATRES["iraq"]["pool"])     # the same Middle East mean as Iraq and the GCC
+            self.assertIn(t, next(ks for r, _, ks in C.REGIONS if r == "mideast"))
+            for d in (C.BOXES, C.FIRS, C.HUBS, C.FCDO, C.STATE_ISO, C.GDELT_CC, C.GNEWS, C.CITIES, catalog.IODA):
+                self.assertIn(t, d)
+        self.assertNotIn("jordan", C.THEATRES)
+        self.assertEqual(C.STATE_ISO["israel"], ["IS", "LE", "JO", "EG"])     # Israel's own feeds are unchanged
+        self.assertEqual(C.GDELT_CC["israel"], ["IS", "LE"])
+        self.assertEqual(list(C.BOXES)[-2:], ["lebanon", "syria"])  # last, so a point in Israel's box stays with Israel
+        ev = model.load_events()
+        for t, d in (("lebanon", dt.date(2024, 9, 23)), ("lebanon", dt.date(2023, 10, 8)), ("syria", dt.date(2024, 11, 27))):
+            self.assertIn((t, d), ev)
+        for t in ("iraq", "syria", "iran"):                                    # struck in both countries: labels both, and its theatre
+            self.assertIn((t, dt.date(2024, 2, 2)), ev)
+        self.assertEqual(C.sites("iraq;syria"), ["iraq", "syria"])
+        self.assertEqual(C.sites(""), [])
 
     def test_market_probability_filters_converts_and_blends(self):
         end = (dt.date.today() + dt.timedelta(days=90)).isoformat()
@@ -1147,6 +1166,8 @@ class TestValidate(unittest.TestCase):
         self.assertEqual(int((~ev["dup"]).sum()), len(pd.read_csv(os.path.join(validate.DATA, "events.csv"))))
         udeid = ev[ev["date"] == "2025-06-23"]
         self.assertEqual(sorted(udeid["theatre"]), ["gulf", "iran"])
+        self.assertEqual(sorted(ev[ev["date"] == "2024-02-02"]["theatre"]), ["iran", "iraq", "syria"])   # one copy per site
+        self.assertEqual(sorted(ev[ev["date"] == "2024-01-28"]["theatre"]), ["iran"])                    # Tower 22: Jordan is no sub-theatre
         days = pd.date_range("2024-01-01", "2024-12-31", freq="D")
         ths = ["iran", "israel", "yemen", "iraq"]
         P = pd.DataFrame({"date": list(days) * len(ths), "theatre": np.repeat(ths, len(days))})

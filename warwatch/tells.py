@@ -218,7 +218,7 @@ def read_events():
         try:
             with open(os.path.join(DATA, fn), newline="") as f:
                 for r in csv.DictReader(f):
-                    ev += [(r["theatre"], r["date"])] + ([(r["site_theatre"], r["date"])] if r.get("site_theatre") else [])
+                    ev += [(r["theatre"], r["date"])] + [(s, r["date"]) for s in C.sites(r.get("site_theatre"))]
         except OSError:
             pass
     return sorted(set(ev))

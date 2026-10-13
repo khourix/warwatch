@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="darkreader-lock">
 <title>WarWatch: war early-warning dashboard</title>
-<meta name="description" content="Timing tells and unusual readings for 15 theatres in 6 regions, from 600+ public signals. Updated every 30 minutes.">
+<meta name="description" content="Timing tells and unusual readings for 17 theatres in 6 regions, from 600+ public signals. Updated every 30 minutes.">
 <meta name="theme-color" content="#0e1217">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
@@ -16,7 +16,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="WarWatch">
 <meta property="og:title" content="WarWatch: war early-warning dashboard">
-<meta property="og:description" content="Timing tells and unusual readings for 15 theatres in 6 regions, from 600+ public signals. Updated every 30 minutes.">
+<meta property="og:description" content="Timing tells and unusual readings for 17 theatres in 6 regions, from 600+ public signals. Updated every 30 minutes.">
 <link rel="alternate" type="application/rss+xml" title="WarWatch: this week" href="feed.xml">
 <meta property="og:url" content="https://khourix.github.io/warwatch/">
 <meta property="og:image" content="https://khourix.github.io/warwatch/og.jpg">
@@ -26,7 +26,7 @@
 <meta property="og:image:alt" content="WarWatch logo over a dark world map with the watched theatres marked">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="WarWatch: war early-warning dashboard">
-<meta name="twitter:description" content="Timing tells and unusual readings for 15 theatres in 6 regions, from 600+ public signals. Updated every 30 minutes.">
+<meta name="twitter:description" content="Timing tells and unusual readings for 17 theatres in 6 regions, from 600+ public signals. Updated every 30 minutes.">
 <meta name="twitter:image" content="https://khourix.github.io/warwatch/og.jpg">
 <link rel="preload" href="inter-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="jbmono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
@@ -1984,7 +1984,8 @@ function driversBody(t){
 }
 const HK = {tell: ['Timing tell', 'var(--tell)'], wave: ['Strike wave', 'var(--tell)'], advisory: ['US advisory', 'var(--ink)'], advice: ['UK advice', 'var(--mute)'], rating: ['CrisisWatch', 'var(--ink)'], alert: ['Live alert', 'var(--mute)'], event: ['Event in the list', 'var(--ink)']};
 const EVT = {strike: 'strike', onset: 'start of fighting', maritime: 'at sea', exercise: 'exercise', other: 'other'};
-function evFor(t){ const L = (D.events && D.events.list) || []; return t === 'global' ? L.filter(e => e[5]) : L.filter(e => e[1] === t || e[2] === t); }
+const sitesOf = e => (e[2] || '').split(';').filter(Boolean);   /* sub-theatres an event happened in, ';'-joined in events.csv */
+function evFor(t){ const L = (D.events && D.events.list) || []; return t === 'global' ? L.filter(e => e[5]) : L.filter(e => e[1] === t || sitesOf(e).includes(t)); }
 function histDate(d){ return String(d).length > 7 ? shortDate(d) : monthName(d); }
 function historyItems(t){
   const H = (D.hist || {})[t] || {items: []}, out = H.items.map(([d, k, tx, id]) => ({d, k, tx, id}));
@@ -2005,7 +2006,7 @@ function historyBody(t){
     h += rk.length >= 2 ? chartBlock(`Times usual, from ${shortDate(rk[0][0])}`, rk.map(r => [r[0], r[1]]), {h: 150, c: PM ? '#2bb8ca' : '#8a939c', fy: v => v.toFixed(1) + '×', min: 0, lines: [{y: 1, c: '#7f93a8', t: 'usual', d: '2 3', left: true}]}, null)
       : `<p class="hint">The forward record has ${rk.length} day${rk.length === 1 ? '' : 's'} here so far; the line appears from the second day.</p>`;
   }
-  const er = e => `<div class="pe"><time>${esc(e[0])}</time><span>${esc(e[4])}<small>${esc(EVT[e[3]] || e[3])}${e[2] === t && e[1] !== t ? ` · happened here, part of ${esc(thName(e[1]))}'s war` : e[2] && e[2] !== t ? ` · happened in ${esc(thName(e[2]))}` : ''}${e[5] ? ' · moved markets' : ''}</small></span></div>`;
+  const er = e => `<div class="pe"><time>${esc(e[0])}</time><span>${esc(e[4])}<small>${esc(EVT[e[3]] || e[3])}${sitesOf(e).includes(t) && e[1] !== t ? ` · happened here, part of ${esc(thName(e[1]))}'s war` : sitesOf(e).length ? ` · happened in ${sitesOf(e).map(x => esc(thName(x))).join(' and ')}` : ''}${e[5] ? ' · moved markets' : ''}</small></span></div>`;
   h += `<div class="sh" style="margin-top:16px">Past events in the list ${inf('The events the model is fitted and scored on, from 2018. Each counts for the theatre whose war it belongs to; one that happened on another theatre\'s ground says where.')}<small>${ev.length}${thr ? ' · complete to ' + esc(shortDate(thr)) : ''}</small></div>`;
   h += ev.slice(0, 8).map(er).join('') || '<p class="hint">No event in the list for this theatre.</p>';
   if (ev.length > 8) h += `<details class="more"><summary>Show all ${ev.length}</summary>${ev.slice(8).map(er).join('')}</details>`;
@@ -2072,7 +2073,7 @@ function causeL(t, l){ const n = thName(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'
 function subNote(t){
   const wars = SPILL[t]; if (!wars) return '';
   const sp = SUBT[t], names = xs => xs.map(x => esc(thName(x))).join(', ').replace(/, ([^,]*)$/, ' and $1');
-  const n = (D.events && D.events.list || []).filter(e => e[2] === t).length;
+  const n = (D.events && D.events.list || []).filter(e => sitesOf(e).includes(t)).length;
   const head = `${esc(thName(t))} is a spillover theatre: it has no war of its own and is at risk because the war${wars.length > 1 ? 's' : ''} in ${names(wars)} reach${wars.length > 1 ? '' : 'es'} it.`;
   if (!sp) return head + ' Its model is fitted on its own events, like any theatre.';
   return `${head} Its model reads its own signals and those of ${names(sp.parents)}, and its usual rate is pooled with ${names(sp.pool)}.${n ? ` ${n} past event${n === 1 ? '' : 's'} in the list happened here, too few to test it on its own.` : ''}`;

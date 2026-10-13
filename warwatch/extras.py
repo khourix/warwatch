@@ -454,6 +454,8 @@ KEYS = {   # theatre -> words that tie a market to it
     "venezuela": r"Venezuela|Maduro|Caracas|Cuba|Guyana|Colombia|Panama",
     "iraq": r"\bIraq|Baghdad|Erbil|Kataib",       # after Iran: a market naming both stays with Iran
     "gulf": r"Saudi|Riyadh|Aramco|\bUAE\b|Emirat|Abu Dhabi|Dubai|Qatar|Doha|Bahrain|Kuwait|\bOman\b",
+    "lebanon": r"Leban|Beirut|Hezbollah|Litani",   # after Israel: a market naming Hezbollah stays with Israel
+    "syria": r"Syria|Damascus|Aleppo|Idlib|Latakia",
 }
 
 

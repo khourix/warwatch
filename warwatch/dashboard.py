@@ -432,7 +432,7 @@ def feed_xml(data, site="https://khourix.github.io/warwatch/"):
         f"<guid isPermaLink=\"false\">{escape(f['t'] + '|' + f['d'] + '|' + f['title'])}</guid><pubDate>{when(f['d'])}</pubDate></item>"
         for f in feed_items(data))
     return ('<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>WarWatch: this week</title>'
-            f"<link>{escape(site)}</link><description>Timing tells, official steps and strong readings for 15 theatres in 6 regions. "
+            f"<link>{escape(site)}</link><description>Timing tells, official steps and strong readings for 17 theatres in 6 regions. "
             f"Built {escape(data['generated'])}.</description>{items}</channel></rss>\n")
 
 

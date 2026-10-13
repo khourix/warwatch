@@ -12,7 +12,7 @@ on:
         required: false
         default: "all"
       only:
-        description: "history: comma-separated catalogue ids whose long history backtest.py fetch reads (blank = the sub-theatres'); state: one theatre group, e.g. iraq,gulf (blank = all); adsb: theatres to fill, e.g. iraq,gulf (blank = all, skipping days held); news: theatres, iraq and/or gulf (blank = both)"
+        description: "history: comma-separated catalogue ids whose long history backtest.py fetch reads (blank = the sub-theatres'); state: one theatre group, e.g. iraq,gulf or lebanon,syria (blank = all); adsb: theatres to fill, e.g. lebanon,syria (blank = all, skipping days held); news: theatres among iraq, gulf, lebanon, syria (blank = all four)"
         required: false
         default: ""
       start:
@@ -89,7 +89,7 @@ jobs:
         if: always()
   gdeltadd:
     needs: plan
-    # GDELT counts for countries added to config.GDELT_CC after the history file was built (Iraq and the Gulf states):
+    # GDELT counts for countries added to config.GDELT_CC after the history file was built (Iraq and the Gulf states; Syria):
     # one year of daily files per job into backfill/data/gdelt_add/, then folded into the history file; only when asked for by name
     if: needs.plan.outputs.src == 'gdeltadd'
     runs-on: ubuntu-latest
@@ -150,7 +150,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: ["ukraine,europe_east", "iran,yemen", "israel,drc", "taiwan,scs,korea", "southasia,libya,sudan", "venezuela", "iraq,gulf"]
+        group: ["ukraine,europe_east", "iran,yemen", "israel,drc", "taiwan,scs,korea", "southasia,libya,sudan", "venezuela", "iraq,gulf", "lebanon,syria"]
     steps:
       - uses: actions/checkout@v4
       - name: Back-fill advisories via Wayback
@@ -271,7 +271,7 @@ jobs:
       fail-fast: false
       max-parallel: 6
       matrix:
-        theatre: [iraq, gulf]
+        theatre: [iraq, gulf, lebanon, syria]
         year: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
     steps:
       - uses: actions/checkout@v4
