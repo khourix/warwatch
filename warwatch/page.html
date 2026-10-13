@@ -1025,7 +1025,7 @@ function openAlert(a){
 }
 
 /* ------------------------------------------------------------ routing */
-const SUBS = ['drivers', 'signals', 'history', 'markets', 'about'], SETS = ['display', 'health', 'sources', 'method', 'gaps'];
+const SUBS = ['drivers', 'signals', 'history', 'markets', 'about'], SETS = ['guide', 'display', 'health', 'sources', 'method', 'gaps'];
 let R = {v: 'overview'}, selDom = null;
 function parseHash(){
   const h = decodeURIComponent(location.hash.slice(1)), [path, qs] = h.split('?'), [a, b] = path.split('/');
@@ -2153,7 +2153,7 @@ function hideResults(){ $('#results').style.display = 'none'; }
 function searchAll(q){
   q = q.trim().toLowerCase(); if (q.length < 2) return [];
   const out = [];
-  [['overview', 'World overview'], ['signals', 'Signals'], ['activity', 'Activity'], ['settings', 'Settings']].concat(REG.filter(r => r.kids.length > 1).map(r => ['region/' + r.id, r.name]), D.order.map(t => [t, thName(t)]))
+  [['overview', 'World overview'], ['signals', 'Signals'], ['activity', 'Activity'], ['settings', 'Settings'], ['settings/guide', 'Guide: how to use WarWatch']].concat(REG.filter(r => r.kids.length > 1).map(r => ['region/' + r.id, r.name]), D.order.map(t => [t, thName(t)]))
     .forEach(([id, n]) => { if (n.toLowerCase().includes(q)) out.push({g: 'Go to', t: n, s: '', run: () => nav(id)}); });
   D.series.filter(s => (s.l + ' ' + s.s + ' ' + s.id).toLowerCase().includes(q)).slice(0, 8).forEach(s => out.push({g: 'Signals', t: s.l, s: (s.z != null ? (isEv(s) ? zTxt(s) : fmtz(s.z) + ' SD') + ' · ' : '') + thName(s.t), run: () => openModal(s.id)}));
   if (M) {
@@ -2517,13 +2517,59 @@ function renderRecord(){
   P.innerHTML = h;
 }
 $('#pg-record').addEventListener('click', e => { const n = e.target.closest('[data-nav]'); if (n) nav(n.dataset.nav); });
+/* The guide: a tour of the dashboard for a first-time reader, with a button to each place it describes. */
+function guideBody(){
+  const ex = RANK[0] || THEATRES[0], exn = esc(thName(ex)), reg = REG.find(r => r.kids.length > 1);
+  const go = (to, n) => `<button class="btn" data-nav="${to}">${n} ${ic('chev', 's')}</button>`;
+  const step = (k, title, body, btns) => `<div style="display:flex;gap:12px;padding:14px 0;border-top:1px solid var(--line)"><b style="flex:none;width:26px;height:26px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;font:600 12px var(--mono)">${k}</b><div style="min-width:0;flex:1"><h3 style="margin:2px 0 6px">${title}</h3>${body}${btns ? `<div class="row" style="margin-top:8px;flex-wrap:wrap;gap:8px">${btns}</div>` : ''}</div></div>`;
+  const qa = (q, a) => `<li><b>${q}</b> ${a}</li>`;
+  return `<div class="setscroll prose">
+    <h3>WarWatch in one minute</h3>
+    <p>WarWatch watches public data for signs that a war or a military strike is coming: governments telling their people to leave, military aircraft and ships, warnings at sea, news about threats and troop moves, procurement, prices and markets. It covers ${THEATRES.filter(t => !isSub(t)).length} theatres and ${THEATRES.filter(isSub).length} sub-theatres, grouped in regions.</p>
+    <p>It gives you three kinds of answer, from most to least direct:</p>
+    <ol><li><b>Timing tells.</b> Costly actions that came before past attacks within days, such as a departure order or airspace closing. Each is a yes or no for the last 7 days, with its record on our history.</li>
+      <li><b>Unusual readings.</b> How far each signal sits from its own normal, in standard deviations (SD). 2 SD is unusual, 3 SD is strong. It says something changed, not that an attack is coming.</li>
+      <li><b>The 30-day chance.</b> A fitted model's chance of an event in the next 30 days. ${PM ? 'It passed its checks on past events and sets the levels.' : 'It has not passed its checks on past events, so it is shown grey, for reference only, and sets no level or colour.'}</li></ol>
+    <p>It is decision support, not a prediction. Read it as "what is unusual, and how often has this kind of thing come before trouble".</p>
+    <h3 style="margin-top:22px">A tour in seven steps</h3>
+    ${step(1, 'Start with the world overview', `<p>The map shows each region with its main number. Click a pin or a country to open it. Under the map: <b>Theatres</b> ranks them, <b>This week</b> lists the tells and strong readings of the last 7 days, and <b>Biggest movers</b> shows the signals furthest from normal. The <b>This week</b> button at the top opens the same list from any page.</p>`, go('overview', 'Open the overview'))}
+    ${step(2, 'Open a theatre', `<p>The header has four boxes: <b>Timing tells</b> seen this week out of those watched, <b>Unusual readings</b>, the <b>30-day chance</b> and <b>Coverage</b> (the share of signals with a score now; when it is low, read the rest with care). The tabs below are <b>Now</b> (tells, strongest readings, official signals), <b>Signals</b> (every signal for the theatre), <b>History</b> (past events and alerts) and <b>About</b>.</p>`, go(ex, 'Open ' + exn) + (reg ? go('region/' + reg.id, 'Open ' + esc(reg.name)) : ''))}
+    ${step(3, 'Read a timing tell', `<p>Each tell line says whether it fired this week and its record, for example "1 of 18 firings before an event · caught 2 of 158". The first part is how often a firing was followed by an event within 7 days. The second is how many events it caught. A tell that rarely fires but is often right matters more than a busy one. "No history to test it on yet" means the rule is new.</p>`, '')}
+    ${step(4, 'Check what moved, and why', `<p>Click any signal to see its chart, its raw value against its usual value, its source and when it was last updated. Always look at the raw value: a jump from 0 to 1 aircraft can read as many SD. The <b>Signals</b> page puts all signals in one table. Filter by theatre, group or status, or use <b>Unusual</b> to see only those at 2 SD or more.</p>`, go('signals', 'Open Signals'))}
+    ${step(5, 'See what is moving now', `<p><b>Activity</b> shows military aircraft, ships, sea incidents, fires and warnings at sea, each theatre against its own recent normal. Map layers (the buttons at the top left of the map) add the same things to the map.</p>`, go('activity', 'Open Activity'))}
+    ${step(6, 'Check the track record', `<p>Every day the build logs each forecast before anything happens, in a record nobody can edit later. <b>Track record</b> scores those forecasts as their outcomes become known. It is the honest test of whether the numbers are any good.</p>`, go('record', 'Open Track record'))}
+    ${step(7, 'Check the data before you trust it', `<p><b>Data health</b> lists the sources that failed, are stale, need a key or are still collecting history. <b>Sources and schedule</b> says how often each is read. <b>How the score works</b> has the method in full.</p>`, go('settings/health', 'Open Data health') + go('settings/method', 'How the score works'))}
+    <h3 style="margin-top:22px">Questions people ask</h3>
+    <ul>
+      ${qa('Is something happening in a place right now?', 'Open the theatre. Look at the timing tells first, then the strongest readings, then This week.')}
+      ${qa('Why is a theatre flagged?', 'On the Now tab, the strongest readings say which signals drive it. Click one to see whether the move is real or a tiny count.')}
+      ${qa('Is a high number a forecast of war?', PM ? 'No. The 30-day chance is the closest thing to one, and even a high chance means trouble is more likely than usual, not that it will happen.' : 'No. Today no number on the page is a validated forecast. The 30-day chance is shown grey because it has not passed its checks.')}
+      ${qa('Why do two numbers disagree?', 'Signal pressure and unusual readings say how strange the data is. The chance also asks whether data like this came before events in the past. Strange is not the same as dangerous.')}
+      ${qa('How fresh is this?', 'The top right corner shows when the page was built and when the next run is due. The page rebuilds about every 30 minutes, but many sources update only daily, weekly or monthly.')}
+      ${qa('Can I share what I am looking at?', 'Yes. Use <b>Link</b> on a theatre page, or copy the address: every view has its own link.')}
+    </ul>
+    <h3 style="margin-top:22px">Words you will see</h3>
+    <ul>
+      ${qa('SD', 'standard deviations from the signal\'s own normal. Capped at ±5.')}
+      ${qa('Normal, Watch, Elevated, Critical', PM ? 'the levels, set by the 30-day chance.' : 'the levels, set by signal pressure (how unusual the signals are together), while the model is in shadow.')}
+      ${qa('Signal pressure', 'a 0 to 100 index of how unusual a theatre\'s signals are together. 50 is the Watch line.')}
+      ${qa('Standing risk', 'how often this theatre has had events, not whether one is near.')}
+      ${qa('Sub-theatre', 'a country drawn into a neighbour\'s war, such as Iraq or the GCC. It reads its own signals and its neighbours\'.')}
+      ${qa('Lagging', 'data published late. It confirms a build-up already under way; it cannot warn early.')}
+      ${qa('Coverage', 'the share of a theatre\'s signals that have a score now.')}
+    </ul>
+    <h3 style="margin-top:22px">Shortcuts</h3>
+    <ul><li>Press <span class="kw">/</span> to search for a theatre, a signal or a page.</li><li>The bell lists live alerts, such as emergency squawks and incidents at sea. The ones you have not opened are marked.</li><li>On a phone, the bar at the bottom has Overview, Signals, Activity, Record and More. Settings and this guide are under More.</li><li>Display settings change the main number, label size, time window and motion.</li></ul>
+    <div class="row" style="margin:14px 0 4px;flex-wrap:wrap;gap:8px">${go('settings/display', 'Display settings')}${go('overview', 'Back to the overview')}</div></div>`;
+}
 function renderSettings(){
   const P = $('#pg-settings'), sub = R.sub || 'health', iss = issues(), cnt = {}; iss.forEach(i => cnt[i.k] = (cnt[i.k] || 0) + 1);
   const st = {}; D.series.forEach(s => st[s.st] = (st[s.st] || 0) + 1);
   const bad = (cnt.error || 0) + (cnt.stale || 0);
-  const tabs = [['display', 'Display', 'eye'], ['health', 'Data health', 'health', bad, bad > 0], ['sources', 'Sources and schedule', 'clock'], ['method', 'How the score works', 'book'], ['gaps', 'Data we cannot get', 'gap', D.unavailable.length]];
+  const tabs = [['guide', 'Guide', 'pin'], ['display', 'Display', 'eye'], ['health', 'Data health', 'health', bad, bad > 0], ['sources', 'Sources and schedule', 'clock'], ['method', 'How the score works', 'book'], ['gaps', 'Data we cannot get', 'gap', D.unavailable.length]];
   let body = '';
-  if (sub === 'display') {
+  if (sub === 'guide') body = guideBody();
+  else if (sub === 'display') {
     const seg = (k, opts, cur) => `<span class="seg">${opts.map(([v, n]) => `<button class="${String(cur) === String(v) ? 'on' : ''}" data-set="${k}" data-v="${v}">${n}</button>`).join('')}</span>`;
     const row = (n, ctl, hint) => `<div class="setrow"><span>${n}</span>${ctl}<span class="hint">${hint}</span></div>`;
     body = `<div class="setscroll">${row('Main number', seg('lead', [['p', '30-day chance'], ['score', 'Signal pressure']], pref.lead), PM ? 'The number on the map, in the sidebar and in lists.' : 'The number on the map, in the sidebar and in lists. The 30-day chance leads only once the model passes its release checks; until then signal pressure leads.')}
