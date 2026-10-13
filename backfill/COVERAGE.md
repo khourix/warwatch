@@ -141,6 +141,8 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | msa_taiwan | 2292 | 2020-07-01 | 2026-10-09 | 80% |
 | news_gulf | 3205 | 2018-01-01 | 2026-10-10 | 100% |
 | news_iraq | 3205 | 2018-01-01 | 2026-10-10 | 100% |
+| news_lebanon | 2841 | 2018-01-01 | 2026-10-12 | 100% |
+| news_syria | 366 | 2020-01-01 | 2020-12-31 | 99% |
 | nga_drc | 2293 | 2018-01-30 | 2024-05-10 | 1% |
 | nga_europe_east | 2293 | 2018-01-30 | 2024-05-10 | 1% |
 | nga_iran | 2293 | 2018-01-30 | 2024-05-10 | 16% |
@@ -209,6 +211,7 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | state_dep_country_south-korea | 2847 | 2018-01-11 | 2025-11-12 | 0% |
 | state_dep_country_south-sudan | 2922 | 2018-01-11 | 2026-01-10 | 6% |
 | state_dep_country_sudan | 2766 | 2018-01-11 | 2025-08-25 | 37% |
+| state_dep_country_syria | 2856 | 2018-01-11 | 2026-02-17 | 0% |
 | state_dep_country_taiwan | 3022 | 2018-01-11 | 2026-07-11 | 0% |
 | state_dep_country_ukraine | 3139 | 2018-01-11 | 2026-08-15 | 2% |
 | state_dep_country_united-arab-emirates | 2844 | 2018-05-04 | 2026-06-09 | 3% |
@@ -220,8 +223,10 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | state_dep_iran | 2956 | 2018-01-11 | 2026-02-13 | 61% |
 | state_dep_iraq | 3177 | 2018-01-11 | 2026-09-22 | 58% |
 | state_dep_korea | 2779 | 2018-01-11 | 2025-09-16 | 0% |
+| state_dep_lebanon | 3012 | 2018-01-11 | 2026-07-29 | 32% |
 | state_dep_southasia | 2682 | 2018-01-11 | 2025-07-05 | 1% |
 | state_dep_sudan | 2766 | 2018-01-11 | 2025-08-25 | 37% |
+| state_dep_syria | 2856 | 2018-01-11 | 2026-02-17 | 0% |
 | state_dep_taiwan | 3022 | 2018-01-11 | 2026-07-11 | 0% |
 | state_dep_ukraine | 2830 | 2018-01-11 | 2026-03-29 | 51% |
 | state_dep_venezuela | 2801 | 2018-01-11 | 2025-10-09 | 14% |
@@ -232,6 +237,7 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | state_iran | 2956 | 2018-01-11 | 2026-02-13 | 100% |
 | state_iraq | 3177 | 2018-01-11 | 2026-09-22 | 100% |
 | state_korea | 2779 | 2018-01-11 | 2025-09-16 | 100% |
+| state_lebanon | 3012 | 2018-01-11 | 2026-07-29 | 100% |
 | state_level_bahrain | 2934 | 2018-01-11 | 2026-05-15 | 100% |
 | state_level_belarus | 2890 | 2018-01-11 | 2026-03-29 | 100% |
 | state_level_colombia | 2807 | 2018-01-11 | 2025-10-09 | 100% |
@@ -261,6 +267,7 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | state_level_south-korea | 2847 | 2018-01-11 | 2025-11-12 | 100% |
 | state_level_south-sudan | 2922 | 2018-01-11 | 2026-01-10 | 100% |
 | state_level_sudan | 2766 | 2018-01-11 | 2025-08-25 | 100% |
+| state_level_syria | 2856 | 2018-01-11 | 2026-02-17 | 100% |
 | state_level_taiwan | 3022 | 2018-01-11 | 2026-07-11 | 100% |
 | state_level_ukraine | 3139 | 2018-01-11 | 2026-08-15 | 100% |
 | state_level_united-arab-emirates | 2844 | 2018-05-04 | 2026-06-09 | 100% |
@@ -297,6 +304,7 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | state_od_country_south-korea | 2847 | 2018-01-11 | 2025-11-12 | 0% |
 | state_od_country_south-sudan | 2922 | 2018-01-11 | 2026-01-10 | 6% |
 | state_od_country_sudan | 2766 | 2018-01-11 | 2025-08-25 | 37% |
+| state_od_country_syria | 2856 | 2018-01-11 | 2026-02-17 | 0% |
 | state_od_country_taiwan | 3022 | 2018-01-11 | 2026-07-11 | 0% |
 | state_od_country_ukraine | 3139 | 2018-01-11 | 2026-08-15 | 2% |
 | state_od_country_united-arab-emirates | 2844 | 2018-05-04 | 2026-06-09 | 3% |
@@ -317,7 +325,7 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | state_od_jordan | 3192 | 2018-01-11 | 2026-10-07 | 7% |
 | state_od_korea | 2779 | 2018-01-11 | 2025-09-16 | 0% |
 | state_od_latvia | 3192 | 2018-01-11 | 2026-10-07 | 0% |
-| state_od_lebanon | 3192 | 2018-01-11 | 2026-10-07 | 33% |
+| state_od_lebanon | 3012 | 2018-01-11 | 2026-07-29 | 28% |
 | state_od_lithuania | 3192 | 2018-01-11 | 2026-10-07 | 0% |
 | state_od_moldova | 3192 | 2018-01-11 | 2026-10-07 | 0% |
 | state_od_north-korea | 3192 | 2018-01-11 | 2026-10-07 | 0% |
@@ -330,6 +338,7 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | state_od_south-sudan | 3192 | 2018-01-11 | 2026-10-07 | 5% |
 | state_od_southasia | 2682 | 2018-01-11 | 2025-07-05 | 0% |
 | state_od_sudan | 2766 | 2018-01-11 | 2025-08-25 | 37% |
+| state_od_syria | 2856 | 2018-01-11 | 2026-02-17 | 0% |
 | state_od_taiwan | 3022 | 2018-01-11 | 2026-07-11 | 0% |
 | state_od_ukraine | 2830 | 2018-01-11 | 2026-03-29 | 51% |
 | state_od_venezuela | 2801 | 2018-01-11 | 2025-10-09 | 14% |
@@ -337,6 +346,7 @@ Written by `backfill.py coverage`. `nonzero` is the share of days with a value a
 | state_od_yemen | 2770 | 2018-01-11 | 2026-04-06 | 0% |
 | state_southasia | 2682 | 2018-01-11 | 2025-07-05 | 100% |
 | state_sudan | 2766 | 2018-01-11 | 2025-08-25 | 100% |
+| state_syria | 2856 | 2018-01-11 | 2026-02-17 | 100% |
 | state_taiwan | 3022 | 2018-01-11 | 2026-07-11 | 100% |
 | state_ukraine | 2830 | 2018-01-11 | 2026-03-29 | 100% |
 | state_venezuela | 2801 | 2018-01-11 | 2025-10-09 | 100% |
