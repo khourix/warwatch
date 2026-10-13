@@ -94,7 +94,11 @@ def build_series():
     out = [s for s in B.load_series() if s["scored"]]
     for s in catalog.SERIES:
         if s["id"].startswith(("gdelt_", "gdeltshare_")) and s["scored"]:
-            pts = s["fetch"]()
+            try:
+                pts = s["fetch"]()
+            except C.Pending:       # a country added to GDELT_CC before its back-fill has landed: no history to fit on yet
+                print("no history yet:", s["id"], flush=True)
+                continue
             out.append({"id": s["id"], "theatre": s["theatre"], "domain": s["domain"], "direction": s["direction"], "lag": s["lag"],
                         "kind": "daily", "all": pts, "avail": [(dt.date.fromisoformat(l) + dt.timedelta(days=1)).toordinal() for l, _ in pts]})
     import csv
