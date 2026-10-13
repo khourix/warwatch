@@ -78,8 +78,8 @@ The sub-theatres (Iraq, GCC, Lebanon and Syria) are fitted on top of the theatre
 |---|---|---|---|---|---|---|---|
 | Iraq | Iran | 5 | 150 | -0.099 | 0.332 (0.136 to 0.566) | 0.923 | no |
 | GCC | Iran, Yemen | 7 | 187 | +0.015 | 0.642 (0.507 to 0.789) | 0.060 | no |
-| Lebanon | Israel | 3 | 90 | +0.016 | 0.612 (0.252 to 0.877) | 0.223 | no |
-| Syria | Israel, Iran | 7 | 208 | -0.064 | 0.513 (0.364 to 0.655) | 0.427 | no |
+| Lebanon | Israel | 3 | 90 | +0.031 | 0.637 (0.269 to 0.868) | 0.157 | no |
+| Syria | Israel, Iran | 7 | 208 | -0.107 | 0.476 (0.336 to 0.637) | 0.627 | no |
 
 ## Indicator families ranked by noise-to-signal
 
@@ -205,4 +205,4 @@ Conflict-history terms (log-odds per full-scale term): events in the last year +
 Published probabilities are capped at 55%, the highest the model produced out of sample, rounded up: it is not shown claiming more than it was tested on.
 
 Theatre base rates (30-day probability on a quiet day with no history): Ukraine 9.7%, Eastern flank 10.0%, Iran 22.2%, Yemen 17.0%, Israel 16.5%, Taiwan Strait 8.6%, South China Sea 10.1%, Korea 8.1%, South Asia (India-Pakistan) 4.3%, Libya 8.6%, Sudan 6.9%, DR Congo 6.5%, Americas (Venezuela and Caribbean) 6.0%, Iraq 12.1%, GCC 13.2%, Lebanon 9.5%, Syria 14.5%.
-Shrink toward the base rate gamma = 0.3, floor phi = 0.0. Chance of an event somewhere within 30 days, climatological: 66%.
+Shrink toward the base rate gamma = 0.2, floor phi = 0.0. Chance of an event somewhere within 30 days, climatological: 66%.

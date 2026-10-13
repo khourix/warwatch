@@ -78,8 +78,8 @@ The sub-theatres (Iraq, GCC, Lebanon and Syria) are fitted on top of the theatre
 |---|---|---|---|---|---|---|---|
 | Iraq | Iran | 5 | 150 | +0.014 | 0.529 (0.143 to 0.723) | 0.477 | no |
 | GCC | Iran, Yemen | 7 | 187 | +0.005 | 0.501 (0.257 to 0.645) | 0.557 | no |
-| Lebanon | Israel | 3 | 90 | -0.031 | 0.480 (0.192 to 0.736) | 0.453 | no |
-| Syria | Israel, Iran | 7 | 208 | -0.036 | 0.431 (0.177 to 0.593) | 0.677 | no |
+| Lebanon | Israel | 3 | 90 | -0.026 | 0.491 (0.206 to 0.726) | 0.450 | no |
+| Syria | Israel, Iran | 7 | 208 | -0.046 | 0.402 (0.149 to 0.552) | 0.733 | no |
 
 ## Indicator families ranked by noise-to-signal
 
