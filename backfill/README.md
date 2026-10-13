@@ -10,6 +10,7 @@ Output: `backfill/data/<series>.csv`, one `date,value` row per UTC day. `COVERAG
 | Source | Series (id) | Archive | Starts | Key |
 |---|---|---|---|---|
 | Military aircraft per theatre box and class | `adsb_<theatre>_<mil\|lift\|tanker\|isr\|fighter>`, `adsb_global_mil` | adsb.lol daily archives (GitHub releases `adsblol/globe_history_YYYY`) | 2024-03-20 (the archive has no earlier day; 71 later days are missing) | none |
+| Headline counts (Iraq, Gulf) | `news_<theatre>` | Google News RSS, one query a day with the live series' search text | 2018-01-01 | none |
 | Hazard and missile-range warnings | `nga_<theatre>` (30-day count, as live), `nga_new_<theatre>` (issued that day) | NGA broadcast warnings, active and cancelled, per year | 2018 | none |
 | Vessel presence and SAR detections | `ais_presence_<theatre>` (as live), `sar_<theatre>` | Global Fishing Watch 4Wings | 2018 (SAR 2017) | `GFW_TOKEN` |
 | Thermal detections | `firms_<theatre>`, `firms_frp_<theatre>` | NASA FIRMS VIIRS S-NPP standard processing | 2018 | `FIRMS_MAP_KEY` |
@@ -29,5 +30,8 @@ Output: `backfill/data/<series>.csv`, one `date,value` row per UTC day. `COVERAG
 * **ADS-B coverage**: Yemen and DRC are all zeros (no military traffic seen in their boxes), so they cannot be tested.
 * **Rate limits**: FIRMS allows 5000 requests per 10 minutes and GFW answers 429; both jobs back off and run few jobs at once.
 * Gaps are real gaps: a day that failed to download is simply absent, not zero.
+
+* **Headline counts**: Google News answers old days with fewer items in quiet periods (about 10 a day, 2018 to early 2026) and up to 100 in busy ones; a day that failed is absent, not zero. Run with `source` = `news` (`only` = iraq, gulf). The live `news_*` series reads these days before its own 150-day cache.
+* **Iraq and Gulf aircraft** were back-filled with `adsb` and `only` = iraq,gulf (20 Mar 2024 to 10 Oct 2026; the archive has no earlier day).
 
 `python3 backfill/test_backfill.py` runs the parser tests (no network).

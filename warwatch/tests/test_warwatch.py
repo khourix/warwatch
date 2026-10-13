@@ -953,6 +953,40 @@ class TestModel(unittest.TestCase):
         self.assertIn(["2024-01-01", "SA", "all", "0"], rows)
         self.assertEqual(rows, sorted(rows, key=lambda r: (r[0], r[1], backfill.ROOT_ORDER[r[2]])))
 
+    def test_a_feed_still_filling_is_collecting_not_failed(self):
+        def pending():
+            raise C.Pending("first refresh pending (test)")
+
+        def broken():
+            raise RuntimeError("HTTP 500")
+        saved = list(catalog.SERIES)
+        mk = lambda sid, fn: dict(id=sid, label=sid, domain="geospatial", theatre="iraq", kind="daily", lag=False, why="", fetch=fn,
+                                  direction="up", needs=[], drop=0, url="", sub="", every=None, scored=True, scale=None)
+        try:
+            catalog.SERIES[:] = [mk("p", pending), mk("b", broken)]
+            os.environ["WARWATCH_NO_RETRY"] = "1"
+            out = {r["id"]: r for r in run.collect()}
+        finally:
+            catalog.SERIES[:] = saved
+            os.environ.pop("WARWATCH_NO_RETRY", None)
+        self.assertEqual(out["p"]["status"], "collecting")
+        self.assertEqual(out["b"]["status"], "error")
+
+    def test_opensky_airborne_counts_only_aircraft_in_the_air(self):
+        import extras
+        import io
+        import urllib.request
+        self.assertIsNone(extras.opensky_airborne((0, 1, 0, 1), cid="", secret=""))
+        orig = (urllib.request.urlopen, extras.S.get)
+        urllib.request.urlopen = lambda req, timeout=0: io.BytesIO(b'{"access_token": "t"}')
+        extras.S.get = lambda url, **k: {"states": [["a", "", "IQ", 0, 0, 44, 33, 9000, False], ["b", "", "IQ", 0, 0, 44, 33, 0, True], ["c", "", "IQ", 0, 0, 44, 33, 8000, False]]}
+        try:
+            self.assertEqual(extras.opensky_airborne((29, 37.5, 38.5, 48.7), cid="x", secret="y"), 2.0)
+            extras.S.get = lambda url, **k: {"states": None}
+            self.assertEqual(extras.opensky_airborne((29, 37.5, 38.5, 48.7), cid="x", secret="y"), 0.0)   # an empty sky is a reading
+        finally:
+            urllib.request.urlopen, extras.S.get = orig
+
     def test_global_probability_is_chance_of_any(self):
         m = _toy_model()
         per = {t: {"p": 0.1} for t in model.TH}

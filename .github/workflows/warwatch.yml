@@ -52,6 +52,8 @@ jobs:
           FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
           FIRMS_MAX: "12"
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
+          OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
         run: python3 $WW/run.py --only "${{ github.event.inputs.only }}" --out site/index.html
       - uses: actions/upload-artifact@v4
         with:

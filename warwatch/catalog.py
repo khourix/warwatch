@@ -52,7 +52,7 @@ def _slow(sid, fn):
             return fn()
         pts = store.cache_load(sid)
         if not pts:
-            raise RuntimeError("first refresh pending (rate-limited source; slow job fills it)")
+            raise C.Pending("first refresh pending (rate-limited source; slow job fills it)")
         return pts
     return go
 
@@ -228,7 +228,7 @@ def _adsb(th, cls):
         store.append(sid, v)   # the instant snapshots keep accumulating in history/, but the score reads the archive series
         pts = store.backfill(sid)
         if not pts:
-            raise RuntimeError("no archive history yet (the adsb-daily job fills it)")
+            raise C.Pending("no archive history yet (the adsb-daily job fills it)")
         return pts
     return go
 
@@ -253,6 +253,17 @@ def _gnss(theatre):
     return f
 
 
+OPENSKY_CIVIL = {"iraq"}   # public ADS-B receivers see no aircraft over central Iraq; OpenSky has more receivers there
+
+
+def _civil(th):
+    if th in OPENSKY_CIVIL:
+        n = extras.opensky_airborne(C.BOXES[th])
+        if n is not None:     # zero is a reading here: Iraq's airspace emptying is the signal
+            return n
+    return float(extras.hub_stats(th)[0]) or None
+
+
 NGA = "https://msi.nga.mil/"
 # Too little civil traffic is visible in public ADS-B near these hubs (Yemen's airspace is nearly empty, Venezuela's is thin),
 # so the ADS-B GPS and airliner counts cannot be measured there; GPSJam, ports and Radar cover those theatres instead.
@@ -269,7 +280,7 @@ for th in C.HUBS:
     if th not in NO_CIVIL:
         add(f"civil_{th}", f"Airliners in the air near {nm}", "geospatial", th, "daily", False,
             "A fall means airspace is being closed or avoided. Snapshots start now.",
-            _snap(f"civil_{th}", lambda t=th: float(extras.hub_stats(t)[0]) or None), direction="down", url=ADS, sub="Airspace")
+            _snap(f"civil_{th}", lambda t=th: _civil(t)), direction="down", url=ADS, sub="Airspace")
     add(f"nga_{th}", f"New naval and air hazard warnings, last 30 days, {nm} (US NGA)", "geospatial", th, "daily", False,
         "Missile firing, exercises, mines, drones and GPS-interference notices to mariners and pilots; exercises are announced before they happen. From NGA's current feed, kept from 1 August 2026 and counted from 31 August.",
         (lambda t=th: extras.nga_series(t)), url=NGA, sub="Warnings")
@@ -324,7 +335,7 @@ def _gpsjam(th):
             S.gpsjam_update(C.BOXES, store)
         pts = store.cache_load(f"gpsjam_{th}")
         if not pts:
-            raise RuntimeError("first refresh pending (GPSJam history fills a few weeks per run)")
+            raise C.Pending("first refresh pending (GPSJam history fills a few weeks per run)")
         return pts
     return go
 
@@ -335,7 +346,7 @@ def _notam(th):
             S.nms_update(C.FIRS, store)
         pts = store.cache_load(f"notam_{th}")
         if not pts:
-            raise RuntimeError("first refresh pending (FAA NOTAM snapshots start now)")
+            raise C.Pending("first refresh pending (FAA NOTAM snapshots start now)")
         return pts
     return go
 
@@ -426,8 +437,8 @@ def _news(th):
             return S.fetch_gnews(sid, C.GNEWS[th], days=150)
         pts = store.cache_load(sid)
         if not pts:
-            raise RuntimeError("first refresh pending (news history fills from the news job)")
-        return pts
+            raise C.Pending("first refresh pending (news history fills from the news job)")
+        return store.seed(sid, pts)   # the back-filled days before the live cache starts, when there are any
     return go
 
 
@@ -437,7 +448,7 @@ def _gdelt(th, roots, share=False):
             S.gdelt_update(days=150)
         pts = S.gdelt_series(th, roots, share)
         if not pts:
-            raise RuntimeError("first refresh pending (GDELT history fills from the news job)")
+            raise C.Pending("first refresh pending (GDELT history fills from the news job)")
         return pts
     return go
 
@@ -497,7 +508,7 @@ def _fires(th):
         osint.firms_counts(key, th, days=150)
         pts = osint.firms_series(th)
         if not pts:
-            raise RuntimeError("first refresh pending (fire history fills over a few runs)")
+            raise C.Pending("first refresh pending (fire history fills over a few runs)")
         return store.seed(f"firms_{th}", pts)   # standard-processing archive back to 2018, then the live cache
     return go
 
@@ -521,7 +532,7 @@ def _newsq(sid, query):
             return S.fetch_gnews(sid, query, days=150)
         pts = store.cache_load(sid)
         if not pts:
-            raise RuntimeError("first refresh pending (news history fills from the news job)")
+            raise C.Pending("first refresh pending (news history fills from the news job)")
         return pts
     return go
 
@@ -578,7 +589,7 @@ def _sar(box):
     def go():
         pts = store.cache_load(f"sar_{box}")
         if not pts:
-            raise RuntimeError("first refresh pending (the radar job fills this; history backfills in slices)")
+            raise C.Pending("first refresh pending (the radar job fills this; history backfills in slices)")
         return pts
     return go
 
@@ -609,6 +620,8 @@ def _package(th):
         for d in days:
             vals = [cls[c].get(d, 0.0) for c in cls]
             out.append((d, sum(vals) * sum(1 for v in vals if v > 0)))
+        if not out:
+            raise C.Pending("no archive history yet (the adsb backfill fills it)")
         return out
     return go
 
@@ -625,7 +638,7 @@ def _preforce(th):
             S.gdelt_update(days=150)
         pts = _sum([S.gdelt_series(th, ("13",)), S.gdelt_series(th, ("15",))])
         if not pts:
-            raise RuntimeError("first refresh pending (GDELT history fills from the news job)")
+            raise C.Pending("first refresh pending (GDELT history fills from the news job)")
         return pts
     return go
 
