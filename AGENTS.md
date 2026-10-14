@@ -4,7 +4,7 @@ This repo has no full agent kit yet. Read `README.md` first.
 
 ## Engineering skills (pstack)
 
-Hermes and Claude Code load the shared pstack skills (a port of poteto's pstack from github.com/cursor/plugins) on every machine. This file wins over them.
+Hermes and Claude Code load poteto's pstack skills (used live and unmodified from github.com/cursor/plugins) on every machine. This file wins over them.
 
 - Load `pstack-harness` before any pstack skill. It maps tools and models, and its rules (no merging, delete checks, plain-language replies) win over pstack.
 - Rigorous work (bug fix, feature, perf, refactor): start with `/poteto-mode`. It picks a playbook.
