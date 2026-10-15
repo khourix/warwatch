@@ -1,0 +1,53 @@
+name: fireref
+# Fire reference tables for the map's fire classes (docs/FIRECLASS_PLAN.md, F1): the NASA FIRMS VIIRS archive (about 4 GB,
+# no key) reduced to ~1 km "burns every day" cells, ~11 km farm-burning seasons and first-burn years, plus industrial and
+# sensitive sites from OpenStreetMap, the World Bank flare list and WRI. Monthly; a new archive year appears once a year.
+on:
+  schedule:
+    - cron: "20 3 2 * *"
+  workflow_dispatch:
+    inputs:
+      what:
+        description: "all | build | sites | replay"
+        required: false
+        default: "all"
+permissions:
+  contents: write
+concurrency:
+  group: warwatch-fireref
+  cancel-in-progress: false
+jobs:
+  fireref:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      FIRMS_ARCHIVE_CACHE: ${{ runner.temp }}/firms
+      WHAT: ${{ github.event.inputs.what || 'all' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check sources
+        run: python3 warwatch/fireref.py probe || echo "some sources did not answer; the steps below keep old rows for those"
+      - name: Archive tables
+        if: env.WHAT == 'all' || env.WHAT == 'build' || env.WHAT == 'replay'
+        run: python3 warwatch/fireref.py build
+      - name: Sites (OpenStreetMap, GGFR, WRI)
+        if: env.WHAT == 'all' || env.WHAT == 'sites'
+        run: python3 warwatch/fireref.py sites
+      - name: Spot checks
+        run: python3 warwatch/fireref.py check || echo "spot checks need a look"
+      - name: Replay the archive (unusual-fire history)
+        if: env.WHAT == 'all' || env.WHAT == 'replay'
+        run: python3 warwatch/fireref.py replay --from 2018-01-01
+      - name: Commit (public data only)
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add warwatch/data/fire_*.gz warwatch/data/fire_sites.csv backfill/data/firecls 2>/dev/null || true
+          git diff --cached --quiet && exit 0
+          git commit -qm "fireref: $(date -u +%FT%H:%MZ)"
+          for i in 1 2 3; do
+            git pull --rebase -q -X theirs origin main && git push -q && exit 0
+            git rebase --abort 2>/dev/null || true
+            sleep $((i * 5))
+          done
+          echo "push skipped"

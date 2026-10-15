@@ -310,6 +310,7 @@ main{flex:1;min-height:0;display:flex;position:relative}
 #card p{margin:8px 0;color:#bcc3ca}
 #card .flag{background:#3a1416;border:1px solid #8c2a2f;color:#ffc9cb;border-radius:6px;padding:4px 8px;margin:6px 0;font-weight:600}
 #card .btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chips-i{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin:4px 0}.chip-i{margin:0}.chip-i img,.noimg{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;background:#15181b;display:block}.noimg{display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:11px}.chip-i figcaption{font-size:11px;color:var(--mute);margin-top:2px}
 .agebar{display:flex;align-items:center;gap:8px;margin:6px 0}
 .agebar i{width:12px;height:12px;border-radius:50%;flex:none}
 .agebar.t0 i{background:var(--ink);box-shadow:0 0 0 3px color-mix(in oklab,var(--ink) 22%,transparent)}.agebar.t1 i{background:var(--ink);opacity:.62}.agebar.t2 i{border:1.2px solid var(--ink);opacity:.45}
@@ -982,8 +983,8 @@ function buildAlerts(){
   (M.ships || []).forEach((a, i) => { if (a.k === 'carrier' || a.k === 'amphib') out.push({id: 'ship:' + a.n + a.d, k: 'ships', sev: 60, title: `${a.n}: ${a.loc || 'position updated'}`, sub: a.g || shipName(a.k), th: a.th, i, xy: a.xy, ts: a.d}); });
   (M.nga || []).forEach((a, i) => { const h = ageH(a.iss); if (h != null && h < 8 * 24) out.push({id: 'nga:' + a.id, k: 'nga', sev: 40, title: 'Hazard warning ' + a.id, sub: a.tx.slice(0, 90), th: a.th, i, xy: a.xy, ts: a.iss}); });
   (M.czib || []).forEach((a, i) => { const h = ageH(a.u); if (h != null && h < 21 * 24) out.push({id: 'czib:' + a.n + a.u, k: 'czib', sev: 35, title: 'EASA airspace bulletin revised: ' + a.n, sub: 'Revised ' + a.u, th: a.th, i, xy: a.xy, ts: a.u}); });
-  const fby = {}; (M.fires || []).forEach((f, i) => { if (!f.r && f.th && ageH(f.ts || f.d) < 24) (fby[f.th] = fby[f.th] || []).push(i); });
-  Object.keys(fby).forEach(t => { if (fby[t].length >= 10) { const f = M.fires[fby[t][0]]; out.push({id: 'fires:' + t + ':' + (f.ts || f.d).slice(0, 13), k: 'fires', sev: 30, title: `${fby[t].length} new fires in ${thName(t)} in the last 24 hours`, sub: 'Satellite heat detections in places that do not burn every day', th: t, i: fby[t][0], xy: f.xy, ts: f.ts || f.d}); } });
+  const fby = {}; (M.fires || []).forEach((f, i) => { if (fireAnom(f) && f.th && ageH(f.ts || f.d) < 24) (fby[f.th] = fby[f.th] || []).push(i); });
+  Object.keys(fby).forEach(t => { if (fby[t].length >= 5) { fby[t].sort((a, b) => (M.fires[b].a || 0) - (M.fires[a].a || 0)); const f = M.fires[fby[t][0]]; out.push({id: 'fires:' + t + ':' + (f.ts || f.d).slice(0, 13), k: 'fires', sev: 30, title: `${fby[t].length} unusual fires in ${thName(t)} in the last 24 hours`, sub: 'Satellite heat with no usual reason: not a flare, plant or farm-burning season', th: t, i: fby[t][0], xy: f.xy, ts: f.ts || f.d}); } });
   return out.sort((a, b) => (Date.parse(b.ts) || 0) - (Date.parse(a.ts) || 0) || b.sev - a.sev);
 }
 function shipName(k){ return ({carrier:'Aircraft carrier', amphib:'Amphibious group', navy:'Naval vessel', tanker:'Oil tanker', cargo:'Cargo ship'})[k] || 'Vessel'; }
@@ -1319,11 +1320,11 @@ const M = D.map;
 const svg = $('#map');
 const NS = 'http://www.w3.org/2000/svg';
 let view = {x: 0, y: 0, w: M ? M.w : 1000}, anim = null;
-const DEFAULTS = {zones: true, mil: true, sqk: true, ships: true, inc: true, nga: true, czib: true, fires: true, choke: true, hubs: false, adv: false, cities: true, labels: true};
+const DEFAULTS = {zones: true, mil: true, sqk: true, ships: true, inc: true, nga: true, czib: true, fires: true, firesx: true, choke: true, hubs: false, adv: false, cities: true, labels: true};
 const layerState = Object.assign({}, DEFAULTS);
 const LAYERS = [
   ['Air and sea', [['mil', 'Military aircraft', 'plane'], ['sqk', 'Emergency squawks', 'warn'], ['ships', 'Warships and tracked ships', 'ship'], ['inc', 'Maritime incidents', 'anchor']]],
-  ['Warnings and ground', [['nga', 'Hazard warnings (NGA)', 'warn'], ['czib', 'Airspace bulletins (EASA)', 'diamond'], ['fires', 'Fires and heat (NASA)', 'fire'], ['choke', 'Chokepoints', 'pin']]],
+  ['Warnings and ground', [['nga', 'Hazard warnings (NGA)', 'warn'], ['czib', 'Airspace bulletins (EASA)', 'diamond'], ['fires', 'Fires and heat (NASA)', 'fire'], ['firesx', 'Explained fires (industry, farm)', 'fire'], ['choke', 'Chokepoints', 'pin']]],
   ['Background', [['zones', 'Theatre areas', 'zones'], ['adv', 'US travel advice', 'hatch'], ['hubs', 'GPS-jamming sample zones', 'jam'], ['cities', 'Cities', 'city'], ['labels', 'Country names', 'text']]]];
 /* aircraft and ships: e4 combat roles and warships, e2 support roles, n3 the rest; the role is in the legend and the card */
 const CLS = {lift:['Airlift','#3bdfef'], tanker:['Air refuelling','#3bdfef'], isr:['Surveillance','#3bdfef'], fighter:['Fighter','#3bdfef'],
@@ -1451,6 +1452,18 @@ const fireCol = h => fireBand(h)[1];
 const fireOp = h => fireBand(h)[2];
 const fireAge = f => ageH(f.ts || f.d);
 const fireR = f => 2.6 + Math.min(5, Math.sqrt(f.p || 0) / 2.6);
+/* fire classes from firecls.py: anomalies glow, unexplained heat is a plain dot, explained heat (industry, farm burning, volcano,
+   offshore) is a faint dashed ring that the "Explained fires" layer switch hides */
+const FIRE_CLS = {anom: 'Unusual fire or heat', hot: 'Hotter than usual at an industrial site', unex: 'Unexplained heat', seas: 'Seasonal farm or grass fire', ind: 'Routine industrial heat', volc: 'Volcano', off: 'Offshore platform or flare'};
+const fireCls = f => f.c || (f.r ? 'ind' : 'unex');
+const fireAnom = f => fireCls(f) === 'anom' || fireCls(f) === 'hot';
+const fireExpl = f => ['seas', 'ind', 'volc', 'off'].includes(fireCls(f));
+const fireShown = f => !fireExpl(f) || layerState.firesx;
+const isoDay = (d, k) => new Date(Date.parse(String(d).slice(0, 10) + 'T00:00:00Z') + k * 864e5).toISOString().slice(0, 10);
+const cbUrl = (ll, d, layer, zoom) => `https://browser.dataspace.copernicus.eu/?zoom=${zoom || 14}&lat=${ll[0]}&lng=${ll[1]}&themeId=DEFAULT-THEME&datasetId=S2_L2A_CDAS&layerId=${layer || '1_TRUE_COLOR'}&fromTime=${isoDay(d, -10)}T00%3A00%3A00.000Z&toTime=${isoDay(d, 10)}T23%3A59%3A59.999Z&dateMode=TIME%20RANGE`;
+const wvUrl = (ll, d) => `https://worldview.earthdata.nasa.gov/?v=${(ll[1] - .15).toFixed(3)},${(ll[0] - .1).toFixed(3)},${(ll[1] + .15).toFixed(3)},${(ll[0] + .1).toFixed(3)}&l=VIIRS_SNPP_Thermal_Anomalies_375m_All,VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_NOAA21_Thermal_Anomalies_375m_All,VIIRS_SNPP_CorrectedReflectance_TrueColor&t=${String(d).slice(0, 10)}-T00%3A00%3A00Z`;
+const chipImg = (src, cap) => `<figure class="chip-i"><img src="${esc(src)}" alt="${esc(cap)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',textContent:'No image yet'}))"><figcaption>${esc(cap)}</figcaption></figure>`;
+const chipRow = (pairs) => `<div class="chips-i">${pairs.filter(p => p[0]).map(p => chipImg(p[0], p[1])).join('')}</div><p class="hint" style="margin:2px 0 8px">Contains modified Copernicus Sentinel data ${new Date().getUTCFullYear()}.</p>`;
 const isFresh = (d, hours) => { const h = ageH(d); return h != null && h <= hours; };
 /* every other alert layer shares one age scale (fires keep their colour bands, aircraft and squawks are live):
    tier 0 = last 24 hours, solid with a soft halo; tier 1 = 1 to 3 days, solid but dimmed; tier 2 = older, a faint outline.
@@ -1484,11 +1497,11 @@ function buildMap(){
   (M.fires || []).map((f, i) => [f, i]).sort((a, b) => (fireAge(b[0]) || 0) - (fireAge(a[0]) || 0)).forEach(([f, i]) => {
     const m = mk('g', {transform: `translate(${f.xy[0]},${f.xy[1]})`, class: 'mk', 'data-k': 'fires:' + i}, gf); const s = scg(m);
     const h = fireAge(f), r = fireR(f);
-    if (f.r) mk('circle', {r, fill: 'none', stroke: '#8a949e', 'stroke-width': 1.3, 'stroke-dasharray': '2 1.6', opacity: .8}, s);
-    else { const fresh = h != null && h <= 24;
-      if (fresh) mk('circle', {r: r + 3.2, fill: fireCol(h), 'fill-opacity': .22}, s);   // a soft glow: only the last 24 hours have one
-      mk('circle', {r: fresh ? r : r * .85, fill: fireCol(h), 'fill-opacity': fireOp(h), stroke: fresh ? '#f2ffd6' : '#0b0d11', 'stroke-width': fresh ? 1 : .6, 'stroke-opacity': fresh ? .9 : .5}, s); }
-    if (!f.r) ping(s, f.ts || f.d, r + 2); f._el = m; f._h = h; OBJ.fires[i] = f; scaleEls.push(s); });
+    if (fireExpl(f)) mk('circle', {r, fill: 'none', stroke: '#8a949e', 'stroke-width': 1.3, 'stroke-dasharray': '2 1.6', opacity: .55}, s);
+    else { const glow = fireAnom(f);
+      if (glow) mk('circle', {r: r + 3.2, fill: fireCol(h), 'fill-opacity': .22 * (fireOp(h) < 1 ? .6 : 1)}, s);   // a soft glow: anomalies only
+      mk('circle', {r: glow ? r : r * .85, fill: fireCol(h), 'fill-opacity': fireOp(h), stroke: glow ? '#f2ffd6' : '#0b0d11', 'stroke-width': glow ? 1 : .6, 'stroke-opacity': glow ? .9 : .5}, s); }
+    if (fireAnom(f)) ping(s, f.ts || f.d, r + 2); f._el = m; f._h = h; OBJ.fires[i] = f; scaleEls.push(s); });
   const gc = L('choke');
   M.choke.forEach((c, i) => { const m = mk('g', {transform: `translate(${c.xy[0]},${c.xy[1]})`, class: 'mk', 'data-k': 'choke:' + i}, gc); const s = scg(m);
     mk('circle', {r: 9, fill: 'none', stroke: '#b6bec6', 'stroke-width': 2}, s); mk('circle', {r: 3.5, fill: '#b6bec6'}, s); OBJ.choke.push(c); scaleEls.push(s);
@@ -1541,7 +1554,7 @@ function syncLayers(){
   const LG = ['mil', 'sqk', 'ships', 'inc', 'nga', 'czib', 'choke', 'hubs', 'cities', 'fires'].map(k => $('#L' + k)).filter(Boolean), was = LG.map(g => g.style.display !== 'none');
   ['mil', 'sqk', 'ships', 'inc', 'nga', 'czib', 'choke', 'hubs', 'cities'].forEach(k => { const g = $('#L' + k); if (g) g.style.display = layerState[k] && !(k === 'hubs' && wideView()) ? '' : 'none'; });
   OBJ.mil.forEach(a => { if (a._el) a._el.style.display = classOff[a.c] ? 'none' : ''; });
-  OBJ.fires.forEach(f => { if (f && f._el) f._el.style.display = f._h == null || f._h <= pref.win ? '' : 'none'; });
+  OBJ.fires.forEach(f => { if (f && f._el) f._el.style.display = (f._h == null || f._h <= pref.win) && fireShown(f) ? '' : 'none'; });
   OBJ.inc.forEach(n => { if (n._el) { const h = ageH(n.d); n._el.style.display = h == null || h <= Math.max(pref.win, 24 * 7) ? '' : 'none'; } });
   syncFireZoom(); paintCountries(); applyView();
   LG.forEach((g, i) => { if (!was[i] && g.style.display !== 'none') staggerIn(g); });
@@ -1552,7 +1565,8 @@ function setPreset(k){
 }
 function layerCount(k){
   if (!M) return null;
-  if (k === 'fires') return (M.fires || []).filter(f => { const h = ageH(f.ts || f.d); return h == null || h <= pref.win; }).length;
+  if (k === 'fires') return (M.fires || []).filter(f => { const h = ageH(f.ts || f.d); return (h == null || h <= pref.win) && fireShown(f); }).length;
+  if (k === 'firesx') return (M.fires || []).filter(f => { const h = ageH(f.ts || f.d); return (h == null || h <= pref.win) && fireExpl(f); }).length;
   if (k === 'zones') return THEATRES.length;
   if (k === 'adv') return Object.keys(M.levels || {}).length;
   if (k === 'cities') return M.cities.length;
@@ -1568,7 +1582,7 @@ function renderRail(){
 function popLayers(){
   const preset = ['none', 'default', 'all'].find(k => Object.keys(layerState).every(x => layerState[x] === (k === 'all' ? true : k === 'none' ? x === 'labels' || x === 'zones' : DEFAULTS[x])));
   const row = ([k, n, icn]) => { const c = layerCount(k), dis = (k === 'hubs' && wideView()) || (k === 'fires' && wideView() && view.w > M.w * 0.42);
-    return `<div class="lrow ${dis ? 'dis' : ''}" data-layer="${k}" ${dis ? `data-tip="${k === 'fires' ? 'Zoom in to see fires' : 'Shown in theatre views'}"` : ''}><span style="color:${({mil: '#3bdfef', sqk: '#f0405a', ships: '#6d8dff', inc: '#ff6fb1', nga: '#b08cff', czib: '#b08cff', fires: '#b8e04a', adv: '#9c8dca'})[k] || 'var(--mute)'}">${ic(icn, 's')}</span><span>${esc(n)}</span><small>${c == null ? '' : c}</small><span class="tog ${layerState[k] ? 'on' : ''}"></span></div>`; };
+    return `<div class="lrow ${dis ? 'dis' : ''}" data-layer="${k}" ${dis ? `data-tip="${k === 'fires' ? 'Zoom in to see fires' : 'Shown in theatre views'}"` : ''}><span style="color:${({mil: '#3bdfef', sqk: '#f0405a', ships: '#6d8dff', inc: '#ff6fb1', nga: '#b08cff', czib: '#b08cff', fires: '#b8e04a', firesx: '#8a949e', adv: '#9c8dca'})[k] || 'var(--mute)'}">${ic(icn, 's')}</span><span>${esc(n)}</span><small>${c == null ? '' : c}</small><span class="tog ${layerState[k] ? 'on' : ''}"></span></div>`; };
   return `<div class="ph"><h4>Map layers</h4><span class="seg">${['none', 'default', 'all'].map(k => `<button class="${preset === k ? 'on' : ''}" data-preset="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</span></div><div class="pb" style="padding:0 0 8px">` +
     LAYERS.map(([g, list]) => `<div class="lgrp">${g}</div>` + list.map(row).join('')).join('') + `</div>`;
 }
@@ -1578,7 +1592,7 @@ function popLegend(){
   if (layerState.mil) h += `<div class="lgrp">Aircraft · shape = role, hollow = support · click to hide</div><div class="lkey">${Object.keys(CLS).filter(k => classOff[k] || M.mil.some(a => a.c === k)).map(k => `<svg width="18" height="18" viewBox="-10 -10 20 20">${AIR(0, CLS[k][1], k)}</svg><span data-cls="${k}" class="${classOff[k] ? 'off' : ''}">${CLS[k][0]} <span style="color:var(--dim)">${M.mil.filter(a => a.c === k).length}</span></span>`).join('')}</div>`;
   if (layerState.sqk) h += `<div class="lgrp">Emergency squawks</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#f0405a" stroke="#fff" stroke-width="1.5"/></svg><span>7500 hijack · 7700 emergency (pulsing)</span><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#5a636c" stroke="#fff" stroke-width="1.5"/></svg><span>7600 radio failure</span></div>`;
   if (layerState.ships) h += `<div class="lgrp">Ships</div><div class="lkey">${['carrier', 'amphib', 'navy', 'tanker'].map(k => `<svg width="16" height="12" viewBox="-9 -6 18 12"><path d="M-8,2L-5,-3L6,-3L8,0L6,4L-5,4Z" fill="${SHIPK[k][1]}"/></svg><span>${SHIPK[k][0]}</span>`).join('')}</div>`;
-  if (layerState.fires) h += `<div class="lgrp">Fires and heat · fainter = older</div><div class="lkey">${FIRE_BANDS.map(([, c, o, n], k) => `<svg width="16" height="16"><circle cx="8" cy="8" r="${k ? 4.3 : 5}" fill="${c}" fill-opacity="${o}"${k ? '' : ' stroke="#ffd9c7" stroke-width="1"'}/>${k ? '' : `<circle cx="8" cy="8" r="7.6" fill="${c}" fill-opacity=".22"/>`}</svg><span>${k ? n : '<b style="color:var(--ink)">' + n + '</b>'}</span>`).join('')}<svg width="16" height="16"><circle cx="8" cy="8" r="5" fill="none" stroke="#8a949e" stroke-width="1.5" stroke-dasharray="2 1.6"/></svg><span>Routine: burns on most days (gas flare, industry)</span><span></span><span style="color:var(--dim)">Larger dot: more heat (MW)</span></div>`;
+  if (layerState.fires) h += `<div class="lgrp">Fires and heat · fainter = older</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="7.6" fill="#b8e04a" fill-opacity=".22"/><circle cx="8" cy="8" r="5" fill="#b8e04a" stroke="#f2ffd6" stroke-width="1"/></svg><span><b style="color:var(--ink)">Unusual</b>: no usual reason to burn here, or far hotter than usual</span><svg width="16" height="16"><circle cx="8" cy="8" r="4.3" fill="#b8e04a"/></svg><span>Unexplained: not a known source, not the burning season</span><svg width="16" height="16"><circle cx="8" cy="8" r="5" fill="none" stroke="#8a949e" stroke-width="1.5" stroke-dasharray="2 1.6"/></svg><span>Explained: gas flare, industry, farm burning, volcano, offshore</span>${FIRE_BANDS.slice(1).map(([, c, o, n]) => `<svg width="16" height="16"><circle cx="8" cy="8" r="4.3" fill="${c}" fill-opacity="${o}"/></svg><span>${n}</span>`).join('')}<span></span><span style="color:var(--dim)">Larger dot: more heat (MW). Click a fire for the reason and satellite images.</span></div>`;
   if (layerState.inc) h += `<div class="lgrp">Maritime</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#ff6fb1"/></svg><span>Maritime incident (UKMTO, news)</span></div>`;
   if (layerState.nga || layerState.czib) h += `<div class="lgrp">Warnings</div><div class="lkey">${layerState.nga ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,6L-8,6Z" fill="#b08cff"/></svg><span>Hazard warning (NGA)</span>` : ''}${layerState.czib ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,0L0,8L-8,0Z" fill="#b6bec6"/></svg><span>Airspace bulletin (EASA)</span>` : ''}</div>`;
   if (layerState.inc || layerState.nga || layerState.czib || layerState.ships) h += `<div class="lgrp">Age · incidents, warnings, bulletins and ships</div><div class="lkey">${AGE_TIERS.map((b, t) => `<svg width="16" height="16" class="agek t${t}"><circle cx="8" cy="8" r="${t ? 5 : 4.6}"${t ? '' : ' stroke-width="4"'}/>${t ? '' : '<circle cx="8" cy="8" r="4.6"/>'}</svg><span>${b[2]}</span>`).join('')}<span></span><span style="color:var(--dim)">Aircraft and squawks are live positions.</span></div>`;
@@ -1623,7 +1637,7 @@ function tipFor(k){
   if (type === 'inc') return `<b>${esc(o.t)}</b><br>${esc(ago(o.d))} · ${esc(o.src || '')}`;
   if (type === 'nga') return `<b>Hazard warning ${esc(o.id)}</b> · issued ${esc(ago(o.iss))}<br>${esc(o.tx.slice(0, 110))}`;
   if (type === 'czib') return `<b>EASA airspace bulletin</b><br>${esc(o.n)} · revised ${esc(ago(o.u))}`;
-  if (type === 'fires') return `<b>${o.r ? 'Routine heat source' : 'Fire or heat detection'}</b><br>${o.ts ? 'Seen ' + esc(ago(o.ts)) : esc(o.d)} · ${Math.round(o.p || 0)} MW`;
+  if (type === 'fires') return `<b>${esc(FIRE_CLS[fireCls(o)])}</b><br>${o.ts ? 'Seen ' + esc(ago(o.ts)) : esc(o.d)} · ${Math.round(o.p || 0)} MW${o.why ? '<br>' + esc(o.why.slice(0, 120)) : ''}`;
   if (type === 'choke') return `<b>${esc(o.n)}</b><br>Ship transits from IMF PortWatch`;
   if (type === 'city') return `<b>${esc(o.n)}</b>`;
   if (type === 'hub') return `<b>GPS-jamming sample zone</b><br>${o.nm} nm radius`;
@@ -1666,11 +1680,20 @@ function openCard(type, o){
     `<div class="btns">${o.u ? `<a class="btn" target="_blank" rel="noopener" href="${esc(o.u)}">Report ${ic('ext', 's')}</a>` : ''}${goBtn(o.th)}</div>`;
   else if (type === 'nga') h = `<h3>Hazard warning ${esc(o.id)}</h3><div class="sub">Issued ${esc(o.iss || 'n/a')} · ${esc(ago(o.iss))}</div>${ageChip(o.iss)}<p>${esc(o.tx)}</p><p style="color:var(--dim)">An active navigational warning from the US National Geospatial-Intelligence Agency.</p><div class="btns"><a class="btn" target="_blank" rel="noopener" href="https://msi.nga.mil/NavWarnings">All warnings ${ic('ext', 's')}</a>${goBtn(o.th)}</div>`;
   else if (type === 'czib') h = `<h3>EASA airspace bulletin</h3><div class="sub">${esc(o.n)}</div>` + ageChip(o.u) + kv('Last revised', esc(o.u || 'n/a') + (o.u ? ' (' + esc(ago(o.u)) + ')' : '')) + `<p>EASA tells European airlines about the risk in conflict zones. A new revision means that the risk assessment changed.</p><div class="btns"><a class="btn" target="_blank" rel="noopener" href="https://www.easa.europa.eu/en/domains/air-operations/czibs">All bulletins ${ic('ext', 's')}</a>${goBtn(o.th)}</div>`;
-  else if (type === 'fires') { const hh = ageH(o.ts || o.d);
-    h = `<h3>${o.r ? 'Routine heat source' : 'Fire or heat detection'}</h3><div class="sub">${o.ts ? esc(isNaN(Date.parse(o.ts)) ? o.ts : new Date(o.ts).toLocaleString([], {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short'})) + ' · ' + esc(ago(o.ts)) : esc(o.d || '')}</div>` +
-      `<div class="agebar"><i style="background:${o.r ? 'transparent;border:1.5px dashed #8a949e' : fireCol(hh)}"></i><span class="hint">${o.r ? 'This place burns on most days.' : esc(fireBand(hh)[3]) + '.'}</span></div>` +
-      kv('Heat (radiative power)', Math.round(o.p || 0) + ' MW') + kv('Theatre', esc(o.th ? thName(o.th) : '')) +
-      `<p>${o.r ? 'A NASA satellite sees heat at this place on most days. Gas flares, refineries and steel works look like this. It is probably not related to fighting.' : 'A NASA satellite saw heat at this place. It does not burn here every day. In a conflict zone, groups of fires like this often come from shelling, strikes or burning depots. Farm fires also occur.'}</p><div class="btns">${goBtn(o.th)}</div>`; }
+  else if (type === 'fires') { const hh = ageH(o.ts || o.d), cl = fireCls(o), ex = fireExpl(o), im = o.img;
+    const what = {anom: 'A NASA satellite saw heat where there is no usual reason for it. In a conflict zone this can be a strike, shelling or a burning depot; it can also be an accident or a new field fire. Check the satellite images.',
+      hot: 'This industrial site burns every day, but this time it was far hotter than usual. That can be a fire at the plant, including after a strike.',
+      unex: 'A NASA satellite saw heat at a place that is not a known industrial site and not in its usual burning season. Most such fires are small and ordinary.',
+      seas: 'Farm and grass fires burn here at this time of year. It is probably not related to fighting.',
+      ind: 'This place burns on most days: gas flares, refineries and steel works look like this. It is probably not related to fighting.',
+      volc: 'An active volcano.', off: 'An offshore oil or gas platform, or its flare.'}[cl];
+    const ll = o.ll || null, d = (o.ts || o.d || '').slice(0, 10);
+    h = `<h3>${esc(FIRE_CLS[cl])}</h3><div class="sub">${o.ts ? esc(isNaN(Date.parse(o.ts)) ? o.ts : new Date(o.ts).toLocaleString([], {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short'})) + ' · ' + esc(ago(o.ts)) : esc(o.d || '')}</div>` +
+      `<div class="agebar"><i style="background:${ex ? 'transparent;border:1.5px dashed #8a949e' : fireCol(hh)}"></i><span class="hint">${ex ? 'Explained heat.' : esc(fireBand(hh)[3]) + '.'}</span></div>` +
+      (o.why ? `<p><b>Why:</b> ${esc(o.why)}</p>` : '') +
+      kv('Heat (radiative power)', Math.round(o.p || 0) + ' MW') + (ex ? '' : kv('Unusual score', (o.a || 0) + ' of 100')) + kv('Theatre', esc(o.th ? thName(o.th) : '')) + (o.dn ? kv('Pass', o.dn === 'N' ? 'night' : 'day') : '') +
+      (im ? `<div class="lgrp" style="padding:8px 0 4px">Sentinel-2 check${im.v === 'scar' ? ': burn scar seen' : im.v === 'none' ? ': no burn scar seen' : ''}</div>` + chipRow([[im.b, 'Before ' + (im.bd || '')], [im.a, 'After ' + (im.ad || '')], [im.s, 'After, infrared ' + (im.ad || '')]]) : '') +
+      `<p>${what}</p><div class="btns">${ll ? `<a class="btn" target="_blank" rel="noopener" href="${esc(cbUrl(ll, d))}">Sentinel-2 images ${ic('ext', 's')}</a><a class="btn" target="_blank" rel="noopener" href="${esc(cbUrl(ll, d, '6-SWIR'))}">Infrared (burn scars) ${ic('ext', 's')}</a><a class="btn" target="_blank" rel="noopener" href="${esc(wvUrl(ll, d))}">NASA Worldview ${ic('ext', 's')}</a>` : ''}${goBtn(o.th)}</div>`; }
   else if (type === 'choke') h = `<h3>${esc(o.n)}</h3><p>Daily ship transits come from IMF PortWatch. A fall means that ships avoid the strait or cannot pass.</p><div class="btns">${goBtn(o.t)}</div>`;
   else if (type === 'hub') h = `<h3>GPS-jamming sample zone</h3><p>WarWatch checks airliners within ${o.nm} nm of this point for bad navigation accuracy. A higher share points to jamming.</p><div class="btns">${goBtn(o.t)}</div>`;
   else if (type === 'city') h = `<h3>${esc(o.n)}</h3><div class="btns">${goBtn(o.t)}</div>`;
@@ -2444,7 +2467,7 @@ function renderActivity(){
   const usual = Object.values(A).map(x => median((x.mil || []).map(p => p[1]))).filter(v => v != null).reduce((a, b) => a + b, 0);
   const tot = Mm.mil.length, warships = (Mm.ships || []).filter(s => ['carrier', 'amphib', 'navy'].includes(s.k)), carriers = warships.filter(s => s.k === 'carrier').length;
   const inc7 = (Mm.inc || []).filter(n => ageH(n.d) != null && ageH(n.d) <= 24 * 7);
-  const fw = (Mm.fires || []).filter(f => { const h = ageH(f.ts || f.d); return h == null || h <= pref.win; }), fu = fw.filter(f => !f.r).length;
+  const fw = (Mm.fires || []).filter(f => { const h = ageH(f.ts || f.d); return h == null || h <= pref.win; }), fu = fw.filter(fireAnom).length, fx = fw.filter(fireExpl).length;
   const win = pref.win >= 168 ? '7 days' : pref.win + ' h';
   const sq = (Mm.sqk || [])[0];
   const lastV = id => { const x = SERIES[id]; return x && x.pts && x.pts.length ? x.pts[x.pts.length - 1][1] : null; };
@@ -2459,14 +2482,14 @@ function renderActivity(){
     ${ks('Emergency squawks', (Mm.sqk || []).length, sq ? `${esc(sq.call || sq.hex)} ${sq.sq}${sq.th ? ' · ' + esc(thName(sq.th)) : ''}` : 'none now', (Mm.sqk || []).length ? 'var(--critical)' : null)}
     ${ks('Warships tracked', warships.length, `${carriers} carrier${carriers === 1 ? '' : 's'} · USNI, weekly`)}
     ${ks('Sea incidents · 7 days', inc7.length, inc7.length ? Array.from(new Set(inc7.map(n => n.th ? thName(n.th) : n.loc))).slice(0, 2).join(', ') : 'none reported', inc7.length ? 'var(--c-inc)' : null)}
-    ${ks('Fires · ' + win, fw.length, `${fu} unusual · ${fw.length - fu} routine`, fu ? 'var(--c-fire)' : null, 'NASA satellite heat detections in the theatre boxes. Routine sources burn on most days: gas flares and industry.')}
+    ${ks('Fires · ' + win, fw.length, `${fu} unusual · ${fw.length - fu - fx} unexplained · ${fx} explained`, fu ? 'var(--c-fire)' : null, 'NASA satellite heat detections in the theatre boxes. Unusual: no usual reason to burn there. Explained: gas flares, industry, farm burning.')}
     ${ks('Alert waves · 7 days', wv.sum, wv.txt, wv.hot ? 'var(--tell)' : null, 'Alert waves counted by Tzeva Adom (Israel) and alerts.in.ua (Ukraine) over the last 7 days.')}
     ${ks('Sea warnings · 30 days', sea.sum, 'firing and launch areas', null, 'Navigational warnings for firing, missile or launch areas in force over the last 30 days, across the watched waters.')}</div><div class="grid4">`;
   const cards = [], quiet = [];
   RANK.forEach(t => {
     const th = D.theatres[t], mil = Mm.mil.filter(a => a.th === t), n = mil.length, by = {}; mil.forEach(a => { const k = roleOf(a.c); by[k] = (by[k] || 0) + 1; });
     const hist = ((A[t] || {}).mil || []).map(p => p[1]);
-    const fires = fw.filter(f => f.th === t), unus = fires.filter(f => !f.r).length;
+    const fires = fw.filter(f => f.th === t), unus = fires.filter(fireAnom).length;
     const warn = (Mm.nga || []).filter(x => x.th === t).length + (Mm.czib || []).filter(x => x.th === t).length;
     const ships = (Mm.ships || []).filter(x => x.th === t && ['carrier', 'amphib', 'navy'].includes(x.k)).length, incs = inc7.filter(x => x.th === t).length;
     const um = median(hist), sw = seaOf(t), tw = wvl.find(x => x.t === t);

@@ -701,7 +701,14 @@ def collect():
         key = os.environ.get("FIRMS_MAP_KEY")
         if not key:
             return []
-        return osint.fetch_fires(key, C.FIRMS_BOX)
+        import firecls
+        pts = osint.fetch_fires(key, C.FIRMS_BOX)
+        try:   # caches for the imagery review and the unusual-fires series; never break the map
+            firecls.save_anoms(pts)
+            firecls.save_daily(pts)
+        except Exception as e:
+            ex["errors"].append(f"fire caches: {str(e)[:80]}")
+        return pts
     for key, fn in (("mil", lambda: mil_positions(S.fetch_adsb())),
                     ("sqk", osint.fetch_squawks),
                     ("ships", ships),

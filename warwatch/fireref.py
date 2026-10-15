@@ -7,7 +7,8 @@ in the dashboard build.
     python3 warwatch/fireref.py build [--box iran,yemen] [--years 2012-2025] [--cache DIR]
     python3 warwatch/fireref.py sites [--box iran]            # OpenStreetMap + World Bank GGFR + WRI (+ GEM files in data/raw)
     python3 warwatch/fireref.py check                         # spot checks: flares are routine, city centres are not
-    python3 warwatch/fireref.py replay [--box iran] [--from 2018]   # classify the archive day by day -> backfill/data/firms_anom_<box>.csv
+    python3 warwatch/fireref.py econ                          # The Economist's war-related fires, last 21 days -> history/cache (every 6 h)
+    python3 warwatch/fireref.py replay [--box iran] [--from 2018]   # classify the archive day by day -> backfill/data/firecls/firms_anom_<box>.csv
 
 Archive: https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/<year>/viirs-snpp_<year>_<Country>.csv
 (standard processing, no key, one file per country and year; the `type` column marks volcanoes, static land sources
@@ -88,15 +89,19 @@ def archive_file(country, year, cache):
     return p
 
 
-def rows(path_):
-    """Detections of one archive file as tuples (lat, lon, date, hhmm, frp, daynight, type, bright_ti4)."""
+def rows(path_, skip_low=False):
+    """Detections of one archive file as tuples (lat, lon, date, hhmm, frp, daynight, type, bright_ti4). skip_low drops
+    low-confidence detections, as the live map does (osint.parse_firms)."""
     with open(path_, newline="", encoding="utf-8", errors="replace") as f:
         head = f.readline().strip().split(",")
         ix = {h: k for k, h in enumerate(head)}
+        cf = ix.get("confidence")
         la, lo, d, t, fr, dn, ty, b4 = (ix["latitude"], ix["longitude"], ix["acq_date"], ix["acq_time"], ix["frp"], ix.get("daynight"), ix.get("type"),
                                         ix.get("bright_ti4"))
         for line in f:
             r = line.rstrip("\r\n").split(",")
+            if skip_low and cf is not None and cf < len(r) and r[cf].lower() == "l":
+                continue
             try:
                 yield (float(r[la]), float(r[lo]), r[d], r[t].zfill(4), float(r[fr] or 0), r[dn] if dn is not None else "",
                        int(r[ty]) if ty is not None and r[ty] != "" else 0, float(r[b4] or 0) if b4 is not None else 0.0)
@@ -595,7 +600,7 @@ def sites(box_names, osm=True):
 # ---------------------------------------------------------------- checks
 CHECKS = [   # name, box, lat, lon, expect routine (True) or not (False); static checks search the nearest static cell within 3 km
     ("Baba Gurgur flame, Kirkuk", "iran", 35.535, 44.358, True),
-    ("Rumaila field flares, Basra", "iran", 30.40, 47.40, True),
+    ("Rumaila field flares, Basra", "iran", 30.36, 47.34, True),
     ("South Pars / Assaluyeh flares", "iran", 27.48, 52.61, True),
     ("Isfahan city centre", "iran", 32.655, 51.668, False),
     ("Tehran city centre", "iran", 35.700, 51.400, False),
@@ -631,8 +636,8 @@ def check():
 # ---------------------------------------------------------------- replay (FIRECLASS F4)
 def replay(box_names, start, years, cache, out_dir=None):
     """Classifies every archive detection from `start` day by day with firecls (which only uses reference years before each
-    day's year) and writes the daily count of anom + hot to backfill/data/firms_anom_<box>.csv, plus the daily count per class."""
-    out_dir = out_dir or os.path.join(os.path.dirname(HERE), "backfill", "data")
+    day's year) and writes the daily count of anom + hot to backfill/data/firecls/firms_anom_<box>.csv, plus the daily count per class."""
+    out_dir = out_dir or F.REPLAY_DIR    # a subfolder, so the studies that glob backfill/data/*.csv do not pick these up
     boxes, by_c = boxes_for(box_names)
     for b, box in boxes:
         ref = F.load(b)
@@ -646,7 +651,7 @@ def replay(box_names, start, years, cache, out_dir=None):
                 p = archive_file(c, y, cache)
                 if not p:
                     continue
-                for lat, lon, date, hhmm, frp, dn, _, b4 in rows(p):
+                for lat, lon, date, hhmm, frp, dn, _, b4 in rows(p, skip_low=True):
                     if date >= start and inside(box, lat, lon):
                         by_day.setdefault(date, []).append({"lat": lat, "lon": lon, "date": date, "ts": f"{date}T{hhmm[:2]}:{hhmm[2:]}Z", "frp": frp,
                                                             "daynight": dn, "bright_ti4": b4})
@@ -705,7 +710,7 @@ def probe():
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["probe", "build", "sites", "check", "replay"])
+    ap.add_argument("cmd", choices=["probe", "build", "sites", "check", "replay", "econ"])
     ap.add_argument("--box", default=",".join(C.FIRMS_BOX))
     ap.add_argument("--years", default=f"2012-{dt.date.today().year - 1}")
     ap.add_argument("--cache", default=os.environ.get("FIRMS_ARCHIVE_CACHE", os.path.join(os.path.dirname(HERE), ".firms_archive")))
@@ -721,6 +726,8 @@ def main(argv=None):
         sites(names, osm=not a.no_osm)
     elif a.cmd == "check":
         return 1 if check() else 0
+    elif a.cmd == "econ":
+        log("Economist war fires, last 21 days:", F.econ_refresh())
     elif a.cmd == "replay":
         replay(names, a.start, years_arg(a.years), a.cache)
     return 0

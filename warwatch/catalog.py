@@ -520,6 +520,22 @@ for th in C.FIRMS_BOX:
         "Infrared satellites see shelling, strikes, burning depots and refinery fires within hours. A sustained rise inside a war-risk box is an early read on kinetic activity.",
         _fires(th), needs=["FIRMS_MAP_KEY"], url="https://firms.modaps.eosdis.nasa.gov/map/", sub="Satellite")
 
+def _fires_anom(th):
+    def go():
+        import firecls
+        pts = firecls.series(th)
+        if not pts:
+            raise C.Pending("first refresh pending (the map run fills it; the archive replay seeds the history)")
+        return pts
+    return go
+
+
+for th in C.FIRMS_BOX:
+    add(f"firms_anom_{th}", f"Unusual satellite fire detections per day, {TH[th]} (NASA FIRMS, classified)", "geospatial", th, "daily", False,
+        "Only the heat with no usual reason: not a gas flare, plant, volcano or farm-burning season, or far hotter than a plant's normal. "
+        "Shown for reading; it carries no weight until it passes its test (docs/FIREANOM_PLAN.md).",
+        _fires_anom(th), needs=["FIRMS_MAP_KEY"], url="https://firms.modaps.eosdis.nasa.gov/map/", sub="Satellite")
+
 # ============ Evacuation and maritime-incident headlines (Google News, backfilled by the news job) ============
 SEA = {"iran": 'tanker OR vessel (attacked OR struck OR seized OR "boarded") (Hormuz OR "Gulf of Oman" OR "Persian Gulf" OR UKMTO)',
        "yemen": 'ship OR vessel OR tanker (attacked OR struck OR missile OR drone) ("Red Sea" OR "Gulf of Aden" OR Houthi OR UKMTO)',
@@ -760,7 +776,7 @@ for _s in SERIES:
 # Their noise-to-signal ratio on 78 labelled events (2018-2026) was 1 or more, so they raised false alarms without adding
 # warning (docs/METHODOLOGY.md, "Zero-weight families"). They stay on the page and keep being scored; the composite ignores
 # them until a refit shows they lead events. Remove an id here to give it weight again.
-ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_build_", "wheat_etf", "copper_etf", "brent_etf", "sar_")
+ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_build_", "wheat_etf", "copper_etf", "brent_etf", "sar_", "firms_anom_", "bases_")
 for _s in SERIES:
     if _s["id"].startswith(ZERO_WEIGHT):
         _s["scored"] = False

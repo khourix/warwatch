@@ -40,3 +40,13 @@ live map instead.
 **Precision audit** (owner, after the result). 50 random `anom` detections from 2022–2025, each opened with the Copernicus
 link, labelled conflict, industrial, farm/wild or cannot tell. There is no pass mark; it tells us whether the label
 "unusual" can be trusted.
+
+## Amendment (2026-10-15, before the test ran)
+
+The first replay put 11% of the Ukraine box's detections in the class "offshore". NASA's `type` 3 marks every detection
+over water, not just platforms. Reed fires in river deltas, and fires along the Dnipro front line, were being hidden as
+"offshore platform or flare". The offshore rule now requires a persistent source: at least 60 days a year in at least
+2 of the 5 years before, the same persistence as the static rule. The replay was run again.
+
+This change was decided from the class shares alone. No event comparison, z value or hit rate had been computed. The
+weights stay as frozen above.

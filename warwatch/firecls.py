@@ -26,6 +26,7 @@ sys.path.insert(0, HERE)
 import config as C  # noqa: E402
 
 DATA = os.path.join(HERE, "data")
+REPLAY_DIR = os.path.join(os.path.dirname(HERE), "backfill", "data", "firecls")   # fireref.py replay: archive history of the unusual-fire counts
 FINE = 0.01           # degrees, ~1.1 km
 COARSE = 0.1          # degrees, ~11 km
 Y0 = 2012             # first archive year (VIIRS S-NPP)
@@ -220,8 +221,11 @@ def _nb(ref, i, j):
 
 def static_row(row, year):
     """Burns on one day in six or more, year after year, or NASA flags it as a static land source."""
-    if row["t2"] >= W["static_t2"]:
-        return True
+    return row["t2"] >= W["static_t2"] or persistent(row, year)
+
+
+def persistent(row, year):
+    """Burned on at least static_days days in each of static_years of the five years before `year`."""
     return sum(1 for y in range(year - 5, year) if row["d"].get(y, 0) >= W["static_days"]) >= W["static_years"]
 
 
@@ -319,7 +323,9 @@ def classify_one(p, ref, near_n, day):
     if any(r["t1"] >= 3 for r in rows):
         return _set(p, "volc", 5, "Volcano: NASA marks this spot as an active volcano.")
     sens, sens_km = ref.sites.near(lat, lon, SENSITIVE, W["sens_km"])
-    if any(r["t3"] >= 3 for r in rows) and not (sens and sens["kind"] in ("port", "military")):
+    # offshore = a persistent source over water (a platform). NASA's type 3 marks any detection over water, so reed fires in
+    # river deltas and shelling along a river front would otherwise be hidden as "offshore".
+    if any(r["t3"] >= 3 and persistent(r, year) for r in rows) and not (sens and sens["kind"] in ("port", "military")):
         return _set(p, "off", 5, "Offshore platform or flare: NASA marks this spot as an offshore heat source.")
     stat = [r for r in rows if static_row(r, year)]
     ind, _ = ref.sites.near(lat, lon, INDUSTRIAL, W["ind_km"])
@@ -400,6 +406,7 @@ def classify(pts, box, today=None, ref=None):
         except (KeyError, ValueError):
             day = today
         classify_one(p, ref, near.get(id(p), 1), day)
+    econ_check(pts, box)
     assign_clusters(pts, box)
     review(pts)
     return pts
@@ -473,4 +480,140 @@ def review(pts, rev=None):
                 p["c"] = "unex"
         elif r["verdict"] in ("wait", "cloud"):
             p["why"] += " Waiting for a clear satellite image." if r["verdict"] == "wait" else " No clear satellite image yet (cloud)."
+    return pts
+
+
+# ---------------------------------------------------------------- caches written by the build
+ANOMS = "fire_anoms"          # clusters with an anomaly, for the imagery review (FIRECLASS F5)
+DAILY = "firms_anom_events"   # [date, box, count of S-NPP anom + hot detections]
+KEEP_DAYS = 21
+
+
+def save_anoms(pts, today=None):
+    """Merges this run's anomalous clusters into history/cache/fire_anoms.csv: cid, box, lat, lon, first_ts, last_ts, max_frp, score, class."""
+    import store
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    cut = (today - dt.timedelta(days=KEEP_DAYS)).isoformat()
+    rows = {r[0]: r for r in store.cache_rows(ANOMS) if len(r) == 9 and r[0] != "cid" and r[4][:10] >= cut}
+    for p in pts:
+        if p.get("c") not in ANOMALY or not p.get("cid"):
+            continue
+        ts = p.get("ts") or p["date"]
+        r = rows.get(p["cid"])
+        if r is None:
+            rows[p["cid"]] = [p["cid"], p.get("box", ""), f"{p['lat']:.4f}", f"{p['lon']:.4f}", ts, ts, f"{p['frp']:.1f}", str(p["a"]), p["c"]]
+        else:
+            r[4], r[5] = min(r[4], ts), max(r[5], ts)
+            if p["frp"] > float(r[6]):
+                r[6] = f"{p['frp']:.1f}"
+            if p["a"] > int(r[7]):
+                r[7], r[8] = str(p["a"]), p["c"]
+    out = sorted(rows.values(), key=lambda r: r[4])
+    store.cache_rows_save(ANOMS, [["cid", "box", "lat", "lon", "first_ts", "last_ts", "max_frp", "score", "c"]] + out)
+    return len(out)
+
+
+def save_daily(pts, today=None, days=7):
+    """Daily S-NPP anomaly counts per box for the firms_anom_<box> series. The last `days` full days are recounted each run
+    (later passes and clusters can change a class); older days are kept as they were."""
+    import store
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    window = {(today - dt.timedelta(days=k)).isoformat() for k in range(1, days + 1)}
+    boxes = {p.get("box") for p in pts if p.get("box")}
+    cnt = {(d, b): 0 for d in window for b in boxes}
+    for p in pts:
+        if p.get("sat", "SNPP") == "SNPP" and p.get("c") in ANOMALY and p["date"] in window and p.get("box"):
+            cnt[(p["date"], p["box"])] += 1
+    keep = [r for r in store.cache_rows(DAILY) if len(r) == 3 and (r[0], r[1]) not in cnt]
+    rows = sorted(keep + [[d, b, str(n)] for (d, b), n in cnt.items()])
+    store.cache_rows_save(DAILY, rows)
+    return len(rows)
+
+
+def daily_series(box):
+    import store
+    return sorted((d, float(n)) for d, b, n in (r for r in store.cache_rows(DAILY) if len(r) == 3) if b == box)
+
+
+def archive_series(box):
+    """Replayed archive counts (fireref.py replay) for the days before the live cache starts -> [(date, count)]."""
+    try:
+        with open(os.path.join(REPLAY_DIR, f"firms_anom_{box}.csv"), newline="") as f:
+            return [(r[0], float(r[1])) for r in csv.reader(f) if len(r) == 2 and r[0][:1].isdigit()]
+    except OSError:
+        return []
+
+
+def series(box):
+    """Archive replay, then the live daily counts: the firms_anom_<box> series."""
+    live = daily_series(box)
+    first = live[0][0] if live else "9999"
+    return [(d, v) for d, v in archive_series(box) if d < first] + live
+
+
+# ---------------------------------------------------------------- second opinion for Ukraine (FIRECLASS F3)
+ECON_URL = "https://raw.githubusercontent.com/TheEconomist/the-economist-war-fire-model/master/output-data/ukraine_war_fires.csv"
+ECON = "econ_war_fires"       # cache: date, lat, lon of fires The Economist's model calls war-related (last 21 days)
+
+
+def econ_refresh(today=None, url=ECON_URL):
+    """Streams The Economist's war-fire file (CC BY 4.0, ~70 MB, updated several times a day) and keeps the last 21 days of
+    fires it marks war-related. Runs in imagery.yml every 6 hours, not in the 30-minute build."""
+    import store
+    import urllib.request
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    cut = (today - dt.timedelta(days=KEEP_DAYS)).isoformat()
+    req = urllib.request.Request(url, headers={"User-Agent": "warwatch (github.com/khourix/warwatch)"})
+    out = []
+    with urllib.request.urlopen(req, timeout=300) as f:
+        rd = csv.reader(io.TextIOWrapper(f, encoding="utf-8", errors="replace"))
+        head = next(rd)
+        ix = {h: k for k, h in enumerate(head)}
+        la, lo, d, w = ix["LATITUDE"], ix["LONGITUDE"], ix["date"], ix["war_fire"]
+        for r in rd:
+            try:
+                if r[w] == "1" and r[d] >= cut:
+                    out.append([r[d], f"{float(r[la]):.4f}", f"{float(r[lo]):.4f}"])
+            except (IndexError, ValueError):
+                continue
+    store.cache_rows_save(ECON, sorted(out))
+    return len(out)
+
+
+_ECON = {}
+
+
+def econ_index():
+    if "s" not in _ECON:
+        import store
+        rows = [{"name": "", "kind": "econ", "lat": float(r[1]), "lon": float(r[2]), "date": r[0]} for r in store.cache_rows(ECON) if len(r) == 3]
+        _ECON["s"] = Sites(rows) if rows else None
+    return _ECON["s"]
+
+
+def econ_check(pts, box):
+    """Ukraine only: a detection within 1 km and 1 day of a fire The Economist's model calls war-related gets +15 and a note.
+    A 'seasonal' one becomes unexplained: their model already allows for the farm-burning season."""
+    if box != "ukraine":
+        return pts
+    idx = econ_index()
+    if idx is None:
+        return pts
+    for p in pts:
+        if p.get("c") not in ("anom", "unex", "seas"):
+            continue
+        try:
+            day = dt.date.fromisoformat(p["date"])
+        except (KeyError, ValueError):
+            continue
+        bi, bj = math.floor(p["lat"] / Sites.B), math.floor(p["lon"] / Sites.B)
+        near = [s for a in (-1, 0, 1) for b in (-1, 0, 1) for s in idx.b.get((bi + a, bj + b), ())]
+        if any(abs((dt.date.fromisoformat(s["date"]) - day).days) <= 1 and km(p["lat"], p["lon"], s["lat"], s["lon"]) <= 1.0 for s in near):
+            if p["c"] == "seas":
+                p["c"], p["a"], p["routine"] = "unex", 40, False   # their flag alone does not make it unusual (40 + 15 < 60)
+            p["a"] = min(100, p["a"] + 15)
+            if p["c"] == "unex" and p["a"] >= ANOM_AT:
+                p["c"] = "anom"
+            p["why"] += " The Economist's war-fire model also marks this fire as war-related."
+            p["econ"] = 1
     return pts
