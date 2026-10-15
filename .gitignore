@@ -4,3 +4,5 @@ __pycache__/
 .env*
 backtest/cache/
 .verify-evidence/
+.firms_archive/
+warwatch/data/raw/

@@ -134,6 +134,19 @@ FIRMS_BOX = {   # satellite thermal boxes: wider than the aircraft boxes so they
     "israel": (28, 38, 32, 44),    # Israel, Gaza, Lebanon, Syria, Jordan, Sinai
     "korea": (33, 43, 124, 132), "libya": (24, 34, 10, 25),   # skipped where crop burning swamps the signal: Sudan, DRC, India, Venezuela
 }
+FIRE_COUNTRIES = {   # NASA FIRMS yearly country files covering each FIRMS_BOX (names as FIRMS spells them, checked 15 Oct 2026); detections are clipped to the box
+    "ukraine": ["Ukraine", "Russian_Federation", "Belarus", "Moldova", "Romania", "Poland", "Slovakia", "Hungary"],
+    "europe_east": ["Poland", "Lithuania", "Latvia", "Estonia", "Finland", "Sweden", "Belarus", "Russian_Federation", "Germany", "Czech_Republic", "Slovakia", "Ukraine"],
+    "iran": ["Iran", "Iraq", "Kuwait", "Bahrain", "Qatar", "United_Arab_Emirates", "Oman", "Saudi_Arabia", "Syria", "Turkey", "Jordan",
+             "Armenia", "Azerbaijan", "Turkmenistan", "Afghanistan", "Pakistan", "Georgia"],
+    "yemen": ["Yemen", "Saudi_Arabia", "Oman", "Eritrea", "Ethiopia", "Djibouti", "Somalia", "Sudan", "Egypt"],
+    "israel": ["Israel", "Palestine", "Lebanon", "Syria", "Jordan", "Egypt", "Turkey", "Iraq", "Saudi_Arabia", "Cyprus"],
+    "korea": ["Republic_of_Korea", "Dem_Rep_Korea", "China", "Japan"],
+    "libya": ["Libya", "Tunisia", "Algeria", "Egypt", "Niger", "Chad", "Sudan"],
+}
+# Years that set the SEASONAL (farm-burning) baseline. Wars are left out so a burning front line is not learned as normal;
+# other boxes use 2012 to the year before. Static sources (flares) use every year.
+FIRE_CLIM_YEARS = {"ukraine": (2012, 2021), "europe_east": (2012, 2021), "israel": (2012, 2022)}
 HUBS = {   # civil-traffic samples for GNSS-jamming and airspace-closure signals: (lat, lon, radius nm)
     "ukraine": [(46.8, 26.5, 250)],
     "europe_east": [(55.0, 22.5, 250)],
