@@ -309,9 +309,13 @@ class TestBaseWatch(unittest.TestCase):
                          ["y", "out", "2026-10-08;2026-10-14", "2026-10-14", "", "-3.10", "harbour", ""]])
             B.save_series("base_x", [("2026-10-08", 0.2), ("2026-10-14", -2.8)])
             B.save_rows("base_chips", ["site", "kind", "date", "scene_id"], [["x", "a", "2026-10-12", "S2"]])
+            viewer = {i["id"]: i for i in B.layer(bases)}           # NO-GO: images to look at, no states
+            B.ALERTS = True
             items = {i["id"]: i for i in B.layer(bases)}
         finally:
-            B.CACHE = old
+            B.CACHE, B.ALERTS = old, False
+        self.assertEqual({i["st"] for i in viewer.values()}, {"viewer"})
+        self.assertIn("z -3.1", viewer["y"]["why"])
         self.assertEqual(items["x"]["pts"], [0.2, -2.8])
         self.assertIn("One radar pass (2026-10-14)", items["x"]["why"])
         self.assertEqual(items["x"]["img"], {"a": "img/bases/x_a.jpg", "ad": "2026-10-12"})

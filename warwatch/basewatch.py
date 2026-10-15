@@ -39,9 +39,9 @@ OPTICAL = os.path.join(HIST, "basewatch_optical.csv")
 CACHE = os.path.join(HIST, "cache")
 
 # ---- frozen by the feasibility test (docs/BASESPIKE.md) ----
-ALERTS = False          # GO turns the states "out"/"in", the theatre counts, the tell and the alerts on
-METRIC = "bright_m2"    # radar metric: bright_m2 (area of pixels with VV >= T dB) or blobs (3 to 150 pixel groups)
-T_DB = 0.0              # VV threshold in dB
+ALERTS = False          # NO-GO on 2026-10-15 (2 of 3 cases, 10.3% false alarms against a 10% limit): a viewer, no states or alerts
+METRIC = "blobs"        # radar metric chosen by the test: groups of 3 to 150 pixels with VV >= T_DB
+T_DB = -3.0             # VV threshold in dB chosen by the test
 # ------------------------------------------------------------
 THRESHOLDS = (-6.0, -3.0, 0.0, 3.0)
 BLOB_MIN, BLOB_MAX = 3, 150
@@ -470,9 +470,16 @@ def layer(path=BASES):
             if k in c:
                 img[k] = f"img/bases/{s['id']}_{k}.jpg"
                 img[k + "d"] = c[k]
+        if not ALERTS and state_ in ("out", "in", "changed", "normal"):
+            zt = f"{float(r['z']):+.1f}" if r.get("z") else "n/a"
+            state_ = "viewer"
+            why_ = (f"Latest radar pass {r.get('last_radar') or 'n/a'}: z {zt} against this orbit's usual count of bright objects {where}. "
+                    "Shown for looking only: the automated check did not pass its test (docs/BASESPIKE.md).")
+        else:
+            why_ = STATE_WHY.get(state_, "").format(where=where, what=what, dates=dates)
         out.append({"id": s["id"], "n": s["name"], "lat": s["lat"], "lon": s["lon"], "k": s["kind"], "side": s["side"], "ths": s["theatres"],
                     "st": state_, "z": float(r["z"]) if r.get("z") else None, "last": r.get("last_radar", ""), "lo": r.get("last_optical", ""),
-                    "pts": pts, "why": STATE_WHY.get(state_, "").format(where=where, what=what, dates=dates), "note": r.get("note", ""),
+                    "pts": pts, "why": why_, "note": r.get("note", ""),
                     "wy": s.get("why", ""), "img": img})
     return out
 

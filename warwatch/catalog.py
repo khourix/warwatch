@@ -637,7 +637,8 @@ def _base_theatres():
         return []
 
 
-for th in _base_theatres():
+import basewatch as _bw   # noqa: E402  (standard library at import)
+for th in (_base_theatres() if _bw.ALERTS else []):   # registered only after the feasibility test says GO (docs/BASESPIKE.md)
     add(f"bases_out_{th}", f"Bases with far fewer aircraft or ships than usual, {TH[th]} (Sentinel-1 radar)", "geospatial", th, "daily", False,
         "Sites where two radar passes in a week show far fewer bright objects on the aprons or in the harbour than that orbit usually sees. "
         "Al Udeid emptied four days before Iran struck it in June 2025. Shown for reading; it carries no weight until it passes its test.",
