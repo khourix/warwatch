@@ -609,6 +609,39 @@ def sites(box_names, osm=True):
     log("sites written:", len(keep), dict(sorted(by.items())))
 
 
+def osm_part(box, path):
+    """One box's OpenStreetMap sites to a CSV (for parallel runner jobs); failed tiles are listed in the log."""
+    got, failed = osm_sites(C.FIRMS_BOX[box])
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f, lineterminator="\n")
+        w.writerow(F.SITE_COLS)
+        for s_ in got:
+            w.writerow([s_["id"], s_["name"].replace("\n", " "), s_["kind"], f"{s_['lat']:.5f}", f"{s_['lon']:.5f}", "osm"])
+    log(box, len(got), "OSM sites,", len(failed), "tiles failed:", failed)
+
+
+def merge_osm(paths):
+    """fire_sites.csv = the current non-OSM rows (GGFR, WRI, GEM) + the OSM parts; boxes without a part keep their old OSM rows."""
+    try:
+        with open(os.path.join(F.DATA, "fire_sites.csv"), newline="", encoding="utf-8") as f:
+            old = [dict(r, lat=float(r["lat"]), lon=float(r["lon"])) for r in csv.DictReader(l for l in f if not l.startswith("#"))]
+    except OSError:
+        old = []
+    out = [r for r in old if r.get("src") != "osm"]
+    covered = set()
+    for p in paths:
+        box = os.path.basename(p).split("osm_")[-1].rsplit(".", 1)[0]
+        covered.add(box)
+        with open(p, newline="", encoding="utf-8") as f:
+            out += [dict(r, lat=float(r["lat"]), lon=float(r["lon"])) for r in csv.DictReader(f)]
+    out += [r for r in old if r.get("src") == "osm" and not any(inside(C.FIRMS_BOX[b], r["lat"], r["lon"]) for b in covered)]
+    keep = write_sites(out)
+    by = {}
+    for r in keep:
+        by[r["kind"]] = by.get(r["kind"], 0) + 1
+    log("sites written:", len(keep), dict(sorted(by.items())))
+
+
 # ---------------------------------------------------------------- checks
 CHECKS = [   # name, box, lat, lon, expect routine (True) or not (False); static checks search the nearest static cell within 3 km
     ("Baba Gurgur flame, Kirkuk", "iran", 35.535, 44.358, True),
@@ -750,7 +783,8 @@ def probe():
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["probe", "build", "sites", "check", "replay", "econ", "cases"])
+    ap.add_argument("cmd", choices=["probe", "build", "sites", "check", "replay", "econ", "cases", "osm-part", "merge-osm"])
+    ap.add_argument("paths", nargs="*")
     ap.add_argument("--box", default=",".join(C.FIRMS_BOX))
     ap.add_argument("--years", default=f"2012-{dt.date.today().year - 1}")
     ap.add_argument("--cache", default=os.environ.get("FIRMS_ARCHIVE_CACHE", os.path.join(os.path.dirname(HERE), ".firms_archive")))
@@ -766,6 +800,10 @@ def main(argv=None):
         sites(names, osm=not a.no_osm)
     elif a.cmd == "check":
         return 1 if check() else 0
+    elif a.cmd == "osm-part":
+        osm_part(names[0], a.paths[0])
+    elif a.cmd == "merge-osm":
+        merge_osm(a.paths)
     elif a.cmd == "cases":
         cases(a.cache)
     elif a.cmd == "econ":

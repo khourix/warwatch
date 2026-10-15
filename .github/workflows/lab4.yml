@@ -1,0 +1,44 @@
+name: lab4
+# TEMPORARY, branch-only: OSM fire sites, one runner per box in parallel (Overpass limits are per IP), then one merge. Removed before the PR.
+on:
+  push:
+    branches: [claude/hopeful-heisenberg-tpy723]
+    paths: [".github/workflows/lab4.yml"]
+permissions:
+  contents: write
+concurrency:
+  group: lab4
+  cancel-in-progress: false
+jobs:
+  part:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        box: [ukraine, europe_east, iran, yemen, israel, korea, libya]
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -u warwatch/fireref.py osm-part --box ${{ matrix.box }} osm_${{ matrix.box }}.csv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: osm_${{ matrix.box }}
+          path: osm_${{ matrix.box }}.csv
+  merge:
+    needs: part
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: parts
+      - run: python3 -u warwatch/fireref.py merge-osm parts/*/osm_*.csv
+      - name: Commit fire_sites.csv
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add warwatch/data/fire_sites.csv
+          git diff --cached --quiet && exit 0
+          git commit -qm "lab4: fire sites with OpenStreetMap $(date -u +%FT%H:%MZ)"
+          for i in 1 2 3 4 5; do git pull --rebase -q origin claude/hopeful-heisenberg-tpy723 && git push -q origin HEAD:claude/hopeful-heisenberg-tpy723 && exit 0; sleep $((i*10)); done
