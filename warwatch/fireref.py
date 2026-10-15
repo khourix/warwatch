@@ -389,10 +389,11 @@ def osm_kind(t):
     return None
 
 
-def osm_sites(box):
+def osm_sites(box, step=3.0):
+    """All site kinds for a box from Overpass, in 3-degree tiles; storage tanks (the heaviest tag) get their own query."""
     out = []
-    union = "".join(f"{flt};" for _, flt in TAGS)
-    for la0, la1, lo0, lo1 in tiles(box):
+    groups = ["".join(f"{flt};" for k, flt in TAGS if k != "fuel"), "".join(f"{flt};" for k, flt in TAGS if k == "fuel")]
+    for (la0, la1, lo0, lo1), union in ((t, g) for t in tiles(box, step) for g in groups):
         q = f"[out:json][timeout:600][maxsize:1073741824][bbox:{la0},{lo0},{la1},{lo1}];({union});out center tags;"
         els = overpass(q).get("elements", [])
         n = 0

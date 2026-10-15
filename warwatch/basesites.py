@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Base registry for the satellite base watch (docs/BASEWATCH_PLAN.md, B1). Standard library only.
 
-    python3 warwatch/basesites.py build     # data/bases_seed.csv + OpenStreetMap outlines -> data/bases.json, docs/BASES_REVIEW.md
+    python3 warwatch/basesites.py build          # data/bases_seed.csv + OpenStreetMap outlines -> data/bases.json, docs/BASES_REVIEW.md
+    python3 warwatch/basesites.py build al_udeid # rebuild named sites only (a plain build skips sites it already has)
 
 For each seed site it asks Overpass for the military or aerodrome outline, the aprons (aeroway=apron) and, for naval
 sites, piers and quays. Hand-drawn shapes in data/bases_manual.geojson (properties: id, part = outline|apron|harbour)
@@ -215,7 +216,13 @@ def write_review(recs, path=REVIEW):
         f.write("\n".join(lines) + "\n")
 
 
-def build():
+def save(recs):
+    with open(OUT + ".part", "w", encoding="utf-8") as f:
+        json.dump(recs, f, separators=(",", ":"), ensure_ascii=False)
+    os.replace(OUT + ".part", OUT)
+
+
+def build(only=None):
     man = manual()
     try:
         with open(OUT, encoding="utf-8") as f:
@@ -224,6 +231,10 @@ def build():
         old = {}
     recs = []
     for s in seeds():
+        if only and s["id"] not in only:
+            continue
+        if not only and s["id"] in old and old[s["id"]].get("outline"):
+            continue          # already built; rebuild one with: basesites.py build <id>
         try:
             got = pick(s, query(s))
             r = record(s, got, man)
@@ -234,15 +245,18 @@ def build():
                 continue
             r = dict(old[s["id"]], **{k: s[k] for k in ("name", "lat", "lon", "kind", "side", "theatres", "why")})
         recs.append(r)
+        old[s["id"]] = r
+        save(list(old.values()) if len(old) > len(recs) else recs)    # after every site, so a stopped run keeps what it got
         time.sleep(4)
-    with open(OUT, "w", encoding="utf-8") as f:
-        json.dump(recs, f, separators=(",", ":"), ensure_ascii=False)
+    order = {s["id"]: k for k, s in enumerate(seeds())}
+    recs = sorted(old.values(), key=lambda r: order.get(r["id"], 999))
+    save(recs)
     write_review(recs)
     print("written", len(recs), "sites;", sum(1 for r in recs if needs_review(r)), "need review")
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] != ["build"]:
+    if sys.argv[1:2] != ["build"]:
         print(__doc__)
         sys.exit(2)
-    build()
+    build(set(sys.argv[2:]) or None)
