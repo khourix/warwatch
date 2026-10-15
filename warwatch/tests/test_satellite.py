@@ -285,6 +285,14 @@ class TestBaseWatch(unittest.TestCase):
         self.assertLess(lo0, 51.30)
         self.assertGreater(la1, 25.11)
 
+    def test_simplify_keeps_a_closed_ring_and_drops_only_collinear_points(self):
+        import basesites
+        sq = [[51.30, 25.10], [51.305, 25.10], [51.31, 25.10], [51.31, 25.11], [51.30, 25.11], [51.30, 25.10]]
+        out = basesites.simplify(sq)
+        self.assertEqual(out[0], out[-1])
+        self.assertEqual(len(out), 5)                 # the midpoint of the straight edge goes, the 4 corners stay
+        self.assertAlmostEqual(basesites.area_m2(out), basesites.area_m2(sq), delta=1.0)
+
     def test_layer_turns_caches_into_map_items(self):
         import json
         import basewatch as B

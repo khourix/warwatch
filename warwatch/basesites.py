@@ -66,9 +66,16 @@ def contains(ring, lon, lat):
 
 
 def simplify(line, tol_m=5.0):
-    """Douglas-Peucker in local metres; keeps the first and last points."""
+    """Douglas-Peucker in local metres; keeps the first and last points. A closed ring (first point = last) is split at its
+    farthest point from the start and each half simplified, since a zero-length base line would drop every point."""
     if len(line) < 4:
-        return line
+        return [[round(p[0], 5), round(p[1], 5)] for p in line]
+    if line[0] == line[-1]:
+        f = _xy(line[0][1])
+        x0, y0 = f(*line[0])
+        far = max(range(1, len(line) - 1), key=lambda k: math.hypot(f(*line[k])[0] - x0, f(*line[k])[1] - y0))
+        a, b = simplify(line[:far + 1], tol_m), simplify(line[far:], tol_m)
+        return a[:-1] + b
     f = _xy(line[0][1])
     pts = [f(*p) for p in line]
 
