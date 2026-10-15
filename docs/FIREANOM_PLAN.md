@@ -64,3 +64,11 @@ Tehran burn every June. Seasonal now also needs the spot itself (~3 km) to have 
 spot had two tiny detections in 12 years. The ~1 km first-burn grid became a grid of the years each cell burned, to
 count this. This was decided from that one case check. No event comparison had been
 run. The replay is run again after the OpenStreetMap site list is built, so the test uses the full site list.
+
+**Fourth amendment (same day, before the test ran).** The OpenStreetMap site list could not be built today. The public
+Overpass servers were at capacity for more than six hours (single and parallel runner jobs, and four mirrors). The test
+therefore runs with the site list as it stands: World Bank GGFR flares and WRI power plants, with no OSM military sites,
+airfields, ports, fuel depots or substations. The "near a sensitive site" score term (+25) and the rule that sensitive
+sites block "seasonal" therefore never apply. This tests the classifier without that part. When `fireref.yml` next runs
+(monthly: sites, then replay), the test is run again with the full list, and both results are reported. Nothing else
+changes.
