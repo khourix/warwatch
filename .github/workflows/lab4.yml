@@ -19,7 +19,7 @@ jobs:
         box: [ukraine, europe_east, iran, yemen, israel, korea, libya]
     steps:
       - uses: actions/checkout@v4
-      - run: python3 -u warwatch/fireref.py osm-part --box ${{ matrix.box }} osm_${{ matrix.box }}.csv
+      - run: python3 -u warwatch/fireref.py osm-part osm_${{ matrix.box }}.csv --box ${{ matrix.box }}
       - uses: actions/upload-artifact@v4
         with:
           name: osm_${{ matrix.box }}
