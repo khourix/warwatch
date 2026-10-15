@@ -217,6 +217,15 @@ def write_review(recs, path=REVIEW):
 
 
 def save(recs):
+    """Merges into the file on disk by id (two builders may run at once on different sites), keeping the seed order."""
+    try:
+        with open(OUT, encoding="utf-8") as f:
+            cur = {r["id"]: r for r in json.load(f)}
+    except (OSError, ValueError):
+        cur = {}
+    cur.update({r["id"]: r for r in recs})
+    order = {s["id"]: k for k, s in enumerate(seeds())}
+    recs = sorted(cur.values(), key=lambda r: order.get(r["id"], 999))
     with open(OUT + ".part", "w", encoding="utf-8") as f:
         json.dump(recs, f, separators=(",", ":"), ensure_ascii=False)
     os.replace(OUT + ".part", OUT)
@@ -246,12 +255,11 @@ def build(only=None):
             r = dict(old[s["id"]], **{k: s[k] for k in ("name", "lat", "lon", "kind", "side", "theatres", "why")})
         recs.append(r)
         old[s["id"]] = r
-        save(list(old.values()) if len(old) > len(recs) else recs)    # after every site, so a stopped run keeps what it got
+        save([r])    # after every site, so a stopped run keeps what it got
         time.sleep(4)
-    order = {s["id"]: k for k, s in enumerate(seeds())}
-    recs = sorted(old.values(), key=lambda r: order.get(r["id"], 999))
     save(recs)
-    write_review(recs)
+    with open(OUT, encoding="utf-8") as f:
+        write_review(json.load(f))
     print("written", len(recs), "sites;", sum(1 for r in recs if needs_review(r)), "need review")
 
 
