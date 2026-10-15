@@ -15,6 +15,7 @@ Archive: https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/<year>/vii
 such as gas flares, and offshore detections).
 """
 import argparse
+import array
 import bisect
 import csv
 import datetime as dt
@@ -163,7 +164,7 @@ class Acc:
     def __init__(self, name, box):
         self.name, self.box = name, box
         self.i0, self.j0, self.rows, self.cols = F.grid_dims(name)
-        self.first = bytearray(self.rows * self.cols)
+        self.ymask = array.array("H", bytes(2 * self.rows * self.cols))   # per cell: bit k = burned in 2012 + k
         self.days = {}        # (i, j) -> {year: days}
         self.types = {}       # (i, j) -> [t1, t2, t3]
         self.coarse = {}      # (I, J) -> {year: month mask}
@@ -201,8 +202,8 @@ class Acc:
         for c, n in per.items():
             self.days.setdefault(c, {})[y] = n
             r, k = c[0] - self.i0, c[1] - self.j0
-            if 0 <= r < self.rows and 0 <= k < self.cols and not self.first[r * self.cols + k]:
-                self.first[r * self.cols + k] = y - 2000
+            if 0 <= r < self.rows and 0 <= k < self.cols:
+                self.ymask[r * self.cols + k] |= 1 << (y - F.Y0)
         for c, (mask, I, J) in self._months.items():
             if per.get(c, 0) >= KEEP_STATIC_DAYS or c in self._typed:
                 continue         # flares, plants, volcanoes and offshore heat do not make an area "seasonal"
@@ -255,10 +256,10 @@ class Acc:
             F.write_cells(f, cells, years)
         with gzip.open(os.path.join(out_dir, f"fire_coarse_{self.name}.csv.gz"), "wt", newline="", compresslevel=9) as f:
             F.write_coarse(f, self.coarse, years)
-        with gzip.open(os.path.join(out_dir, f"fire_first_{self.name}.bin.gz"), "wb", compresslevel=9) as f:
-            f.write(F.write_grid(self.i0, self.j0, self.rows, self.cols, self.first))
-        sizes = {k: os.path.getsize(os.path.join(out_dir, f"fire_{k}_{self.name}" + (".bin.gz" if k == "first" else ".csv.gz"))) for k in ("cells", "coarse", "first")}
-        log(f"{self.name}: {len(cells)} notable cells, {len(self.coarse)} coarse cells, {sum(1 for v in self.first if v)} cells ever burned; bytes {sizes}")
+        with gzip.open(os.path.join(out_dir, f"fire_years_{self.name}.bin.gz"), "wb", compresslevel=9) as f:
+            f.write(F.write_grid(self.i0, self.j0, self.rows, self.cols, self.ymask))
+        sizes = {k: os.path.getsize(os.path.join(out_dir, f"fire_{k}_{self.name}" + (".bin.gz" if k == "years" else ".csv.gz"))) for k in ("cells", "coarse", "years")}
+        log(f"{self.name}: {len(cells)} notable cells, {len(self.coarse)} coarse cells, {sum(1 for v in self.ymask if v)} cells ever burned; bytes {sizes}")
 
 
 def years_arg(s):

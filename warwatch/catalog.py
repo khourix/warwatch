@@ -618,6 +618,34 @@ for box, th, nm in (("hormuz", "iran", "the Strait of Hormuz"), ("bab_el_mandeb"
         "Counts include oil rigs and miss small boats; a fall means fewer ships, a rise means more.",
         _sar(box), direction="down", url="https://planetarycomputer.microsoft.com/dataset/sentinel-1-rtc", sub="Sea")
 
+# ============ Military bases watched by satellite (Sentinel-1 radar), filled by basewatch.py in the imagery workflow ============
+def _bases(sid):
+    def go():
+        pts = store.cache_load(sid)
+        if not pts:
+            raise C.Pending("waiting for the base-watch feasibility test (docs/BASESPIKE.md) and the imagery job")
+        return pts
+    return go
+
+
+def _base_theatres():
+    import csv as _csv
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "bases_seed.csv"), newline="", encoding="utf-8") as f:
+            return sorted({t for r in _csv.DictReader(f) for t in r["theatres"].split(";") if t in C.THEATRES})
+    except OSError:
+        return []
+
+
+for th in _base_theatres():
+    add(f"bases_out_{th}", f"Bases with far fewer aircraft or ships than usual, {TH[th]} (Sentinel-1 radar)", "geospatial", th, "daily", False,
+        "Sites where two radar passes in a week show far fewer bright objects on the aprons or in the harbour than that orbit usually sees. "
+        "Al Udeid emptied four days before Iran struck it in June 2025. Shown for reading; it carries no weight until it passes its test.",
+        _bases(f"bases_out_{th}"), url="https://planetarycomputer.microsoft.com/dataset/sentinel-1-rtc", sub="Satellite")
+    add(f"bases_in_{th}", f"Bases with far more aircraft or ships than usual, {TH[th]} (Sentinel-1 radar)", "geospatial", th, "daily", False,
+        "Sites where two radar passes in a week show far more bright objects than usual: aircraft or ships arriving. Shown for reading; no weight until tested.",
+        _bases(f"bases_in_{th}"), url="https://planetarycomputer.microsoft.com/dataset/sentinel-1-rtc", sub="Satellite")
+
 # ============ Vessel presence from Global Fishing Watch (fills the gaps where live AIS has no receivers) ============
 GFW_BOX = {"iran": (23, 29, 48, 60), "yemen": (11, 22, 37, 46), "israel": (31, 36, 29, 36), "ukraine": (41, 46, 27, 41), "taiwan": (21, 27, 117, 124),
            "scs": (5, 20, 108, 121), "korea": (33, 40, 124, 131), "venezuela": (8, 14, -74, -60)}

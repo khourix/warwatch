@@ -165,6 +165,8 @@ def map_json(topo, ex, levels_by_country):
                            flag=m.get("flag", ""), dest=m.get("dest", ""), spd=m.get("spd"), note=m.get("note", ""), th=m.get("th", "")) for m in ex.get("ships", [])],
             "inc": [dict(xy=xy(m["lat"], m["lon"]), t=m["t"], d=m["d"], src=m["src"], u=m["u"], loc=m["loc"], th=m["th"], tx=m.get("tx", "")) for m in ex.get("inc", [])],
             "fires": [fire_json(m, xy) for m in ex.get("fires", [])],
+            "bases": [dict({k: v for k, v in b.items() if k not in ("lat", "lon")}, xy=xy(b["lat"], b["lon"]), ll=[round(b["lat"], 3), round(b["lon"], 3)],
+                           th=(b.get("ths") or [""])[0]) for b in ex.get("bases", [])],
             "seas": [{"n": n, "xy": xy(la, lo)} for n, la, lo in C.SEAS],
             "nga": [{"xy": xy(m["lat"], m["lon"]), "id": m["id"], "tx": m["text"], "iss": m["issued"], "th": osint.theatre_at(m["lat"], m["lon"])} for m in ex.get("nga", [])],
             "czib": [{"xy": xy(z["lat"], z["lon"]), "n": z["name"], "u": z["updated"], "th": osint.theatre_at(z["lat"], z["lon"])} for z in ex.get("czib", [])],

@@ -77,6 +77,10 @@ jobs:
             sleep $((i * 5))
           done
           echo "history push skipped"
+      - name: Imagery chips (optional; written by imagery.yml to the imagery branch)
+        run: |
+          mkdir -p site/img
+          (git fetch --depth 1 origin imagery && git --work-tree=site/img checkout FETCH_HEAD -- . && git reset -q) || echo "no imagery yet"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/

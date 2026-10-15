@@ -665,7 +665,7 @@ def collect():
     """All map and panel layers; any failure leaves that layer empty."""
     import os
     import osint
-    ex = {"mil": [], "sqk": [], "ships": [], "inc": [], "fires": [], "nga": [], "markets": [], "levels": {}, "czib": [], "pizza": None, "errors": []}
+    ex = {"mil": [], "sqk": [], "ships": [], "inc": [], "fires": [], "bases": [], "nga": [], "markets": [], "levels": {}, "czib": [], "pizza": None, "errors": []}
     def nga():
         if "nga" not in _CACHE:
             _CACHE["nga"] = fetch_nga()
@@ -714,6 +714,7 @@ def collect():
                     ("ships", ships),
                     ("inc", osint.fetch_incidents),
                     ("fires", fires),
+                    ("bases", lambda: __import__("basewatch").layer()),
                     ("nga", nga),
                     ("czib", czib),
                     ("markets", fetch_markets),

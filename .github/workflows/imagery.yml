@@ -1,0 +1,83 @@
+name: imagery
+# Satellite images every 6 hours (docs/BASEWATCH_PLAN.md S0): The Economist's war-fire flags for Ukraine, a Sentinel-2
+# check of unusual fires (firereview.py), and radar and optical change at the watched bases (basewatch.py). Needs numpy,
+# scipy, rasterio and Pillow, so it runs apart from the dashboard build, which only reads the small files written here.
+# CSVs go to main; image chips go to the orphan branch "imagery", overwritten each run so the repo does not grow.
+on:
+  schedule:
+    - cron: "40 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "all | fires | bases | econ"
+        required: false
+        default: "all"
+      backfill_from:
+        description: "bases: backfill radar scenes from this date (blank = new scenes only)"
+        required: false
+        default: ""
+      site:
+        description: "bases: comma-separated site ids (blank = all)"
+        required: false
+        default: ""
+permissions:
+  contents: write
+concurrency:
+  group: warwatch-imagery
+  cancel-in-progress: false
+jobs:
+  imagery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      ONLY: ${{ github.event.inputs.only || 'all' }}
+      WARWATCH_CHIPS: ${{ github.workspace }}/chips
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install image libraries
+        run: python3 -m pip install --quiet --break-system-packages numpy scipy rasterio pillow
+      - name: Restore the current chips
+        run: |
+          mkdir -p chips
+          git fetch --depth 1 origin imagery 2>/dev/null && git --work-tree=chips checkout FETCH_HEAD -- . && git reset -q || echo "no imagery branch yet"
+      - name: The Economist's war-related fires (Ukraine)
+        if: env.ONLY == 'all' || env.ONLY == 'econ'
+        continue-on-error: true
+        run: python3 warwatch/fireref.py econ
+      - name: Satellite check of unusual fires
+        if: env.ONLY == 'all' || env.ONLY == 'fires'
+        continue-on-error: true
+        run: python3 warwatch/firereview.py
+      - name: Bases
+        if: env.ONLY == 'all' || env.ONLY == 'bases'
+        continue-on-error: true
+        run: |
+          python3 warwatch/basewatch.py \
+            ${{ github.event.inputs.backfill_from && format('--backfill-from {0} --budget 2000 --no-optical', github.event.inputs.backfill_from) || '' }} \
+            ${{ github.event.inputs.site && format('--site {0}', github.event.inputs.site) || '' }}
+      - name: Commit results (public data only)
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add warwatch/history/basewatch_*.csv warwatch/history/cache/base_*.csv warwatch/history/cache/bases_*.csv \
+                  warwatch/history/cache/fire_review.csv warwatch/history/cache/econ_war_fires.csv 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -qm "imagery: $(date -u +%FT%H:%MZ)"
+            for i in 1 2 3; do
+              git pull --rebase -q -X theirs origin main && git push -q && break
+              git rebase --abort 2>/dev/null || true
+              sleep $((i * 5))
+            done
+          fi
+      - name: Push chips to the imagery branch (overwritten, no history)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          [ -d chips ] && [ -n "$(ls -A chips 2>/dev/null)" ] || exit 0
+          find chips/fires -name '*.jpg' -mtime +21 -delete 2>/dev/null || true
+          cd chips
+          rm -rf .git
+          git init -q && git checkout -q -b imagery
+          git add -A
+          git -c user.name=warwatch-bot -c user.email=warwatch-bot@users.noreply.github.com commit -qm "imagery $(date -u +%FT%H:%MZ)"
+          git push -qf "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" imagery

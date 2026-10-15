@@ -8,6 +8,7 @@ with the same measure in calm 30-day windows of the same theatre, on the origina
     python3 warwatch/sourcestudy.py gdeltwide  wider GDELT event types and dyads    -> docs/GDELTWIDE.md  (docs/GDELTWIDE_PLAN.md)
     python3 warwatch/sourcestudy.py senkaku    Japan Coast Guard Senkaku counts     -> docs/SENKAKU.md    (docs/SENKAKU_PLAN.md)
     python3 warwatch/sourcestudy.py metaculus  Metaculus military questions         -> docs/METACULUS.md  (docs/METACULUS_PLAN.md)
+    python3 warwatch/sourcestudy.py fireanom   unusual satellite fires (classified) -> docs/FIREANOM.md   (docs/FIREANOM_PLAN.md)
 """
 import csv
 import datetime as dt
@@ -206,8 +207,36 @@ def metaculus():
     return res
 
 
+FIRE_THEATRES = {"ukraine": ["ukraine"], "europe_east": ["europe_east"], "iran": ["iran", "iraq", "gulf"], "yemen": ["yemen"],
+                 "israel": ["israel", "lebanon", "syria"], "korea": ["korea"], "libya": ["libya"]}
+
+
+def fireanom():
+    """firms_anom_<box> (backfill/data/firecls, fireref.py replay) against the events, pooled over the theatres each box
+    covers; the raw firms_<box> archive series is tested the same way for comparison."""
+    res = {}
+    for fam, path in (("firms_anom", os.path.join(DATA, "firecls", "firms_anom_{b}.csv")), ("firms (raw, for comparison)", os.path.join(DATA, "firms_{b}.csv"))):
+        zs = {}
+        for b, ths in FIRE_THEATRES.items():
+            p = path.format(b=b)
+            if not os.path.exists(p):
+                continue
+            pts = [x for x in _csv_points(p) if x[0] <= "2025-12-31"]
+            z = zdaily(pts)
+            for th in ths:
+                zs[th] = z
+        res[fam] = test(zs, alpha_added=0.05)
+    write(os.path.join(DOCS, "FIREANOM.md"), "Unusual satellite fires against past events",
+          "Written by `warwatch/sourcestudy.py fireanom` to the plan fixed before the counts were read ([FIREANOM_PLAN.md](FIREANOM_PLAN.md)). "
+          "Daily VIIRS S-NPP detections that `firecls` classes as unusual (`anom` or `hot`), replayed over the 2018–2025 archive with "
+          "reference data from earlier years only, scored as the live build scores a daily count and tested against the events of the "
+          "theatres each box covers. Pass rule (firms_anom only): added events p < 0.05, original events p < 0.10, AUC above 0.55 on both. "
+          "The raw count of all detections is tested the same way for comparison; it is not part of the rule.", res)
+    return res
+
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "pla"
-    r = {"pla": pla, "gdeltwide": gdeltwide, "senkaku": senkaku, "metaculus": metaculus}[what]()
+    r = {"pla": pla, "gdeltwide": gdeltwide, "senkaku": senkaku, "metaculus": metaculus, "fireanom": fireanom}[what]()
     for fam, x in r.items():
         print(fam, {k: x[k] for k in ("calm", "fa", "orig", "added", "pass")})

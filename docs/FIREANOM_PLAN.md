@@ -57,3 +57,10 @@ Mariupol (and POSCO Pohang in Korea). Their edge pixels touch water. As "offshor
 normal" test, so a strike on such a plant would have been hidden. Offshore now also needs water detections (type 3) to
 outnumber static-land ones (type 2). The replay was run again. This was decided from class shares and the cells'
 locations only.
+
+**Third amendment (same day, before the test ran).** A case check failed. The Shahran fuel depot fire in Tehran (night of
+14 June 2025, 43 MW) came out as "seasonal farm fire". The seasonal rule looks at a ~33 km area, and the fields around
+Tehran burn every June. Seasonal now also needs the spot itself (~3 km) to have burned in at least 3 earlier years. Shahran's
+spot had two tiny detections in 12 years. The ~1 km first-burn grid became a grid of the years each cell burned, to
+count this. This was decided from that one case check. No event comparison had been
+run. The replay is run again after the OpenStreetMap site list is built, so the test uses the full site list.

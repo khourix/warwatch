@@ -4,7 +4,7 @@ Standard library only, so the dashboard build can run it. The reference tables i
 NASA FIRMS VIIRS S-NPP archive (2012 to last year) and from public site lists (OpenStreetMap, World Bank GGFR, WRI):
 
     data/fire_cells_<box>.csv.gz   ~1 km cells that burn often or carry NASA's static/volcano/offshore type
-    data/fire_first_<box>.bin.gz   first year each ~1 km cell of the box burned (0 = never)
+    data/fire_years_<box>.bin.gz   per ~1 km cell of the box, a 16-bit mask of the archive years it burned (bit 0 = 2012)
     data/fire_coarse_<box>.csv.gz  ~11 km cells: per year, a 12-bit mask of the months with farm or grass fires
     data/fire_sites.csv            industrial and sensitive sites (flares, refineries, bases, depots, ports...)
 
@@ -39,7 +39,7 @@ KIND_NAME = {"flare": "Gas flare", "oilgas": "Oil and gas plant", "steel": "Stee
 ANOM_AT = 60          # an unexplained detection with this score or more is an anomaly
 # Starting weights (FIRECLASS_PLAN F2). Tuned only on 2018-2021 and frozen before the 2022+ test (docs/FIREANOM_PLAN.md).
 W = {"base": 30, "novel": 20, "rare_season": 10, "sensitive": 25, "frp50": 10, "frp200": 10, "cluster": 10, "night": 5, "seasonal": -15,
-     "static_t2": 5, "static_days": 60, "static_years": 2, "seas_p": 0.4, "rare_p": 0.1, "sens_km": 2.0, "ind_km": 1.0}
+     "static_t2": 5, "static_days": 60, "static_years": 2, "spot_years": 3, "seas_p": 0.4, "rare_p": 0.1, "sens_km": 2.0, "ind_km": 1.0}
 
 
 def fine(lat, lon):
@@ -67,18 +67,24 @@ class Ref:
     """Reference tables for one box. cells: {(i, j): row dict}; first: grid of first years; coarse: {(I, J): {year: mask}}."""
     def __init__(self, box, cells, years, grid, coarse, cyears, sites):
         self.box, self.cells, self.years, self.coarse, self.cyears, self.sites = box, cells, years, coarse, cyears, sites
-        self.grid = grid       # (i0, j0, rows, cols, bytes) or None
+        self.grid = grid       # (i0, j0, rows, cols, array of 16-bit year masks) or None
+
+    def year_mask(self, i, j):
+        """Bit k set = the fine cell burned in 2012 + k; None when outside the grid."""
+        if not self.grid:
+            return None
+        i0, j0, rows, cols, a = self.grid
+        r, c = i - i0, j - j0
+        if 0 <= r < rows and 0 <= c < cols:
+            return a[r * cols + c]
+        return None
 
     def first_year(self, i, j):
         """First archive year the fine cell burned, 0 for never, None when outside the grid."""
-        if not self.grid:
+        m = self.year_mask(i, j)
+        if m is None:
             return None
-        i0, j0, rows, cols, b = self.grid
-        r, c = i - i0, j - j0
-        if 0 <= r < rows and 0 <= c < cols:
-            v = b[r * cols + c]
-            return 2000 + v if v else 0
-        return None
+        return Y0 + (m & -m).bit_length() - 1 if m else 0
 
 
 def read_cells(fh):
@@ -128,15 +134,25 @@ def grid_dims(box):
 
 
 def read_grid(raw):
+    """fire_years file -> (i0, j0, rows, cols, array('H') of year masks). Header line "i0 j0 rows cols u16", then little-endian uint16."""
+    import array
     head, _, body = raw.partition(b"\n")
-    i0, j0, rows, cols = (int(x) for x in head.split())
-    if len(body) != rows * cols:
-        raise ValueError("fire_first grid has the wrong size")
-    return i0, j0, rows, cols, body
+    i0, j0, rows, cols = (int(x) for x in head.split()[:4])
+    a = array.array("H")
+    a.frombytes(body)
+    if sys.byteorder != "little":
+        a.byteswap()
+    if len(a) != rows * cols:
+        raise ValueError("fire_years grid has the wrong size")
+    return i0, j0, rows, cols, a
 
 
-def write_grid(i0, j0, rows, cols, body):
-    return f"{i0} {j0} {rows} {cols}\n".encode() + bytes(body)
+def write_grid(i0, j0, rows, cols, masks):
+    import array
+    a = array.array("H", masks)
+    if sys.byteorder != "little":
+        a.byteswap()
+    return f"{i0} {j0} {rows} {cols} u16\n".encode() + a.tobytes()
 
 
 SITE_COLS = ("id", "name", "kind", "lat", "lon", "src")
@@ -201,7 +217,7 @@ def load(box):
         with gzip.open(path(f"fire_coarse_{box}.csv.gz"), "rt", newline="") as f:
             co, cyears = read_coarse(f)
         try:
-            with gzip.open(path(f"fire_first_{box}.bin.gz"), "rb") as f:
+            with gzip.open(path(f"fire_years_{box}.bin.gz"), "rb") as f:
                 grid = read_grid(f.read())
         except OSError:
             grid = None
@@ -270,18 +286,24 @@ def seasonal_p(ref, lat, lon, day):
     return hit / len(ys)
 
 
-def novel(ref, i, j, year):
-    """True when no cell of the 3 x 3 neighbourhood burned in any archive year before `year`; None outside the grid."""
-    seen = None
+def spot_years(ref, i, j, year):
+    """Number of archive years before `year` in which the 3 x 3 neighbourhood (~3 km) burned; None outside the grid."""
+    acc, seen = 0, False
     for a in (-1, 0, 1):
         for b in (-1, 0, 1):
-            f = ref.first_year(i + a, j + b)
-            if f is None:
-                continue
-            seen = seen or False
-            if f and f < year:
-                return False
-    return None if seen is None else True
+            m = ref.year_mask(i + a, j + b)
+            if m is not None:
+                seen = True
+                acc |= m
+    if not seen:
+        return None
+    return bin(acc & ((1 << max(0, year - Y0)) - 1)).count("1")
+
+
+def novel(ref, i, j, year):
+    """True when the 3 x 3 neighbourhood burned in no archive year before `year`; None outside the grid."""
+    n = spot_years(ref, i, j, year)
+    return None if n is None else n == 0
 
 
 def _same_pass(pts):
@@ -349,10 +371,13 @@ def classify_one(p, ref, near_n, day):
         return _set(p, "ind", 10, f"{kind}{where}{tail}", name)
     sp = seasonal_p(ref, lat, lon, day)
     month = day.strftime("%B")
-    if sp is not None and sp >= W["seas_p"] and not sens and frp < 100:
+    ny = spot_years(ref, i, j, year)
+    nv = None if ny is None else ny == 0
+    # seasonal needs the area to burn in this season AND this spot (~3 km) to burn in several years: a depot in a city ringed by
+    # fields does not become "the usual farm fire" because the fields burn every June
+    if sp is not None and sp >= W["seas_p"] and (ny is None or ny >= W["spot_years"]) and not sens and frp < 100:
         return _set(p, "seas", 15, f"This area burns in most years in {month} (farm and grass fires).")
     a, why = W["base"], []
-    nv = novel(ref, i, j, year)
     if nv:
         a += W["novel"]
         why.append(f"No fire here in {year - Y0} years of records")

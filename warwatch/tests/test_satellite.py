@@ -28,11 +28,14 @@ def det(lat, lon, frp=10.0, date="2026-10-10", ts=None, dn="D", b4=330.0):
     return {"lat": lat, "lon": lon, "frp": frp, "date": date, "ts": ts or f"{date}T10:30Z", "daynight": dn, "bright_ti4": b4}
 
 
-def full_grid(box_lat, box_lon, first=0, rows=20, cols=20):
-    """A small first-year grid centred on a point; every cell has first year `first` (0 = never burned)."""
+def full_grid(box_lat, box_lon, first=0, rows=20, cols=20, years=()):
+    """A small year-mask grid centred on a point: every cell burned in `years` (or in every year from `first`); none by default."""
+    import array
     i0, j0 = F.fine(box_lat, box_lon)
     i0, j0 = i0 - rows // 2, j0 - cols // 2
-    return (i0, j0, rows, cols, bytes([first - 2000 if first else 0]) * (rows * cols))
+    ys = list(years) or (list(range(first, 2026)) if first else [])
+    m = sum(1 << (y - 2012) for y in ys)
+    return (i0, j0, rows, cols, array.array("H", [m] * (rows * cols)))
 
 
 class TestFireCls(unittest.TestCase):
@@ -74,6 +77,17 @@ class TestFireCls(unittest.TestCase):
         r = ref(coarse={(I, J): {y: june for y in range(2012, 2022)}}, box="iran")
         self.assertEqual(F.classify([det(36.4, 40.9, date="2026-06-15")], "iran", ref=r)[0]["c"], "seas")
         self.assertIn(F.classify([det(36.4, 40.9, date="2026-10-15")], "iran", ref=r)[0]["c"], ("unex", "anom"))
+
+    def test_a_spot_that_never_burned_is_not_seasonal_even_in_a_farm_district(self):
+        I, J = F.coarse(35.78, 51.30)
+        r = ref(coarse={(I, J): {y: 1 << 5 for y in range(2012, 2026)}}, grid=full_grid(35.78, 51.30))   # district burns every June
+        p = F.classify([det(35.78, 51.30, frp=43, date="2025-06-14", dn="N")], "iran", ref=r)[0]
+        self.assertIn(p["c"], ("unex", "anom"))
+        self.assertIn("No fire here", p["why"])
+        r = ref(coarse={(I, J): {y: 1 << 5 for y in range(2012, 2026)}}, grid=full_grid(35.78, 51.30, years=(2013, 2023)))   # two small fires in 12 years
+        self.assertNotEqual(F.classify([det(35.78, 51.30, frp=43, date="2025-06-14")], "iran", ref=r)[0]["c"], "seas")
+        r = ref(coarse={(I, J): {y: 1 << 5 for y in range(2012, 2026)}}, grid=full_grid(35.78, 51.30, first=2015))   # a field that burns most years
+        self.assertEqual(F.classify([det(35.78, 51.30, frp=43, date="2025-06-14")], "iran", ref=r)[0]["c"], "seas")
 
     def test_war_years_are_left_out_of_the_seasonal_baseline(self):
         I, J = F.coarse(48.1, 37.7)
@@ -173,7 +187,7 @@ class TestFireRef(unittest.TestCase):
         self.assertEqual(a.coarse[F.coarse(36.4, 40.9)][2020], 1 << 5)
         self.assertNotIn(F.coarse(30.4, 47.4), a.coarse)        # the flare does not make its area seasonal
         r, c = field[0] - a.i0, field[1] - a.j0
-        self.assertEqual(a.first[r * a.cols + c], 20)
+        self.assertEqual(a.ymask[r * a.cols + c], 1 << 8)
         self.assertEqual(a.pick_notable(), {flare})
 
     def test_tables_round_trip(self):
@@ -184,7 +198,7 @@ class TestFireRef(unittest.TestCase):
         self.assertEqual(years, [2012, 2013])
         self.assertEqual(back[(1, 2)]["t2"], 5)
         self.assertEqual(back[(1, 2)]["d"], {2012: 3, 2013: 0})
-        g = F.read_grid(F.write_grid(5, 6, 2, 3, bytearray(b"\x00\x0c\x00\x00\x00\x0e")))
+        g = F.read_grid(F.write_grid(5, 6, 2, 3, [0, 1 | 4, 0, 0, 0, 4]))
         rf = F.Ref("iran", {}, [], g, {}, [], F.Sites([]))
         self.assertEqual((rf.first_year(5, 7), rf.first_year(6, 8), rf.first_year(5, 6), rf.first_year(9, 9)), (2012, 2014, 0, None))
 
@@ -219,6 +233,107 @@ class TestFireRef(unittest.TestCase):
             z.writestr("xl/worksheets/sheet1.xml", sheet)
             z.writestr("xl/sharedStrings.xml", ss)
         self.assertEqual(R.xlsx_rows(buf.getvalue()), [["Country", "Latitude"], ["Iraq", 30.5]])
+
+
+def _have(*mods):
+    try:
+        for m in mods:
+            __import__(m)
+        return True
+    except ImportError:
+        return False
+
+
+class TestBaseWatch(unittest.TestCase):
+    def test_zscore_needs_eight_earlier_scenes_and_floors_the_spread(self):
+        import basewatch as B
+        self.assertIsNone(B.zscore([10.0] * 7, 50.0))
+        z = B.zscore([10000.0] * 8, 5000.0)            # flat history: MAD 0, floored at 5% of the median
+        self.assertAlmostEqual(z, -5000.0 / 500.0)
+        self.assertAlmostEqual(B.zscore([3.0] * 8, 8.0, counts=True), 5.0)    # counts: floor of 1
+
+    def test_scenes_are_only_compared_within_their_orbit(self):
+        import basewatch as B
+        rows = []
+        for k in range(10):
+            d = (dt.date(2025, 1, 1) + dt.timedelta(days=6 * k)).isoformat()
+            rows.append({"date": d, "orbit": "A101", "part": "apron", "m": 10000.0})
+            rows.append({"date": d, "orbit": "D137", "part": "apron", "m": 30000.0})   # another geometry, always brighter
+        out = B.scene_z(rows, "m", "apron")
+        self.assertTrue(all(z is None or abs(z) < 0.01 for _, _, _, z in out))
+
+    def test_state_needs_two_passes_within_a_week(self):
+        import basewatch as B
+        today = dt.date(2026, 3, 1)
+        self.assertEqual(B.state([("2026-02-20", -3.0), ("2026-02-26", -3.1)], today, alerts=True)[0], "out")
+        self.assertEqual(B.state([("2026-02-10", -3.0), ("2026-02-26", -3.1)], today, alerts=True)[0], "changed")
+        self.assertEqual(B.state([("2026-02-20", 0.5), ("2026-02-26", 3.1)], today, alerts=True)[0], "changed")
+        self.assertEqual(B.state([("2026-02-20", 3.0), ("2026-02-26", 3.1)], today, alerts=True)[0], "in")
+        self.assertEqual(B.state([("2026-02-20", -3.0), ("2026-02-26", -3.1)], today, alerts=False)[0], "changed")   # before GO
+        self.assertEqual(B.state([("2026-02-01", 0.1)], today)[0], "nodata")
+
+    def test_theatre_counts_use_each_sites_own_theatres(self):
+        import basewatch as B
+        sites = [{"id": "a", "theatres": ["iran", "gulf"]}, {"id": "b", "theatres": ["ukraine"]}]
+        c = B.theatre_counts({"a": "out", "b": "normal"}, sites, dt.date(2026, 3, 1))
+        self.assertEqual(c, {"iran": (1, 0), "gulf": (1, 0), "ukraine": (0, 0)})
+
+    def test_site_box_covers_the_aprons_with_a_margin(self):
+        import basewatch as B
+        rec = {"lat": 25.1, "lon": 51.3, "aprons": [[[51.30, 25.10], [51.31, 25.10], [51.31, 25.11], [51.30, 25.10]]]}
+        lo0, la0, lo1, la1 = B.site_bbox(rec, margin_km=0.3)
+        self.assertLess(lo0, 51.30)
+        self.assertGreater(la1, 25.11)
+
+    @unittest.skipUnless(_have("numpy", "scipy"), "needs numpy and scipy (imagery workflow only)")
+    def test_radar_metrics_count_aircraft_not_noise_or_buildings_outside(self):
+        import numpy as np
+        import basewatch as B
+        db = np.full((60, 60), -18.0)
+        region = np.zeros((60, 60), bool)
+        region[10:50, 10:50] = True
+        for y, x in ((15, 15), (30, 30), (40, 20)):        # three aircraft: 3 x 3 bright pixels each
+            db[y:y + 3, x:x + 3] = 4.0
+        db[0:5, 0:60] = 6.0                                 # a bright building edge outside the apron
+        db[45, 45] = 2.0                                     # one bright pixel: too small to be an aircraft
+        m = B.radar_metrics(db, region, (0.0,))
+        self.assertEqual(m["blobs@0"], 3.0)
+        self.assertEqual(m["bright_m2@0"], (27 + 1) * 100.0)
+
+    @unittest.skipUnless(_have("numpy", "scipy", "rasterio"), "needs numpy, scipy and rasterio (imagery workflow only)")
+    def test_mask_rasterises_polygons_and_widens_lines(self):
+        import imagery as I
+        bbox = (51.0, 25.0, 51.01, 25.01)
+        poly = [[51.002, 25.002], [51.008, 25.002], [51.008, 25.008], [51.002, 25.008], [51.002, 25.002]]
+        m = I.mask([poly], bbox, 100, 100)
+        self.assertTrue(m[50, 50])
+        self.assertFalse(m[5, 5])
+        line = I.mask([[[51.001, 25.005], [51.009, 25.005]]], bbox, 100, 100, buffer_px=3)
+        self.assertTrue(line[49:52, 50].all())
+        self.assertGreaterEqual(int(line[:, 50].sum()), 7)
+
+    @unittest.skipUnless(_have("numpy", "PIL"), "needs numpy and Pillow (imagery workflow only)")
+    def test_chips_are_256_square_jpegs(self):
+        import numpy as np
+        from PIL import Image
+        import imagery as I
+        d = tempfile.mkdtemp()
+        p = I.chip_radar(np.random.default_rng(1).normal(-15, 5, (80, 120)), os.path.join(d, "r.jpg"))
+        with Image.open(p) as im:
+            self.assertEqual((im.size, im.format), ((256, 256), "JPEG"))
+        rgb = np.stack([I.stretch(np.random.default_rng(k).random((50, 50))) for k in range(3)])
+        with Image.open(I.save_jpeg(rgb, os.path.join(d, "c.jpg"))) as im:
+            self.assertEqual(im.mode, "RGB")
+
+    @unittest.skipUnless(_have("numpy"), "needs numpy (imagery workflow only)")
+    def test_fire_review_burn_area_and_verdicts(self):
+        import numpy as np
+        import firereview as V
+        pre = {"B08": np.full((50, 50), 0.30), "B12": np.full((50, 50), 0.15)}
+        post = {"B08": np.full((50, 50), 0.30), "B12": np.full((50, 50), 0.15)}
+        post["B08"][:10, :10], post["B12"][:10, :10] = 0.10, 0.30          # 100 burnt 20 m pixels = 4 ha
+        self.assertAlmostEqual(V.burn_area(pre, post), 4.0)
+        self.assertEqual([V.verdict(x) for x in (4.0, 0.5, 0.1)], ["scar", "unclear", "none"])
 
 
 if __name__ == "__main__":
