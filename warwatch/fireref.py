@@ -390,12 +390,18 @@ def osm_kind(t):
 
 
 def osm_sites(box, step=3.0):
-    """All site kinds for a box from Overpass, in 3-degree tiles; storage tanks (the heaviest tag) get their own query."""
-    out = []
+    """All site kinds for a box from Overpass, in 3-degree tiles; storage tanks (the heaviest tag) get their own query.
+    -> (sites, failed tiles). A failed tile does not lose the tiles that worked."""
+    out, failed = [], []
     groups = ["".join(f"{flt};" for k, flt in TAGS if k != "fuel"), "".join(f"{flt};" for k, flt in TAGS if k == "fuel")]
     for (la0, la1, lo0, lo1), union in ((t, g) for t in tiles(box, step) for g in groups):
         q = f"[out:json][timeout:600][maxsize:1073741824][bbox:{la0},{lo0},{la1},{lo1}];({union});out center tags;"
-        els = overpass(q).get("elements", [])
+        try:
+            els = overpass(q).get("elements", [])
+        except Exception as e:
+            log(f"  tile {la0},{lo0} failed: {str(e)[:80]}")
+            failed.append(((la0, la1, lo0, lo1), "fuel" if 'storage_tank' in union else "other"))
+            continue
         n = 0
         for e in els:
             la = e.get("lat", e.get("center", {}).get("lat"))
@@ -409,7 +415,7 @@ def osm_sites(box, step=3.0):
                         "src": "osm", "content": (t.get("content", "") + " " + t.get("substance", "")).lower()})
         log(f"  tile {la0},{lo0}: {len(els)} elements, {n} sites")
         time.sleep(5)
-    return merge_tanks(out)
+    return merge_tanks(out), failed
 
 
 def merge_tanks(sites, r_km=0.4, min_untagged=5):
@@ -588,11 +594,14 @@ def sites(box_names, osm=True):
     if osm:
         for b in box_names:
             log("osm", b)
-            try:
-                out += osm_sites(C.FIRMS_BOX[b])
-            except Exception as e:
-                log("osm", b, "failed, keeping the old rows:", str(e)[:160])
-                out += [s for s in old if s.get("src") == "osm" and inside(C.FIRMS_BOX[b], s["lat"], s["lon"])]
+            got, failed = osm_sites(C.FIRMS_BOX[b])
+            out += got
+            # keep earlier OSM rows inside the tiles that failed this time (fuel tiles keep fuel sites, other tiles the rest)
+            for (la0, la1, lo0, lo1), grp in failed:
+                out += [s for s in old if s.get("src") == "osm" and la0 <= s["lat"] <= la1 and lo0 <= s["lon"] <= lo1
+                        and (s["kind"] == "fuel") == (grp == "fuel")]
+            log("osm", b, len(got), "sites,", len(failed), "tiles failed")
+            write_sites(out + [s for s in old if s.get("src") == "osm" and any(inside(C.FIRMS_BOX[x], s["lat"], s["lon"]) for x in box_names[box_names.index(b) + 1:])])
     keep = write_sites(out)
     by = {}
     for s in keep:
