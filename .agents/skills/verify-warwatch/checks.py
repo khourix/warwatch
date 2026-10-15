@@ -105,8 +105,8 @@ def c_never_guard(r):
 
 
 def c_unit_tests(r):
-    # unittest discovery, not `python3 test_warwatch.py`: that entry calls unittest.main() before the classes
-    # defined below it (TestEngine), so the script form skips them.
+    # unittest discovery. The README form (`python3 test_warwatch.py`) runs the same 136 tests since the
+    # unittest.main() guard moved to the end of the file; discovery is kept so it does not depend on that order.
     p = sh([sys.executable, "-m", "unittest", "test_warwatch"], log=os.path.join(r.ev, "unit-tests.log"),
            env={"WARWATCH_HISTORY": os.path.join(r.tmp, "history-tests")}, cwd=os.path.join(WW, "tests"))
     ran = re.findall(r"Ran (\d+) tests?", p.stderr)

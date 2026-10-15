@@ -88,8 +88,9 @@ The script refuses these in code (`NEVER` in `checks.py`, tested by `never-guard
 
 ## Gotchas
 
-- `python3 warwatch/tests/test_warwatch.py` (the README form) calls `unittest.main()` before the last class
-  (`TestEngine`, 9 tests) is defined, so the script form runs 127 tests and skips those 9. The skill uses unittest discovery (136 tests).
+- The README form (`python3 warwatch/tests/test_warwatch.py`) and this skill's unittest discovery both run all 136
+  tests now. Until the `unittest.main()` guard moved to the end of the file, the script form stopped before the last
+  class (`TestEngine`, 9 tests) was defined and ran only 127. If the number drops below 136 again, check that order first.
 - `quick` takes about 3 minutes, over the 2-minute target: the unit tests render the demo several times.
 - The demo render does not run the model, so `model_ran` is `false` there by design. `model-runs` covers the model
   offline; `live-model-ran` covers the real build.
