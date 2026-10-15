@@ -1,3 +1,0 @@
-warwatch/data/bases.json
-docs/BASES_REVIEW.md
-warwatch/data/fire_sites.csv
