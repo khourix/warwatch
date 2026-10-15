@@ -139,7 +139,13 @@ One PR per stage. Each stage in the plans lists its files, data formats, thresho
   - the flare controls pass;
   - Abqaiq 2019 and Hodeidah 2024 left no unusual heat in the S-NPP archive (a data limit);
   - Shahran 2025 comes out "unexplained" until OpenStreetMap depots are in the site list.
-- The event test result is in [FIREANOM.md](FIREANOM.md) once the replay with the full site list has run.
+- **Event test: fails** ([FIREANOM.md](FIREANOM.md)). Unusual-fire counts rose before 70% of the original events
+  (p = 0.016). On the added events they did no better than calm periods (53% against 50% false alarms). The daily counts
+  are small and jumpy.
+- Because of that, `firms_anom_<box>` stays at zero weight. The classes stay on the map as a reading aid. That was the
+  main aim: telling a flare from a fire worth a look.
+- The test ran without OpenStreetMap sites, because Overpass was overloaded all day (fourth amendment). The monthly
+  `fireref.yml` run rebuilds the sites and the replay, and the test can then be run again.
 
 **Bases: feasibility test NO-GO** ([BASESPIKE.md](BASESPIKE.md)).
 - Free radar caught 2 of 3 leading cases. Al Udeid's two passes before the June 2025 strike both fell to z −2.7. But
