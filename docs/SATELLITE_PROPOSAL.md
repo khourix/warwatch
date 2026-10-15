@@ -122,3 +122,38 @@ One PR per stage. Each stage in the plans lists its files, data formats, thresho
   the gaps.
 - Overpass and FIRMS file names must be checked live at the start. This sandbox could not reach them; F1.0 does
   that check first.
+
+## 4. Built and tested (2026-10-15)
+
+**Fires: built (F1–F5).**
+- Every map fire now has a class, a score and a reason. The map reads all three VIIRS satellites.
+- Explained fires fade, and a layer switch hides them. Each fire links to Copernicus Browser and NASA Worldview.
+- `imagery.yml` checks the top anomalies against Sentinel-2. Tested on the Shahran depot strike (Tehran, 14 June 2025): it
+  found clear images on 12 and 15 June, the smoke plume over the tank farm and the fire in short-wave infrared
+  ([docs/firereview/](firereview/)).
+- Three rule bugs were found and fixed before the event test, each recorded in [FIREANOM_PLAN.md](FIREANOM_PLAN.md):
+  - water detections were treated as "offshore";
+  - waterside steel works were treated as "offshore";
+  - a city fire was called a farm fire.
+- Case checks:
+  - the flare controls pass;
+  - Abqaiq 2019 and Hodeidah 2024 left no unusual heat in the S-NPP archive (a data limit);
+  - Shahran 2025 comes out "unexplained" until OpenStreetMap depots are in the site list.
+- The event test result is in [FIREANOM.md](FIREANOM.md) once the replay with the full site list has run.
+
+**Bases: feasibility test NO-GO** ([BASESPIKE.md](BASESPIKE.md)).
+- Free radar caught 2 of 3 leading cases. Al Udeid's two passes before the June 2025 strike both fell to z −2.7. But
+  single-scene false alarms were 10.3% against a 10% limit.
+- As the plan says, the base layer is an image viewer: 30 sites, radar and optical chips every 6 hours, the latest radar
+  z as text, and no alerts or tell.
+- A fixed test of the two-pass rule is suggested.
+
+**For the owner.**
+1. Read [BASES_REVIEW.md](BASES_REVIEW.md). Muwaffaq Salti, Akrotiri, Dezful, Semnan, Shaykovka and Mozdok have no OSM
+   aprons; Bahrain, Hodeidah and Novorossiysk have piers only. Draw the missing aprons in
+   `warwatch/data/bases_manual.geojson` and run `python3 warwatch/basesites.py build <ids>`.
+2. Optional: download Global Energy Monitor's oil and gas, steel and coal trackers (free form) into `warwatch/data/raw/`,
+   then run `python3 warwatch/fireref.py sites`.
+3. Add source links to the three strike cases in `warwatch/data/fire_cases.csv`.
+4. After the first `imagery.yml` runs, look at the chips in the fire and base drawers.
+5. Precision audit: label 50 random "unusual" fires, as in FIREANOM_PLAN.md.
