@@ -974,6 +974,22 @@ function popWeek(){
 }
 
 /* ------------------------------------------------------------ alerts (the bell) */
+/* fire classes from firecls.py: anomalies glow, unexplained heat is a plain dot, explained heat (industry, farm burning, volcano,
+   offshore) is a faint dashed ring that the "Explained fires" layer switch hides */
+const FIRE_CLS = {anom: 'Unusual fire or heat', hot: 'Hotter than usual at an industrial site', unex: 'Unexplained heat', seas: 'Seasonal farm or grass fire', ind: 'Routine industrial heat', volc: 'Volcano', off: 'Offshore platform or flare'};
+const fireCls = f => f.c || (f.r ? 'ind' : 'unex');
+const fireAnom = f => fireCls(f) === 'anom' || fireCls(f) === 'hot';
+const fireExpl = f => ['seas', 'ind', 'volc', 'off'].includes(fireCls(f));
+const fireShown = f => !fireExpl(f) || layerState.firesx;
+const isoDay = (d, k) => new Date(Date.parse(String(d).slice(0, 10) + 'T00:00:00Z') + k * 864e5).toISOString().slice(0, 10);
+const cbUrl = (ll, d, layer, zoom) => `https://browser.dataspace.copernicus.eu/?zoom=${zoom || 14}&lat=${ll[0]}&lng=${ll[1]}&themeId=DEFAULT-THEME&datasetId=S2_L2A_CDAS&layerId=${layer || '1_TRUE_COLOR'}&fromTime=${isoDay(d, -10)}T00%3A00%3A00.000Z&toTime=${isoDay(d, 10)}T23%3A59%3A59.999Z&dateMode=TIME%20RANGE`;
+const wvUrl = (ll, d) => `https://worldview.earthdata.nasa.gov/?v=${(ll[1] - .15).toFixed(3)},${(ll[0] - .1).toFixed(3)},${(ll[1] + .15).toFixed(3)},${(ll[0] + .1).toFixed(3)}&l=VIIRS_SNPP_Thermal_Anomalies_375m_All,VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_NOAA21_Thermal_Anomalies_375m_All,VIIRS_SNPP_CorrectedReflectance_TrueColor&t=${String(d).slice(0, 10)}-T00%3A00%3A00Z`;
+/* military bases watched by satellite (basewatch.py): grey = usual or no data, purple = one pass differed, pink = two passes agree */
+const BASEC = {out: '#ff6fb1', in: '#ff6fb1', changed: '#b08cff', normal: '#8a949e', nodata: '#5a636c', optical: '#8a949e'};
+const BASEN = {out: 'Far fewer than usual on two passes', in: 'Far more than usual on two passes', changed: 'One pass differed from usual', normal: 'Usual', nodata: 'No recent radar pass', optical: 'Optical images only'};
+const BASEK = {air: 'Air base', naval: 'Naval base', 'air+naval': 'Air and naval base', launch: 'Launch site', port: 'Port'};
+const chipImg = (src, cap) => `<figure class="chip-i"><img src="${esc(src)}" alt="${esc(cap)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',textContent:'No image yet'}))"><figcaption>${esc(cap)}</figcaption></figure>`;
+const chipRow = (pairs) => `<div class="chips-i">${pairs.filter(p => p[0]).map(p => chipImg(p[0], p[1])).join('')}</div><p class="hint" style="margin:2px 0 8px">Contains modified Copernicus Sentinel data ${new Date().getUTCFullYear()}.</p>`;
 const KIND = {sqk:['plane','#f0405a','Air'], inc:['anchor','#ff6fb1','Sea'], ships:['ship','#6d8dff','Sea'], nga:['warn','#b08cff','Warnings'], czib:['diamond','#b08cff','Warnings'], fires:['fire','#b8e04a','Ground'], bases:['base','#ff6fb1','Ground']};
 function buildAlerts(){
   const out = [], M = D.map;
@@ -1453,22 +1469,6 @@ const fireCol = h => fireBand(h)[1];
 const fireOp = h => fireBand(h)[2];
 const fireAge = f => ageH(f.ts || f.d);
 const fireR = f => 2.6 + Math.min(5, Math.sqrt(f.p || 0) / 2.6);
-/* fire classes from firecls.py: anomalies glow, unexplained heat is a plain dot, explained heat (industry, farm burning, volcano,
-   offshore) is a faint dashed ring that the "Explained fires" layer switch hides */
-const FIRE_CLS = {anom: 'Unusual fire or heat', hot: 'Hotter than usual at an industrial site', unex: 'Unexplained heat', seas: 'Seasonal farm or grass fire', ind: 'Routine industrial heat', volc: 'Volcano', off: 'Offshore platform or flare'};
-const fireCls = f => f.c || (f.r ? 'ind' : 'unex');
-const fireAnom = f => fireCls(f) === 'anom' || fireCls(f) === 'hot';
-const fireExpl = f => ['seas', 'ind', 'volc', 'off'].includes(fireCls(f));
-const fireShown = f => !fireExpl(f) || layerState.firesx;
-const isoDay = (d, k) => new Date(Date.parse(String(d).slice(0, 10) + 'T00:00:00Z') + k * 864e5).toISOString().slice(0, 10);
-const cbUrl = (ll, d, layer, zoom) => `https://browser.dataspace.copernicus.eu/?zoom=${zoom || 14}&lat=${ll[0]}&lng=${ll[1]}&themeId=DEFAULT-THEME&datasetId=S2_L2A_CDAS&layerId=${layer || '1_TRUE_COLOR'}&fromTime=${isoDay(d, -10)}T00%3A00%3A00.000Z&toTime=${isoDay(d, 10)}T23%3A59%3A59.999Z&dateMode=TIME%20RANGE`;
-const wvUrl = (ll, d) => `https://worldview.earthdata.nasa.gov/?v=${(ll[1] - .15).toFixed(3)},${(ll[0] - .1).toFixed(3)},${(ll[1] + .15).toFixed(3)},${(ll[0] + .1).toFixed(3)}&l=VIIRS_SNPP_Thermal_Anomalies_375m_All,VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_NOAA21_Thermal_Anomalies_375m_All,VIIRS_SNPP_CorrectedReflectance_TrueColor&t=${String(d).slice(0, 10)}-T00%3A00%3A00Z`;
-/* military bases watched by satellite (basewatch.py): grey = usual or no data, purple = one pass differed, pink = two passes agree */
-const BASEC = {out: '#ff6fb1', in: '#ff6fb1', changed: '#b08cff', normal: '#8a949e', nodata: '#5a636c', optical: '#8a949e'};
-const BASEN = {out: 'Far fewer than usual on two passes', in: 'Far more than usual on two passes', changed: 'One pass differed from usual', normal: 'Usual', nodata: 'No recent radar pass', optical: 'Optical images only'};
-const BASEK = {air: 'Air base', naval: 'Naval base', 'air+naval': 'Air and naval base', launch: 'Launch site', port: 'Port'};
-const chipImg = (src, cap) => `<figure class="chip-i"><img src="${esc(src)}" alt="${esc(cap)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',textContent:'No image yet'}))"><figcaption>${esc(cap)}</figcaption></figure>`;
-const chipRow = (pairs) => `<div class="chips-i">${pairs.filter(p => p[0]).map(p => chipImg(p[0], p[1])).join('')}</div><p class="hint" style="margin:2px 0 8px">Contains modified Copernicus Sentinel data ${new Date().getUTCFullYear()}.</p>`;
 const isFresh = (d, hours) => { const h = ageH(d); return h != null && h <= hours; };
 /* every other alert layer shares one age scale (fires keep their colour bands, aircraft and squawks are live):
    tier 0 = last 24 hours, solid with a soft halo; tier 1 = 1 to 3 days, solid but dimmed; tier 2 = older, a faint outline.
