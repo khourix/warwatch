@@ -285,6 +285,31 @@ class TestBaseWatch(unittest.TestCase):
         self.assertLess(lo0, 51.30)
         self.assertGreater(la1, 25.11)
 
+    def test_layer_turns_caches_into_map_items(self):
+        import json
+        import basewatch as B
+        d = tempfile.mkdtemp()
+        bases = os.path.join(d, "bases.json")
+        with open(bases, "w") as f:
+            json.dump([{"id": "x", "name": "X Air Base", "lat": 25.1, "lon": 51.3, "kind": "air", "side": "US", "theatres": ["iran", "gulf"], "why": "test"},
+                       {"id": "y", "name": "Y port", "lat": 26.2, "lon": 50.6, "kind": "naval", "side": "US", "theatres": ["gulf"], "why": ""}], f)
+        old = B.CACHE
+        B.CACHE = d
+        try:
+            B.save_rows("base_state", ["site", "state", "dates", "last_radar", "last_optical", "z", "part", "note"],
+                        [["x", "changed", "2026-10-14", "2026-10-14", "2026-10-12", "-2.80", "apron", ""],
+                         ["y", "out", "2026-10-08;2026-10-14", "2026-10-14", "", "-3.10", "harbour", ""]])
+            B.save_series("base_x", [("2026-10-08", 0.2), ("2026-10-14", -2.8)])
+            B.save_rows("base_chips", ["site", "kind", "date", "scene_id"], [["x", "a", "2026-10-12", "S2"]])
+            items = {i["id"]: i for i in B.layer(bases)}
+        finally:
+            B.CACHE = old
+        self.assertEqual(items["x"]["pts"], [0.2, -2.8])
+        self.assertIn("One radar pass (2026-10-14)", items["x"]["why"])
+        self.assertEqual(items["x"]["img"], {"a": "img/bases/x_a.jpg", "ad": "2026-10-12"})
+        self.assertIn("Ships may have left", items["y"]["why"])
+        self.assertIn("2026-10-08 and 2026-10-14", items["y"]["why"])
+
     @unittest.skipUnless(_have("numpy", "scipy"), "needs numpy and scipy (imagery workflow only)")
     def test_radar_metrics_count_aircraft_not_noise_or_buildings_outside(self):
         import numpy as np

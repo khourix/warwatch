@@ -9,6 +9,18 @@ work goes in its own workflow; public data only; new series get zero weight unti
 Order: **S0 → B0 (go/no-go) → B1 → B2 → B3 → B4 → B5**. If B0 says no-go, build only S0, B1 and the image
 part of B3 (a viewer for people to look at), and skip the automated alerts.
 
+## As built (2026-10-15)
+
+- **Diego Garcia has no Sentinel-1 coverage at all.** Planetary Computer lists no scenes in 2025 or 2026, so the site is
+  optical only (state `optical`).
+- **Radar revisit at Al Udeid**: two orbits. In mid-2025 each passed about every 12 days (Sentinel-1A only). Since
+  mid-2026 each passes about every 6 days (1C + 1D).
+- The feasibility windows start in December 2024, so every orbit has 8 earlier scenes before each case
+  ([BASESPIKE_PLAN.md](BASESPIKE_PLAN.md)).
+- `basewatch.ALERTS` stays `False` until the feasibility test says GO. Until then no site can be "out" or "in", the
+  theatre counts stay empty, and the tell and alerts cannot fire. The layer still shows images and z values.
+- `basewatch.layer()` is standard library only. The build calls it for the map payload.
+
 ## What the free imagery can and cannot see
 
 | | Sentinel-1 radar (10 m) | Sentinel-2 optical (10 m) |

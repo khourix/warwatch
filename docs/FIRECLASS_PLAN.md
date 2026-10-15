@@ -5,6 +5,28 @@ This file is the how. It is written for an implementer who has not seen the desi
 stages in order (F1 to F5) and open one PR per stage. Each stage lists its files, functions, data formats,
 thresholds, tests and "done when" checks.
 
+## As built (2026-10-15)
+
+Built in this order: F1, F2, F3, F4, F5. Where the build differs from the spec below, the build wins:
+- **Country files**: FIRMS spells them `Russian_Federation`, `Republic_of_Korea`, `Dem_Rep_Korea`, `Czech_Republic` and
+  `Turkey` (`config.FIRE_COUNTRIES`). The archive runs 2012–2025; 2026 is not published yet.
+- **Grids**: storing every cell that burned twice was too big (Ukraine's farmland). There are three files per box:
+  - `fire_cells_<box>.csv.gz`: only "notable" cells, those with 20 or more burn days in some year, or NASA type 1/2/3.
+  - `fire_years_<box>.bin.gz`: a 16-bit mask of the years each ~1 km cell burned.
+  - `fire_coarse_<box>.csv.gz`.
+  All seven boxes together come to about 3 MB.
+- **Rules changed before the test** (see the amendments in [FIREANOM_PLAN.md](FIREANOM_PLAN.md)):
+  - offshore needs a persistent source that is mostly over water, which keeps reed fires, river fronts and waterside
+    steel works out;
+  - seasonal needs the ~3 km spot to have burned in 3 or more earlier years. Without that, the Shahran depot fire in
+    Tehran was called a farm fire.
+- **Replay output** goes to `backfill/data/firecls/`, so `fastfeeds.py`, which globs `backfill/data/*.csv`, does not pick it up.
+- **The Economist (F3)**: their per-fire file (`output-data/ukraine_war_fires.csv`, ~70 MB) is streamed every 6 hours in
+  `imagery.yml` (`fireref.py econ`), keeping 21 days of war-related fires. Their flag adds +15. It never makes a fire
+  "unusual" on its own.
+- **OpenStreetMap**: Overpass is often at capacity. `fireref.overpass` rotates mirrors (overpass-api.de, maps.mail.ru,
+  kumi, private.coffee) and backs off. All tag filters for a tile go in one union query.
+
 ## What changes for the reader
 
 Today a fire on the map is either "unusual" or "routine". "Routine" means its ~2 km cell burned on 3 of the

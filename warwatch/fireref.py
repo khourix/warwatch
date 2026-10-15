@@ -7,6 +7,7 @@ in the dashboard build.
     python3 warwatch/fireref.py build [--box iran,yemen] [--years 2012-2025] [--cache DIR]
     python3 warwatch/fireref.py sites [--box iran]            # OpenStreetMap + World Bank GGFR + WRI (+ GEM files in data/raw)
     python3 warwatch/fireref.py check                         # spot checks: flares are routine, city centres are not
+    python3 warwatch/fireref.py cases                         # the class each case in data/fire_cases.csv gets on its day
     python3 warwatch/fireref.py econ                          # The Economist's war-related fires, last 21 days -> history/cache (every 6 h)
     python3 warwatch/fireref.py replay [--box iran] [--from 2018]   # classify the archive day by day -> backfill/data/firecls/firms_anom_<box>.csv
 
@@ -681,6 +682,34 @@ def replay(box_names, start, years, cache, out_dir=None):
         log(b, "replay written:", len(days), "days")
 
 
+# ---------------------------------------------------------------- case checks (FIRECLASS F4)
+def cases(cache, path=os.path.join(F.DATA, "fire_cases.csv")):
+    """For each case in data/fire_cases.csv: classify that day's archive detections in the box and report the classes found
+    within 3 km of the place. -> [(case row, [(class, score, frp, reason)])]."""
+    out = []
+    with open(path, newline="", encoding="utf-8") as f:
+        rows_ = list(csv.DictReader(f))
+    for r in rows_:
+        la, lo, box, day = float(r["lat"]), float(r["lon"]), r["box"], r["date"]
+        y = int(day[:4])
+        pts = []
+        for c in C.FIRE_COUNTRIES[box]:
+            p = archive_file(c, y, cache)
+            if not p:
+                continue
+            for lat, lon, date, hhmm, frp, dn, _, b4 in rows(p, skip_low=True):
+                if date == day and inside(C.FIRMS_BOX[box], lat, lon):
+                    pts.append({"lat": lat, "lon": lon, "date": date, "ts": f"{date}T{hhmm[:2]}:{hhmm[2:]}Z", "frp": frp, "daynight": dn, "bright_ti4": b4})
+        F.classify(pts, box)
+        near = sorted(((p["c"], p["a"], p["frp"], p["why"]) for p in pts if F.km(la, lo, p["lat"], p["lon"]) <= 3.0), key=lambda x: -x[1])
+        ok = any(c in r["expect"].split("|") for c, *_ in near)
+        log(f"{r['date']} {r['name'][:50]:50} expect {r['expect']:9} got {sorted({c for c, *_ in near}) or 'no detection'} {'OK' if ok else 'CHECK'}")
+        for c, a, frp, why in near[:2]:
+            log(f"    {c} {a} {frp:.0f} MW  {why[:150]}")
+        out.append((r, near))
+    return out
+
+
 # ---------------------------------------------------------------- probe
 def probe():
     bad = 0
@@ -711,7 +740,7 @@ def probe():
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["probe", "build", "sites", "check", "replay", "econ"])
+    ap.add_argument("cmd", choices=["probe", "build", "sites", "check", "replay", "econ", "cases"])
     ap.add_argument("--box", default=",".join(C.FIRMS_BOX))
     ap.add_argument("--years", default=f"2012-{dt.date.today().year - 1}")
     ap.add_argument("--cache", default=os.environ.get("FIRMS_ARCHIVE_CACHE", os.path.join(os.path.dirname(HERE), ".firms_archive")))
@@ -727,6 +756,8 @@ def main(argv=None):
         sites(names, osm=not a.no_osm)
     elif a.cmd == "check":
         return 1 if check() else 0
+    elif a.cmd == "cases":
+        cases(a.cache)
     elif a.cmd == "econ":
         log("Economist war fires, last 21 days:", F.econ_refresh())
     elif a.cmd == "replay":
