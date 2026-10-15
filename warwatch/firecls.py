@@ -325,7 +325,8 @@ def classify_one(p, ref, near_n, day):
     sens, sens_km = ref.sites.near(lat, lon, SENSITIVE, W["sens_km"])
     # offshore = a persistent source over water (a platform). NASA's type 3 marks any detection over water, so reed fires in
     # river deltas and shelling along a river front would otherwise be hidden as "offshore".
-    if any(r["t3"] >= 3 and persistent(r, year) for r in rows) and not (sens and sens["kind"] in ("port", "military")):
+    # Waterside plants (steel works on a river or a bay) also get some type 3 pixels, so water must outnumber land.
+    if any(r["t3"] >= 3 and r["t3"] > r["t2"] and persistent(r, year) for r in rows) and not (sens and sens["kind"] in ("port", "military")):
         return _set(p, "off", 5, "Offshore platform or flare: NASA marks this spot as an offshore heat source.")
     stat = [r for r in rows if static_row(r, year)]
     ind, _ = ref.sites.near(lat, lon, INDUSTRIAL, W["ind_km"])

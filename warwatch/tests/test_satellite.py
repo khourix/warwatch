@@ -100,6 +100,8 @@ class TestFireCls(unittest.TestCase):
         self.assertEqual(F.classify([det(26.5, 52.8)], "iran", ref=r)[0]["c"], "off")
         r = ref({(i, j): row(t3=30, d={y: 6 for y in range(2012, 2026)})})          # reeds or a river front: over water, now and then
         self.assertNotEqual(F.classify([det(26.5, 52.8)], "iran", ref=r)[0]["c"], "off")
+        r = ref({(i, j): row(t2=4000, t3=3000, d={y: 300 for y in range(2012, 2026)})})   # a steel works on a river bank
+        self.assertEqual(F.classify([det(26.5, 52.8)], "iran", ref=r)[0]["c"], "ind")
 
     def test_cluster_in_one_pass_adds_to_the_score(self):
         r = ref(grid=full_grid(35.65, 51.32))

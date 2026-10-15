@@ -50,3 +50,10 @@ over water, not just platforms. Reed fires in river deltas, and fires along the 
 
 This change was decided from the class shares alone. No event comparison, z value or hit rate had been computed. The
 weights stay as frozen above.
+
+**Second amendment (same day, again before the test ran).** After the first fix, the Ukraine box still had 10% offshore.
+The cells were waterside steel works: Zaporizhstal on the Dnipro, NLMK Lipetsk, Alchevsk, and Azovstal and Illich in
+Mariupol (and POSCO Pohang in Korea). Their edge pixels touch water. As "offshore" they skipped the "hotter than its
+normal" test, so a strike on such a plant would have been hidden. Offshore now also needs water detections (type 3) to
+outnumber static-land ones (type 2). The replay was run again. This was decided from class shares and the cells'
+locations only.
