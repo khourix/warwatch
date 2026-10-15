@@ -1337,6 +1337,41 @@ class TestTells(unittest.TestCase):
             if s["id"].startswith("state_dep_"):
                 self.assertFalse(s["scored"], s["id"])
 
+class ModelRan(unittest.TestCase):
+    """audit.json says whether the probability model ran, so a model that fails behind a green build shows."""
+
+    def _patched(self, apply):
+        saved = {k: getattr(model, k) for k in ("apply", "forward_append", "shadow", "shadow_wave")}
+        model.apply, model.forward_append, model.shadow, model.shadow_wave = apply, lambda res: 0, lambda res: 0, lambda res: 0
+        self.addCleanup(lambda: [setattr(model, k, v) for k, v in saved.items()])
+
+    def test_true_when_the_model_sets_its_probabilities(self):
+        real = model.apply
+        self._patched(lambda res, markets=None: real(res, today=dt.date(2026, 10, 8), forward_path=os.devnull))
+        res = run.evaluate(demo.scenario("buildup"))
+        self.assertTrue(run.run_model(res, None))
+        self.assertIn("model", res)
+
+    def test_false_when_the_model_fails_or_has_no_weights(self):
+        def boom(res, markets=None):
+            raise RuntimeError("weights unreadable")
+        self._patched(boom)
+        self.assertFalse(run.run_model(run.evaluate(demo.scenario("buildup")), None))
+        self._patched(lambda res, markets=None: res)     # model.load() found no weights: apply returns the page unchanged
+        self.assertFalse(run.run_model(run.evaluate(demo.scenario("buildup")), None))
+
+    def test_demo_render_writes_model_ran_false(self):
+        with tempfile.TemporaryDirectory() as d:
+            argv = sys.argv
+            sys.argv = ["run.py", "--demo", "buildup", "--out", os.path.join(d, "index.html")]
+            try:
+                run.main()
+            finally:
+                sys.argv = argv
+            with open(os.path.join(d, "audit.json")) as f:
+                self.assertIs(json.load(f)["model_ran"], False)
+
+
 if __name__ == "__main__":
     unittest.main()
 
