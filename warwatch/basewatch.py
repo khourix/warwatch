@@ -201,8 +201,9 @@ def radar_rows(rec, start, end, budget, done=frozenset(), log=print):
     return rows
 
 
-def optical_rows(rec, start, end, budget, done=frozenset(), log=print, min_clear=0.9):
-    """Rows for new clear Sentinel-2 scenes over a site's aprons (or outline): object pixels, changed area, burn area."""
+def optical_rows(rec, start, end, budget, done=frozenset(), log=print, min_clear=0.9, latest=False):
+    """Rows for new clear Sentinel-2 scenes over a site's aprons (or outline): object pixels, changed area, burn area.
+    latest=True reads only the newest `budget` scenes of the window (live runs: the newest image matters most)."""
     import imagery as I
     import numpy as np
     bbox = site_bbox(rec)
@@ -213,7 +214,10 @@ def optical_rows(rec, start, end, budget, done=frozenset(), log=print, min_clear
         return []
     m10, m20 = I.mask(geoms, bbox, w, h), I.mask(geoms, bbox, w2, h2)
     rows, prev = [], []
-    for it in I.stac_search("sentinel-2-l2a", bbox, start, end):
+    items = I.stac_search("sentinel-2-l2a", bbox, start, end)
+    if latest:
+        items = items[-budget:]
+    for it in items:
         if budget <= 0:
             break
         if (it["id"], rec["id"]) in done or not I.has(it, "SCL"):
@@ -400,7 +404,8 @@ def main(argv=None):
         if not a.no_optical:
             try:
                 # optical needs the previous clear scenes for its change measure: read 90 days, keep only new rows
-                oo = optical_rows(s, (today - dt.timedelta(days=90)).isoformat() if not a.backfill_from else start, today.isoformat(), max(6, per // 2))
+                oo = optical_rows(s, (today - dt.timedelta(days=90)).isoformat() if not a.backfill_from else start, today.isoformat(), max(8, per // 2),
+                                  latest=not a.backfill_from)
             except Exception as e:
                 print(s["id"], "optical search failed:", repr(e)[:160], flush=True)
         if a.dry_run:
