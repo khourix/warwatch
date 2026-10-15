@@ -72,3 +72,21 @@ airfields, ports, fuel depots or substations. The "near a sensitive site" score 
 sites block "seasonal" therefore never apply. This tests the classifier without that part. When `fireref.yml` next runs
 (monthly: sites, then replay), the test is run again with the full list, and both results are reported. Nothing else
 changes.
+
+## Result (2026-10-15)
+
+**Fails** ([FIREANOM.md](FIREANOM.md)).
+- **Original events**: unusual-fire counts reached z ≥ 2 before 70% of them (p = 0.016, AUC 0.59).
+- **Added events**: only 53%, against a calm false-alarm rate of 50% (p = 0.37, AUC 0.50).
+- **Why the false-alarm rate is so high**: the daily counts are small, so a handful of fires is a large jump.
+- **Raw count of all detections, for comparison**: hit 21% and 24% against a false-alarm rate of 21%.
+
+Recorded as failed and not tuned. `firms_anom_<box>` stays at zero weight. The classes stay on the map as a reading aid.
+
+Case checks (`python3 warwatch/fireref.py cases`):
+- Baba Gurgur and Rumaila are routine industry, as expected.
+- Abqaiq (14 Sep 2019): the S-NPP passes that day saw only the field's normal 1–3 MW flares. The attack fires were not
+  seen, which is a data limit.
+- Hodeidah (20 Jul 2024): no S-NPP detection within 5 km for four days.
+- Shahran (14 Jun 2025): "unexplained" (score 30), not "unusual". Without OpenStreetMap depots the site is not known to be
+  sensitive. The Sentinel-2 check finds the smoke plume and the fire in images from 12 and 15 June ([docs/firereview](firereview/)).
