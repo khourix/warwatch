@@ -106,6 +106,25 @@ def evaluate(series):
     return res
 
 
+def run_model(res, ex):
+    """Applies the probability model and appends the forward records. Returns True when the model ran (res['model'] is set),
+    so audit.json can show a model that failed while the page still built on the composite levels."""
+    try:   # the probability model must never break the build; without it the page keeps the composite levels
+        model.apply(res, markets=(ex or {}).get("markets"))
+        print("forward record: appended", model.forward_append(res), "rows")
+        try:   # hidden armed-force model, own record, never shown
+            print("armed-force shadow record: appended", model.shadow(res), "rows")
+        except Exception as e:
+            print("shadow model skipped:", str(e)[:200])
+        try:   # hidden 7-day strike-wave model, own record, never shown
+            print("strike-wave shadow record: appended", model.shadow_wave(res), "rows")
+        except Exception as e:
+            print("strike-wave model skipped:", str(e)[:200])
+    except Exception as e:
+        print("model skipped:", str(e)[:200])
+    return bool(res.get("model"))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--demo", choices=["calm", "buildup"])
@@ -122,20 +141,7 @@ def main():
             return
     res = evaluate(series)
     ex = None if a.demo else extras.collect()
-    if not a.demo:
-        try:   # the probability model must never break the build; without it the page keeps the composite levels
-            res = model.apply(res, markets=(ex or {}).get("markets"))
-            print("forward record: appended", model.forward_append(res), "rows")
-            try:   # hidden armed-force model, own record, never shown
-                print("armed-force shadow record: appended", model.shadow(res), "rows")
-            except Exception as e:
-                print("shadow model skipped:", str(e)[:200])
-            try:   # hidden 7-day strike-wave model, own record, never shown
-                print("strike-wave shadow record: appended", model.shadow_wave(res), "rows")
-            except Exception as e:
-                print("strike-wave model skipped:", str(e)[:200])
-        except Exception as e:
-            print("model skipped:", str(e)[:200])
+    model_ran = False if a.demo else run_model(res, ex)
     try:   # the timing tells never set a level; like the model they must never break the build
         res["tells"] = tells.evaluate(res["series"])
         if not a.demo:
@@ -166,7 +172,7 @@ def main():
     with open(os.path.splitext(a.out)[0] + ".json", "w") as f:
         json.dump(summ, f, indent=1)
     with open(os.path.join(os.path.dirname(os.path.abspath(a.out)), "audit.json"), "w") as f:
-        json.dump({"generated": now, "weights_version": res["weights_version"], "theatres": res["audit"],
+        json.dump({"generated": now, "weights_version": res["weights_version"], "model_ran": model_ran, "theatres": res["audit"],
                    "series": {s["id"]: {k: (s["score"] or {}).get(k) for k in ("z", "z_raw", "value", "label", "miss", "filled", "base_med", "base_sd", "base_n", "method")}
                               for s in res["series"] if s["score"]}}, f, separators=(",", ":"))
     print("--- scores (direction-adjusted z) ---")

@@ -13,4 +13,6 @@ Hermes and Claude Code load poteto's pstack skills (used live and unmodified fro
 - Resume earlier work: `/recall`. Design across modules: `/architect`. Parallel checks: `/swarm`.
 - Docs and READMEs: `/technical-writing`, then `/unslop`.
 
-**Verification skill for this repo: not created yet.** Make it with `/create-verification-skill` at `.agents/skills/verify-warwatch/`, with a symlink at `.claude/skills/verify-warwatch` for Claude Code. Hermes loads repo skills only after `hermes skills trust` in the repo. It must prove: the site builds, pages render (screenshot as proof), links resolve, and the data is fresh.
+**Verification skill: `verify-warwatch`** at `.agents/skills/verify-warwatch/` (symlink `.claude/skills/verify-warwatch`). Hermes loads repo skills only after `hermes skills trust` in the repo. It proves: the site builds, pages render (screenshot as proof), links resolve, and the data is fresh.
+
+Before you open a PR, run `.agents/skills/verify-warwatch/verify.sh full` and paste the result.
