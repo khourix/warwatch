@@ -325,6 +325,15 @@ and 15 more in the Middle East and Red Sea.
 - Radar reads per window: a site whose parts lie more than 12 km apart gets one window per part.
 - `imagery.yml`'s budget of 120 radar reads per run gives one new scene per site per run (four runs a day), which
   keeps up with the 6-day repeat of each orbit.
+- Radar history was read back to 1 March 2026. Sites with one pass every 12 days (much of Asia, Africa and Yemen) need
+  that long for the 8 earlier passes a z value needs. After that, 8 of 120 sites still had no z in the last 10 days.
+  They are Andersen, Bautista, Diego Garcia, El Libertador, Sinpo, Sunan, Wadi Seidna and Wonsan-Kalma: Sentinel-1
+  passes there are rare or stopped.
+- Optical, as built: live runs read a site only when it has a scene not yet checked. Cloudy scenes are kept with their
+  clear share only. A "before" chip comes from the clearest scene 25 to 60 days earlier. Naval sites are framed on the
+  harbour. Change is measured on the base outline's clear land, in blue and red, against the clear scenes of the last
+  30 days, with each band's scene-wide shift removed. The construction note needs two different days at three times
+  the site's usual change and at least 5 ha.
 
 - More sites: up to about 80 to 120 in total. Taiwan Strait (Fujian air bases, Yulin on Hainan), Korea (Sunan,
   Sohae launch site, Wonsan-Kalma), the Eastern flank, more Russia (Belbek, Saky, Sevastopol, Baltiysk, Soltsy) and

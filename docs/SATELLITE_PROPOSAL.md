@@ -180,7 +180,15 @@ One PR per stage. Each stage in the plans lists its files, data formats, thresho
     and the error was hidden. Files are now added one at a time.
   - **Offshore flares marked unusual.** New South Pars platforms flare every night and have no fire on record before
     2026. Fixed with OpenStreetMap platforms in the site list, and open water in the image check now reads as offshore.
-  - **Base chips.** Most sites had no "before" image, naval sites were framed on a small compound instead of the harbour,
-    and the optical change counted sun glint on water. The construction note now needs two clear images in a row.
+  - **Base chips.** Most sites had no "before" image, and naval sites were framed on a small compound instead of the
+    harbour. Both are fixed.
+  - **Optical change measure.** It counted haze, sun glint, cloud outside the aprons and the season as "construction",
+    and the note fired at 46 sites. It is now measured on the base's clear land only. It compares visible bands against
+    clear scenes from the last 30 days, after taking out each scene's overall shift. The note needs two different days.
+    Al Dhafra's 944 ha of false change became 4.
+  - **Run time.** Planetary Computer's anonymous signing limits requests per IP. Signing every file met "too many
+    requests" and 85 s of retry waits on about every other read, and live runs read 8–11 optical scenes per site. With
+    120 sites a 6-hourly run would have needed many hours. Now one token per storage container, and live runs read only
+    sites with a new scene: about 5 minutes a run.
   - **Radar history.** Sites with one pass every 12 days (much of Asia, Africa and Yemen) need history back to March for
     a z value. It was read back that far.
