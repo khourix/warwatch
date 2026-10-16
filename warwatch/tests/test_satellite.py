@@ -309,6 +309,15 @@ class TestBaseWatch(unittest.TestCase):
         self.assertEqual([p for _, p in B.windows(far)], [["apron"], ["harbour"]])
         self.assertLess(B.site_bbox(far)[2] - B.site_bbox(far)[0], 0.05)      # chips stay on the air base
 
+    def test_naval_site_view_is_the_harbour_not_the_compound(self):
+        import basewatch as B
+        sq = lambda lo, la: [[lo, la], [lo + 0.005, la], [lo + 0.005, la + 0.005], [lo, la]]    # noqa: E731
+        rec = {"kind": "naval", "lat": 44.62, "lon": 33.53, "outline": [sq(33.53, 44.615)], "piers": [[[33.50, 44.60], [33.56, 44.64]]]}
+        b = B.site_bbox(rec)
+        self.assertLess(b[0], 33.50)
+        self.assertGreater(b[3], 44.64)
+        self.assertLess(B.site_bbox(dict(rec, kind="air"))[2] - B.site_bbox(dict(rec, kind="air"))[0], 0.02)
+
     def test_layer_turns_caches_into_map_items(self):
         import json
         import basewatch as B
@@ -337,6 +346,26 @@ class TestBaseWatch(unittest.TestCase):
         self.assertEqual(items["x"]["img"], {"a": "img/bases/x_a.jpg", "ad": "2026-10-12"})
         self.assertIn("Ships may have left", items["y"]["why"])
         self.assertIn("2026-10-08 and 2026-10-14", items["y"]["why"])
+
+    def test_construction_note_needs_two_images_in_a_row(self):
+        import basewatch as B
+        d = tempfile.mkdtemp()
+        old = (B.SCENES, B.OPTICAL, B.CACHE)
+        B.SCENES, B.OPTICAL, B.CACHE = os.path.join(d, "s.csv"), os.path.join(d, "o.csv"), d
+        site = {"id": "x", "kind": "air", "theatres": ["gulf"]}
+        def notes(chg):
+            if os.path.exists(B.OPTICAL):
+                os.remove(B.OPTICAL)
+            B.append_csv(B.OPTICAL, B.OPT_COLS, [{"scene_id": f"s{k}", "site": "x", "date": f"2026-10-{k + 1:02d}", "clear": 1.0, "objects": 0.0,
+                                                  "chg_ha": float(c), "burn_ha": 0.0} for k, c in enumerate(chg)])
+            B.rebuild([site], dt.date(2026, 10, 16))
+            return {r["site"]: r["note"] for r in B.read_csv(os.path.join(d, "base_state.csv"))}["x"]
+        try:
+            one, two = notes([1, 0, 2, 1, 1, 40]), notes([1, 0, 2, 1, 30, 40])
+        finally:
+            B.SCENES, B.OPTICAL, B.CACHE = old
+        self.assertEqual(one, "")
+        self.assertIn("2026-10-05 and 2026-10-06", two)
 
     @unittest.skipUnless(_have("numpy", "scipy"), "needs numpy and scipy (imagery workflow only)")
     def test_radar_metrics_count_aircraft_not_noise_or_buildings_outside(self):

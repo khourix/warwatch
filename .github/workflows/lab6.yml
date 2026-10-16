@@ -2,7 +2,7 @@ name: lab6
 # TEMPORARY, branch-only. lab5's commit step staged nothing (one unmatched path in a single git add; fixed in imagery.yml
 # and fireref.yml), so its results exist only as artifacts of run 38852782078. Each shard starts from its lab5 artifact,
 # adds radar history back to 1 March 2026 (sites with one pass every 12 days need 8 earlier passes for a z value), and the
-# merge commits everything, the lab5 fire results included. lab5's chips are already on the imagery branch. Removed before the PR.
+# merge commits everything, the lab5 fire results included. Base chips are cut again with the fixed views. Removed before the PR.
 on:
   push:
     branches: [claude/hopeful-heisenberg-tpy723]
@@ -19,6 +19,8 @@ jobs:
   bases:
     runs-on: ubuntu-latest
     timeout-minutes: 330
+    env:
+      WARWATCH_CHIPS: ${{ github.workspace }}/chips
     strategy:
       fail-fast: false
       matrix:
@@ -35,7 +37,7 @@ jobs:
       - name: Start from lab5's rows for this shard
         run: |
           mkdir -p warwatch/history/cache
-          cp prev/warwatch/history/basewatch_scenes.csv prev/warwatch/history/basewatch_optical.csv warwatch/history/
+          cp prev/warwatch/history/basewatch_scenes.csv warwatch/history/      # optical restarts: its change measure changed
           cp prev/warwatch/history/cache/base_chips.csv warwatch/history/cache/
           wc -l warwatch/history/basewatch_*.csv
       - name: Sites in this shard
@@ -43,10 +45,13 @@ jobs:
           python3 -c "import json; ids = sorted(r['id'] for r in json.load(open('warwatch/data/bases.json'))); print('SITES=' + ','.join(ids[${{ matrix.shard }}::8]))" >> "$GITHUB_ENV"
       - name: Radar history since March
         run: echo "$SITES" && python3 -u warwatch/basewatch.py --site "$SITES" --backfill-from 2026-03-01 --budget 6000 --no-optical
+      - name: Latest optical scenes and chips (harbour views for naval sites, a "before" image 25-60 days back)
+        run: python3 -u warwatch/basewatch.py --site "$SITES"
       - uses: actions/upload-artifact@v4
         with:
           name: bases_${{ matrix.shard }}
           path: |
+            chips
             warwatch/history/basewatch_scenes.csv
             warwatch/history/basewatch_optical.csv
             warwatch/history/cache/base_chips.csv
@@ -113,3 +118,16 @@ jobs:
           git commit -qm "lab6: base radar history since March, lab5 fire check results"
           for i in 1 2 3 4 5; do git pull --rebase -q origin claude/hopeful-heisenberg-tpy723 && git push -q origin HEAD:claude/hopeful-heisenberg-tpy723 && exit 0; sleep $((i*10)); done
           exit 1
+      - name: New base chips over the imagery branch (fire chips kept)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p chips
+          git fetch --depth 1 origin imagery && git --work-tree=chips checkout FETCH_HEAD -- . && git reset -q
+          for d in parts/bases_*/; do [ -d "$d/chips" ] && cp -r "$d/chips/." chips/; done
+          find chips -name '*.jpg' | wc -l; du -sh chips
+          cd chips
+          git init -q && git checkout -q -b imagery
+          git add -A
+          git -c user.name=warwatch-bot -c user.email=warwatch-bot@users.noreply.github.com commit -qm "imagery $(date -u +%FT%H:%MZ)"
+          git push -qf "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" imagery

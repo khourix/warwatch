@@ -50,6 +50,7 @@ MARGIN_KM = 0.3
 Z_AT = 2.5
 MIN_PREV, MAX_PREV, PREV_DAYS = 8, 20, 240
 OPT_DIFF = 0.06         # reflectance difference that counts an apron pixel as an object, or a pixel as changed
+WATER_NIR = 0.05        # near-infrared reflectance below this is water: left out of the change and burn measures
 SCENE_COLS = ["scene_id", "site", "date", "orbit", "part", "area_m2"] + [f"bright_m2@{t:g}" for t in THRESHOLDS] + [f"blobs@{t:g}" for t in THRESHOLDS]
 OPT_COLS = ["scene_id", "site", "date", "clear", "objects", "chg_ha", "burn_ha"]
 
@@ -154,10 +155,11 @@ def _bbox(pts, margin_km=MARGIN_KM):
 
 def site_bbox(rec, margin_km=MARGIN_KM, part=None):
     """Window around a part ("apron": aprons, else the outline; "harbour": piers and harbour polygons). With no part: the
-    aprons or outline, else the harbour (the view used for optical change and chips)."""
+    aprons or outline, else the harbour; naval sites the other way round (the view used for optical change and chips)."""
     apron = [p for g in rec.get("aprons", []) for p in g] or [p for g in rec.get("outline", []) for p in g]
     harbour = [p for k in ("harbour", "piers") for g in rec.get(k, []) for p in g]
-    pts = {"apron": apron, "harbour": harbour}.get(part) if part else (apron or harbour)
+    naval = rec.get("kind") in ("naval", "port")      # a naval site's view is its harbour, not the (often small) base compound
+    pts = {"apron": apron, "harbour": harbour}.get(part) if part else ((harbour or apron) if naval else (apron or harbour))
     return _bbox(pts or [[rec["lon"], rec["lat"]]], margin_km)
 
 
@@ -244,8 +246,14 @@ def optical_rows(rec, start, end, budget, done=frozenset(), log=print, min_clear
     m10, m20 = I.mask(geoms, bbox, w, h), I.mask(geoms, bbox, w2, h2)
     rows, prev = [], []
     items = I.stac_search("sentinel-2-l2a", bbox, start, end)
-    if latest:
-        items = items[-budget:]
+    if latest and items:
+        # the newest scenes, plus the least cloudy few from 25 to 60 days before the newest: the "before" chip comes from them
+        new = items[-budget:]
+        d1 = dt.date.fromisoformat(I.day(new[-1]))
+        old = sorted((it for it in items[:-budget] if 25 <= (d1 - dt.date.fromisoformat(I.day(it))).days <= 60),
+                     key=lambda it: it["properties"].get("eo:cloud_cover", 100))[:3]
+        items = sorted(old, key=I.day) + new
+        budget += len(old)
     for it in items:
         if budget <= 0:
             break
@@ -269,11 +277,13 @@ def optical_rows(rec, start, end, budget, done=frozenset(), log=print, min_clear
         stack = np.stack([b["B02"], b["B04"], b["B08"], b["B11"]])
         nbr = (b["B08"] - b12) / np.maximum(b["B08"] + b12, 1e-6)
         chg = burn = 0.0
+        # land only: sun glint and waves on open water would otherwise read as change (harbour views are mostly water)
         if len(prev) >= 3:
             ref = np.nanmedian(np.stack([p[0] for p in prev[-3:]]), axis=0)
-            chg = float((np.nanmax(np.abs(stack - ref), axis=0) > OPT_DIFF).sum()) * 100.0 / 1e4
+            land = ref[2] > WATER_NIR
+            chg = float(((np.nanmax(np.abs(stack - ref), axis=0) > OPT_DIFF) & land).sum()) * 100.0 / 1e4
         if prev:
-            burn = float(((prev[-1][1] - nbr) >= 0.27).sum()) * 100.0 / 1e4
+            burn = float((((prev[-1][1] - nbr) >= 0.27) & (prev[-1][0][2] > WATER_NIR)).sum()) * 100.0 / 1e4
         prev.append((stack, nbr))
         rows.append({"scene_id": it["id"], "site": rec["id"], "date": I.day(it), "clear": round(cl, 3), "objects": objects, "chg_ha": round(chg, 2), "burn_ha": round(burn, 2),
                      "_item": it})
@@ -373,11 +383,12 @@ def rebuild(sites, today=None):
         st, used = state(zs, today)
         so = sorted((o for o in opt if o["site"] == s["id"]), key=lambda o: o["date"])
         note = ""
-        if len(so) >= 4:
+        if len(so) >= 5:
+            # two clear images in a row must both show the change: one image with haze, shadows or a season turn often does
             ch = [float(o["chg_ha"] or 0) for o in so]
-            med = sorted(ch[:-1])[len(ch[:-1]) // 2]
-            if ch[-1] >= max(2.0, 3 * med):
-                note = f"New construction or earthworks seen on {so[-1]['date']} ({ch[-1]:.0f} ha changed)."
+            med = sorted(ch[:-2])[len(ch[:-2]) // 2]
+            if min(ch[-2:]) >= max(5.0, 3 * med):
+                note = f"New construction or earthworks seen on {so[-2]['date']} and {so[-1]['date']} ({ch[-1]:.0f} ha changed)."
         if so and float(so[-1]["burn_ha"] or 0) >= 1:
             note = (note + " " if note else "") + f"Burn scars seen on {so[-1]['date']} ({float(so[-1]['burn_ha']):.1f} ha)."
         if not sr and so:
