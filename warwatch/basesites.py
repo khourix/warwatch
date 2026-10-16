@@ -136,7 +136,7 @@ def pick(s, els):
     cand = []
     for e in els:
         t = e.get("tags", {})
-        port = s.get("kind") == "port" and (t.get("landuse") == "port" or t.get("industrial") == "port")
+        port = s.get("kind") in ("port", "naval") and (t.get("landuse") == "port" or t.get("industrial") == "port")
         if t.get("landuse") == "military" or t.get("military") or t.get("aeroway") == "aerodrome" or port:
             for r in rings(e):
                 cand.append((e, r))

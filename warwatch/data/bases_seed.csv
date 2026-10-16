@@ -50,14 +50,14 @@ subi,"Subi Reef, Spratlys",10.9232,114.0706,air+naval,China,scs,,,"Chinese artif
 mischief,"Mischief Reef, Spratlys",9.9215,115.5059,air+naval,China,scs,,,"Chinese artificial island near Second Thomas Shoal, where the Philippine resupply clashes happen."
 basa,"Basa Air Base, Philippines",14.9872,120.4931,air,Philippines,scs,,,Philippine fighter base (FA-50) on Luzon facing the South China Sea.
 bautista,"Antonio Bautista Air Base, Palawan",9.7424,118.7582,air,Philippines,scs,,,"Philippine air base on Palawan, closest to the Spratlys (EDCA site)."
-cam_ranh,"Cam Ranh naval and air base, Vietnam",11.9982,109.2191,air+naval,Vietnam,scs,,,Vietnam's main naval and air base on the South China Sea.
+cam_ranh,"Cam Ranh naval and air base, Vietnam",11.9982,109.2191,air+naval,Vietnam,scs,11.895,109.205,Vietnam's main naval and air base on the South China Sea.
 sunan,Pyongyang Sunan Airport (air force side),39.2189,125.6725,air,North Korea,korea,,,North Korean air force side of Pyongyang airport; parades and drills mass aircraft here.
 sohae,Sohae Satellite Launching Station,39.6600,124.7100,launch,North Korea,korea,,,North Korea's satellite and engine-test site (Tongchang-ri); pad work comes before launches.
 wonsan_kalma,Wonsan-Kalma air base,39.1630,127.4863,air,North Korea,korea,,,North Korean air base on the east coast; ballistic missiles have been launched nearby.
 sinpo,Sinpo submarine base,40.0300,128.1800,naval,North Korea,korea,,,North Korean submarine base (submarine-launched missile tests).
 osan,"Osan Air Base, South Korea",37.0851,127.0302,air,US/South Korea,korea,,,US and South Korean air base south of Seoul.
 kunsan,"Kunsan Air Base, South Korea",35.9084,126.6233,air,US/South Korea,korea,,,US F-16 base on the west coast of South Korea.
-jinhae,"Jinhae naval base, South Korea",35.1400,128.6700,naval,South Korea,korea,,,South Korea's main naval base and fleet headquarters.
+jinhae,"Jinhae naval base, South Korea",35.1438,128.6367,naval,South Korea,korea,,,South Korea's main naval base and fleet headquarters.
 rzeszow,"Rzeszow-Jasionka airport (Ukraine aid hub), Poland",50.1109,22.0215,air,NATO/Poland,europe_east;ukraine,,,Main NATO hub for weapons going into Ukraine; Patriot-defended.
 powidz,"Powidz Air Base, Poland",52.3801,17.8530,air,NATO/Poland,europe_east,,,NATO air base and US Army prepositioned stock in Poland.
 kogalniceanu,"Mihail Kogalniceanu Air Base, Romania",44.3588,28.4861,air,NATO/Romania,europe_east;ukraine,,,NATO air base by the Black Sea in Romania; US and allied rotations.
@@ -115,7 +115,7 @@ sanaa_dulaimi,"Al-Dulaimi air base, Sanaa",15.4750,44.2182,air,Houthis,yemen,,,"
 shiraz_7tab,"Shiraz 7th Tactical Air Base, Iran",29.5407,52.5851,air,Iran,iran;gulf,,,Iranian air base (7th TAB) in the south.
 mashhad_14tab,"Mashhad 14th Tactical Air Base, Iran",36.2341,59.6423,air,Iran,iran,,,Iranian air base (14th TAB) in the north-east.
 omidiyeh_5tab,"Omidiyeh 5th Tactical Air Base, Iran",30.8454,49.5452,air,Iran,iran;iraq,,,Iranian air base (5th TAB) near the Iraqi border.
-konarak,"Konarak naval base (Chabahar), Iran",25.4400,60.3800,naval,Iran,iran;gulf,,,Iranian navy base near Chabahar on the Gulf of Oman.
+konarak,"Konarak naval base (Iranian Navy 3rd District), Chabahar Bay",25.3041,60.4345,naval,Iran,iran;gulf,,,Iranian navy base near Chabahar on the Gulf of Oman.
 duqm,"Duqm port and naval base, Oman",19.6700,57.7000,naval,Oman/US/UK,gulf;yemen,,,Omani port with a UK base used by US and UK warships.
 berbera,"Berbera airport and port, Somaliland",10.3879,44.9407,air+naval,UAE,yemen,10.437,45.012,"UAE-built airport and port in Somaliland, across from Yemen."
 assab,"Assab air and naval base, Eritrea",13.0772,42.6425,air+naval,UAE/Eritrea,yemen,,,UAE air and naval base in Eritrea used in the Yemen war.

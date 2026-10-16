@@ -90,3 +90,22 @@ Case checks (`python3 warwatch/fireref.py cases`):
 - Hodeidah (20 Jul 2024): no S-NPP detection within 5 km for four days.
 - Shahran (14 Jun 2025): "unexplained" (score 30), not "unusual". Without OpenStreetMap depots the site is not known to be
   sensitive. The Sentinel-2 check finds the smoke plume and the fire in images from 12 and 15 June ([docs/firereview](firereview/)).
+
+## Result with the full site list (2026-10-16, as the fourth amendment promised)
+
+The OpenStreetMap sites were built through QLever (51,676 sites with GGFR and WRI), the 2018–2025 replay was run again,
+and the same test was run on it. Nothing else changed.
+
+| Run | Calm false alarms | Original events: hit, p, AUC | Added events: hit, p, AUC | Passes |
+|---|---:|---|---|---|
+| First (15 Oct, no OSM sites) | 50% | 70%, 0.016, 0.59 | 53%, 0.37, 0.50 | no |
+| Full site list (16 Oct) | 51% | 76%, 0.003, 0.61 | 57%, 0.23, 0.52 | no |
+
+**Still fails.** The added events must reach p < 0.05; they reach 0.23. The sites help a little: the original events now
+clear their bar. The false-alarm rate still sits near 50%, so `firms_anom_<box>` stays at zero weight.
+[FIREANOM.md](FIREANOM.md) now holds the full-list run.
+
+Case check, Shahran: the fire is now placed 0.5 km from OpenStreetMap "Fuel tanks", and its score rises from 30 to 55.
+That is still under the bar of 60, because the area's June farm burning takes 15 off. A Sentinel-2 burn scar adds 10,
+which would make it unusual. Abqaiq and Hodeidah are unchanged (no unusual heat in the S-NPP archive), and the flare
+controls still pass.
