@@ -251,6 +251,26 @@ def _have(*mods):
         return False
 
 
+    def test_gem_sites_none_without_files_so_old_rows_are_kept(self):
+        d = tempfile.mkdtemp()
+        self.assertIsNone(R.gem_sites([(22, 40, 38, 64)], raw=d))
+        self.assertIsNone(R.gem_sites([(22, 40, 38, 64)], raw=os.path.join(d, "missing")))
+        with open(os.path.join(d, "gem_steel.csv"), "w") as f:
+            f.write("Plant name,Latitude,Longitude\nMobarakeh Steel,32.33,51.48\nOutside,10.0,10.0\n")
+        got = R.gem_sites([(22, 40, 38, 64)], raw=d)
+        self.assertEqual([(g["name"], g["kind"], g["src"]) for g in got], [("Mobarakeh Steel", "steel", "gem")])
+
+    def test_gem_sites_read_coordinates_skip_dead_sites_and_mark_offshore_fields(self):
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "gem_cement.csv"), "w") as f:
+            f.write('Plant name (English),Coordinates,Operating status\nA,"32.1, 51.1",operating\nB,"32.2, 51.2",cancelled\n')
+        with open(os.path.join(d, "gem_oilgas_extraction.csv"), "w") as f:
+            f.write("Unit Name,Latitude,Longitude,Status,Onshore/Offshore\nSouth Pars,26.6,52.0,operating,Offshore\n"
+                    "Ahvaz,31.3,48.7,,Onshore\nNew,30.0,49.0,discovered,Onshore\n")
+        got = sorted((g["name"], g["kind"]) for g in R.gem_sites([(22, 40, 38, 64)], raw=d))
+        self.assertEqual(got, [("A", "cement"), ("Ahvaz", "oilgas"), ("South Pars", "platform")])
+
+
 class TestBaseWatch(unittest.TestCase):
     def test_zscore_needs_eight_earlier_scenes_and_floors_the_spread(self):
         import basewatch as B
@@ -442,6 +462,49 @@ class TestOsmSource(unittest.TestCase):
         self.assertEqual(len(basesites.rings(way)), 1)
         self.assertEqual(len(basesites.rings(rel)), 1)
         self.assertEqual(pier["geometry"][0], {"lon": 50.6, "lat": 26.2})
+
+    def test_geofabrik_points_pick_regions_by_box_and_filter_tags(self):
+        import osmsource as O
+        old = (O._GF["index"], dict(O._GF["regions"]), O._gf_region)
+        O._GF["index"] = [{"id": "iran", "url": "u", "boxes": [(25, 40, 44, 63)]}, {"id": "chile", "url": "u", "boxes": [(-56, -17, -76, -66)]}]
+        O._GF["regions"].clear()
+        asked = []
+        def fake(r, groups, cache):
+            asked.append(r["id"])
+            return [{"id": "osm:w1", "lat": 32.6, "lon": 51.7, "tags": {"military": "airfield", "name": "Isfahan"}},
+                    {"id": "osm:n2", "lat": 32.6, "lon": 51.7, "tags": {"highway": "crossing"}},
+                    {"id": "osm:w3", "lat": 10.0, "lon": 51.7, "tags": {"military": "base"}}]
+        O._gf_region = fake
+        try:
+            pts = O.geofabrik_points([("military", ["airfield", "base"], [])], (22, 40, 38, 64))
+            O.geofabrik_points([("military", ["airfield", "base"], [])], (22, 40, 38, 64))
+        finally:
+            O._GF["index"], O._GF["regions"], O._gf_region = old[0], old[1], old[2]
+        self.assertEqual([p["id"] for p in pts], ["osm:w1"])
+        self.assertEqual(asked, ["iran"])                        # each extract is read once per run
+        self.assertEqual(O._centroid({"type": "Polygon", "coordinates": [[[0, 0], [2, 0], [2, 2], [0, 2]]]}), (1.0, 1.0))
+        self.assertEqual(O._osmium_filters([("power", ["plant", "substation"], []), ("aeroway", None, [])]),
+                         ["nwr/power=plant,substation", "nwr/aeroway"])
+
+    def test_a_refused_service_is_not_asked_again_this_run(self):
+        import urllib.error
+        import osmsource as O
+        calls = []
+        def refuse(*a, **k):
+            calls.append(1)
+            raise urllib.error.HTTPError("u", 403, "Forbidden", {}, None)
+        old = O.urllib.request.urlopen
+        O.urllib.request.urlopen = refuse
+        O.DOWN.pop("qlever", None)
+        try:
+            with self.assertRaises(O.Unavailable):
+                O.sparql("SELECT ?x WHERE {}")
+            with self.assertRaises(O.Unavailable):
+                O.sparql("SELECT ?x WHERE {}")
+        finally:
+            O.urllib.request.urlopen = old
+            O.DOWN.pop("qlever", None)
+        self.assertEqual(len(calls), 1)
 
     def test_points_merge_rows_of_one_element_and_keep_tags(self):
         import osmsource as O

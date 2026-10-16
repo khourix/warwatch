@@ -9,6 +9,13 @@ resources. Why not Overpass first (checked 2026-10-15/16):
     overpass.kumi.systems answered 500 to everything; overpass.private.coffee only answers small boxes;
   - the ohsome API counts but refuses element extraction (403) to anonymous clients.
 
+Update 2026-10-16: QLever's osm-planet API answers 403 to GitHub's runners (its wikidata API still answers), and the
+public Overpass servers answer 502 "at capacity" to automated clients, so a monthly run that waited on them spent hours
+retrying. Bulk site lists now come from Geofabrik's free regional extracts, filtered locally with osmium-tool
+(geofabrik_points). The two query services remain for small jobs (base outlines), and each is given up for the rest of
+a run after its first hard failure, so a dead service costs seconds, not hours.
+
+    geofabrik_points(groups, bbox)            -> [{id, lat, lon, tags}]      (centroids from extracts; needs osmium)
     points(groups, bbox)                      -> [{id, lat, lon, tags}]      (centroids, for site lists)
     shapes(lat, lon, radius_km, groups)       -> [{type, id, tags, geometry|members}]  (Overpass-like, for base outlines)
 
@@ -17,7 +24,10 @@ return alongside (name and name:en always come back). OSM data (c) OpenStreetMap
 """
 import json
 import math
+import os
 import re
+import shutil
+import subprocess
 import time
 import urllib.error
 import urllib.parse
@@ -32,6 +42,11 @@ PREFIX geo: <http://www.opengis.net/ont/geosparql#>
 PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
 """
 log = print
+DOWN = {}   # service -> reason; a service that failed hard is not asked again in this run
+
+
+class Unavailable(RuntimeError):
+    pass
 
 
 def key_iri(k):
@@ -44,6 +59,8 @@ def lit(v):
 
 def sparql(query, timeout=600, tries=4):
     """SELECT results from QLever as a list of {var: value} dicts."""
+    if "qlever" in DOWN:
+        raise Unavailable("qlever down for this run: " + DOWN["qlever"])
     body = urllib.parse.urlencode({"query": PREFIX + query}).encode()
     last = None
     for k in range(tries):
@@ -52,11 +69,18 @@ def sparql(query, timeout=600, tries=4):
                                                                       "Content-Type": "application/x-www-form-urlencoded"})
             d = json.loads(urllib.request.urlopen(req, timeout=timeout).read())
             return [{v: b[v]["value"] for v in b} for b in d["results"]["bindings"]]
-        except Exception as e:      # 429/5xx, timeouts, cut connections
+        except urllib.error.HTTPError as e:
+            last = e
+            log("  qlever failed:", str(e)[:120])
+            if e.code in (401, 403, 404):      # refused, not busy: retrying will not help
+                break
+            time.sleep(10 * 2 ** k)
+        except Exception as e:      # timeouts, cut connections
             last = e
             log("  qlever failed:", str(e)[:120])
             time.sleep(10 * 2 ** k)
-    raise RuntimeError(f"qlever failed: {last}")
+    DOWN["qlever"] = str(last)[:120]
+    raise Unavailable(f"qlever failed: {last}")
 
 
 def _osm_id(iri):
@@ -171,6 +195,8 @@ def shapes(lat, lon, radius_km, groups):
 
 # ---------------------------------------------------------------- Overpass fallback (small declared resources)
 def overpass(q, tries=6):
+    if "overpass" in DOWN:
+        raise Unavailable("overpass down for this run: " + DOWN["overpass"])
     body = ("data=" + urllib.parse.quote(q)).encode()
     last = None
     for k in range(tries):
@@ -182,7 +208,8 @@ def overpass(q, tries=6):
             last = e
             log("  overpass", url.split("/")[2], "failed:", str(e)[:100])
             time.sleep(10 * (1 + k // len(OVERPASS)))
-    raise RuntimeError(f"overpass failed: {last}")
+    DOWN["overpass"] = str(last)[:120]
+    raise Unavailable(f"overpass failed: {last}")
 
 
 def _ov_filters(groups):
@@ -218,3 +245,119 @@ def shapes_overpass(lat, lon, radius_km, groups):
     r = int(radius_km * 1000)
     flt = "".join(f.replace("nwr", "nwr", 1) + f"(around:{r},{lat},{lon});" for f in _ov_filters(groups))
     return overpass(f"[out:json][timeout:120][maxsize:134217728];({flt});out geom tags;").get("elements", [])
+
+
+# ---------------------------------------------------------------- Geofabrik extracts + osmium (bulk site lists)
+GEOFABRIK = "https://download.geofabrik.de/index-v1.json"
+_GF = {"index": None, "regions": {}}   # region id -> [{id, lat, lon, tags}] filtered for the groups below
+
+
+def geofabrik_ready():
+    return shutil.which("osmium") is not None
+
+
+GF_SKIP = {"dach", "alps", "britain-and-ireland", "us"}   # composite extracts that repeat smaller ones (12 GB for "us")
+
+
+def _gf_leaves():
+    """Geofabrik's smallest extracts (regions with no sub-regions, composites skipped) with one bounding box per polygon
+    (two for a polygon that crosses the antimeridian; one box for it would cover the whole globe) and their .pbf URLs."""
+    if _GF["index"] is None:
+        req = urllib.request.Request(GEOFABRIK, headers={"User-Agent": UA})
+        feats = json.loads(urllib.request.urlopen(req, timeout=120).read())["features"]
+        parents = {f["properties"].get("parent") for f in feats}
+        out = []
+        for f in feats:
+            pr, g = f["properties"], f.get("geometry")
+            if pr["id"] in parents or pr["id"] in GF_SKIP or not g or "pbf" not in pr.get("urls", {}):
+                continue
+            polys = g["coordinates"] if g["type"] == "MultiPolygon" else [g["coordinates"]]
+            boxes = []
+            for poly in polys:
+                xs = [c[0] for c in poly[0]]
+                ys = [c[1] for c in poly[0]]
+                if not xs:
+                    continue
+                if max(xs) - min(xs) <= 180:
+                    boxes.append((min(ys), max(ys), min(xs), max(xs)))
+                else:   # crosses the antimeridian: one box on each side
+                    boxes += [(min(ys), max(ys), min(x for x in xs if x >= 0), 180.0), (min(ys), max(ys), -180.0, max(x for x in xs if x < 0))]
+            if boxes:
+                out.append({"id": pr["id"], "url": pr["urls"]["pbf"], "boxes": boxes})
+        _GF["index"] = out
+    return _GF["index"]
+
+
+def gf_regions(bbox):
+    la0, la1, lo0, lo1 = bbox
+    return [r for r in _gf_leaves() if any(b[0] <= la1 and b[1] >= la0 and b[2] <= lo1 and b[3] >= lo0 for b in r["boxes"])]
+
+
+def _osmium_filters(groups):
+    return [f"nwr/{key}" + ("=" + ",".join(values) if values else "") for key, values, _ in groups]
+
+
+def _centroid(geom):
+    pts = []
+    def walk(c):
+        if c and isinstance(c[0], (int, float)):
+            pts.append(c)
+        else:
+            for x in c:
+                walk(x)
+    walk(geom["coordinates"][0] if geom["type"] in ("Polygon", "MultiPolygon") else geom["coordinates"])
+    if not pts:
+        return None
+    return sum(p[1] for p in pts) / len(pts), sum(p[0] for p in pts) / len(pts)
+
+
+def _gf_region(r, groups, cache):
+    """Download one extract, keep the elements with the groups' tags, export them and return their centroids."""
+    os.makedirs(cache, exist_ok=True)
+    raw, flt, js = (os.path.join(cache, r["id"].replace("/", "_") + x) for x in (".osm.pbf", ".f.osm.pbf", ".geojsonseq"))
+    if not os.path.exists(js):
+        t0 = time.time()
+        req = urllib.request.Request(r["url"], headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=300) as resp, open(raw, "wb") as f:
+            shutil.copyfileobj(resp, f, 1 << 20)
+        mb = os.path.getsize(raw) / 1e6
+        subprocess.run(["osmium", "tags-filter", "--overwrite", "-o", flt, raw] + _osmium_filters(groups), check=True, capture_output=True)
+        os.remove(raw)
+        subprocess.run(["osmium", "export", "--overwrite", "-f", "geojsonseq", "-a", "type,id", "-o", js, flt], check=True, capture_output=True)
+        os.remove(flt)
+        log(f"  geofabrik {r['id']}: {mb:.0f} MB in {time.time() - t0:.0f} s")
+    out = []
+    with open(js, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip().lstrip("\x1e")
+            if not line:
+                continue
+            ft = json.loads(line)
+            pr = ft.get("properties", {})
+            c = _centroid(ft.get("geometry") or {"type": "Point", "coordinates": []})
+            if not c:
+                continue
+            typ = {"n": "n", "w": "w", "r": "r", "node": "n", "way": "w", "relation": "r", "area": "w"}.get(str(pr.get("@type", "n")), "n")
+            tags = {k: v for k, v in pr.items() if not k.startswith("@")}
+            out.append({"id": f"osm:{typ}{pr.get('@id')}", "lat": c[0], "lon": c[1], "tags": tags})
+    return out
+
+
+def geofabrik_points(groups, bbox, cache=None):
+    """Centroids of the elements matching the groups inside bbox, from every Geofabrik extract that touches it. Each
+    extract is downloaded and filtered once per run (the filtered file stays in the cache). Raises if any extract fails,
+    so the caller can keep its earlier rows for this box."""
+    cache = cache or os.environ.get("OSM_PBF_CACHE", "/tmp/osm-pbf")
+    la0, la1, lo0, lo1 = bbox
+    want = {(k, v) for k, vs, _ in groups for v in (vs or [None])}
+    out, seen = [], set()
+    for r in gf_regions(bbox):
+        if r["id"] not in _GF["regions"]:
+            _GF["regions"][r["id"]] = _gf_region(r, groups, cache)
+        for p in _GF["regions"][r["id"]]:
+            if p["id"] in seen or not (la0 <= p["lat"] <= la1 and lo0 <= p["lon"] <= lo1):
+                continue
+            if any(k in p["tags"] and (v is None or p["tags"][k] == v) for k, v in want):
+                seen.add(p["id"])
+                out.append(p)
+    return out

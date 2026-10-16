@@ -193,3 +193,17 @@ One PR per stage. Each stage in the plans lists its files, data formats, thresho
     sites with a new scene: about 5 minutes a run.
   - **Radar history.** Sites with one pass every 12 days (much of Asia, Africa and Yemen) need history back to March for
     a z value. It was read back that far.
+
+## 6. Follow-ups done (2026-10-16, evening)
+
+- **OpenStreetMap from Geofabrik.** A day after the switch, QLever's osm-planet API answered 403 to GitHub's runners (its
+  wikidata API still answered) and the public Overpass servers answered 502 "at capacity, not for automated use", so the
+  first hand run of `fireref.yml` retried for two hours and was cancelled. The site list now comes from Geofabrik's free
+  regional extracts, filtered on the runner with osmium-tool (`osmsource.geofabrik_points`): about 90 extracts, 36
+  minutes, no failed box. QLever and Overpass still serve the hand-run base outlines, and each is given up for the rest
+  of a run after its first hard failure.
+- **Global Energy Monitor.** The owner downloaded the trackers. Oil and gas plants, coal plants, oil and gas fields
+  (offshore ones as platforms), LNG terminals, and steel and cement plants that operate or are being built add 1,997
+  sites (55,539 in all). The files stay out of git (`data/raw/` is ignored); a rebuild without them keeps the GEM rows.
+- **Fire test rerun with both:** still fails (added events 55% against 51% calm false alarms); the case checks are
+  unchanged (Shahran 55 near "Fuel tanks").

@@ -30,9 +30,12 @@ jobs:
       - name: Archive tables
         if: env.WHAT == 'all' || env.WHAT == 'build' || env.WHAT == 'replay'
         run: python3 warwatch/fireref.py build
-      - name: Sites (OpenStreetMap, GGFR, WRI)
+      - name: osmium (filters Geofabrik's OpenStreetMap extracts for the site list)
         if: env.WHAT == 'all' || env.WHAT == 'sites'
-        run: python3 warwatch/fireref.py sites
+        run: sudo apt-get install -y -qq osmium-tool
+      - name: Sites (OpenStreetMap via Geofabrik, GGFR, WRI; GEM rows are kept)
+        if: env.WHAT == 'all' || env.WHAT == 'sites'
+        run: python3 -u warwatch/fireref.py sites
       - name: Spot checks
         run: python3 warwatch/fireref.py check || echo "spot checks need a look"
       - name: Replay the archive (unusual-fire history)

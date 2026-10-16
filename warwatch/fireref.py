@@ -5,7 +5,7 @@ in the dashboard build.
 
     python3 warwatch/fireref.py probe                         # are the archive files and site sources reachable?
     python3 warwatch/fireref.py build [--box iran,yemen] [--years 2012-2025] [--cache DIR]
-    python3 warwatch/fireref.py sites [--box iran]            # OpenStreetMap + World Bank GGFR + WRI (+ GEM files in data/raw)
+    python3 warwatch/fireref.py sites [--box iran] [--no-osm] # OpenStreetMap + World Bank GGFR + WRI (+ GEM files in data/raw)
     python3 warwatch/fireref.py check                         # spot checks: flares are routine, city centres are not
     python3 warwatch/fireref.py cases                         # the class each case in data/fire_cases.csv gets on its day
     python3 warwatch/fireref.py econ                          # The Economist's war-related fires, last 21 days -> history/cache (every 6 h)
@@ -357,12 +357,21 @@ def osm_kind(t):
 
 
 def osm_sites(box):
-    """All site kinds for a box from OpenStreetMap (osmsource: QLever, Overpass as fallback); storage tanks are their own
-    query. -> (sites, failed groups). A failed group does not lose the one that worked."""
+    """All site kinds for a box from OpenStreetMap -> (sites, failed groups). With osmium installed (fireref.yml) they come
+    from Geofabrik's extracts in one pass; otherwise from osmsource's query services (QLever, Overpass as fallback), with
+    storage tanks as their own query. A failed group does not lose the one that worked."""
     out, failed = [], []
-    for name, groups in (("other", GROUPS), ("fuel", TANKS)):
+    if O.geofabrik_ready():
         try:
-            pts = O.points(groups, box)
+            jobs = [("all", O.geofabrik_points(GROUPS + TANKS, box))]
+        except Exception as e:
+            log(f"  geofabrik failed: {str(e)[:160]}")
+            return [], [(box, "other"), (box, "fuel")]
+    else:
+        jobs = [("other", GROUPS), ("fuel", TANKS)]
+    for name, groups in jobs:
+        try:
+            pts = groups if name == "all" else O.points(groups, box)
         except Exception as e:
             log(f"  {name} failed: {str(e)[:120]}")
             failed.append((box, name))
@@ -417,20 +426,29 @@ def merge_tanks(sites, r_km=0.4, min_untagged=5):
     return rest
 
 
-def xlsx_rows(body):
-    """First sheet of an xlsx as lists of cell values (strings or floats). Standard library only."""
+def xlsx_sheets(body):
+    """Numbers of the worksheets in an xlsx (sheet1.xml, sheet2.xml, ...), in order."""
+    names = zipfile.ZipFile(io.BytesIO(body)).namelist()
+    return sorted(int(m.group(1)) for n in names for m in [re.match(r"xl/worksheets/sheet(\d+)\.xml$", n)] if m)
+
+
+def xlsx_rows(body, sheet=1):
+    """One sheet of an xlsx (the first by default) as lists of cell values (strings or floats). Standard library only."""
     z = zipfile.ZipFile(io.BytesIO(body))
     ss = []
     if "xl/sharedStrings.xml" in z.namelist():
         x = z.read("xl/sharedStrings.xml").decode("utf-8", "replace")
         for si in re.findall(r"<si>(.*?)</si>", x, re.S):
             ss.append("".join(re.findall(r"<t[^>]*>([^<]*)</t>", si)).replace("&amp;", "&").strip())
-    sheet = z.read("xl/worksheets/sheet1.xml").decode("utf-8", "replace")
+    sheet = z.read(f"xl/worksheets/sheet{sheet}.xml").decode("utf-8", "replace")
     out = []
     for row in re.finditer(r"<row[^>]*>(.*?)</row>", sheet, re.S):
         vals = {}
         for m in re.finditer(r'<c r="([A-Z]+)\d+"([^>]*?)(?:/>|>(.*?)</c>)', row.group(1), re.S):
             col, attrs, inner = m.group(1), m.group(2), m.group(3) or ""
+            if 't="inlineStr"' in attrs:
+                vals[col] = "".join(re.findall(r"<t[^>]*>([^<]*)</t>", inner)).replace("&amp;", "&").strip()
+                continue
             v = re.search(r"<v>([^<]*)</v>", inner)
             if not v:
                 continue
@@ -492,30 +510,48 @@ def wri_sites(boxes):
 
 
 def gem_sites(boxes, raw=os.path.join(F.DATA, "raw")):
-    """Optional Global Energy Monitor tracker files the owner downloads by hand (free form) into data/raw/gem_*.csv|xlsx."""
+    """Optional Global Energy Monitor tracker files the owner downloads by hand (free form) into data/raw/gem_*.csv|xlsx.
+
+    None when there are no such files (as on the GitHub runner), so sites() keeps the GEM rows already in fire_sites.csv."""
     out = []
     try:
         names = sorted(n for n in os.listdir(raw) if n.startswith("gem_"))
     except OSError:
-        return out
+        names = []
+    if not names:
+        return None
     for n in names:
         body = open(os.path.join(raw, n), "rb").read()
-        tab = xlsx_rows(body) if n.endswith(".xlsx") else list(csv.reader(io.StringIO(body.decode("utf-8", "replace"))))
-        head = [str(h).strip().lower() for h in tab[0]]
-        try:
-            la, lo = head.index("latitude"), head.index("longitude")
-        except ValueError:
-            log("GEM file without Latitude/Longitude:", n)
-            continue
-        nm = next((head.index(h) for h in ("plant name", "project name", "unit name", "name") if h in head), None)
-        kind = "steel" if "steel" in n else "power" if ("coal" in n or "power" in n) else "oilgas"
-        for r in tab[1:]:
-            try:
-                lat, lon = float(r[la]), float(r[lo])
-            except (ValueError, IndexError, TypeError):
+        tabs = ([xlsx_rows(body, k) for k in xlsx_sheets(body)] if n.endswith(".xlsx")
+                else [list(csv.reader(io.StringIO(body.decode("utf-8", "replace"))))])
+        kind = "steel" if "steel" in n else "cement" if "cement" in n else "power" if ("coal" in n or "power" in n) else "oilgas"
+        got = 0
+        for tab in tabs:   # GEM workbooks open with an "About" sheet; use every sheet that has coordinates
+            if not tab:
                 continue
-            if any(inside(b, lat, lon) for b in boxes):
-                out.append({"id": f"gem:{n}:{len(out)}", "name": str(r[nm])[:80] if nm is not None else "", "kind": kind, "lat": lat, "lon": lon, "src": "gem"})
+            head = [str(h).strip().lower() for h in tab[0]]
+            col = lambda *hs: next((head.index(h) for h in hs if h in head), None)
+            la, lo, xy = col("latitude"), col("longitude"), col("coordinates")
+            if (la is None or lo is None) and xy is None:
+                continue
+            nm = col("plant name", "plant name (english)", "terminalname", "project name", "unit name", "name")
+            st = col("status", "operating status")
+            off = col("onshore/offshore")
+            for r in tab[1:]:
+                cell = lambda c: str(r[c]).strip() if c is not None and c < len(r) else ""
+                try:
+                    lat, lon = (float(r[la]), float(r[lo])) if la is not None else map(float, cell(xy).split(","))
+                except (ValueError, IndexError, TypeError):
+                    continue
+                status = cell(st).lower()
+                if status not in ("", "unknown") and not re.search("operat|construct|storage", status):
+                    continue   # cancelled, retired, mothballed, proposed and undeveloped sites do not burn
+                if any(inside(b, lat, lon) for b in boxes):
+                    k = "platform" if kind == "oilgas" and cell(off).lower() == "offshore" else kind
+                    out.append({"id": f"gem:{n}:{len(out)}", "name": cell(nm)[:80], "kind": k, "lat": lat, "lon": lon, "src": "gem"})
+                    got += 1
+        if not got:
+            log("GEM file with no usable rows (no Latitude/Longitude or Coordinates column, or none in the boxes):", n)
     return out
 
 
@@ -548,7 +584,11 @@ def sites(box_names, osm=True):
     for name, fn in (("ggfr", ggfr_sites), ("wri", wri_sites), ("gem", gem_sites)):
         try:
             got = fn(boxes)
-            log(name, len(got))
+            if got is None:
+                got = [s for s in old if s.get("src") == name and any(inside(b, s["lat"], s["lon"]) for b in boxes)]
+                log(name, "no source files; kept", len(got), "earlier rows")
+            else:
+                log(name, len(got))
             out += got
         except Exception as e:
             log(name, "failed:", str(e)[:160])
@@ -564,6 +604,8 @@ def sites(box_names, osm=True):
                         and (s["kind"] == "fuel") == (grp == "fuel")]
             log("osm", b, len(got), "sites,", len(failed), "tiles failed")
             write_sites(out + [s for s in old if s.get("src") == "osm" and any(inside(C.FIRMS_BOX[x], s["lat"], s["lon"]) for x in box_names[box_names.index(b) + 1:])])
+    else:   # --no-osm: refresh GGFR, WRI and GEM only, and keep the OpenStreetMap rows already in the list
+        out += [s for s in old if s.get("src") == "osm" and any(inside(b, s["lat"], s["lon"]) for b in boxes)]
     keep = write_sites(out)
     by = {}
     for s in keep:
