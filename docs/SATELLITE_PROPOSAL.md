@@ -155,11 +155,23 @@ One PR per stage. Each stage in the plans lists its files, data formats, thresho
 - A fixed test of the two-pass rule is suggested.
 
 **For the owner.**
-1. Read [BASES_REVIEW.md](BASES_REVIEW.md). Muwaffaq Salti, Akrotiri, Dezful, Semnan, Shaykovka and Mozdok have no OSM
-   aprons; Bahrain, Hodeidah and Novorossiysk have piers only. Draw the missing aprons in
-   `warwatch/data/bases_manual.geojson` and run `python3 warwatch/basesites.py build <ids>`.
-2. Optional: download Global Energy Monitor's oil and gas, steel and coal trackers (free form) into `warwatch/data/raw/`,
-   then run `python3 warwatch/fireref.py sites`.
-3. Add source links to the three strike cases in `warwatch/data/fire_cases.csv`.
-4. After the first `imagery.yml` runs, look at the chips in the fire and base drawers.
-5. Precision audit: label 50 random "unusual" fires, as in FIREANOM_PLAN.md.
+1. Read [BASES_REVIEW.md](BASES_REVIEW.md) for the 120 sites and mark the rows that look right.
+2. Optional: Global Energy Monitor's oil and gas, steel and coal trackers ask for an email on a form, so they were not
+   downloaded. OpenStreetMap through QLever now covers plants and depots. If you want them, download them into
+   `warwatch/data/raw/` and run `python3 warwatch/fireref.py sites`.
+3. Precision audit: label 50 random "unusual" fires, as in FIREANOM_PLAN.md.
+
+## 5. Follow-ups done (2026-10-16)
+
+- **OpenStreetMap fixed.** Overpass servers only admit a query when the memory and time it declares are free, and ours
+  declared 1 GB and 600 s, so they were refused all day. One server also cuts cloud connections and the mirrors were down.
+  OSM now comes from QLever (University of Freiburg's SPARQL copy of the planet), with small Overpass queries as the
+  fallback (`warwatch/osmsource.py`). The fire site list has 51,676 sites, and every base box answers.
+- **Missing aprons**: four of the six now come from OSM. Shaykovka was drawn by hand. Semnan is a launch site and has no
+  aprons. Souda and Bandar Abbas now find their naval piers, and Hodeidah has a port outline.
+- **Strike cases** have source links in `fire_cases.csv`.
+- **Bases B5**: 120 sites (see BASEWATCH_PLAN.md, B5).
+- **Fire test rerun with OSM sites**: still fails (added events 57% against 51% calm false alarms). Shahran now scores
+  55 near "Fuel tanks", just under the bar of 60 ([FIREANOM_PLAN.md](FIREANOM_PLAN.md)).
+- **Hand runs**: `fireref.py replay`, `cases` and `econ` ran here. `imagery.yml` ran on a GitHub runner with the repo's
+  FIRMS key (a temporary branch workflow, because a workflow must be on main before it can be started by hand).

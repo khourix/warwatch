@@ -309,6 +309,23 @@ Page (`page.html`):
 
 ## B5. Expansion (after B4, or by owner decision)
 
+**As built (2026-10-16): 120 sites.** 90 seeds were added to `bases_seed.csv`, by theatre: Taiwan Strait 13 (Fujian
+air bases, Taiwan's main air and naval bases, Kadena, Andersen), South China Sea 9 (Yulin, Zhanjiang, the Paracel and
+Spratly islands, Philippine and Vietnamese bases), Korea 7 (Sunan, Sohae, Wonsan-Kalma, Sinpo, Osan, Kunsan, Jinhae),
+Eastern flank 6 (Rzeszow, Powidz, Kogalniceanu, Siauliai, Amari, Chkalovsk), Russia, Belarus and Ukraine 20 (Belbek,
+Saky, Sevastopol, Baltiysk, Soltsy, Severomorsk, the Su-34 and MiG-31K bases, Belaya, Ukrainka, Machulishchy and four
+Ukrainian air bases), Venezuela and the Caribbean 4 (with Roosevelt Roads), India and Pakistan 8, Libya 4, Sudan 4,
+and 15 more in the Middle East and Red Sea.
+- Each seed point was checked against OpenStreetMap (QLever): the aerodrome or naval base within 3 km by name.
+  Longtian and Shuimen were found by name; Konarak and Jinhae seeds moved to the naval bases.
+- `harbour_lat`/`harbour_lon` in the seed name a second point for air+naval sites whose piers lie away from the
+  airfield (Souda, Bandar Abbas, Cam Ranh, Port Sudan, Berbera). Naval sites now accept OSM port outlines.
+- Hand-drawn from Sentinel-2 in `bases_manual.geojson`: aprons at Shaykovka, Chiayi, Tel Nof and Al Jufra (plus Al
+  Jufra's outline) and the harbour at Jinhae. The record's `src` names them.
+- Radar reads per window: a site whose parts lie more than 12 km apart gets one window per part.
+- `imagery.yml`'s budget of 120 radar reads per run gives one new scene per site per run (four runs a day), which
+  keeps up with the 6-day repeat of each orbit.
+
 - More sites: up to about 80 to 120 in total. Taiwan Strait (Fujian air bases, Yulin on Hainan), Korea (Sunan,
   Sohae launch site, Wonsan-Kalma), the Eastern flank, more Russia (Belbek, Saky, Sevastopol, Baltiysk, Soltsy) and
   Venezuela. Cloudy regions run on radar only.
