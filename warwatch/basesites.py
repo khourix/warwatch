@@ -17,7 +17,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import fireref  # noqa: E402  (Overpass client with retries across mirrors)
+import osmsource as O  # noqa: E402  (OpenStreetMap: QLever, Overpass as fallback)
 
 DATA = os.path.join(HERE, "data")
 SEED = os.path.join(DATA, "bases_seed.csv")
@@ -100,16 +100,13 @@ def km(la1, lo1, la2, lo2):
 
 
 # ---------------------------------------------------------------- OSM
+SHAPES = [("landuse", ["military", "harbour"], []), ("military", None, []), ("aeroway", ["aerodrome", "apron"], []),
+          ("man_made", ["pier", "quay", "breakwater"], [])]
+
+
 def query(s):
-    la, lo = s["lat"], s["lon"]
-    q = (f"[out:json][timeout:180];("
-         f'way["landuse"="military"](around:4000,{la},{lo});relation["landuse"="military"](around:4000,{la},{lo});'
-         f'way["military"](around:4000,{la},{lo});relation["military"](around:4000,{la},{lo});'
-         f'way["aeroway"="aerodrome"](around:4000,{la},{lo});relation["aeroway"="aerodrome"](around:4000,{la},{lo});'
-         f'way["aeroway"="apron"](around:5000,{la},{lo});'
-         f'way["man_made"~"^(pier|quay|breakwater)$"](around:3000,{la},{lo});way["landuse"="harbour"](around:3000,{la},{lo});'
-         f");out geom tags;")
-    return fireref.overpass(q).get("elements", [])
+    """Outlines, aprons, piers and harbours within 5 km of the seed (osmsource: QLever, Overpass as fallback)."""
+    return O.shapes(s["lat"], s["lon"], 5.0, SHAPES)
 
 
 def rings(e):

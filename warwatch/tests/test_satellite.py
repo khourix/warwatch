@@ -373,5 +373,54 @@ class TestBaseWatch(unittest.TestCase):
         self.assertEqual([V.verdict(x) for x in (4.0, 0.5, 0.1)], ["scar", "unclear", "none"])
 
 
+class TestOsmSource(unittest.TestCase):
+    def test_wkt_shapes(self):
+        import osmsource as O
+        self.assertEqual(O.parse_wkt("POINT(51.3 25.1)"), ("point", [[[51.3, 25.1]]]))
+        k, r = O.parse_wkt("POLYGON((0 0,1 0,1 1,0 0),(0.2 0.2,0.3 0.2,0.3 0.3,0.2 0.2))")
+        self.assertEqual((k, r), ("polygon", [[[0, 0], [1, 0], [1, 1], [0, 0]]]))          # the hole is dropped
+        k, r = O.parse_wkt("MULTIPOLYGON(((0 0,1 0,1 1,0 0)),((5 5,6 5,6 6,5 5),(5.2 5.2,5.3 5.2,5.3 5.3,5.2 5.2)))")
+        self.assertEqual([p[0] for p in r], [[0, 0], [5, 5]])
+        self.assertEqual(O.parse_wkt("LINESTRING(1 2,3 4)"), ("line", [[[1, 2], [3, 4]]]))
+
+    def test_elements_look_like_overpass(self):
+        import basesites
+        import osmsource as O
+        way = O._element("way", 7, {"aeroway": "apron"}, "POLYGON((51.30 25.10,51.31 25.10,51.31 25.11,51.30 25.10))")
+        rel = O._element("relation", 8, {"landuse": "military"}, "MULTIPOLYGON(((51.0 25.0,52.0 25.0,52.0 26.0,51.0 25.0)))")
+        pier = O._element("way", 9, {"man_made": "pier"}, "LINESTRING(50.6 26.2,50.61 26.2)")
+        self.assertEqual(len(basesites.rings(way)), 1)
+        self.assertEqual(len(basesites.rings(rel)), 1)
+        self.assertEqual(pier["geometry"][0], {"lon": 50.6, "lat": 26.2})
+
+    def test_points_merge_rows_of_one_element_and_keep_tags(self):
+        import osmsource as O
+        rows = [{"x": "https://www.openstreetmap.org/way/5", "k": "power", "v": "plant", "c": "POINT(44.0 15.0)", "e0": "Hodeidah PS"},
+                {"x": "https://www.openstreetmap.org/way/5", "k": "power", "v": "plant", "c": "POINT(44.0 15.0)", "e2": "oil"}]
+        old = O.sparql
+        O.sparql = lambda q, **k: rows
+        try:
+            pts = O.points([("power", ["plant"], ["plant:source"])], (8, 22, 34, 60))
+        finally:
+            O.sparql = old
+        self.assertEqual(len(pts), 1)
+        self.assertEqual(pts[0]["id"], "osm:w5")
+        self.assertEqual((pts[0]["lat"], pts[0]["lon"]), (15.0, 44.0))
+        self.assertEqual(pts[0]["tags"], {"power": "plant", "name": "Hodeidah PS", "plant:source": "oil"})
+
+    def test_query_declares_small_resources_for_overpass(self):
+        import osmsource as O
+        seen = []
+        old = O.overpass
+        O.overpass = lambda q, **k: seen.append(q) or {"elements": []}
+        try:
+            O.points_overpass([("aeroway", ["aerodrome"], [])], (10, 11, 40, 41))
+            O.shapes_overpass(25.1, 51.3, 4.0, [("aeroway", ["apron"], [])])
+        finally:
+            O.overpass = old
+        self.assertTrue(all("[timeout:120][maxsize:134217728]" in q for q in seen))
+        self.assertTrue(all("maxsize:1073741824" not in q for q in seen))
+
+
 if __name__ == "__main__":
     unittest.main()

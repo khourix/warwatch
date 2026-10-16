@@ -38,14 +38,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import config as C  # noqa: E402
 import firecls as F  # noqa: E402
+import osmsource as O  # noqa: E402
 
 UA = {"User-Agent": "warwatch (github.com/khourix/warwatch)"}
 ARCHIVE = "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/{y}/viirs-snpp_{y}_{c}.csv"
 GGFR = ("https://thedocs.worldbank.org/en/doc/bd2432bbb0e514986f382f61b14b2608-0400072025/related/"
         "2012-2024-Flare-Volume-Estimates-by-individual-Flare-Location.xlsx")
 WRI = "https://raw.githubusercontent.com/wri/global-power-plant-database/master/output_database/global_power_plant_database.csv"
-OVERPASS = ["https://overpass-api.de/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-            "https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter"]
 FRP_EDGES = [0, 1, 2, 3, 5, 7, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000]
 NOTABLE_DAYS = 20      # a cell that burned on this many days in some year keeps its full row (flares, plants, a shelled town)
 NOTABLE_TYPES = 3      # ... as does one with this many volcano / static / offshore detections
@@ -316,50 +315,16 @@ def build(box_names, years, cache, out_dir=F.DATA):
 
 
 # ---------------------------------------------------------------- sites
-TAGS = [   # (kind, Overpass filter); `nwr` = nodes, ways and relations
-    ("flare", 'nwr["man_made"="flare"]'),
-    ("oilgas", 'nwr["industrial"~"^(refinery|oil|gas|petrochemical|oil_refinery)$"]'),
-    ("oilgas", 'nwr["man_made"="works"]["product"~"oil|gas|petrol",i]'),
-    ("steel", 'nwr["industrial"~"^(steelmaker|steel|steel_mill)$"]'),
-    ("steel", 'nwr["man_made"="works"]["product"~"steel|iron",i]'),
-    ("power", 'nwr["power"="plant"]["plant:source"~"gas|oil|coal|diesel",i]'),
-    ("cement", 'nwr["industrial"="cement"]'),
-    ("cement", 'nwr["man_made"="works"]["product"~"cement",i]'),
-    ("military", 'way["landuse"="military"]'),
-    ("military", 'nwr["military"~"^(airfield|base|naval_base|barracks|range)$"]'),
-    ("airfield", 'nwr["aeroway"="aerodrome"]'),
-    ("port", 'nwr["industrial"="port"]'),
-    ("port", 'way["landuse"="port"]'),
-    ("fuel", 'nwr["man_made"="storage_tank"]'),
-    ("substation", 'nwr["power"="substation"]["voltage"~"^(2[2-9][0-9]|[3-9][0-9][0-9]|[0-9]{4})[0-9]{3}"]'),
+GROUPS = [   # osmsource groups (key, values, extra tags); osm_kind() sorts each element into a site kind
+    ("man_made", ["flare", "works"], ["product"]),
+    ("industrial", ["refinery", "oil", "gas", "petrochemical", "oil_refinery", "steelmaker", "steel", "steel_mill", "cement", "port"], []),
+    ("landuse", ["military", "port"], []),
+    ("military", ["airfield", "base", "naval_base", "barracks", "range"], []),
+    ("aeroway", ["aerodrome"], []),
+    ("power", ["plant", "substation"], ["plant:source", "voltage"]),
 ]
+TANKS = [("man_made", ["storage_tank"], ["content", "substance"])]   # the heaviest tag: its own query
 FUEL_WORDS = ("oil", "fuel", "gas", "petrol", "diesel", "crude", "kerosene", "lpg", "lng", "naphtha")
-
-
-def overpass(q):
-    body = ("data=" + urllib.parse.quote(q)).encode()
-    last = None
-    for k in range(8):
-        url = OVERPASS[k % len(OVERPASS)]
-        try:
-            return json.loads(get(url, data=body, timeout=400, tries=1))
-        except Exception as e:      # busy servers answer 429/502/504 or an HTML page
-            last = e
-            log("  overpass", url.split("/")[2], "failed:", str(e)[:100])
-            time.sleep(min(240, 15 * 2 ** (k // len(OVERPASS))))
-    raise RuntimeError(f"overpass failed: {last}")
-
-
-def tiles(box, step=6.0):
-    la0, la1, lo0, lo1 = box
-    out, a = [], la0
-    while a < la1:
-        b = lo0
-        while b < lo1:
-            out.append((a, min(a + step, la1), b, min(b + step, lo1)))
-            b += step
-        a += step
-    return out
 
 
 def osm_kind(t):
@@ -389,32 +354,27 @@ def osm_kind(t):
     return None
 
 
-def osm_sites(box, step=3.0):
-    """All site kinds for a box from Overpass, in 3-degree tiles; storage tanks (the heaviest tag) get their own query.
-    -> (sites, failed tiles). A failed tile does not lose the tiles that worked."""
+def osm_sites(box):
+    """All site kinds for a box from OpenStreetMap (osmsource: QLever, Overpass as fallback); storage tanks are their own
+    query. -> (sites, failed groups). A failed group does not lose the one that worked."""
     out, failed = [], []
-    groups = ["".join(f"{flt};" for k, flt in TAGS if k != "fuel"), "".join(f"{flt};" for k, flt in TAGS if k == "fuel")]
-    for (la0, la1, lo0, lo1), union in ((t, g) for t in tiles(box, step) for g in groups):
-        q = f"[out:json][timeout:600][maxsize:1073741824][bbox:{la0},{lo0},{la1},{lo1}];({union});out center tags;"
+    for name, groups in (("other", GROUPS), ("fuel", TANKS)):
         try:
-            els = overpass(q).get("elements", [])
+            pts = O.points(groups, box)
         except Exception as e:
-            log(f"  tile {la0},{lo0} failed: {str(e)[:80]}")
-            failed.append(((la0, la1, lo0, lo1), "fuel" if 'storage_tank' in union else "other"))
+            log(f"  {name} failed: {str(e)[:120]}")
+            failed.append((box, name))
             continue
         n = 0
-        for e in els:
-            la = e.get("lat", e.get("center", {}).get("lat"))
-            lo = e.get("lon", e.get("center", {}).get("lon"))
-            t = e.get("tags", {})
+        for p in pts:
+            t = p["tags"]
             kind = osm_kind(t)
-            if la is None or kind is None:
+            if kind is None:
                 continue
             n += 1
-            out.append({"id": f"osm:{e['type'][0]}{e['id']}", "name": (t.get("name:en") or t.get("name") or "")[:80], "kind": kind, "lat": la, "lon": lo,
+            out.append({"id": p["id"], "name": (t.get("name:en") or t.get("name") or "")[:80], "kind": kind, "lat": p["lat"], "lon": p["lon"],
                         "src": "osm", "content": (t.get("content", "") + " " + t.get("substance", "")).lower()})
-        log(f"  tile {la0},{lo0}: {len(els)} elements, {n} sites")
-        time.sleep(5)
+        log(f"  {name}: {len(pts)} elements, {n} sites")
     return merge_tanks(out), failed
 
 
@@ -773,10 +733,10 @@ def probe():
             log(name, "FAIL", e)
             bad += 1
     try:
-        n = len(overpass('[out:json][timeout:60];way["aeroway"="apron"](around:4000,25.117,51.315);out ids;').get("elements", []))
-        log("Overpass OK,", n, "aprons at Al Udeid")
+        n = sum(1 for e in O.shapes(25.117, 51.315, 4.0, [("aeroway", ["apron"], [])]) if e["tags"].get("aeroway") == "apron")
+        log("OpenStreetMap (QLever) OK,", n, "aprons at Al Udeid")
     except Exception as e:
-        log("Overpass FAIL", e)
+        log("OpenStreetMap FAIL", e)
         bad += 1
     return bad
 
