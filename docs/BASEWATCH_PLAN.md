@@ -332,8 +332,10 @@ and 15 more in the Middle East and Red Sea.
 - Optical, as built: live runs read a site only when it has a scene not yet checked. Cloudy scenes are kept with their
   clear share only. A "before" chip comes from the clearest scene 25 to 60 days earlier. Naval sites are framed on the
   harbour. Change is measured on the base outline's clear land, in blue and red, against the clear scenes of the last
-  30 days, with each band's scene-wide shift removed. The construction note needs two different days at three times
-  the site's usual change and at least 5 ha.
+  30 days, with each band's scene-wide shift removed. Only brightening counts, as new concrete and earthworks do;
+  cloud shadows the scene mask misses darken. The construction note needs two different days at three times the site's
+  usual change and at least 5 ha. A burn needs the burn ratio to drop with red not brightening: char is dark, while a
+  harvested field's bare soil is bright (the first full run read Ningbo's harvest as a 40 ha burn).
 
 - More sites: up to about 80 to 120 in total. Taiwan Strait (Fujian air bases, Yulin on Hainan), Korea (Sunan,
   Sohae launch site, Wonsan-Kalma), the Eastern flank, more Russia (Belbek, Saky, Sevastopol, Baltiysk, Soltsy) and

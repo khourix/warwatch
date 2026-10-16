@@ -184,8 +184,9 @@ One PR per stage. Each stage in the plans lists its files, data formats, thresho
     harbour. Both are fixed.
   - **Optical change measure.** It counted haze, sun glint, cloud outside the aprons and the season as "construction",
     and the note fired at 46 sites. It is now measured on the base's clear land only. It compares visible bands against
-    clear scenes from the last 30 days, after taking out each scene's overall shift. The note needs two different days.
-    Al Dhafra's 944 ha of false change became 4.
+    clear scenes from the last 30 days, after taking out each scene's overall shift. Only brightening counts, and burns
+    must be dark. The note needs two different days. Al Dhafra's 944 ha of false change became 4, and the notes went
+    from 46 sites to a few.
   - **Run time.** Planetary Computer's anonymous signing limits requests per IP. Signing every file met "too many
     requests" and 85 s of retry waits on about every other read, and live runs read 8–11 optical scenes per site. With
     120 sites a 6-hourly run would have needed many hours. Now one token per storage container, and live runs read only

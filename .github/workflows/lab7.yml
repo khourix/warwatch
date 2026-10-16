@@ -1,6 +1,7 @@
 name: lab7
 # TEMPORARY, branch-only: optical history again with the fixed change measure (base outline, clear pixels, last 30 days,
-# visible bands, scene-wide shift removed), new radar scenes, and fresh chips for all 120 bases. Removed before the PR.
+# visible bands, scene-wide shift removed, brightening only, dark burns), new radar scenes, and fresh chips for all 120
+# bases. Removed before the PR.
 on:
   push:
     branches: [claude/hopeful-heisenberg-tpy723]

@@ -306,10 +306,13 @@ def optical_rows(rec, start, end, budget, done=frozenset(), log=print, min_clear
                 # visible bands only (blue, red): bare ground and concrete show there, while near and short-wave infrared follow
                 # grass and crops through the season
                 off = np.array([np.nanmedian((stack[k] - ref[k])[base]) for k in VIS])
-                diff = np.abs(stack[VIS] - ref[VIS] - np.nan_to_num(off)[:, None, None])
+                # brighter only: new concrete and earthworks brighten the ground, while cloud shadows the scene mask misses darken it
+                diff = stack[VIS] - ref[VIS] - np.nan_to_num(off)[:, None, None]
                 chg = round(float(((np.nanmax(diff, axis=0) > OPT_DIFF) & base & (ref[2] > WATER_NIR)).sum()) * 100.0 / 1e4, 2)
             if recent and base_clear >= min_clear:
-                burn = round(float((((recent[-1][1] - nbr) >= 0.27) & base & (recent[-1][0][2] > WATER_NIR)).sum()) * 100.0 / 1e4, 2)
+                # a burn scar is dark char: the burn ratio drops and red does not brighten (a harvested field's bare soil does)
+                dark = stack[1] <= recent[-1][0][1] + 0.01
+                burn = round(float((((recent[-1][1] - nbr) >= 0.27) & dark & base & (recent[-1][0][2] > WATER_NIR)).sum()) * 100.0 / 1e4, 2)
         prev.append((stack, nbr, d))
         rows.append({"scene_id": it["id"], "site": rec["id"], "date": I.day(it), "clear": round(cl, 3), "objects": objects, "chg_ha": chg, "burn_ha": burn,
                      "_item": it})
