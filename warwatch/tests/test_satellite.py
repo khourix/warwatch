@@ -463,6 +463,49 @@ class TestOsmSource(unittest.TestCase):
         self.assertEqual(len(basesites.rings(rel)), 1)
         self.assertEqual(pier["geometry"][0], {"lon": 50.6, "lat": 26.2})
 
+    def test_geofabrik_points_pick_regions_by_box_and_filter_tags(self):
+        import osmsource as O
+        old = (O._GF["index"], dict(O._GF["regions"]), O._gf_region)
+        O._GF["index"] = [{"id": "iran", "url": "u", "bbox": (25, 40, 44, 63)}, {"id": "chile", "url": "u", "bbox": (-56, -17, -76, -66)}]
+        O._GF["regions"].clear()
+        asked = []
+        def fake(r, groups, cache):
+            asked.append(r["id"])
+            return [{"id": "osm:w1", "lat": 32.6, "lon": 51.7, "tags": {"military": "airfield", "name": "Isfahan"}},
+                    {"id": "osm:n2", "lat": 32.6, "lon": 51.7, "tags": {"highway": "crossing"}},
+                    {"id": "osm:w3", "lat": 10.0, "lon": 51.7, "tags": {"military": "base"}}]
+        O._gf_region = fake
+        try:
+            pts = O.geofabrik_points([("military", ["airfield", "base"], [])], (22, 40, 38, 64))
+            O.geofabrik_points([("military", ["airfield", "base"], [])], (22, 40, 38, 64))
+        finally:
+            O._GF["index"], O._GF["regions"], O._gf_region = old[0], old[1], old[2]
+        self.assertEqual([p["id"] for p in pts], ["osm:w1"])
+        self.assertEqual(asked, ["iran"])                        # each extract is read once per run
+        self.assertEqual(O._centroid({"type": "Polygon", "coordinates": [[[0, 0], [2, 0], [2, 2], [0, 2]]]}), (1.0, 1.0))
+        self.assertEqual(O._osmium_filters([("power", ["plant", "substation"], []), ("aeroway", None, [])]),
+                         ["nwr/power=plant,substation", "nwr/aeroway"])
+
+    def test_a_refused_service_is_not_asked_again_this_run(self):
+        import urllib.error
+        import osmsource as O
+        calls = []
+        def refuse(*a, **k):
+            calls.append(1)
+            raise urllib.error.HTTPError("u", 403, "Forbidden", {}, None)
+        old = O.urllib.request.urlopen
+        O.urllib.request.urlopen = refuse
+        O.DOWN.pop("qlever", None)
+        try:
+            with self.assertRaises(O.Unavailable):
+                O.sparql("SELECT ?x WHERE {}")
+            with self.assertRaises(O.Unavailable):
+                O.sparql("SELECT ?x WHERE {}")
+        finally:
+            O.urllib.request.urlopen = old
+            O.DOWN.pop("qlever", None)
+        self.assertEqual(len(calls), 1)
+
     def test_points_merge_rows_of_one_element_and_keep_tags(self):
         import osmsource as O
         rows = [{"x": "https://www.openstreetmap.org/way/5", "k": "power", "v": "plant", "c": "POINT(44.0 15.0)", "e0": "Hodeidah PS"},

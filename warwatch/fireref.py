@@ -357,12 +357,21 @@ def osm_kind(t):
 
 
 def osm_sites(box):
-    """All site kinds for a box from OpenStreetMap (osmsource: QLever, Overpass as fallback); storage tanks are their own
-    query. -> (sites, failed groups). A failed group does not lose the one that worked."""
+    """All site kinds for a box from OpenStreetMap -> (sites, failed groups). With osmium installed (fireref.yml) they come
+    from Geofabrik's extracts in one pass; otherwise from osmsource's query services (QLever, Overpass as fallback), with
+    storage tanks as their own query. A failed group does not lose the one that worked."""
     out, failed = [], []
-    for name, groups in (("other", GROUPS), ("fuel", TANKS)):
+    if O.geofabrik_ready():
         try:
-            pts = O.points(groups, box)
+            jobs = [("all", O.geofabrik_points(GROUPS + TANKS, box))]
+        except Exception as e:
+            log(f"  geofabrik failed: {str(e)[:160]}")
+            return [], [(box, "other"), (box, "fuel")]
+    else:
+        jobs = [("other", GROUPS), ("fuel", TANKS)]
+    for name, groups in jobs:
+        try:
+            pts = groups if name == "all" else O.points(groups, box)
         except Exception as e:
             log(f"  {name} failed: {str(e)[:120]}")
             failed.append((box, name))
