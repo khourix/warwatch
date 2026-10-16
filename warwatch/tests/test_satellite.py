@@ -138,6 +138,12 @@ class TestFireCls(unittest.TestCase):
         self.assertEqual(pts[0]["c"], "seas")
         self.assertIn("burn scar (2.5 ha)", pts[1]["why"])
 
+    def test_review_marks_open_water_with_nothing_burnt_offshore(self):
+        pts = F.classify([det(25.67, 52.40, frp=4, dn="N")], "iran", ref=ref())
+        F.review(pts, {pts[0]["cid"]: {"verdict": "none", "ha": 0.0, "lc": "water", "bd": "2026-10-12", "ad": "2026-10-15"}})
+        self.assertEqual(pts[0]["c"], "off")
+        self.assertIn("open water", pts[0]["why"])
+
     def test_payload_keeps_r_for_explained_and_adds_class_fields(self):
         import dashboard
         p = dict(det(30.4, 47.4), c="ind", a=10, why="Gas flare.", routine=True)
@@ -219,6 +225,7 @@ class TestFireRef(unittest.TestCase):
 
     def test_osm_kinds(self):
         self.assertEqual(R.osm_kind({"man_made": "flare"}), "flare")
+        self.assertEqual(R.osm_kind({"man_made": "offshore_platform"}), "platform")
         self.assertEqual(R.osm_kind({"landuse": "military"}), "military")
         self.assertEqual(R.osm_kind({"power": "substation", "voltage": "400000;220000"}), "substation")
         self.assertIsNone(R.osm_kind({"power": "substation", "voltage": "110000"}))

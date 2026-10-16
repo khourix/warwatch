@@ -32,9 +32,9 @@ COARSE = 0.1          # degrees, ~11 km
 Y0 = 2012             # first archive year (VIIRS S-NPP)
 EXPLAINED = ("seas", "ind", "volc", "off")
 ANOMALY = ("anom", "hot")
-INDUSTRIAL = ("flare", "oilgas", "steel", "power", "cement")
+INDUSTRIAL = ("flare", "platform", "oilgas", "steel", "power", "cement")
 SENSITIVE = ("military", "airfield", "port", "fuel", "substation")
-KIND_NAME = {"flare": "Gas flare", "oilgas": "Oil and gas plant", "steel": "Steel works", "power": "Power plant", "cement": "Cement works",
+KIND_NAME = {"flare": "Gas flare", "platform": "Offshore oil and gas platform", "oilgas": "Oil and gas plant", "steel": "Steel works", "power": "Power plant", "cement": "Cement works",
              "military": "military site", "airfield": "airfield", "port": "port", "fuel": "fuel depot", "substation": "power substation"}
 ANOM_AT = 60          # an unexplained detection with this score or more is an anomaly
 # Starting weights (FIRECLASS_PLAN F2). Tuned only on 2018-2021 and frozen before the 2022+ test (docs/FIREANOM_PLAN.md).
@@ -500,6 +500,9 @@ def review(pts, rev=None):
             _set(p, p["c"], p["a"] + 10 if p["c"] in ("anom", "unex", "hot") else p["a"], p["why"] + f" The satellite image shows a burn scar ({r['ha']:.1f} ha) on {r['ad']}.", p.get("site", ""))
             if p["c"] == "unex" and p["a"] >= ANOM_AT:
                 p["c"] = "anom"
+        elif r["lc"] == "water" and r["verdict"] in ("none", "unclear") and p["c"] in ("anom", "unex"):
+            # a steady flame on open water with nothing burnt: a platform or ship flare not yet in the site list
+            _set(p, "off", 5, f"Offshore: the satellite image on {r['ad']} shows open water here and nothing burnt (a platform or ship flare).", p.get("site", ""))
         elif r["verdict"] == "none":
             _set(p, p["c"], p["a"] - 10 if p["c"] in ("anom", "unex") else p["a"], p["why"] + f" No burn scar visible on {r['ad']}.", p.get("site", ""))
             if p["c"] == "anom" and p["a"] < ANOM_AT:

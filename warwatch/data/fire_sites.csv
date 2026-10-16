@@ -41813,7 +41813,6 @@ osm:w1078673814,,oilgas,24.69490,55.63266,osm
 osm:w668047287,SARB South Island ADNOC Offshore,oilgas,24.73608,53.19895,osm
 osm:w1075202249,,oilgas,24.76574,53.73932,osm
 osm:w1075202226,,oilgas,24.77234,53.68114,osm
-osm:w1075202221,,oilgas,24.77420,53.64101,osm
 osm:w1075202250,,oilgas,24.77762,53.70995,osm
 osm:w1075202251,,oilgas,24.78062,53.67402,osm
 osm:w1075202225,,oilgas,24.78166,53.63075,osm
@@ -41823,11 +41822,9 @@ osm:w668047750,SARB North Island ADNOC Offshore,oilgas,24.79502,53.21205,osm
 osm:w1075202230,,oilgas,24.80251,53.66862,osm
 osm:w1075202247,,oilgas,24.80546,53.72621,osm
 osm:w1075202227,,oilgas,24.80661,53.68883,osm
-osm:w1075202215,,oilgas,24.80824,53.62329,osm
 osm:w1075202220,,oilgas,24.80888,53.60194,osm
 osm:w1075202218,,oilgas,24.81353,53.60944,osm
 osm:w1075202243,,oilgas,24.81570,53.73050,osm
-osm:w1075202239,,oilgas,24.82013,53.70574,osm
 osm:w1075202242,,oilgas,24.82296,53.71852,osm
 osm:w1075202232,,oilgas,24.82329,53.67198,osm
 osm:w1074940758,,oilgas,24.82722,53.64246,osm
@@ -41840,7 +41837,6 @@ osm:w1075202214,,oilgas,24.83497,53.63190,osm
 osm:w1074940763,Upper Zakum production facility,oilgas,24.83557,53.61413,osm
 osm:w1075202219,,oilgas,24.84048,53.60578,osm
 osm:w1074940715,,oilgas,24.84454,53.61638,osm
-osm:w1075327295,,oilgas,24.84676,53.71505,osm
 osm:w1074940716,,oilgas,24.84695,53.62213,osm
 osm:w1074940717,,oilgas,24.85174,53.62043,osm
 osm:w668042561,Zakum West Super Complex,oilgas,24.85829,53.61292,osm
@@ -41859,7 +41855,6 @@ osm:w1075202202,,oilgas,24.89778,53.72281,osm
 osm:w1075202176,,oilgas,24.89954,53.64408,osm
 osm:w1075202187,,oilgas,24.90254,53.67143,osm
 osm:w1075202195,,oilgas,24.90295,53.71797,osm
-osm:w1072206841,,oilgas,24.90765,53.71260,osm
 osm:w1075202174,,oilgas,24.90914,53.64536,osm
 osm:w1075202173,,oilgas,24.91030,53.61341,osm
 osm:w1075202211,,oilgas,24.91241,53.70591,osm
@@ -44300,33 +44295,25 @@ osm:n9543276974,oil drilling production platform,oilgas,39.44136,52.75214,osm
 osm:n9543188267,oil drilling production platform,oilgas,39.44637,52.78536,osm
 osm:n9543276984,oil drilling production platform,oilgas,39.44647,52.68193,osm
 osm:n9543276993,oil drilling production platform,oilgas,39.45300,52.79510,osm
-osm:w1035794514,,oilgas,39.45317,52.80903,osm
-osm:w1035794515,,oilgas,39.45326,52.79484,osm
 osm:n9543276973,oil drilling production platform,oilgas,39.45408,52.77741,osm
 osm:n9543089860,oil drilling production platform,oilgas,39.45657,52.97225,osm
 osm:w274902525,Goturdepe,oilgas,39.45795,53.63859,osm
 osm:n9543276975,oil drilling production platform,oilgas,39.45906,52.72596,osm
 osm:n9543276994,oil drilling production platform,oilgas,39.45979,52.78403,osm
-osm:w1035794537,,oilgas,39.45981,52.78445,osm
 osm:n9543276992,oil drilling production platform,oilgas,39.45999,52.82699,osm
-osm:w1035794534,,oilgas,39.46029,52.74103,osm
 osm:n9543276977,oil drilling production platform,oilgas,39.46039,52.74116,osm
 osm:n9543089861,oil drilling production platform,oilgas,39.46091,52.97908,osm
 osm:n9543276983,oil drilling production platform,oilgas,39.46204,52.71592,osm
 osm:n9543276996,oil drilling production platform,oilgas,39.46231,52.81145,osm
 osm:n9543276995,oil drilling production platform,oilgas,39.46270,52.79664,osm
 osm:n9543188256,oil drilling production platform,oilgas,39.46317,52.84707,osm
-osm:w1035794511,,oilgas,39.46342,52.84694,osm
 osm:n9543276985,oil drilling production platform,oilgas,39.46400,52.69228,osm
 osm:n9543089862,oil drilling production platform,oilgas,39.46622,52.97865,osm
 osm:n9543276987,oil drilling production platform,oilgas,39.46651,52.66730,osm
-osm:w1035794523,,oilgas,39.46742,52.73272,osm
 osm:n9543276976,oil drilling production platform,oilgas,39.46754,52.73292,osm
-osm:w1035794535,,oilgas,39.46807,52.76126,osm
 osm:n9543276978,oil drilling production platform,oilgas,39.46807,52.76150,osm
 osm:n9543089858,oil drilling production platform,oilgas,39.46910,52.98807,osm
 osm:n9543089863,oil drilling production platform,oilgas,39.46940,52.97565,osm
-osm:w1035794529,,oilgas,39.46948,52.98751,osm
 osm:n9543089859,oil drilling production platform,oilgas,39.46984,52.98708,osm
 osm:n9543089865,oil drilling production platform,oilgas,39.47092,52.96466,osm
 osm:n9543276982,oil drilling production platform,oilgas,39.47125,52.71772,osm
@@ -44334,37 +44321,26 @@ osm:n9543276991,oil drilling production platform,oilgas,39.47138,52.82724,osm
 osm:n9543276971,oil drilling production platform,oilgas,39.47172,52.78416,osm
 osm:n9543276981,oil drilling production platform,oilgas,39.47258,52.71549,osm
 osm:n9543089864,oil drilling production platform,oilgas,39.47274,52.97324,osm
-osm:w1035794528,,oilgas,39.47276,52.97367,osm
 osm:n9543276989,oil drilling production platform,oilgas,39.47551,52.65599,osm
-osm:w1035794520,,oilgas,39.47685,52.69000,osm
 osm:n9543276979,oil drilling production platform,oilgas,39.47688,52.68989,osm
-osm:w1035794510,,oilgas,39.47758,52.88612,osm
 osm:n9543276986,oil drilling production platform,oilgas,39.47880,52.67314,osm
 osm:n9543276972,oil drilling production platform,oilgas,39.48149,52.77341,osm
 osm:n9543089857,oil drilling production platform,oilgas,39.48177,52.97942,osm
-osm:w1035794527,,oilgas,39.48207,52.97923,osm
 osm:n9543276997,oil drilling production platform,oilgas,39.48261,52.97919,osm
 osm:n9543276988,oil drilling production platform,oilgas,39.48410,52.64275,osm
 osm:n9543276980,oil drilling production platform,oilgas,39.48430,52.71446,osm
 osm:n9543089868,oil drilling production platform,oilgas,39.48672,52.88685,osm
 osm:n9543089866,oil drilling production platform,oilgas,39.49185,52.93427,osm
 osm:n9543089871,oil drilling production platform,oilgas,39.49288,52.88655,osm
-osm:w1035794509,,oilgas,39.49296,52.88687,osm
-osm:w1035794533,,oilgas,39.49308,52.90400,osm
 osm:n9543089873,oil drilling production platform,oilgas,39.49311,52.90389,osm
-osm:w1035794531,,oilgas,39.49359,52.91730,osm
 osm:n9543089867,oil drilling production platform,oilgas,39.49371,52.91762,osm
 osm:n9543276965,oil drilling production platform,oilgas,39.49603,52.84784,osm
 osm:n9543089872,oil drilling production platform,oilgas,39.49753,52.90272,osm
-osm:w1035794532,,oilgas,39.49782,52.90250,osm
 osm:w1171574331,,oilgas,39.49885,53.63396,osm
-osm:w1035794530,,oilgas,39.50093,52.88786,osm
 osm:n9543089869,oil drilling production platform,oilgas,39.50106,52.88793,osm
-osm:w1035794524,,oilgas,39.50450,52.86846,osm
 osm:n9543089870,oil drilling production platform,oilgas,39.50454,52.86840,osm
 osm:n9543276966,oil drilling production platform,oilgas,39.50609,52.85196,osm
 osm:n9543276970,oil drilling production platform,oilgas,39.50788,52.83394,osm
-osm:w1035794525,,oilgas,39.50792,52.83412,osm
 osm:n9543276963,oil drilling production platform,oilgas,39.50967,52.86964,osm
 osm:n9543276968,oil drilling production platform,oilgas,39.51318,52.81823,osm
 osm:n9543276964,oil drilling production platform,oilgas,39.51437,52.85540,osm
@@ -44375,7 +44351,6 @@ osm:n9543276969,oil drilling production platform,oilgas,39.52066,52.83136,osm
 osm:n9543188255,oil drilling production platform,oilgas,39.53887,52.61541,osm
 osm:n9543188253,oil drilling production platform,oilgas,39.53913,52.55705,osm
 osm:n9543188254,oil drilling production platform,oilgas,39.54572,52.64211,osm
-osm:w1035794512,,oilgas,39.54582,52.64207,osm
 osm:n9543188250,oil drilling production platform,oilgas,39.54747,52.49723,osm
 osm:n9543188252,oil drilling production platform,oilgas,39.55521,52.56125,osm
 osm:n9543188251,oil drilling production platform,oilgas,39.56273,52.53433,osm
@@ -44383,28 +44358,21 @@ osm:n9545104205,oil drilling production platform,oilgas,39.56284,49.74232,osm
 osm:n9543188248,oil drilling production platform,oilgas,39.56554,52.50152,osm
 osm:n9545104206,oil drilling production platform,oilgas,39.56826,49.75466,osm
 osm:n9545104209,oil drilling production platform,oilgas,39.57292,49.76002,osm
-osm:w1035999771,,oilgas,39.57308,49.75992,osm
 osm:n9545104208,oil drilling production platform,oilgas,39.57553,49.76562,osm
 osm:n9545104207,oil drilling production platform,oilgas,39.57716,49.77177,osm
-osm:w1035999770,,oilgas,39.57741,49.77162,osm
-osm:w1035794513,,oilgas,39.57747,52.48951,osm
 osm:n9543188249,oil drilling production platform,oilgas,39.57751,52.48967,osm
 osm:n9545104204,oil drilling production platform,oilgas,39.58485,49.74213,osm
 osm:n9545104203,oil drilling production platform,oilgas,39.59008,49.75289,osm
 osm:n9545104202,oil drilling production platform,oilgas,39.59724,49.75918,osm
 osm:n9545104201,oil drilling production platform,oilgas,39.60624,49.74581,osm
-osm:w1036006176,,oilgas,39.63981,49.42697,osm
 osm:n9545158599,oil drilling production platform,oilgas,39.63982,49.42708,osm
 osm:w220791937,Jeongju Refinery,oilgas,39.67640,125.21685,osm
 osm:n9545110067,oil drilling production platform,oilgas,39.70249,49.66550,osm
 osm:n9545158604,oil drilling production platform,oilgas,39.70318,49.92584,osm
-osm:w1036006177,,oilgas,39.70326,49.92591,osm
 osm:n9545109231,oil drilling production platform,oilgas,39.70881,49.63487,osm
 osm:n9545109232,oil drilling production platform,oilgas,39.71229,49.65696,osm
-osm:w1035999865,,oilgas,39.71252,49.65687,osm
 osm:n9545109230,oil drilling production platform,oilgas,39.71470,49.64614,osm
 osm:n9545110066,oil drilling production platform,oilgas,39.71683,49.66172,osm
-osm:w1035999769,,oilgas,39.71696,49.66165,osm
 osm:n9545109235,oil drilling production platform,oilgas,39.71823,49.64341,osm
 osm:n9545110065,oil drilling production platform,oilgas,39.72612,49.67104,osm
 osm:n9545109236,oil drilling production platform,oilgas,39.72787,49.63898,osm
@@ -44413,208 +44381,145 @@ osm:n9545109234,oil drilling production platform,oilgas,39.75140,49.60614,osm
 osm:n9545109233,oil drilling production platform,oilgas,39.75640,49.61583,osm
 osm:n9545110049,oil drilling production platform,oilgas,39.76495,49.59170,osm
 osm:n2828331790,oil drilling production platform,oilgas,39.77109,49.60652,osm
-osm:w1036006170,,oilgas,39.78985,49.53758,osm
 osm:n9545158584,oil drilling production platform,oilgas,39.78987,49.53751,osm
-osm:w1036006171,,oilgas,39.78991,49.53732,osm
 osm:n9545158585,oil drilling production platform,oilgas,39.79005,49.53756,osm
-osm:w1036006173,,oilgas,39.79007,49.53762,osm
 osm:n9545110053,oil drilling production platform,oilgas,39.79020,49.53739,osm
-osm:w1036006172,,oilgas,39.79030,49.53766,osm
 osm:n9545158583,oil drilling production platform,oilgas,39.79031,49.53765,osm
 osm:n9545110054,oil drilling production platform,oilgas,39.80010,49.51205,osm
-osm:w1036006175,,oilgas,39.80013,49.51197,osm
 osm:w177916523,,oilgas,39.80378,44.76314,osm
 osm:n9545110063,oil drilling production platform,oilgas,39.80718,49.52969,osm
 osm:n9545167279,oil drilling production platform,oilgas,39.81294,49.54029,osm
-osm:w1036006168,,oilgas,39.81301,49.54023,osm
 osm:n9545110062,oil drilling production platform,oilgas,39.81305,49.54033,osm
 osm:n9545158562,oil drilling production platform,oilgas,39.81349,49.54038,osm
-osm:w1035999860,,oilgas,39.81520,49.55450,osm
 osm:n9545110057,oil drilling production platform,oilgas,39.81521,49.55472,osm
 osm:n9545110064,oil drilling production platform,oilgas,39.81690,49.52841,osm
-osm:w1035999863,,oilgas,39.81697,49.52864,osm
 osm:n9545167273,oil drilling production platform,oilgas,39.81700,49.52879,osm
 osm:n9545167274,oil drilling production platform,oilgas,39.81760,49.52914,osm
-osm:w1036006162,,oilgas,39.82303,49.54104,osm
 osm:n9545110061,oil drilling production platform,oilgas,39.82359,49.54108,osm
 osm:n9545110060,oil drilling production platform,oilgas,39.82384,49.54735,osm
 osm:n9545096489,oil drilling production platform,oilgas,39.82392,49.57937,osm
 osm:n9545167246,oil drilling production platform,oilgas,39.82394,49.54119,osm
-osm:w1036006155,,oilgas,39.82398,49.54724,osm
 osm:n9545167271,oil drilling production platform,oilgas,39.82424,49.55008,osm
-osm:w1036006154,,oilgas,39.82469,49.54719,osm
 osm:n9545158907,oil drilling production platform,oilgas,39.82479,49.52840,osm
 osm:n9545158908,oil drilling production platform,oilgas,39.82497,49.52849,osm
 osm:n9545158909,oil drilling production platform,oilgas,39.82544,49.52841,osm
 osm:n9545167270,oil drilling production platform,oilgas,39.82755,49.54904,osm
-osm:w1036006166,,oilgas,39.82766,49.54903,osm
 osm:n9545167269,oil drilling production platform,oilgas,39.82782,49.54878,osm
 osm:n9545110059,oil drilling production platform,oilgas,39.82823,49.54893,osm
 osm:n9545110058,oil drilling production platform,oilgas,39.83296,49.55492,osm
-osm:w1035999772,,oilgas,39.83307,49.55493,osm
 osm:n9545110051,oil drilling production platform,oilgas,39.83555,49.46139,osm
 osm:n9545110056,oil drilling production platform,oilgas,39.83721,49.56237,osm
 osm:w184170246,vana istasyonu,oilgas,39.83991,42.38114,osm
 osm:n9545110055,oil drilling production platform,oilgas,39.84355,49.53621,osm
 osm:n9545109822,oil drilling production platform,oilgas,39.84566,49.86925,osm
 osm:n9545110050,oil drilling production platform,oilgas,39.84739,49.46664,osm
-osm:w1035999825,,oilgas,39.84838,49.84914,osm
 osm:n9545109832,oil drilling production platform,oilgas,39.84858,49.84897,osm
-osm:w1035999824,,oilgas,39.84989,49.86898,osm
 osm:n9545109827,oil drilling production platform,oilgas,39.85013,49.86898,osm
-osm:w1035999826,,oilgas,39.85063,49.90408,osm
 osm:n9545109837,oil drilling production platform,oilgas,39.85087,49.90409,osm
-osm:w1035999815,,oilgas,39.85176,49.81848,osm
 osm:n9545105782,oil drilling production platform,oilgas,39.85197,49.81833,osm
-osm:w1035999820,,oilgas,39.85251,49.82772,osm
 osm:n9545105807,oil drilling production platform,oilgas,39.85274,49.82760,osm
 osm:n9545109620,oil drilling production platform,oilgas,39.85530,49.72787,osm
 osm:n9545104210,oil drilling production platform,oilgas,39.85554,49.46990,osm
 osm:n9545110052,oil drilling production platform,oilgas,39.85594,49.45539,osm
-osm:w1035999822,,oilgas,39.85598,49.85852,osm
 osm:n9545109817,oil drilling production platform,oilgas,39.85622,49.85852,osm
 osm:n9545109621,oil drilling production platform,oilgas,39.85661,49.75316,osm
-osm:w1035999821,,oilgas,39.85890,49.84133,osm
 osm:n9545109626,oil drilling production platform,oilgas,39.85893,49.80601,osm
-osm:w1035999817,,oilgas,39.85899,49.79273,osm
 osm:n9545105812,oil drilling production platform,oilgas,39.85910,49.84115,osm
 osm:n9545105792,oil drilling production platform,oilgas,39.85917,49.79253,osm
 osm:n9545109627,oil drilling production platform,oilgas,39.85961,49.82164,osm
-osm:w1035999819,,oilgas,39.86295,49.83149,osm
 osm:n9545105802,oil drilling production platform,oilgas,39.86319,49.83150,osm
-osm:w1035999818,,oilgas,39.86330,49.79851,osm
 osm:n9545105797,oil drilling production platform,oilgas,39.86347,49.79829,osm
-osm:w1035999805,,oilgas,39.86451,49.78415,osm
 osm:n9545109783,oil drilling production platform,oilgas,39.86475,49.78416,osm
-osm:w1035999816,,oilgas,39.86477,49.81303,osm
 osm:n9545105787,oil drilling production platform,oilgas,39.86497,49.81285,osm
 osm:n9545109628,oil drilling production platform,oilgas,39.86633,49.81707,osm
 osm:n9545109632,oil drilling production platform,oilgas,39.86705,49.79819,osm
 osm:n9545109634,oil drilling production platform,oilgas,39.86781,49.76676,osm
 osm:n9545109635,oil drilling production platform,oilgas,39.86962,49.75206,osm
 osm:n9545109629,oil drilling production platform,oilgas,39.87093,49.82472,osm
-osm:w1035999763,,oilgas,39.87109,49.82479,osm
 osm:n9545109645,oil drilling production platform,oilgas,39.87144,49.73748,osm
 osm:n9545109624,oil drilling production platform,oilgas,39.87171,49.76980,osm
-osm:w1035999808,,oilgas,39.87195,49.78212,osm
 osm:n9545109798,oil drilling production platform,oilgas,39.87219,49.78212,osm
 osm:n9545109631,oil drilling production platform,oilgas,39.87254,49.80843,osm
 osm:n9545109646,oil drilling production platform,oilgas,39.87258,49.71645,osm
-osm:w1035999766,,oilgas,39.87269,49.80845,osm
 osm:n9545109633,oil drilling production platform,oilgas,39.87385,49.79175,osm
-osm:w1035999767,,oilgas,39.87397,49.79171,osm
 osm:n9545109644,oil drilling production platform,oilgas,39.87402,49.74375,osm
-osm:w1035999762,,oilgas,39.87435,49.74323,osm
 osm:n9545109647,oil drilling production platform,oilgas,39.87514,49.69608,osm
-osm:w1035999809,,oilgas,39.87571,49.77210,osm
 osm:n9545109803,oil drilling production platform,oilgas,39.87595,49.77210,osm
 osm:w92632700,BTC Botaş PT-3 Pompa İstasyonu Çayırlı,oilgas,39.87685,39.78661,osm
-osm:w1035999810,,oilgas,39.87752,49.76517,osm
 osm:n9545109630,oil drilling production platform,oilgas,39.87774,49.79962,osm
 osm:n9545109808,oil drilling production platform,oilgas,39.87776,49.76517,osm
-osm:w1035999784,,oilgas,39.87807,49.75922,osm
 osm:n9545109667,oil drilling production platform,oilgas,39.87811,49.75926,osm
 osm:n9545109643,oil drilling production platform,oilgas,39.87818,49.74670,osm
 osm:n9545109652,oil drilling production platform,oilgas,39.87981,49.68633,osm
 osm:n9545109625,oil drilling production platform,oilgas,39.88177,49.81244,osm
-osm:w1035999764,,oilgas,39.88178,49.81253,osm
 osm:n9545109623,oil drilling production platform,oilgas,39.88185,49.77219,osm
 osm:n9545109636,oil drilling production platform,oilgas,39.88242,49.72223,osm
-osm:w1035999806,,oilgas,39.88285,49.78680,osm
-osm:w1035999814,,oilgas,39.88289,49.75955,osm
 osm:n9545109788,oil drilling production platform,oilgas,39.88309,49.78680,osm
 osm:n9545105777,oil drilling production platform,oilgas,39.88313,49.75955,osm
 osm:n9545109642,oil drilling production platform,oilgas,39.88364,49.75224,osm
 osm:n9545109640,oil drilling production platform,oilgas,39.88369,49.73280,osm
-osm:w1035999759,,oilgas,39.88369,49.75225,osm
-osm:w1035999761,,oilgas,39.88373,49.73274,osm
 osm:n9545109657,oil drilling production platform,oilgas,39.88431,49.80279,osm
-osm:w1035999807,,oilgas,39.88504,49.77937,osm
 osm:n9545109793,oil drilling production platform,oilgas,39.88528,49.77937,osm
 osm:n9545109639,oil drilling production platform,oilgas,39.88538,49.72465,osm
 osm:n9545109641,oil drilling production platform,oilgas,39.88631,49.74736,osm
-osm:w1035999786,,oilgas,39.88914,49.75410,osm
 osm:n9545109677,oil drilling production platform,oilgas,39.88918,49.75414,osm
 osm:n9545109638,oil drilling production platform,oilgas,39.88939,49.72856,osm
 osm:n9545096436,oil drilling production platform,oilgas,39.88952,49.75903,osm
 osm:n9545109619,oil drilling production platform,oilgas,39.89057,49.71977,osm
-osm:w1035999760,,oilgas,39.89093,49.73831,osm
 osm:n9545109637,oil drilling production platform,oilgas,39.89100,49.73830,osm
 osm:n9545104211,oil drilling production platform,oilgas,39.89141,49.73177,osm
 osm:n9545109622,oil drilling production platform,oilgas,39.89189,49.78621,osm
-osm:w1035999803,,oilgas,39.89220,49.69934,osm
 osm:n9545109773,oil drilling production platform,oilgas,39.89243,49.69945,osm
-osm:w1035999813,,oilgas,39.89269,49.72729,osm
 osm:n9545105772,oil drilling production platform,oilgas,39.89293,49.72730,osm
-osm:w1035999785,,oilgas,39.89420,49.75036,osm
 osm:n9545109672,oil drilling production platform,oilgas,39.89425,49.75040,osm
 osm:n9545096435,oil drilling production platform,oilgas,39.89427,49.76420,osm
 osm:n9545109618,oil drilling production platform,oilgas,39.89583,49.72055,osm
-osm:w1035999787,,oilgas,39.89632,49.73325,osm
 osm:n9545109682,oil drilling production platform,oilgas,39.89637,49.73326,osm
 osm:n9545109662,oil drilling production platform,oilgas,39.89774,49.79093,osm
 osm:n9545096434,oil drilling production platform,oilgas,39.89891,49.76670,osm
-osm:w1035999811,,oilgas,39.90172,49.75201,osm
 osm:n9545105762,oil drilling production platform,oilgas,39.90196,49.75201,osm
-osm:w1035999804,,oilgas,39.90229,49.70259,osm
 osm:n9545109778,oil drilling production platform,oilgas,39.90246,49.70238,osm
 osm:n9545104212,oil drilling production platform,oilgas,39.90264,49.73800,osm
 osm:n9545109617,oil drilling production platform,oilgas,39.90348,49.72616,osm
-osm:w1035999812,,oilgas,39.90438,49.71551,osm
 osm:n9545105767,oil drilling production platform,oilgas,39.90462,49.71552,osm
 osm:n9545109723,oil drilling production platform,oilgas,39.90730,49.69029,osm
-osm:w1035999789,,oilgas,39.90797,49.67682,osm
 osm:n9545109692,oil drilling production platform,oilgas,39.90801,49.67687,osm
-osm:w1035999788,,oilgas,39.90907,49.72102,osm
 osm:n9545109687,oil drilling production platform,oilgas,39.90912,49.72106,osm
 osm:n9545104215,oil drilling production platform,oilgas,39.90999,49.69244,osm
 osm:n9545104216,oil drilling production platform,oilgas,39.91101,49.72585,osm
 osm:n9545104214,oil drilling production platform,oilgas,39.91316,49.69797,osm
 osm:n9545109697,oil drilling production platform,oilgas,39.91584,49.67112,osm
-osm:w1035999802,,oilgas,39.91811,49.68442,osm
 osm:n9545109768,oil drilling production platform,oilgas,39.91814,49.68447,osm
 osm:n9545109718,oil drilling production platform,oilgas,39.92121,49.65740,osm
 osm:n9545066413,oil drilling production platform,oilgas,39.92391,49.67092,osm
 osm:n9545104213,oil drilling production platform,oilgas,39.92594,49.69036,osm
 osm:n9545104200,oil drilling production platform,oilgas,39.92695,49.69049,osm
 osm:w266280172,Belek Compressor Station,oilgas,39.93819,53.86795,osm
-osm:w1035999795,,oilgas,39.95145,49.76494,osm
 osm:n9545109733,oil drilling production platform,oilgas,39.95148,49.76500,osm
-osm:w1035999796,,oilgas,39.95291,49.78264,osm
 osm:n9545109738,oil drilling production platform,oilgas,39.95294,49.78269,osm
 osm:n9545104198,oil drilling production platform,oilgas,39.95532,49.72181,osm
 osm:n9545109582,oil drilling production platform,oilgas,39.95638,49.70657,osm
 osm:n9545109520,oil drilling production platform,oilgas,39.95668,49.68075,osm
 osm:n9545109743,oil drilling production platform,oilgas,39.96175,49.74048,osm
 osm:n9545109521,oil drilling production platform,oilgas,39.96373,49.68533,osm
-osm:w1035999849,,oilgas,39.96817,49.67204,osm
-osm:w1035999798,,oilgas,39.96912,49.73077,osm
 osm:n9545109748,oil drilling production platform,oilgas,39.96917,49.73079,osm
 osm:n9545104199,oil drilling production platform,oilgas,39.96979,49.74364,osm
 osm:n9545072877,oil drilling production platform,oilgas,39.97194,49.57179,osm
-osm:w1035999848,,oilgas,39.97226,49.65334,osm
 osm:n9545072866,oil drilling production platform,oilgas,39.97236,49.62814,osm
-osm:w1035999850,,oilgas,39.97524,49.65960,osm
 osm:n9545109523,oil drilling production platform,oilgas,39.97639,49.66551,osm
-osm:w1035999838,,oilgas,39.97971,49.56616,osm
 osm:n9545072876,oil drilling production platform,oilgas,39.97978,49.56614,osm
 osm:n9545109524,oil drilling production platform,oilgas,39.98004,49.66399,osm
 osm:n9545109525,oil drilling production platform,oilgas,39.98034,49.67894,osm
-osm:w1035999836,,oilgas,39.98047,49.58689,osm
 osm:n9545109526,oil drilling production platform,oilgas,39.98240,49.68641,osm
-osm:w1035999799,,oilgas,39.98313,49.67880,osm
 osm:n9545109753,oil drilling production platform,oilgas,39.98317,49.67885,osm
 osm:n9545109527,oil drilling production platform,oilgas,39.98377,49.68658,osm
-osm:w1035999794,,oilgas,39.98383,49.71189,osm
 osm:n9545109728,oil drilling production platform,oilgas,39.98387,49.71192,osm
 osm:n9545072875,oil drilling production platform,oilgas,39.98415,49.55448,osm
-osm:w1035999835,,oilgas,39.98418,49.55433,osm
 osm:n9545109581,oil drilling production platform,oilgas,39.98419,49.72181,osm
 osm:n9545109522,oil drilling production platform,oilgas,39.98487,49.67063,osm
 osm:n9545072878,oil drilling production platform,oilgas,39.98494,49.57725,osm
 osm:n9545072872,oil drilling production platform,oilgas,39.98502,49.55421,osm
 osm:n9545109528,oil drilling production platform,oilgas,39.98558,49.68611,osm
-osm:w1035999839,,oilgas,39.98785,49.58367,osm
 osm:n9545072871,oil drilling production platform,oilgas,39.98815,49.57032,osm
 osm:n9545109579,oil drilling production platform,oilgas,39.98916,49.70008,osm
 osm:n9545072874,oil drilling production platform,oilgas,39.98924,49.56302,osm
@@ -44622,12 +44527,10 @@ osm:n9545109580,oil drilling production platform,oilgas,39.98924,49.73076,osm
 osm:n9545109529,oil drilling production platform,oilgas,39.98939,49.68466,osm
 osm:n9545072873,oil drilling production platform,oilgas,39.99010,49.56275,osm
 osm:n9545109530,oil drilling production platform,oilgas,39.99178,49.68270,osm
-osm:w1035999837,,oilgas,39.99276,49.57404,osm
 osm:n9545072870,oil drilling production platform,oilgas,39.99283,49.57408,osm
 osm:n9545109758,oil drilling production platform,oilgas,39.99485,49.70081,osm
 osm:n9545109531,oil drilling production platform,oilgas,39.99502,49.67950,osm
 osm:w265206204,Kenar Oil Storage and Loading Enterprise,oilgas,39.99564,53.07872,osm
-osm:w1035999833,,oilgas,39.99583,49.55547,osm
 osm:n9545072867,oil drilling production platform,oilgas,39.99603,49.55537,osm
 osm:n9545109538,oil drilling production platform,oilgas,39.99605,49.66600,osm
 osm:n9545109578,oil drilling production platform,oilgas,39.99639,49.68523,osm
@@ -46449,6 +46352,599 @@ osm:w758814873,,oilgas,61.49205,23.52893,osm
 osm:w151742616,NEOT Oy – Varkauden terminaali,oilgas,62.27567,27.94305,osm
 osm:w388737519,Onttolan öljyvarasto,oilgas,62.63663,29.69631,osm
 osm:w1429792219,,oilgas,62.91989,27.71386,osm
+osm:n2291399720,,platform,24.39862,53.63657,osm
+osm:n2291399726,,platform,24.39984,53.62289,osm
+osm:n2291399750,,platform,24.42525,53.65696,osm
+osm:n2291399765,,platform,24.43941,53.66601,osm
+osm:w1075260453,,platform,24.45260,53.37189,osm
+osm:n2291399814,,platform,24.47128,53.69338,osm
+osm:n2291399850,,platform,24.49308,53.72524,osm
+osm:n2291399854,,platform,24.49350,53.70894,osm
+osm:n2291399866,,platform,24.50461,53.70334,osm
+osm:n2291399871,,platform,24.50815,53.72772,osm
+osm:n2291399889,,platform,24.55846,53.72000,osm
+osm:n2291399919,,platform,24.59651,53.73063,osm
+osm:n2291399922,,platform,24.60350,53.74456,osm
+osm:n2291399953,,platform,24.63399,53.74697,osm
+osm:n2291400111,,platform,24.73644,53.68027,osm
+osm:n2291400116,,platform,24.73711,53.74902,osm
+osm:n2291400120,,platform,24.73760,53.59143,osm
+osm:n2291400125,,platform,24.74198,53.72014,osm
+osm:n2291400128,,platform,24.74320,53.64110,osm
+osm:n2291400132,,platform,24.74427,53.71491,osm
+osm:n2291400140,,platform,24.74497,53.55508,osm
+osm:n2291400146,,platform,24.75657,53.67567,osm
+osm:n2291400151,,platform,24.75724,53.68748,osm
+osm:n2291400159,,platform,24.75979,53.46260,osm
+osm:n2291400177,,platform,24.76522,53.73963,osm
+osm:n2291400186,,platform,24.76678,53.51321,osm
+osm:n2291400188,,platform,24.76769,53.61313,osm
+osm:n2291400194,,platform,24.76830,53.77018,osm
+osm:n2291400217,,platform,24.77153,53.76029,osm
+osm:n2291400225,,platform,24.77165,53.68124,osm
+osm:n2291400230,,platform,24.77226,53.59911,osm
+osm:w1075202221,,platform,24.77420,53.64101,osm
+osm:n2291400249,,platform,24.77424,53.64180,osm
+osm:n2291400268,,platform,24.77691,53.71038,osm
+osm:n2291400271,,platform,24.77713,53.60223,osm
+osm:n2291400281,,platform,24.77959,53.79044,osm
+osm:n2291400284,,platform,24.78011,53.67463,osm
+osm:w1075327328,,platform,24.78030,53.67367,osm
+osm:n2291400291,,platform,24.78096,53.63104,osm
+osm:n2291400299,,platform,24.78408,53.52331,osm
+osm:w1075350601,,platform,24.78507,53.20766,osm
+osm:n2291400308,,platform,24.78812,53.72011,osm
+osm:n2291400314,,platform,24.78942,53.74061,osm
+osm:n2291400321,,platform,24.79049,53.64250,osm
+osm:n2291400328,,platform,24.79081,53.56743,osm
+osm:n2291400331,,platform,24.79099,53.51488,osm
+osm:n2291400342,,platform,24.79179,53.56321,osm
+osm:n2291400363,,platform,24.79395,53.48423,osm
+osm:n2291400365,,platform,24.79424,53.78447,osm
+osm:n2291400371,,platform,24.79480,53.43369,osm
+osm:n2291400392,,platform,24.79792,53.75133,osm
+osm:n2291400400,,platform,24.79820,53.71263,osm
+osm:n2291400410,,platform,24.79885,53.49359,osm
+osm:n2291400411,,platform,24.79954,53.76304,osm
+osm:n2291400454,,platform,24.80177,53.66932,osm
+osm:w1075202246,,platform,24.80514,53.72659,osm
+osm:n2291400487,,platform,24.80600,53.68954,osm
+osm:n2291400496,,platform,24.80635,53.72527,osm
+osm:n2291400498,,platform,24.80661,53.68216,osm
+osm:w1075202229,,platform,24.80734,53.68205,osm
+osm:n2291400511,,platform,24.80748,53.76129,osm
+osm:n2291400515,,platform,24.80793,53.62384,osm
+osm:n2291400518,,platform,24.80809,53.60223,osm
+osm:w1075202215,,platform,24.80824,53.62329,osm
+osm:n2291400543,,platform,24.81097,53.52410,osm
+osm:n2291400559,,platform,24.81293,53.60961,osm
+osm:n2291400562,,platform,24.81299,53.44521,osm
+osm:w1075327331,,platform,24.81311,53.60939,osm
+osm:n2291400578,,platform,24.81512,53.73114,osm
+osm:n2291400583,,platform,24.81530,53.76260,osm
+osm:n2291400591,,platform,24.81561,53.81056,osm
+osm:n2291400600,,platform,24.81658,53.65131,osm
+osm:n2291400610,,platform,24.81707,53.21136,osm
+osm:n2291400627,,platform,24.81829,53.39561,osm
+osm:n2291400634,,platform,24.81877,53.46691,osm
+osm:n2291400639,,platform,24.81970,53.70674,osm
+osm:w1075202239,,platform,24.82013,53.70574,osm
+osm:n2291400645,,platform,24.82016,53.68954,osm
+osm:n2291400652,,platform,24.82042,53.57543,osm
+osm:n2291400666,,platform,24.82291,53.71852,osm
+osm:n2291400668,,platform,24.82294,53.67234,osm
+osm:n2291400680,,platform,24.82438,53.76119,osm
+osm:n2291400705,,platform,24.82677,53.64249,osm
+osm:n2291400713,,platform,24.82730,53.78916,osm
+osm:n2291400717,,platform,24.82739,53.62067,osm
+osm:n2291400720,,platform,24.82783,53.53554,osm
+osm:n2291400727,,platform,24.82827,53.57375,osm
+osm:n2291400729,,platform,24.82830,53.56397,osm
+osm:n2291400733,,platform,24.82869,53.66392,osm
+osm:n2291400742,,platform,24.82909,53.62346,osm
+osm:n2291400752,,platform,24.82973,53.48475,osm
+osm:n2291400758,,platform,24.82990,53.68582,osm
+osm:n2291400791,,platform,24.83296,53.44142,osm
+osm:n2291400807,,platform,24.83377,53.68890,osm
+osm:n2291400800,,platform,24.83435,53.65389,osm
+osm:w1074940751,,platform,24.83436,53.65389,osm
+osm:n2291400821,,platform,24.83439,53.63224,osm
+osm:n2291400859,,platform,24.83485,53.61504,osm
+osm:n2291400866,,platform,24.83515,53.76589,osm
+osm:n2291400952,,platform,24.83993,53.60565,osm
+osm:w1075327333,,platform,24.84011,53.60546,osm
+osm:n2291401012,,platform,24.84350,53.75951,osm
+osm:n2291401032,,platform,24.84416,53.61645,osm
+osm:n2291401037,,platform,24.84417,53.68280,osm
+osm:n2291401051,,platform,24.84434,53.79107,osm
+osm:n2291401077,,platform,24.84567,53.59406,osm
+osm:n2291401087,,platform,24.84583,53.71541,osm
+osm:n2291401093,,platform,24.84604,53.81301,osm
+osm:n2291401102,,platform,24.84629,53.62272,osm
+osm:w1075327295,,platform,24.84676,53.71505,osm
+osm:n2291401119,Zakum Tower 189,platform,24.84714,53.51038,osm
+osm:n2291401121,,platform,24.84715,53.52457,osm
+osm:w1075332784,,platform,24.84799,53.50934,osm
+osm:w1075332780,,platform,24.84834,53.50881,osm
+osm:n2291401148,,platform,24.84839,53.76096,osm
+osm:n2291401150,,platform,24.84860,53.44605,osm
+osm:n2291401192,,platform,24.85094,53.79109,osm
+osm:n2291401194,,platform,24.85098,53.62034,osm
+osm:n2291401202,,platform,24.85134,53.56980,osm
+osm:n2291401205,,platform,24.85137,53.70824,osm
+osm:n2291401221,,platform,24.85222,53.70052,osm
+osm:n2291401222,,platform,24.85240,53.52423,osm
+osm:n2291401237,,platform,24.85273,53.64624,osm
+osm:n2291401241,,platform,24.85301,53.73993,osm
+osm:n2291401255,,platform,24.85370,53.67227,osm
+osm:n2291401301,,platform,24.85493,53.53364,osm
+osm:w1074940733,,platform,24.85559,53.61410,osm
+osm:n2291401321,,platform,24.85583,53.64993,osm
+osm:n2291401324,,platform,24.85588,53.71126,osm
+osm:n2291401330,,platform,24.85600,53.62339,osm
+osm:w1074940726,,platform,24.85693,53.61214,osm
+osm:n2291401331,,platform,24.85710,53.70545,osm
+osm:w1075309984,,platform,24.85713,53.70043,osm
+osm:w1074940731,,platform,24.85731,53.61394,osm
+osm:w1075309983,,platform,24.85733,53.70075,osm
+osm:w1075309982,,platform,24.85768,53.70012,osm
+osm:n2291401391,,platform,24.85773,53.56752,osm
+osm:w1075309985,,platform,24.85803,53.70164,osm
+osm:w1074940723,,platform,24.85806,53.61302,osm
+osm:n2291401406,,platform,24.85821,53.76094,osm
+osm:w1074940737,,platform,24.85833,53.61418,osm
+osm:w1075309981,,platform,24.85849,53.69893,osm
+osm:n2291401423,,platform,24.85854,53.38708,osm
+osm:w1074940738,,platform,24.85910,53.61502,osm
+osm:w1074940722,,platform,24.85920,53.61207,osm
+osm:w1074940724,,platform,24.85964,53.61234,osm
+osm:w1075309980,,platform,24.85970,53.69773,osm
+osm:n2291401460,,platform,24.85998,53.54558,osm
+osm:w1074940720,,platform,24.86030,53.61080,osm
+osm:n2291401487,,platform,24.86076,53.04405,osm
+osm:w1074940719,,platform,24.86096,53.61017,osm
+osm:n2291401503,,platform,24.86104,53.72314,osm
+osm:w1074940718,,platform,24.86124,53.61066,osm
+osm:n2291401519,,platform,24.86149,53.66570,osm
+osm:n2291401537,,platform,24.86266,53.42881,osm
+osm:n2291401546,,platform,24.86369,53.48341,osm
+osm:n2291401569,,platform,24.86538,53.64551,osm
+osm:n2291401581,,platform,24.86753,53.54169,osm
+osm:n2291401589,,platform,24.86806,53.65047,osm
+osm:n2291401597,,platform,24.86936,53.69666,osm
+osm:n2291401608,,platform,24.86989,53.82147,osm
+osm:n2291401616,,platform,24.87015,53.48012,osm
+osm:n2291401623,,platform,24.87030,53.74709,osm
+osm:n2291401639,,platform,24.87179,53.62258,osm
+osm:n2291401662,,platform,24.87574,53.59079,osm
+osm:n2291401664,,platform,24.87583,53.67381,osm
+osm:n2291401667,,platform,24.87622,53.75576,osm
+osm:n2291401668,,platform,24.87649,53.40606,osm
+osm:n2291401671,,platform,24.87672,53.51097,osm
+osm:n2291401680,,platform,24.87816,53.62027,osm
+osm:n2291401684,,platform,24.87885,53.60206,osm
+osm:n2291401688,,platform,24.87963,53.76279,osm
+osm:n2291401690,,platform,24.87985,53.72765,osm
+osm:n2291401696,,platform,24.88030,53.65929,osm
+osm:n2291401694,,platform,24.88061,53.70552,osm
+osm:n2291401701,,platform,24.88090,53.74080,osm
+osm:n2291401702,,platform,24.88153,53.78294,osm
+osm:n2291401707,,platform,24.88195,53.52620,osm
+osm:n2291401708,,platform,24.88200,53.64477,osm
+osm:n2291401716,,platform,24.88305,53.68604,osm
+osm:n2291401721,,platform,24.88383,53.67730,osm
+osm:n2291401735,,platform,24.88507,53.44677,osm
+osm:n2291401743,,platform,24.88581,53.81470,osm
+osm:n2291401748,,platform,24.88643,53.80581,osm
+osm:n2291401761,,platform,24.88871,53.59220,osm
+osm:n2291401763,,platform,24.88919,53.71313,osm
+osm:n2291401792,,platform,24.89155,53.75110,osm
+osm:w1075309959,,platform,24.89187,53.75111,osm
+osm:n2291401808,,platform,24.89468,53.39254,osm
+osm:n2291401821,,platform,24.89620,53.73589,osm
+osm:n11930318395,,platform,24.89673,53.02963,osm
+osm:n2291401826,,platform,24.89682,53.53321,osm
+osm:n2291401828,,platform,24.89700,53.67338,osm
+osm:n2291401833,,platform,24.89746,53.79233,osm
+osm:w1072280091,,platform,24.89753,53.72245,osm
+osm:n2291401840,,platform,24.89785,53.72287,osm
+osm:n2291401845,,platform,24.89834,53.76741,osm
+osm:n2291401853,,platform,24.89917,53.64458,osm
+osm:n2291401858,,platform,24.89941,53.51902,osm
+osm:n2291401862,,platform,24.89978,53.56470,osm
+osm:n2291401864,,platform,24.89982,53.63010,osm
+osm:n2291401866,,platform,24.90007,53.69975,osm
+osm:n11930318396,,platform,24.90113,53.03132,osm
+osm:n2291401881,,platform,24.90179,53.57027,osm
+osm:w1075378292,,platform,24.90184,53.06497,osm
+osm:n2291401885,,platform,24.90239,53.48662,osm
+osm:w1072206838,,platform,24.90275,53.71840,osm
+osm:n2291401890,,platform,24.90296,53.71793,osm
+osm:n2291401904,,platform,24.90446,53.71639,osm
+osm:n2291401911,,platform,24.90553,53.74431,osm
+osm:n2291401916,,platform,24.90661,53.68907,osm
+osm:n2291401923,,platform,24.90745,53.71244,osm
+osm:w1072206841,,platform,24.90765,53.71260,osm
+osm:n2291401930,,platform,24.90796,53.72810,osm
+osm:n2291401932,,platform,24.90807,53.67713,osm
+osm:n2291401943,,platform,24.90910,53.64524,osm
+osm:n2291401946,,platform,24.91035,53.61351,osm
+osm:n2291401949,,platform,24.91083,53.35842,osm
+osm:n2291401962,,platform,24.91230,53.40782,osm
+osm:n2291401959,,platform,24.91241,53.70589,osm
+osm:n2291401994,,platform,24.91510,53.76295,osm
+osm:n2291401999,,platform,24.91574,53.68360,osm
+osm:n2291402005,,platform,24.91616,53.52645,osm
+osm:n2291402007,,platform,24.91656,53.78894,osm
+osm:n2291402020,,platform,24.91829,53.60580,osm
+osm:n2291402037,,platform,24.92054,53.44757,osm
+osm:n2291402047,,platform,24.92334,53.43936,osm
+osm:n2291402049,,platform,24.92356,53.81259,osm
+osm:n2291402071,,platform,24.92684,53.63524,osm
+osm:n2291402080,,platform,24.92784,53.70560,osm
+osm:n2291402106,,platform,24.93104,53.67945,osm
+osm:n2291402111,,platform,24.93182,53.60741,osm
+osm:n2291402115,,platform,24.93249,53.55938,osm
+osm:n2291402118,,platform,24.93314,53.72435,osm
+osm:n2291402129,,platform,24.93586,53.47001,osm
+osm:n2291402131,,platform,24.93609,53.75738,osm
+osm:n2291402136,,platform,24.93635,53.50630,osm
+osm:n2291402138,,platform,24.93657,53.58206,osm
+osm:n2291402148,,platform,24.93849,53.66798,osm
+osm:n2291402158,,platform,24.94062,53.71245,osm
+osm:n2291402166,,platform,24.94161,53.48490,osm
+osm:n2291402186,,platform,24.94460,53.53602,osm
+osm:n2291402200,,platform,24.94743,53.64557,osm
+osm:n2291402221,,platform,24.95184,53.76389,osm
+osm:n2291402229,,platform,24.95628,53.76701,osm
+osm:n2291402239,,platform,24.95971,53.73871,osm
+osm:n2291402247,,platform,24.96181,53.69487,osm
+osm:n2291402253,,platform,24.96269,53.70943,osm
+osm:n2291402271,,platform,24.96761,53.35434,osm
+osm:n11930318397,,platform,24.97428,52.95185,osm
+osm:n11930318394,,platform,24.98498,53.25073,osm
+osm:n4348645482,,platform,25.00517,52.95233,osm
+osm:n2291402376,,platform,25.03023,52.92905,osm
+osm:n2291402749,,platform,25.12018,53.17987,osm
+osm:n2291402792,,platform,25.13126,53.25254,osm
+osm:n2291402795,,platform,25.13138,53.21615,osm
+osm:n2291402816,,platform,25.13733,53.21662,osm
+osm:n2291402874,,platform,25.14874,53.18751,osm
+osm:n2291402880,,platform,25.14892,53.15223,osm
+osm:n2291402900,,platform,25.15336,53.21461,osm
+osm:n2291402925,,platform,25.15694,53.11890,osm
+osm:n2291402927,,platform,25.15718,53.23098,osm
+osm:n2291402928,,platform,25.15724,53.19617,osm
+osm:n2291402939,,platform,25.15785,53.23212,osm
+osm:n2291402949,,platform,25.15963,53.26158,osm
+osm:n2291402963,,platform,25.16208,53.25318,osm
+osm:n2291402979,,platform,25.16605,53.16410,osm
+osm:n2291402989,,platform,25.16866,53.19489,osm
+osm:n2291402994,,platform,25.16966,53.18336,osm
+osm:n2291402998,,platform,25.17118,52.87653,osm
+osm:n2291403005,,platform,25.17160,52.88206,osm
+osm:n2291403013,,platform,25.17403,52.87314,osm
+osm:n2291403018,,platform,25.17448,52.88072,osm
+osm:n2291403021,,platform,25.17576,52.87559,osm
+osm:n2291403024,,platform,25.17597,52.87851,osm
+osm:n2291403028,,platform,25.17694,53.25704,osm
+osm:n2291403033,,platform,25.17737,53.25804,osm
+osm:n2291403037,,platform,25.17840,53.28715,osm
+osm:n2291403039,,platform,25.17992,53.19325,osm
+osm:n2291403045,,platform,25.18350,53.17280,osm
+osm:n2291403057,,platform,25.18520,53.14844,osm
+osm:n2291403073,,platform,25.18857,53.26556,osm
+osm:n2291403084,,platform,25.18965,53.14414,osm
+osm:n2291403086,,platform,25.18981,53.21142,osm
+osm:n2291403089,,platform,25.18984,53.22585,osm
+osm:n2291403093,,platform,25.19042,53.20771,osm
+osm:n2291403097,,platform,25.19149,53.16879,osm
+osm:n2291403119,,platform,25.19558,53.21468,osm
+osm:w671972543,Umm Shaif Super Complex,platform,25.19647,53.21630,osm
+osm:n2291403135,,platform,25.19797,53.12281,osm
+osm:n2291403153,,platform,25.20034,53.18956,osm
+osm:n2291403156,,platform,25.20049,53.24791,osm
+osm:n2291403162,,platform,25.20068,53.17977,osm
+osm:n2291403171,,platform,25.20104,53.16320,osm
+osm:n2291403179,,platform,25.20155,53.22031,osm
+osm:n2291403181,,platform,25.20155,53.28108,osm
+osm:n2291403194,,platform,25.20311,53.30327,osm
+osm:n2291403204,,platform,25.20362,53.26850,osm
+osm:n2291403248,,platform,25.20896,53.22407,osm
+osm:n2291403273,,platform,25.21469,53.17185,osm
+osm:n2291403291,,platform,25.21934,53.28913,osm
+osm:n2291403294,,platform,25.21958,53.26787,osm
+osm:n2291403298,,platform,25.22125,53.22125,osm
+osm:n2291403304,,platform,25.22383,53.25633,osm
+osm:n2291403307,,platform,25.22471,53.15324,osm
+osm:n2291403309,,platform,25.22525,53.16954,osm
+osm:n2291403328,,platform,25.23052,53.17375,osm
+osm:n2291403332,,platform,25.23065,53.23980,osm
+osm:n2291403339,,platform,25.23423,53.25734,osm
+osm:n2291403347,,platform,25.23654,53.18939,osm
+osm:n2291403355,,platform,25.23890,53.25501,osm
+osm:n2291403370,,platform,25.24254,53.16186,osm
+osm:n2291403372,,platform,25.24269,53.20432,osm
+osm:n2291403378,,platform,25.24611,53.27130,osm
+osm:n2291403383,,platform,25.24721,53.17734,osm
+osm:n2291403388,,platform,25.24867,53.11105,osm
+osm:n2291403392,,platform,25.25289,53.30264,osm
+osm:n2291403394,,platform,25.25300,53.13777,osm
+osm:n2291403402,,platform,25.25437,53.31324,osm
+osm:n2291403405,,platform,25.25507,53.23485,osm
+osm:n2291403419,,platform,25.26090,53.18850,osm
+osm:n2291403449,,platform,25.26249,53.26854,osm
+osm:n2291403451,,platform,25.26308,53.26926,osm
+osm:n2291403460,,platform,25.26551,53.20669,osm
+osm:n2291403472,,platform,25.26691,53.20794,osm
+osm:n2291403484,,platform,25.27211,53.18411,osm
+osm:n2291403496,,platform,25.27436,53.25422,osm
+osm:n2291403508,,platform,25.27539,53.25375,osm
+osm:n2291403521,,platform,25.27988,53.19761,osm
+osm:n2291403533,,platform,25.28372,53.21755,osm
+osm:n2291403543,,platform,25.28473,53.27488,osm
+osm:n2291403545,,platform,25.28497,53.23721,osm
+osm:n2291403554,,platform,25.28646,53.30499,osm
+osm:n2291403561,,platform,25.28858,53.25261,osm
+osm:n2291403564,,platform,25.28982,53.16252,osm
+osm:n2291403567,,platform,25.29007,53.22819,osm
+osm:n2291403573,,platform,25.29286,53.26948,osm
+osm:n2291403578,,platform,25.29795,53.23983,osm
+osm:n2291403594,,platform,25.31341,53.15691,osm
+osm:n2291403596,,platform,25.31469,53.46766,osm
+osm:n2291403598,,platform,25.31620,53.20527,osm
+osm:n2291403602,,platform,25.32196,53.25611,osm
+osm:n2291403621,,platform,25.33627,53.22801,osm
+osm:n2291404441,,platform,25.47090,53.13310,osm
+osm:n2291404461,,platform,25.47187,53.13605,osm
+osm:n2291404545,,platform,25.47816,53.11224,osm
+osm:n2291404672,,platform,25.48622,53.14725,osm
+osm:n2291404677,,platform,25.48628,53.13625,osm
+osm:n2291404900,,platform,25.49339,53.15149,osm
+osm:n2291404987,,platform,25.49440,53.14623,osm
+osm:n2291404993,,platform,25.49452,53.14732,osm
+osm:n2291405011,,platform,25.49471,53.14568,osm
+osm:n2291405052,,platform,25.49516,53.11794,osm
+osm:n2291405074,,platform,25.49530,53.12685,osm
+osm:n2291405095,,platform,25.49539,53.14623,osm
+osm:n2291405124,,platform,25.49569,53.14673,osm
+osm:n2291405167,,platform,25.49616,53.15621,osm
+osm:n2291405182,,platform,25.49649,53.14685,osm
+osm:n2291405223,,platform,25.49673,53.14878,osm
+osm:n2291405253,,platform,25.49735,53.14672,osm
+osm:n2291405401,,platform,25.49907,53.15134,osm
+osm:n2291405450,,platform,25.50000,53.16147,osm
+osm:n2291405479,,platform,25.50069,53.10674,osm
+osm:n2291405537,,platform,25.50118,53.14952,osm
+osm:n2291405558,,platform,25.50126,53.12708,osm
+osm:n2291405704,,platform,25.50367,53.13186,osm
+osm:n2291405737,,platform,25.50610,53.11689,osm
+osm:n2291405742,,platform,25.50619,53.12130,osm
+osm:n2291405766,,platform,25.50905,53.13355,osm
+osm:n2291405773,,platform,25.51001,53.18008,osm
+osm:n2291405777,,platform,25.51016,53.15513,osm
+osm:n2291405779,,platform,25.51043,53.17137,osm
+osm:n2291405783,,platform,25.51194,53.14722,osm
+osm:n2291405790,,platform,25.51314,53.13880,osm
+osm:n2291405813,,platform,25.51653,53.14653,osm
+osm:n2291405822,,platform,25.51863,53.19712,osm
+osm:n2291405826,,platform,25.51901,53.16384,osm
+osm:n2291405830,,platform,25.52056,53.15676,osm
+osm:n2291405832,,platform,25.52080,53.12044,osm
+osm:n2291405840,,platform,25.52181,53.17346,osm
+osm:n2291405850,,platform,25.52438,53.13313,osm
+osm:n2291405851,,platform,25.52736,53.14836,osm
+osm:n2291405860,,platform,25.53349,53.16335,osm
+osm:n2291405866,,platform,25.53584,53.14599,osm
+osm:n2291405870,,platform,25.53756,53.17787,osm
+osm:n2291405874,,platform,25.53966,53.12141,osm
+osm:n2291405875,,platform,25.53968,53.15163,osm
+osm:n2291405879,,platform,25.54242,53.15539,osm
+osm:n2291405888,,platform,25.54348,53.15067,osm
+osm:n2291405902,,platform,25.54560,53.19541,osm
+osm:n2291405922,,platform,25.54921,53.15679,osm
+osm:n2291405934,,platform,25.55262,53.13895,osm
+osm:n2291405964,,platform,25.56089,53.12374,osm
+osm:n2291405968,,platform,25.56151,53.16920,osm
+osm:n2291405982,,platform,25.56732,52.55328,osm
+osm:n2291406001,,platform,25.57446,52.53490,osm
+osm:n2291406002,,platform,25.57488,53.14784,osm
+osm:n2291406024,,platform,25.58281,52.53751,osm
+osm:n2291406028,,platform,25.58359,52.56649,osm
+osm:n2291406034,,platform,25.58396,52.55348,osm
+osm:n2291406038,,platform,25.58499,52.57702,osm
+osm:n2291406054,,platform,25.58850,52.52443,osm
+osm:n2291406058,,platform,25.58880,52.57045,osm
+osm:n2291406080,,platform,25.59231,52.54224,osm
+osm:n2291406088,,platform,25.59321,52.53805,osm
+osm:n2291406089,,platform,25.59327,52.55509,osm
+osm:n2291406092,,platform,25.59349,52.54737,osm
+osm:n2291406120,,platform,25.59551,52.54013,osm
+osm:n2291406121,,platform,25.59551,52.54318,osm
+osm:n2291406128,,platform,25.59581,52.56005,osm
+osm:n2291406184,,platform,25.59884,52.55361,osm
+osm:n2291406255,,platform,25.60186,52.54556,osm
+osm:n2291406270,,platform,25.60206,52.57623,osm
+osm:n2291406274,,platform,25.60207,52.57861,osm
+osm:n2291406287,,platform,25.60446,52.55593,osm
+osm:n2291406299,,platform,25.60628,52.54644,osm
+osm:n2291406309,,platform,25.60942,52.55982,osm
+osm:n2291406313,,platform,25.61036,52.53175,osm
+osm:n2291406316,,platform,25.61060,52.53007,osm
+osm:n2291406336,,platform,25.61762,52.54955,osm
+osm:n12089274983,,platform,25.61820,55.20683,osm
+osm:n2291406340,,platform,25.61925,52.57199,osm
+osm:n2291406354,,platform,25.62524,52.54741,osm
+osm:n2291406371,,platform,25.62975,52.55603,osm
+osm:n2291406484,,platform,25.69542,52.43350,osm
+osm:n2291406581,,platform,25.81908,55.22463,osm
+osm:n2291406583,,platform,25.82183,55.17771,osm
+osm:n2291406603,,platform,25.84522,55.19656,osm
+osm:n2291406607,,platform,25.84591,55.19524,osm
+osm:n2291406612,,platform,25.84672,55.17723,osm
+osm:n2291406623,,platform,25.84959,55.19974,osm
+osm:n2291406630,,platform,25.85095,55.19692,osm
+osm:n2291406637,,platform,25.85361,55.20893,osm
+osm:n2291406645,,platform,25.85654,55.22533,osm
+osm:n2291406658,,platform,25.85684,55.20347,osm
+osm:n2291406685,,platform,25.86224,55.21427,osm
+osm:n2291406694,,platform,25.86360,55.20491,osm
+osm:n2291406720,,platform,25.87002,55.18998,osm
+osm:n1293793718,,platform,26.24422,56.05527,osm
+osm:n2291407473,,platform,26.38128,55.97996,osm
+osm:w1318444335,,platform,32.59878,34.80604,osm
+osm:w215263078,Tamar Gas Platform,platform,33.17056,33.61807,osm
+osm:w1551984455,,platform,33.86075,12.05889,osm
+osm:w1551984754,,platform,33.89295,12.60623,osm
+osm:w1551984456,,platform,33.92203,12.68006,osm
+osm:w1035794514,,platform,39.45317,52.80903,osm
+osm:w1035794515,,platform,39.45326,52.79484,osm
+osm:w1035794536,,platform,39.45412,52.77742,osm
+osm:w1035794522,,platform,39.45909,52.72603,osm
+osm:w1035794537,,platform,39.45981,52.78445,osm
+osm:w1035794534,,platform,39.46029,52.74103,osm
+osm:w1035794511,,platform,39.46342,52.84694,osm
+osm:w1035794523,,platform,39.46742,52.73272,osm
+osm:w1035794535,,platform,39.46807,52.76126,osm
+osm:w1035794529,,platform,39.46948,52.98751,osm
+osm:w1035794528,,platform,39.47276,52.97367,osm
+osm:w1035794519,,platform,39.47548,52.65597,osm
+osm:w1035794520,,platform,39.47685,52.69000,osm
+osm:w1035794510,,platform,39.47758,52.88612,osm
+osm:w1035794521,,platform,39.47882,52.67309,osm
+osm:w1035794527,,platform,39.48207,52.97923,osm
+osm:w1035794526,,platform,39.49187,52.93430,osm
+osm:w1035794509,,platform,39.49296,52.88687,osm
+osm:w1035794533,,platform,39.49308,52.90400,osm
+osm:w1035794531,,platform,39.49359,52.91730,osm
+osm:w1035794532,,platform,39.49782,52.90250,osm
+osm:w1035794530,,platform,39.50093,52.88786,osm
+osm:w1035794524,,platform,39.50450,52.86846,osm
+osm:w1035794525,,platform,39.50792,52.83412,osm
+osm:w1035794512,,platform,39.54582,52.64207,osm
+osm:w1035999771,,platform,39.57308,49.75992,osm
+osm:w1035999770,,platform,39.57741,49.77162,osm
+osm:w1035794513,,platform,39.57747,52.48951,osm
+osm:w1036006176,,platform,39.63981,49.42697,osm
+osm:w1036006177,,platform,39.70326,49.92591,osm
+osm:w1035999865,,platform,39.71252,49.65687,osm
+osm:w1035999769,,platform,39.71696,49.66165,osm
+osm:w1036006170,,platform,39.78985,49.53758,osm
+osm:w1036006171,,platform,39.78991,49.53732,osm
+osm:w1036006173,,platform,39.79007,49.53762,osm
+osm:w1036006174,,platform,39.79018,49.53739,osm
+osm:w1036006172,,platform,39.79030,49.53766,osm
+osm:w1036006175,,platform,39.80013,49.51197,osm
+osm:w1035999864,,platform,39.80722,49.52974,osm
+osm:w1036006168,,platform,39.81301,49.54023,osm
+osm:w1036006169,,platform,39.81355,49.54037,osm
+osm:w1035999860,,platform,39.81520,49.55450,osm
+osm:w1035999863,,platform,39.81697,49.52864,osm
+osm:w1036006167,,platform,39.81760,49.52912,osm
+osm:w1036006162,,platform,39.82303,49.54104,osm
+osm:w1036006158,,platform,39.82362,49.54111,osm
+osm:w1036006157,,platform,39.82393,49.54119,osm
+osm:w1036006155,,platform,39.82398,49.54724,osm
+osm:w1036006163,,platform,39.82420,49.55008,osm
+osm:w1036006154,,platform,39.82469,49.54719,osm
+osm:w1036006160,,platform,39.82484,49.52836,osm
+osm:w1036006161,,platform,39.82543,49.52841,osm
+osm:w1036006166,,platform,39.82766,49.54903,osm
+osm:w1036006164,,platform,39.82779,49.54878,osm
+osm:w1036006165,,platform,39.82823,49.54888,osm
+osm:w1035999772,,platform,39.83307,49.55493,osm
+osm:w1035999773,,platform,39.83723,49.56240,osm
+osm:w1035999823,,platform,39.84566,49.86920,osm
+osm:w1035999825,,platform,39.84838,49.84914,osm
+osm:w1035999824,,platform,39.84989,49.86898,osm
+osm:w1035999826,,platform,39.85063,49.90408,osm
+osm:w1035999815,,platform,39.85176,49.81848,osm
+osm:w1035999820,,platform,39.85251,49.82772,osm
+osm:w1035999822,,platform,39.85598,49.85852,osm
+osm:w1035999821,,platform,39.85890,49.84133,osm
+osm:w1035999817,,platform,39.85899,49.79273,osm
+osm:w1035999765,,platform,39.85961,49.82158,osm
+osm:w1035999819,,platform,39.86295,49.83149,osm
+osm:w1035999818,,platform,39.86330,49.79851,osm
+osm:w1035999805,,platform,39.86451,49.78415,osm
+osm:w1035999816,,platform,39.86477,49.81303,osm
+osm:w1035999763,,platform,39.87109,49.82479,osm
+osm:w1035999808,,platform,39.87195,49.78212,osm
+osm:w1035999766,,platform,39.87269,49.80845,osm
+osm:w1035999767,,platform,39.87397,49.79171,osm
+osm:w1035999762,,platform,39.87435,49.74323,osm
+osm:w1035999809,,platform,39.87571,49.77210,osm
+osm:w1035999810,,platform,39.87752,49.76517,osm
+osm:w1035999768,,platform,39.87768,49.79962,osm
+osm:w1035999784,,platform,39.87807,49.75922,osm
+osm:w1035999781,,platform,39.87976,49.68632,osm
+osm:w1035999764,,platform,39.88178,49.81253,osm
+osm:w1035999806,,platform,39.88285,49.78680,osm
+osm:w1035999814,,platform,39.88289,49.75955,osm
+osm:w1035999759,,platform,39.88369,49.75225,osm
+osm:w1035999761,,platform,39.88373,49.73274,osm
+osm:w1035999782,,platform,39.88426,49.80277,osm
+osm:w1035999807,,platform,39.88504,49.77937,osm
+osm:w1035999786,,platform,39.88914,49.75410,osm
+osm:w1035999760,,platform,39.89093,49.73831,osm
+osm:w1035999803,,platform,39.89220,49.69934,osm
+osm:w1035999813,,platform,39.89269,49.72729,osm
+osm:w1035999785,,platform,39.89420,49.75036,osm
+osm:w1035999787,,platform,39.89632,49.73325,osm
+osm:w1035999783,,platform,39.89769,49.79090,osm
+osm:w1035999811,,platform,39.90172,49.75201,osm
+osm:w1035999804,,platform,39.90229,49.70259,osm
+osm:w1035999812,,platform,39.90438,49.71551,osm
+osm:w1035999793,,platform,39.90725,49.69025,osm
+osm:w1035999789,,platform,39.90797,49.67682,osm
+osm:w1035999788,,platform,39.90907,49.72102,osm
+osm:w1035999790,,platform,39.91580,49.67107,osm
+osm:w1035999802,,platform,39.91811,49.68442,osm
+osm:w1035999792,,platform,39.92117,49.65736,osm
+osm:w1035999791,,platform,39.92387,49.67088,osm
+osm:w1035999795,,platform,39.95145,49.76494,osm
+osm:w1035999796,,platform,39.95291,49.78264,osm
+osm:w1035999797,,platform,39.96170,49.74045,osm
+osm:w1035999849,,platform,39.96817,49.67204,osm
+osm:w1035999798,,platform,39.96912,49.73077,osm
+osm:w1035999848,,platform,39.97226,49.65334,osm
+osm:w1035999850,,platform,39.97524,49.65960,osm
+osm:w1035999838,,platform,39.97971,49.56616,osm
+osm:w1035999836,,platform,39.98047,49.58689,osm
+osm:w1035999799,,platform,39.98313,49.67880,osm
+osm:w1035999794,,platform,39.98383,49.71189,osm
+osm:w1035999835,,platform,39.98418,49.55433,osm
+osm:w1035999839,,platform,39.98785,49.58367,osm
+osm:w1035999837,,platform,39.99276,49.57404,osm
+osm:w1035999800,,platform,39.99481,49.70076,osm
+osm:w1035999833,,platform,39.99583,49.55547,osm
+osm:w1071846628,PFSS-U Fixed satelite platform,platform,44.48107,29.64536,osm
+osm:w354237846,PGSU 3,platform,44.52725,29.54868,osm
+osm:w354237576,PGSU 6,platform,44.53241,29.46808,osm
+osm:w985361806,PGSU-4,platform,44.53398,29.54707,osm
+osm:w354237769,PGSU 7,platform,44.54602,29.44682,osm
+osm:w1071846201,PFSS-8,platform,44.59997,29.35937,osm
+osm:n11140410094,,platform,45.25006,31.71547,osm
+osm:w1551973039,,platform,45.26009,31.67207,osm
+osm:n11140370346,,platform,45.33661,31.88417,osm
+osm:n11140366663,,platform,45.34539,31.86378,osm
+osm:n7973413825,"MODU ""Petro Holovanets""",platform,45.57000,32.78667,osm
+osm:n7973413824,"MODU ""Ukraine""",platform,45.59000,32.71167,osm
+osm:w1560096204,"СПБУ ""Петро Годованець""",platform,45.66995,31.65838,osm
+osm:w1560095948,"СПБУ ""Сиваш""",platform,45.70606,31.87504,osm
+osm:w306226159,,platform,45.83279,34.94543,osm
+osm:w306226150,,platform,45.83741,34.95112,osm
+osm:w306226152,,platform,45.83747,34.95157,osm
+osm:w306226153,,platform,45.84285,34.97186,osm
+osm:w1551988587,Док,platform,46.37304,31.83795,osm
+osm:w1551988586,Док,platform,46.37323,31.83773,osm
+osm:w1552001481,,platform,46.58324,30.95999,osm
+osm:n11934781615,Kravtsovskoye,platform,55.32743,20.57442,osm
+osm:n8776955909,Lotos Petrobaltic,platform,55.40031,18.72144,osm
+osm:n8777037483,Petrobaltic,platform,55.40044,18.72303,osm
+osm:n3135730227,,platform,55.40137,18.66275,osm
+osm:n8777040953,Petro Giant,platform,55.45618,18.15718,osm
+osm:n2406460000,Baltic Beta,platform,55.48160,18.18193,osm
 osm:w224084343,Mojo Dry Port,port,8.58315,39.15016,osm
 osm:w1255981986,JETEE PETROLIER,port,11.51201,43.23895,osm
 osm:r11199579,Port Minéralier du Ghoubet,port,11.53540,42.52055,osm

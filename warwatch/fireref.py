@@ -316,7 +316,7 @@ def build(box_names, years, cache, out_dir=F.DATA):
 
 # ---------------------------------------------------------------- sites
 GROUPS = [   # osmsource groups (key, values, extra tags); osm_kind() sorts each element into a site kind
-    ("man_made", ["flare", "works"], ["product"]),
+    ("man_made", ["flare", "works", "offshore_platform"], ["product"]),
     ("industrial", ["refinery", "oil", "gas", "petrochemical", "oil_refinery", "steelmaker", "steel", "steel_mill", "cement", "port"], []),
     ("landuse", ["military", "port"], []),
     ("military", ["airfield", "base", "naval_base", "barracks", "range"], []),
@@ -332,6 +332,8 @@ def osm_kind(t):
     g = lambda k: (t.get(k) or "").lower()
     if g("man_made") == "flare":
         return "flare"
+    if g("man_made") == "offshore_platform":
+        return "platform"
     if g("industrial") in ("refinery", "oil", "gas", "petrochemical", "oil_refinery") or (g("man_made") == "works" and re.search("oil|gas|petrol", g("product"))):
         return "oilgas"
     if g("industrial") in ("steelmaker", "steel", "steel_mill") or (g("man_made") == "works" and re.search("steel|iron", g("product"))):
