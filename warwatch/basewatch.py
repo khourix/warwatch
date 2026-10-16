@@ -144,15 +144,36 @@ def load_bases(path=BASES):
         return []
 
 
-def site_bbox(rec, margin_km=MARGIN_KM):
-    pts = [p for part in ("aprons", "harbour", "piers") for g in rec.get(part, []) for p in g]
-    if not pts:
-        pts = [p for g in rec.get("outline", []) for p in g] or [[rec["lon"], rec["lat"]]]
+def _bbox(pts, margin_km=MARGIN_KM):
     lo0, lo1 = min(p[0] for p in pts), max(p[0] for p in pts)
     la0, la1 = min(p[1] for p in pts), max(p[1] for p in pts)
     dla = margin_km / 110.574
     dlo = margin_km / (111.320 * max(0.05, math.cos(math.radians((la0 + la1) / 2))))
     return (lo0 - dlo, la0 - dla, lo1 + dlo, la1 + dla)
+
+
+def site_bbox(rec, margin_km=MARGIN_KM, part=None):
+    """Window around a part ("apron": aprons, else the outline; "harbour": piers and harbour polygons). With no part: the
+    aprons or outline, else the harbour (the view used for optical change and chips)."""
+    apron = [p for g in rec.get("aprons", []) for p in g] or [p for g in rec.get("outline", []) for p in g]
+    harbour = [p for k in ("harbour", "piers") for g in rec.get(k, []) for p in g]
+    pts = {"apron": apron, "harbour": harbour}.get(part) if part else (apron or harbour)
+    return _bbox(pts or [[rec["lon"], rec["lat"]]], margin_km)
+
+
+def windows(rec):
+    """[(bbox, [parts])]: one window for both parts when they lie together, one each when they are far apart (a naval
+    harbour 18 km from its air base)."""
+    parts = [k for k, have in (("apron", rec.get("aprons")), ("harbour", rec.get("harbour") or rec.get("piers"))) if have]
+    if not parts:
+        return []
+    boxes = {k: site_bbox(rec, part=k) for k in parts}
+    u = (min(b[0] for b in boxes.values()), min(b[1] for b in boxes.values()), max(b[2] for b in boxes.values()), max(b[3] for b in boxes.values()))
+    wide_km = (u[2] - u[0]) * 111.32 * math.cos(math.radians((u[1] + u[3]) / 2))
+    high_km = (u[3] - u[1]) * 110.574
+    if len(parts) == 1 or (wide_km <= 12 and high_km <= 12):
+        return [(u, parts)]
+    return [(boxes[k], [k]) for k in parts]
 
 
 def part_masks(rec, bbox, w, h):
@@ -170,34 +191,42 @@ def part_masks(rec, bbox, w, h):
 
 # ---------------------------------------------------------------- reading scenes
 def radar_rows(rec, start, end, budget, done=frozenset(), log=print):
-    """Rows for new Sentinel-1 RTC scenes over a site (oldest first, at most `budget`)."""
+    """Rows for new Sentinel-1 RTC scenes over a site (oldest first, at most `budget` scenes); each part is measured in its
+    own window when the parts lie far apart."""
     import imagery as I
     import numpy as np
-    bbox = site_bbox(rec)
-    w, h = I.grid(bbox, 10)
-    masks = part_masks(rec, bbox, w, h)
-    if not masks:
+    wins = []
+    for bbox, parts in windows(rec):
+        w, h = I.grid(bbox, 10)
+        masks = {k: v for k, v in part_masks(rec, bbox, w, h).items() if k in parts}
+        if masks:
+            wins.append((bbox, w, h, masks))
+    if not wins:
         return []
+    union = (min(b[0][0] for b in wins), min(b[0][1] for b in wins), max(b[0][2] for b in wins), max(b[0][3] for b in wins))
     rows = []
-    for it in I.stac_search("sentinel-1-rtc", bbox, start, end):
+    for it in I.stac_search("sentinel-1-rtc", union, start, end):
         if budget <= 0:
             break
         if (it["id"], rec["id"]) in done or not I.has(it, "vv"):
             continue
-        try:
-            dbv = I.db(I.read(I.href(it, "vv"), bbox, w, h, "nearest"))
-        except Exception as e:
-            log(rec["id"], it["id"][:40], "read failed:", repr(e)[:120])
-            continue
         budget -= 1
-        for part, m in masks.items():
-            valid = m & np.isfinite(dbv)
-            if valid.sum() < 0.5 * m.sum():
+        n0 = len(rows)
+        for bbox, w, h, masks in wins:
+            try:
+                dbv = I.db(I.read(I.href(it, "vv"), bbox, w, h, "nearest"))
+            except Exception as e:
+                log(rec["id"], it["id"][:40], "read failed:", repr(e)[:120])
                 continue
-            r = {"scene_id": it["id"], "site": rec["id"], "date": I.day(it), "orbit": I.orbit(it), "part": part, "area_m2": float(valid.sum()) * 100.0}
-            r.update(radar_metrics(dbv, m))
-            rows.append(r)
-        rows and rows[-1]["scene_id"] == it["id"] and log(rec["id"], I.day(it), I.orbit(it), {k: rows[-1][k] for k in (f"bright_m2@{T_DB:g}", f"blobs@{T_DB:g}")})
+            for part, m in masks.items():
+                valid = m & np.isfinite(dbv)
+                if valid.sum() < 0.5 * m.sum():
+                    continue
+                r = {"scene_id": it["id"], "site": rec["id"], "date": I.day(it), "orbit": I.orbit(it), "part": part, "area_m2": float(valid.sum()) * 100.0}
+                r.update(radar_metrics(dbv, m))
+                rows.append(r)
+        if len(rows) > n0:
+            log(rec["id"], I.day(it), I.orbit(it), {f"{r['part']}": r[f"{METRIC}@{T_DB:g}"] for r in rows[n0:]})
     return rows
 
 

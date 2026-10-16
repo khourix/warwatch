@@ -5,7 +5,7 @@
     python3 warwatch/basesites.py build al_udeid # rebuild named sites only (a plain build skips sites it already has)
 
 For each seed site it asks Overpass for the military or aerodrome outline, the aprons (aeroway=apron) and, for naval
-sites, piers and quays. Hand-drawn shapes in data/bases_manual.geojson (properties: id, part = outline|apron|harbour)
+sites, piers and quays. Hand-drawn shapes in data/bases_manual.geojson (properties: id, part = outline|apron|harbour|pier)
 replace OSM's for that site and part. OSM data (c) OpenStreetMap contributors, ODbL.
 """
 import csv
@@ -33,6 +33,8 @@ def seeds(path=SEED):
         for r in csv.DictReader(f):
             r["lat"], r["lon"] = float(r["lat"]), float(r["lon"])
             r["theatres"] = [t for t in r["theatres"].split(";") if t]
+            # air+naval sites whose naval piers lie away from the airfield name a second point for the harbour
+            r["hpt"] = (float(r["harbour_lat"]), float(r["harbour_lon"])) if r.get("harbour_lat") else None
             out.append(r)
         return out
 
@@ -100,13 +102,18 @@ def km(la1, lo1, la2, lo2):
 
 
 # ---------------------------------------------------------------- OSM
-SHAPES = [("landuse", ["military", "harbour"], []), ("military", None, []), ("aeroway", ["aerodrome", "apron"], []),
-          ("man_made", ["pier", "quay", "breakwater"], [])]
+SHAPES = [("landuse", ["military", "harbour", "port"], []), ("military", None, []), ("aeroway", ["aerodrome", "apron"], []),
+          ("man_made", ["pier", "quay", "breakwater"], []), ("industrial", ["port"], [])]
 
 
 def query(s):
-    """Outlines, aprons, piers and harbours within 5 km of the seed (osmsource: QLever, Overpass as fallback)."""
-    return O.shapes(s["lat"], s["lon"], 5.0, SHAPES)
+    """Outlines, aprons, piers and harbours within 5 km of the seed, and within 3 km of the harbour point when the site
+    has one (osmsource: QLever, Overpass as fallback)."""
+    els = O.shapes(s["lat"], s["lon"], 5.0, SHAPES)
+    if s.get("hpt"):
+        seen = {(e["type"], e["id"]) for e in els}
+        els += [e for e in O.shapes(s["hpt"][0], s["hpt"][1], 3.0, SHAPES) if (e["type"], e["id"]) not in seen]
+    return els
 
 
 def rings(e):
@@ -129,7 +136,8 @@ def pick(s, els):
     cand = []
     for e in els:
         t = e.get("tags", {})
-        if t.get("landuse") == "military" or t.get("military") or t.get("aeroway") == "aerodrome":
+        port = s.get("kind") == "port" and (t.get("landuse") == "port" or t.get("industrial") == "port")
+        if t.get("landuse") == "military" or t.get("military") or t.get("aeroway") == "aerodrome" or port:
             for r in rings(e):
                 cand.append((e, r))
     containing = [(e, r) for e, r in cand if contains(r, lo, la)]
@@ -151,7 +159,8 @@ def pick(s, els):
                     aprons.append(r)
         elif t.get("man_made") in ("pier", "quay", "breakwater") and e["type"] == "way":
             g = [[p["lon"], p["lat"]] for p in e.get("geometry", [])]
-            if g and min(km(la, lo, p[1], p[0]) for p in g) <= 2.5:
+            hla, hlo = s.get("hpt") or (la, lo)
+            if g and min(km(hla, hlo, p[1], p[0]) for p in g) <= 2.5:
                 piers.append(g)
         elif t.get("landuse") == "harbour":
             harbour += rings(e)
@@ -178,15 +187,17 @@ def manual(path=MANUAL):
 
 
 def record(s, got, man):
+    drawn = []
     for part in ("outline", "aprons", "harbour", "piers"):
         k = (s["id"], part.rstrip("s") if part in ("aprons", "piers") else part)
         if k in man:
             got[part] = man[k]
+            drawn.append(part)
     aprons = [simplify(r) for r in got["aprons"]]
     rec = {"id": s["id"], "name": s["name"], "lat": s["lat"], "lon": s["lon"], "kind": s["kind"], "side": s["side"], "theatres": s["theatres"], "why": s["why"],
            "outline": [simplify(r) for r in got["outline"]], "aprons": aprons, "harbour": [simplify(r) for r in got["harbour"]],
            "piers": [simplify(l) for l in got["piers"]], "apron_m2": round(sum(area_m2(r) for r in got["aprons"])),
-           "osm": got.get("ids", []), "src": SRC}
+           "osm": got.get("ids", []), "src": SRC + (f"; {', '.join(drawn)} hand-drawn from Sentinel-2" if drawn else "")}
     return rec
 
 

@@ -293,6 +293,15 @@ class TestBaseWatch(unittest.TestCase):
         self.assertEqual(len(out), 5)                 # the midpoint of the straight edge goes, the 4 corners stay
         self.assertAlmostEqual(basesites.area_m2(out), basesites.area_m2(sq), delta=1.0)
 
+    def test_far_apart_parts_get_their_own_windows(self):
+        import basewatch as B
+        sq = lambda lo, la: [[lo, la], [lo + 0.01, la], [lo + 0.01, la + 0.01], [lo, la]]    # noqa: E731
+        near = {"lat": 35.53, "lon": 24.15, "aprons": [sq(24.15, 35.53)], "piers": [[[24.16, 35.52], [24.17, 35.52]]]}
+        far = {"lat": 27.2, "lon": 56.37, "aprons": [sq(56.37, 27.21)], "piers": [[[56.21, 27.14], [56.215, 27.14]]]}
+        self.assertEqual([p for _, p in B.windows(near)], [["apron", "harbour"]])
+        self.assertEqual([p for _, p in B.windows(far)], [["apron"], ["harbour"]])
+        self.assertLess(B.site_bbox(far)[2] - B.site_bbox(far)[0], 0.05)      # chips stay on the air base
+
     def test_layer_turns_caches_into_map_items(self):
         import json
         import basewatch as B

@@ -1,31 +1,31 @@
-id,name,lat,lon,kind,side,theatres,why
-al_udeid,"Al Udeid Air Base, Qatar",25.117,51.315,air,US/Qatar,iran;gulf,US air hub for the Gulf. It emptied on 19 Jun 2025 before Iran struck it on 23 Jun.
-al_dhafra,"Al Dhafra Air Base, UAE",24.248,54.548,air,US/UAE,iran;gulf,US fighters and tankers near Hormuz.
-prince_sultan,"Prince Sultan Air Base, Saudi Arabia",24.063,47.580,air,US/Saudi Arabia,iran;gulf;yemen,US air base deep in Saudi Arabia; surges before Gulf and Yemen operations.
-ali_al_salem,"Ali Al Salem Air Base, Kuwait",29.347,47.521,air,US/Kuwait,iran;iraq,US airlift and drone base for Iraq and Iran.
-muwaffaq_salti,"Muwaffaq Salti Air Base, Jordan",31.827,36.782,air,US/Jordan,iran;syria;israel,US fighters in Jordan; filled up before the 2024 and 2025 Iran-Israel rounds.
-nsa_bahrain,NSA Bahrain and Mina Salman port,26.205,50.610,naval,US,iran;gulf,US Fifth Fleet home port. Every US ship left on 26 Feb 2026 before strikes on 28 Feb.
-diego_garcia,Diego Garcia,-7.313,72.411,air+naval,US/UK,iran;yemen,Bomber base in the Indian Ocean (B-2 deployment in spring 2025). No Sentinel-1 radar coverage: optical only.
-akrotiri,"RAF Akrotiri, Cyprus",34.590,32.988,air,UK,yemen;israel;lebanon;syria,UK strike base for the Middle East.
-incirlik,"Incirlik Air Base, Turkey",37.002,35.426,air,US/Turkey,syria;iran,US and NATO base in southern Turkey.
-lemonnier,"Camp Lemonnier, Djibouti",11.547,43.159,air,US,yemen,US base at Bab el-Mandeb.
-souda,"Souda Bay, Crete",35.532,24.150,air+naval,US/Greece,israel;lebanon,US naval and air support in the eastern Mediterranean.
-nevatim,Nevatim Air Base,31.208,35.012,air,Israel,israel;iran;lebanon,Israeli F-35 base; Iran targeted it in April and October 2024.
-ramon,Ramon Air Base,30.776,34.667,air,Israel,israel;iran,Israeli fighter base in the Negev.
-hatzerim,Hatzerim Air Base,31.234,34.663,air,Israel,israel,Israeli fighter base near Beersheba.
-bandar_abbas,Bandar Abbas: 9th air base and naval base,27.218,56.378,air+naval,Iran,iran;gulf,Iran's main air and naval base on Hormuz.
-isfahan_8tab,Isfahan 8th Tactical Air Base,32.751,51.861,air,Iran,iran,Iranian F-14 base next to Isfahan's nuclear and missile sites.
-hamadan_3tab,Hamadan (Nojeh) 3rd Tactical Air Base,35.211,48.653,air,Iran,iran,Iranian F-4 base in the west; hosted Russian bombers in 2016.
-tabriz_2tab,Tabriz 2nd Tactical Air Base,38.134,46.235,air,Iran,iran,Iranian air base in the north-west.
-dezful_4tab,Dezful (Vahdati) 4th Tactical Air Base,32.434,48.398,air,Iran,iran;iraq,Iranian air base facing Iraq.
-bushehr_6tab,Bushehr 6th Tactical Air Base,28.945,50.835,air,Iran,iran;gulf,Iranian air base on the Gulf near the Bushehr reactor.
-semnan_space,"Imam Khomeini Spaceport, Semnan",35.234,53.921,launch,Iran,iran,Iran's space and long-range missile launch site.
-jask,Jask naval base,25.650,57.770,naval,Iran,iran;gulf,Iranian navy base on the Gulf of Oman.
-ain_al_asad,"Ain al-Asad Air Base, Iraq",33.786,42.441,air,Iraq/US,iraq;iran,Iraqi base with US forces; hit by Iran in January 2020.
-hmeimim,"Hmeimim Air Base, Syria",35.401,35.949,air,Russia,syria,Russian air base in Syria.
-hodeidah,"Hodeidah port, Yemen",14.830,42.930,port,Houthis,yemen,Houthi-held port; struck by Israel and the US.
-engels,Engels-2 Air Base,51.481,46.200,air,Russia,ukraine,Russian strategic bomber base; bombers move before mass missile waves.
-olenya,Olenya Air Base,68.152,33.464,air,Russia,ukraine,Russian bomber base in the Arctic; struck on 1 Jun 2025.
-shaykovka,Shaykovka Air Base,54.226,34.371,air,Russia,ukraine,Russian Tu-22M3 bomber base.
-mozdok,Mozdok Air Base,43.787,44.603,air,Russia,ukraine,Russian bomber base in the North Caucasus.
-novorossiysk,Novorossiysk naval base,44.700,37.790,naval,Russia,ukraine,Black Sea Fleet base since the fleet left Sevastopol.
+id,name,lat,lon,kind,side,theatres,harbour_lat,harbour_lon,why
+al_udeid,"Al Udeid Air Base, Qatar",25.117,51.315,air,US/Qatar,iran;gulf,,,US air hub for the Gulf. It emptied on 19 Jun 2025 before Iran struck it on 23 Jun.
+al_dhafra,"Al Dhafra Air Base, UAE",24.248,54.548,air,US/UAE,iran;gulf,,,US fighters and tankers near Hormuz.
+prince_sultan,"Prince Sultan Air Base, Saudi Arabia",24.063,47.580,air,US/Saudi Arabia,iran;gulf;yemen,,,US air base deep in Saudi Arabia; surges before Gulf and Yemen operations.
+ali_al_salem,"Ali Al Salem Air Base, Kuwait",29.347,47.521,air,US/Kuwait,iran;iraq,,,US airlift and drone base for Iraq and Iran.
+muwaffaq_salti,"Muwaffaq Salti Air Base, Jordan",31.827,36.782,air,US/Jordan,iran;syria;israel,,,US fighters in Jordan; filled up before the 2024 and 2025 Iran-Israel rounds.
+nsa_bahrain,NSA Bahrain and Mina Salman port,26.205,50.610,naval,US,iran;gulf,,,US Fifth Fleet home port. Every US ship left on 26 Feb 2026 before strikes on 28 Feb.
+diego_garcia,Diego Garcia,-7.313,72.411,air+naval,US/UK,iran;yemen,,,Bomber base in the Indian Ocean (B-2 deployment in spring 2025). No Sentinel-1 radar coverage: optical only.
+akrotiri,"RAF Akrotiri, Cyprus",34.590,32.988,air,UK,yemen;israel;lebanon;syria,,,UK strike base for the Middle East.
+incirlik,"Incirlik Air Base, Turkey",37.002,35.426,air,US/Turkey,syria;iran,,,US and NATO base in southern Turkey.
+lemonnier,"Camp Lemonnier, Djibouti",11.547,43.159,air,US,yemen,,,US base at Bab el-Mandeb.
+souda,"Souda Bay, Crete",35.532,24.150,air+naval,US/Greece,israel;lebanon,35.468,24.153,US naval and air support in the eastern Mediterranean.
+nevatim,Nevatim Air Base,31.208,35.012,air,Israel,israel;iran;lebanon,,,Israeli F-35 base; Iran targeted it in April and October 2024.
+ramon,Ramon Air Base,30.776,34.667,air,Israel,israel;iran,,,Israeli fighter base in the Negev.
+hatzerim,Hatzerim Air Base,31.234,34.663,air,Israel,israel,,,Israeli fighter base near Beersheba.
+bandar_abbas,Bandar Abbas: 9th air base and naval base,27.218,56.378,air+naval,Iran,iran;gulf,27.143,56.210,Iran's main air and naval base on Hormuz.
+isfahan_8tab,Isfahan 8th Tactical Air Base,32.751,51.861,air,Iran,iran,,,Iranian F-14 base next to Isfahan's nuclear and missile sites.
+hamadan_3tab,Hamadan (Nojeh) 3rd Tactical Air Base,35.211,48.653,air,Iran,iran,,,Iranian F-4 base in the west; hosted Russian bombers in 2016.
+tabriz_2tab,Tabriz 2nd Tactical Air Base,38.134,46.235,air,Iran,iran,,,Iranian air base in the north-west.
+dezful_4tab,Dezful (Vahdati) 4th Tactical Air Base,32.434,48.398,air,Iran,iran;iraq,,,Iranian air base facing Iraq.
+bushehr_6tab,Bushehr 6th Tactical Air Base,28.945,50.835,air,Iran,iran;gulf,,,Iranian air base on the Gulf near the Bushehr reactor.
+semnan_space,"Imam Khomeini Spaceport, Semnan",35.234,53.921,launch,Iran,iran,,,Iran's space and long-range missile launch site.
+jask,Jask naval base,25.650,57.770,naval,Iran,iran;gulf,,,Iranian navy base on the Gulf of Oman.
+ain_al_asad,"Ain al-Asad Air Base, Iraq",33.786,42.441,air,Iraq/US,iraq;iran,,,Iraqi base with US forces; hit by Iran in January 2020.
+hmeimim,"Hmeimim Air Base, Syria",35.401,35.949,air,Russia,syria,,,Russian air base in Syria.
+hodeidah,"Hodeidah port, Yemen",14.830,42.930,port,Houthis,yemen,,,Houthi-held port; struck by Israel and the US.
+engels,Engels-2 Air Base,51.481,46.200,air,Russia,ukraine,,,Russian strategic bomber base; bombers move before mass missile waves.
+olenya,Olenya Air Base,68.152,33.464,air,Russia,ukraine,,,Russian bomber base in the Arctic; struck on 1 Jun 2025.
+shaykovka,Shaykovka Air Base,54.226,34.371,air,Russia,ukraine,,,Russian Tu-22M3 bomber base.
+mozdok,Mozdok Air Base,43.787,44.603,air,Russia,ukraine,,,Russian bomber base in the North Caucasus.
+novorossiysk,Novorossiysk naval base,44.700,37.790,naval,Russia,ukraine,,,Black Sea Fleet base since the fleet left Sevastopol.
