@@ -492,12 +492,16 @@ def wri_sites(boxes):
 
 
 def gem_sites(boxes, raw=os.path.join(F.DATA, "raw")):
-    """Optional Global Energy Monitor tracker files the owner downloads by hand (free form) into data/raw/gem_*.csv|xlsx."""
+    """Optional Global Energy Monitor tracker files the owner downloads by hand (free form) into data/raw/gem_*.csv|xlsx.
+
+    None when there are no such files (as on the GitHub runner), so sites() keeps the GEM rows already in fire_sites.csv."""
     out = []
     try:
         names = sorted(n for n in os.listdir(raw) if n.startswith("gem_"))
     except OSError:
-        return out
+        names = []
+    if not names:
+        return None
     for n in names:
         body = open(os.path.join(raw, n), "rb").read()
         tab = xlsx_rows(body) if n.endswith(".xlsx") else list(csv.reader(io.StringIO(body.decode("utf-8", "replace"))))
@@ -548,7 +552,11 @@ def sites(box_names, osm=True):
     for name, fn in (("ggfr", ggfr_sites), ("wri", wri_sites), ("gem", gem_sites)):
         try:
             got = fn(boxes)
-            log(name, len(got))
+            if got is None:
+                got = [s for s in old if s.get("src") == name and any(inside(b, s["lat"], s["lon"]) for b in boxes)]
+                log(name, "no source files; kept", len(got), "earlier rows")
+            else:
+                log(name, len(got))
             out += got
         except Exception as e:
             log(name, "failed:", str(e)[:160])

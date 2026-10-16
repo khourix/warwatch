@@ -251,6 +251,16 @@ def _have(*mods):
         return False
 
 
+    def test_gem_sites_none_without_files_so_old_rows_are_kept(self):
+        d = tempfile.mkdtemp()
+        self.assertIsNone(R.gem_sites([(22, 40, 38, 64)], raw=d))
+        self.assertIsNone(R.gem_sites([(22, 40, 38, 64)], raw=os.path.join(d, "missing")))
+        with open(os.path.join(d, "gem_steel.csv"), "w") as f:
+            f.write("Plant name,Latitude,Longitude\nMobarakeh Steel,32.33,51.48\nOutside,10.0,10.0\n")
+        got = R.gem_sites([(22, 40, 38, 64)], raw=d)
+        self.assertEqual([(g["name"], g["kind"], g["src"]) for g in got], [("Mobarakeh Steel", "steel", "gem")])
+
+
 class TestBaseWatch(unittest.TestCase):
     def test_zscore_needs_eight_earlier_scenes_and_floors_the_spread(self):
         import basewatch as B
