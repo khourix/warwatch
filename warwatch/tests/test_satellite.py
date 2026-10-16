@@ -357,15 +357,17 @@ class TestBaseWatch(unittest.TestCase):
             if os.path.exists(B.OPTICAL):
                 os.remove(B.OPTICAL)
             B.append_csv(B.OPTICAL, B.OPT_COLS, [{"scene_id": f"s{k}", "site": "x", "date": f"2026-10-{k + 1:02d}", "clear": 1.0, "objects": 0.0,
-                                                  "chg_ha": float(c), "burn_ha": 0.0} for k, c in enumerate(chg)])
+                                                  "chg_ha": c, "burn_ha": 0.0} for k, c in enumerate(chg)])
             B.rebuild([site], dt.date(2026, 10, 16))
             return {r["site"]: r["note"] for r in B.read_csv(os.path.join(d, "base_state.csv"))}["x"]
         try:
             one, two = notes([1, 0, 2, 1, 1, 40]), notes([1, 0, 2, 1, 30, 40])
+            blank = notes(["", "", "", 1, 30, 40])          # unmeasured scenes (no recent reference) do not count
         finally:
             B.SCENES, B.OPTICAL, B.CACHE = old
         self.assertEqual(one, "")
         self.assertIn("2026-10-05 and 2026-10-06", two)
+        self.assertEqual(blank, "")
 
     @unittest.skipUnless(_have("numpy", "scipy"), "needs numpy and scipy (imagery workflow only)")
     def test_radar_metrics_count_aircraft_not_noise_or_buildings_outside(self):

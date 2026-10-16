@@ -17,6 +17,7 @@ import urllib.request
 
 PC_STAC = "https://planetarycomputer.microsoft.com/api/stac/v1/search"
 PC_SIGN = "https://planetarycomputer.microsoft.com/api/sas/v1/sign?href="
+PC_TOKEN = "https://planetarycomputer.microsoft.com/api/sas/v1/token/"
 ES_STAC = "https://earth-search.aws.element84.com/v1/search"
 ES_BAND = {"B02": "blue", "B03": "green", "B04": "red", "B08": "nir", "B8A": "nir08", "B11": "swir16", "B12": "swir22", "SCL": "scl"}
 CLEAR_SCL = (4, 5, 6, 7, 11)      # vegetation, bare, water, unclassified, snow: everything except cloud, shadow, no data
@@ -45,9 +46,26 @@ def _post(url, body):
 
 
 _SIGNED = {}
+_TOKENS = {}      # (storage account, container) -> (SAS token, expiry as epoch seconds)
 
 
 def sign(href):
+    """Signed URL for a Planetary Computer blob. One SAS token per storage container, kept until 5 minutes before it expires:
+    the anonymous signing service rate-limits per IP, and signing each file (six bands a scene) from a shared GitHub runner
+    met 429s and the 85 s of waits after them on every other read. Per-file signing remains the fallback."""
+    u = urllib.parse.urlparse(href)
+    if u.netloc.endswith(".blob.core.windows.net") and u.path.count("/") >= 2:
+        key = (u.netloc.split(".")[0], u.path.split("/")[1])
+        tok = _TOKENS.get(key)
+        if not tok or tok[1] - time.time() < 300:
+            try:
+                d = _open(urllib.request.Request(PC_TOKEN + "/".join(key), headers=UA), 40)
+                exp = dt.datetime.strptime(d["msft:expiry"][:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=dt.timezone.utc).timestamp()
+                tok = _TOKENS[key] = (d["token"], exp)
+            except Exception:
+                tok = None
+        if tok:
+            return href + ("&" if u.query else "?") + tok[0]
     if href not in _SIGNED:
         _SIGNED[href] = _open(urllib.request.Request(PC_SIGN + urllib.parse.quote(href, safe=""), headers=UA), 40)["href"]
     return _SIGNED[href]
@@ -98,6 +116,12 @@ def grid(bbox, res_m):
     w = max(8, round((lo1 - lo0) * 111320 * math.cos(math.radians(mid)) / res_m))
     h = max(8, round((la1 - la0) * 110574 / res_m))
     return w, h
+
+
+# remote COG reads: no sidecar-file listing on open (a listing of a signed blob URL only costs time), bounded HTTP waits
+for _k, _v in (("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR"), ("GDAL_HTTP_TIMEOUT", "60"), ("GDAL_HTTP_MAX_RETRY", "3"),
+               ("GDAL_HTTP_RETRY_DELAY", "2"), ("GDAL_HTTP_MERGE_CONSECUTIVE_RANGES", "YES"), ("VSI_CACHE", "TRUE")):
+    os.environ.setdefault(_k, _v)
 
 
 def read(url, bbox, w, h, resampling="bilinear", band=1):

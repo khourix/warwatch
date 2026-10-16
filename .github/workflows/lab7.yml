@@ -1,24 +1,19 @@
-name: lab6
-# TEMPORARY, branch-only. lab5's commit step staged nothing (one unmatched path in a single git add; fixed in imagery.yml
-# and fireref.yml), so its results exist only as artifacts of run 38852782078. Each shard starts from its lab5 artifact,
-# adds radar history back to 1 March 2026 (sites with one pass every 12 days need 8 earlier passes for a z value), and the
-# merge commits everything, the lab5 fire results included. Base chips are cut again with the fixed views. Removed before the PR.
+name: lab7
+# TEMPORARY, branch-only: optical history again with the fixed change measure (base outline, clear pixels, last 30 days,
+# visible bands, scene-wide shift removed), new radar scenes, and fresh chips for all 120 bases. Removed before the PR.
 on:
   push:
     branches: [claude/hopeful-heisenberg-tpy723]
-    paths: [".github/workflows/lab6.yml"]
+    paths: [".github/workflows/lab7.yml"]
 permissions:
   contents: write
-  actions: read
 concurrency:
-  group: lab6
+  group: lab7
   cancel-in-progress: false
-env:
-  LAB5_RUN: "38852782078"
 jobs:
   bases:
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 240
     env:
       WARWATCH_CHIPS: ${{ github.workspace }}/chips
     strategy:
@@ -28,23 +23,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python3 -m pip install --quiet --break-system-packages numpy scipy rasterio pillow
-      - uses: actions/download-artifact@v4
-        with:
-          name: bases_${{ matrix.shard }}
-          path: prev
-          run-id: ${{ env.LAB5_RUN }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Start from lab5's rows for this shard
-        run: |
-          mkdir -p warwatch/history/cache
-          cp prev/warwatch/history/basewatch_scenes.csv warwatch/history/      # optical restarts: its change measure changed
-          cp prev/warwatch/history/cache/base_chips.csv warwatch/history/cache/
-          wc -l warwatch/history/basewatch_*.csv
+      - name: Restart the optical history (its measure changed)
+        run: rm -f warwatch/history/basewatch_optical.csv
       - name: Sites in this shard
         run: |
           python3 -c "import json; ids = sorted(r['id'] for r in json.load(open('warwatch/data/bases.json'))); print('SITES=' + ','.join(ids[${{ matrix.shard }}::8]))" >> "$GITHUB_ENV"
-      - name: Radar history since March
-        run: echo "$SITES" && python3 -u warwatch/basewatch.py --site "$SITES" --backfill-from 2026-03-01 --budget 6000 --no-optical
       - name: Latest optical scenes and chips (harbour views for naval sites, a "before" image 25-60 days back)
         run: python3 -u warwatch/basewatch.py --site "$SITES"
       - uses: actions/upload-artifact@v4
@@ -64,17 +47,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: parts
-      - uses: actions/download-artifact@v4
-        with:
-          name: fires
-          path: fires
-          run-id: ${{ env.LAB5_RUN }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Merge shards
         run: |
-          find parts fires -name '*.csv'
+          find parts -name '*.csv'
           mkdir -p warwatch/history/cache
-          cp fires/warwatch/history/cache/*.csv warwatch/history/cache/
           python3 -u - <<'EOF'
           import csv, glob, os, sys
           sys.path.insert(0, "warwatch")
@@ -115,7 +91,7 @@ jobs:
           done
           git status --short | head -20
           git diff --cached --quiet && { echo "nothing staged"; exit 1; }
-          git commit -qm "lab6: base radar history since March, lab5 fire check results"
+          git commit -qm "lab7: base optical history with the fixed change measure, fresh chips"
           for i in 1 2 3 4 5; do git pull --rebase -q origin claude/hopeful-heisenberg-tpy723 && git push -q origin HEAD:claude/hopeful-heisenberg-tpy723 && exit 0; sleep $((i*10)); done
           exit 1
       - name: New base chips over the imagery branch (fire chips kept)

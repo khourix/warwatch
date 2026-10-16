@@ -4,7 +4,8 @@
 Runs in imagery.yml (numpy, scipy, rasterio, Pillow); the dashboard build only reads the caches it writes:
 
     history/basewatch_scenes.csv      one row per Sentinel-1 scene and site part: scene, site, date, orbit, part, area, metric values
-    history/basewatch_optical.csv     one row per clear Sentinel-2 scene and site: scene, site, date, clear share, objects, change, burn
+    history/basewatch_optical.csv     one row per Sentinel-2 scene checked and site: scene, site, date, clear share, objects, change, burn
+                                      (under 90% clear: the clear share only; change and burn blank without a clear scene in 30 days)
     history/cache/base_<id>.csv       per site and day: z of the radar metric against the same orbit's recent scenes
     history/cache/base_state.csv      per site: state (out, in, changed, normal, nodata, optical), latest dates, note
     history/cache/bases_out_<t>.csv   per theatre and day: sites in state "out" (far fewer bright objects than usual, two passes)
@@ -27,6 +28,7 @@ import json
 import math
 import os
 import sys
+import warnings
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -51,6 +53,8 @@ Z_AT = 2.5
 MIN_PREV, MAX_PREV, PREV_DAYS = 8, 20, 240
 OPT_DIFF = 0.06         # reflectance difference that counts an apron pixel as an object, or a pixel as changed
 WATER_NIR = 0.05        # near-infrared reflectance below this is water: left out of the change and burn measures
+REF_DAYS = 30           # optical change and burns compare with clear scenes of the last 30 days only
+VIS = [0, 1]            # blue and red in the optical stack (B02, B04, B08, B11): the bands the change measure reads
 SCENE_COLS = ["scene_id", "site", "date", "orbit", "part", "area_m2"] + [f"bright_m2@{t:g}" for t in THRESHOLDS] + [f"blobs@{t:g}" for t in THRESHOLDS]
 OPT_COLS = ["scene_id", "site", "date", "clear", "objects", "chg_ha", "burn_ha"]
 
@@ -232,9 +236,10 @@ def radar_rows(rec, start, end, budget, done=frozenset(), log=print):
     return rows
 
 
-def optical_rows(rec, start, end, budget, done=frozenset(), log=print, min_clear=0.9, latest=False):
+def optical_rows(rec, start, end, budget, done=frozenset(), log=print, min_clear=0.9, latest=False, seen=None):
     """Rows for new clear Sentinel-2 scenes over a site's aprons (or outline): object pixels, changed area, burn area.
-    latest=True reads only the newest `budget` scenes of the window (live runs: the newest image matters most)."""
+    latest=True reads only the newest `budget` scenes of the window (live runs: the newest image matters most). With `seen`
+    (scene ids already read for this site) it returns None when the newest usable scene is among them."""
     import imagery as I
     import numpy as np
     bbox = site_bbox(rec)
@@ -244,8 +249,14 @@ def optical_rows(rec, start, end, budget, done=frozenset(), log=print, min_clear
     if not geoms:
         return []
     m10, m20 = I.mask(geoms, bbox, w, h), I.mask(geoms, bbox, w2, h2)
+    base = I.mask(rec.get("outline") or geoms, bbox, w, h)      # change and burns are measured on the base itself
     rows, prev = [], []
     items = I.stac_search("sentinel-2-l2a", bbox, start, end)
+    if seen is not None:
+        # live runs: nothing to do when the newest usable scene was already read (most sites, most runs)
+        usable = [it for it in items if I.has(it, "SCL") and it["properties"].get("eo:cloud_cover", 0) <= 80]
+        if not usable or usable[-1]["id"] in seen:
+            return None
     if latest and items:
         # the newest scenes, plus the least cloudy few from 25 to 60 days before the newest: the "before" chip comes from them
         new = items[-budget:]
@@ -265,6 +276,8 @@ def optical_rows(rec, start, end, budget, done=frozenset(), log=print, min_clear
             cl = I.clear_share(it, bbox, m20)
             budget -= 1
             if cl < min_clear:
+                # kept as checked (clear share only), so live runs do not read it again
+                rows.append({"scene_id": it["id"], "site": rec["id"], "date": I.day(it), "clear": round(cl, 3)})
                 continue
             b = I.s2_bands(it, bbox, ("B02", "B04", "B08", "B11"), 10)
             b12 = I.read(I.href(it, "B12"), bbox, w, h, "bilinear") / 10000.0
@@ -274,20 +287,33 @@ def optical_rows(rec, start, end, budget, done=frozenset(), log=print, min_clear
         red = b["B04"]
         med = float(np.nanmedian(red[m10])) if np.isfinite(red[m10]).any() else float("nan")
         objects = float((np.abs(red - med) > OPT_DIFF)[m10].sum())
-        stack = np.stack([b["B02"], b["B04"], b["B08"], b["B11"]])
-        nbr = (b["B08"] - b12) / np.maximum(b["B08"] + b12, 1e-6)
-        chg = burn = 0.0
-        # land only: sun glint and waves on open water would otherwise read as change (harbour views are mostly water)
-        if len(prev) >= 3:
-            ref = np.nanmedian(np.stack([p[0] for p in prev[-3:]]), axis=0)
-            land = ref[2] > WATER_NIR
-            chg = float(((np.nanmax(np.abs(stack - ref), axis=0) > OPT_DIFF) & land).sum()) * 100.0 / 1e4
-        if prev:
-            burn = float((((prev[-1][1] - nbr) >= 0.27) & (prev[-1][0][2] > WATER_NIR)).sum()) * 100.0 / 1e4
-        prev.append((stack, nbr))
-        rows.append({"scene_id": it["id"], "site": rec["id"], "date": I.day(it), "clear": round(cl, 3), "objects": objects, "chg_ha": round(chg, 2), "burn_ha": round(burn, 2),
+        # cloud, shadow and haze pixels (scene classification) are blanked, so they never count as change or burn
+        ok = np.isin(np.nan_to_num(I.read(I.href(it, "SCL"), bbox, w, h, "nearest"), nan=0), I.CLEAR_SCL)
+        stack = np.where(ok, np.stack([b["B02"], b["B04"], b["B08"], b["B11"]]), np.nan)
+        nbr = np.where(ok, (b["B08"] - b12) / np.maximum(b["B08"] + b12, 1e-6), np.nan)
+        base_clear = float(ok[base].mean()) if base.any() else 0.0
+        # against clear scenes of the last REF_DAYS only (a scene weeks older differs by season), on the base's land only
+        # (sun glint on water reads as change), and blank when there is no such reference
+        d = dt.date.fromisoformat(I.day(it))
+        recent = [x for x in prev if 0 < (d - x[2]).days <= REF_DAYS]
+        chg = burn = None
+        with np.errstate(invalid="ignore"), warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)      # all-blank pixels: nanmedian / nanmax of nothing
+            if len(recent) >= 3 and base_clear >= min_clear:
+                ref = np.nanmedian(np.stack([x[0] for x in recent[-3:]]), axis=0)
+                # take out each band's overall shift on the base first: haze, sun angle and the satellites' calibration move a
+                # whole scene, and a bright desert base would otherwise "change" everywhere at once
+                # visible bands only (blue, red): bare ground and concrete show there, while near and short-wave infrared follow
+                # grass and crops through the season
+                off = np.array([np.nanmedian((stack[k] - ref[k])[base]) for k in VIS])
+                diff = np.abs(stack[VIS] - ref[VIS] - np.nan_to_num(off)[:, None, None])
+                chg = round(float(((np.nanmax(diff, axis=0) > OPT_DIFF) & base & (ref[2] > WATER_NIR)).sum()) * 100.0 / 1e4, 2)
+            if recent and base_clear >= min_clear:
+                burn = round(float((((recent[-1][1] - nbr) >= 0.27) & base & (recent[-1][0][2] > WATER_NIR)).sum()) * 100.0 / 1e4, 2)
+        prev.append((stack, nbr, d))
+        rows.append({"scene_id": it["id"], "site": rec["id"], "date": I.day(it), "clear": round(cl, 3), "objects": objects, "chg_ha": chg, "burn_ha": burn,
                      "_item": it})
-        log(rec["id"], I.day(it), "clear", round(cl, 2), "objects", objects, "chg_ha", round(chg, 1))
+        log(rec["id"], I.day(it), "clear", round(cl, 2), "objects", objects, "chg_ha", chg)
     return rows
 
 
@@ -332,6 +358,7 @@ def chips(rec, optical, radar_items, log=print):
     bbox = site_bbox(rec)
     out = []
     path = lambda k: os.path.join(I.CHIPS, "bases", f"{rec['id']}_{k}.jpg")    # noqa: E731
+    optical = [o for o in optical if o.get("_item")]       # clear scenes only (cloudy ones are kept as checked, without an image)
     if optical:
         a = optical[-1]
         da = dt.date.fromisoformat(a["date"])
@@ -381,16 +408,23 @@ def rebuild(sites, today=None):
                 per_day.setdefault(d, []).append(z)
         save_series(f"base_{s['id']}", [(d, sum(v) / len(v)) for d, v in sorted(per_day.items())])
         st, used = state(zs, today)
-        so = sorted((o for o in opt if o["site"] == s["id"]), key=lambda o: o["date"])
+        so = sorted((o for o in opt if o["site"] == s["id"] and float(o.get("clear") or 0) >= 0.9), key=lambda o: o["date"])
         note = ""
-        if len(so) >= 5:
-            # two clear images in a row must both show the change: one image with haze, shadows or a season turn often does
-            ch = [float(o["chg_ha"] or 0) for o in so]
-            med = sorted(ch[:-2])[len(ch[:-2]) // 2]
-            if min(ch[-2:]) >= max(5.0, 3 * med):
-                note = f"New construction or earthworks seen on {so[-2]['date']} and {so[-1]['date']} ({ch[-1]:.0f} ha changed)."
-        if so and float(so[-1]["burn_ha"] or 0) >= 1:
-            note = (note + " " if note else "") + f"Burn scars seen on {so[-1]['date']} ({float(so[-1]['burn_ha']):.1f} ha)."
+        # one value per day (two tiles or satellites can image the same day), only measured ones
+        byday = {}
+        for o in so:
+            if o.get("chg_ha") not in (None, "", "None"):
+                byday[o["date"]] = max(byday.get(o["date"], 0.0), float(o["chg_ha"]))
+        ch = sorted(byday.items())
+        if len(ch) >= 5:
+            # two clear images on different days must both show the change: one image with haze or shadow often does
+            base_ = sorted(v for _, v in ch[:-2])
+            med = base_[len(base_) // 2]
+            if min(v for _, v in ch[-2:]) >= max(5.0, 3 * med):
+                note = f"New construction or earthworks seen on {ch[-2][0]} and {ch[-1][0]} ({ch[-1][1]:.0f} ha of the base changed)."
+        burns = [o for o in so if o.get("burn_ha") not in (None, "", "None")]
+        if burns and float(burns[-1]["burn_ha"]) >= 1:
+            note = (note + " " if note else "") + f"Burn scars seen on {burns[-1]['date']} ({float(burns[-1]['burn_ha']):.1f} ha)."
         if not sr and so:
             st = "optical"
         states[s["id"]] = st
@@ -444,15 +478,17 @@ def main(argv=None):
         if not a.no_optical:
             try:
                 # optical needs the previous clear scenes for its change measure: read 90 days, keep only new rows
+                seen = None if a.backfill_from else {sid for sid, site in done_o if site == s["id"]}
                 oo = optical_rows(s, (today - dt.timedelta(days=90)).isoformat() if not a.backfill_from else start, today.isoformat(), max(8, per // 2),
-                                  latest=not a.backfill_from)
+                                  latest=not a.backfill_from, seen=seen) or []
             except Exception as e:
                 print(s["id"], "optical search failed:", repr(e)[:160], flush=True)
         if a.dry_run:
             continue
         append_csv(SCENES, SCENE_COLS, rr)
         append_csv(OPTICAL, OPT_COLS, [o for o in oo if (o["scene_id"], s["id"]) not in done_o])
-        if not a.backfill_from:
+        have = {r[1] for r in chip_rows.values() if r[0] == s["id"]}
+        if not a.backfill_from and (rr or oo or not have):      # chips only where something is new (or none exist yet)
             try:
                 ri = [it for it in I.stac_search("sentinel-1-rtc", site_bbox(s), (today - dt.timedelta(days=70)).isoformat(), today.isoformat()) if I.has(it, "vv")]
                 for r in chips(s, oo, ri):
