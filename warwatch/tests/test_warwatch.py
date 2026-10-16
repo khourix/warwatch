@@ -1372,10 +1372,6 @@ class ModelRan(unittest.TestCase):
                 self.assertIs(json.load(f)["model_ran"], False)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TestEngine(unittest.TestCase):
     def test_modified_z_matches_formula_and_winsorizes(self):
         import stats
@@ -1448,3 +1444,7 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(a, b)
         for t, w in engine.load_weights()["weights"].items():
             self.assertAlmostEqual(sum(w.values()), 1.0, msg=t)
+
+
+if __name__ == "__main__":
+    unittest.main()
