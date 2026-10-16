@@ -109,3 +109,12 @@ Case check, Shahran: the fire is now placed 0.5 km from OpenStreetMap "Fuel tank
 That is still under the bar of 60, because the area's June farm burning takes 15 off. A Sentinel-2 burn scar adds 10,
 which would make it unusual. Abqaiq and Hodeidah are unchanged (no unusual heat in the S-NPP archive), and the flare
 controls still pass.
+
+**After the test (16 Oct, map only).** The live run with the FIRMS key showed steady night flares on new South Pars
+platforms in the Gulf marked unusual: they have no fire on record before 2026. Two changes followed:
+- the site list now includes OpenStreetMap offshore platforms (593);
+- a cluster that the Sentinel-2 check sees on open water with nothing burnt becomes "offshore".
+
+The replay and this test were run again after the first change. The replay files and the result are identical, because
+platforms that flared before 2026 were already explained by their history. The second change uses the image check, which
+the replay does not have.

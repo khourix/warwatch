@@ -173,5 +173,14 @@ One PR per stage. Each stage in the plans lists its files, data formats, thresho
 - **Bases B5**: 120 sites (see BASEWATCH_PLAN.md, B5).
 - **Fire test rerun with OSM sites**: still fails (added events 57% against 51% calm false alarms). Shahran now scores
   55 near "Fuel tanks", just under the bar of 60 ([FIREANOM_PLAN.md](FIREANOM_PLAN.md)).
-- **Hand runs**: `fireref.py replay`, `cases` and `econ` ran here. `imagery.yml` ran on a GitHub runner with the repo's
-  FIRMS key (a temporary branch workflow, because a workflow must be on main before it can be started by hand).
+- **Hand runs**: `fireref.py replay`, `cases` and `econ` ran here. `imagery.yml` ran on GitHub runners with the repo's
+  FIRMS key, through temporary branch workflows, because a workflow must be on main before it can be started by hand.
+  The image chips are on the `imagery` branch. The runs found and fixed:
+  - **`imagery.yml` and `fireref.yml` committed nothing.** One unmatched path in a single `git add` made it stage nothing,
+    and the error was hidden. Files are now added one at a time.
+  - **Offshore flares marked unusual.** New South Pars platforms flare every night and have no fire on record before
+    2026. Fixed with OpenStreetMap platforms in the site list, and open water in the image check now reads as offshore.
+  - **Base chips.** Most sites had no "before" image, naval sites were framed on a small compound instead of the harbour,
+    and the optical change counted sun glint on water. The construction note now needs two clear images in a row.
+  - **Radar history.** Sites with one pass every 12 days (much of Asia, Africa and Yemen) need history back to March for
+    a z value. It was read back that far.
