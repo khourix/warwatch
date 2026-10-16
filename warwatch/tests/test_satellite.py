@@ -260,6 +260,16 @@ def _have(*mods):
         got = R.gem_sites([(22, 40, 38, 64)], raw=d)
         self.assertEqual([(g["name"], g["kind"], g["src"]) for g in got], [("Mobarakeh Steel", "steel", "gem")])
 
+    def test_gem_sites_read_coordinates_skip_dead_sites_and_mark_offshore_fields(self):
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "gem_cement.csv"), "w") as f:
+            f.write('Plant name (English),Coordinates,Operating status\nA,"32.1, 51.1",operating\nB,"32.2, 51.2",cancelled\n')
+        with open(os.path.join(d, "gem_oilgas_extraction.csv"), "w") as f:
+            f.write("Unit Name,Latitude,Longitude,Status,Onshore/Offshore\nSouth Pars,26.6,52.0,operating,Offshore\n"
+                    "Ahvaz,31.3,48.7,,Onshore\nNew,30.0,49.0,discovered,Onshore\n")
+        got = sorted((g["name"], g["kind"]) for g in R.gem_sites([(22, 40, 38, 64)], raw=d))
+        self.assertEqual(got, [("A", "cement"), ("Ahvaz", "oilgas"), ("South Pars", "platform")])
+
 
 class TestBaseWatch(unittest.TestCase):
     def test_zscore_needs_eight_earlier_scenes_and_floors_the_spread(self):
