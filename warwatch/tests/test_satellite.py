@@ -142,7 +142,7 @@ class TestFireCls(unittest.TestCase):
         pts = F.classify([det(25.67, 52.40, frp=4, dn="N")], "iran", ref=ref())
         F.review(pts, {pts[0]["cid"]: {"verdict": "none", "ha": 0.0, "lc": "water", "bd": "2026-10-12", "ad": "2026-10-15"}})
         self.assertEqual(pts[0]["c"], "off")
-        self.assertIn("open water", pts[0]["why"])
+        self.assertIn("water here and nothing burnt", pts[0]["why"])
 
     def test_payload_keeps_r_for_explained_and_adds_class_fields(self):
         import dashboard
@@ -417,6 +417,9 @@ class TestBaseWatch(unittest.TestCase):
         post = {"B08": np.full((50, 50), 0.30), "B12": np.full((50, 50), 0.15)}
         post["B08"][:10, :10], post["B12"][:10, :10] = 0.10, 0.30          # 100 burnt 20 m pixels = 4 ha
         self.assertAlmostEqual(V.burn_area(pre, post), 4.0)
+        post["B12"][:5, :10] = 0.80                                          # half of it still in flame: not a scar
+        pre["B08"][5:10, :10] = 0.02                                         # the other half was water before
+        self.assertAlmostEqual(V.burn_area(pre, post), 0.0)
         self.assertEqual([V.verdict(x) for x in (4.0, 0.5, 0.1)], ["scar", "unclear", "none"])
 
 

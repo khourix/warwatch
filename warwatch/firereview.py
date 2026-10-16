@@ -38,11 +38,15 @@ def verdict(burn_ha):
 
 
 def burn_area(pre, post):
-    """Hectares with dNBR >= 0.27 (moderate burn severity) from two {B08, B12} reflectance dicts on one 20 m grid."""
+    """Hectares with dNBR >= 0.27 (moderate burn severity) from two {B08, B12} reflectance dicts on one 20 m grid, on land
+    only (over open water the ratio swings with waves, glint and ships) and without pixels still in flame (a shoreline flare at
+    an oil terminal in the Gulf read as a 1.6 ha scar)."""
     import numpy as np
     nbr = lambda b: (b["B08"] - b["B12"]) / np.maximum(b["B08"] + b["B12"], 1e-6)    # noqa: E731
     d = nbr(pre) - nbr(post)
-    return float(np.nansum(d >= 0.27)) * 0.04
+    land = pre["B08"] > 0.05
+    flame = post["B12"] >= 0.45          # a flame burning in the image itself (a flare) lifts short-wave infrared: not a scar
+    return float(np.nansum((d >= 0.27) & land & ~flame)) * 0.04
 
 
 def review_one(row, today, log=log, write_chips=True):

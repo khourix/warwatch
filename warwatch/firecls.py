@@ -502,7 +502,7 @@ def review(pts, rev=None):
                 p["c"] = "anom"
         elif r["lc"] == "water" and r["verdict"] in ("none", "unclear") and p["c"] in ("anom", "unex"):
             # a steady flame on open water with nothing burnt: a platform or ship flare not yet in the site list
-            _set(p, "off", 5, f"Offshore: the satellite image on {r['ad']} shows open water here and nothing burnt (a platform or ship flare).", p.get("site", ""))
+            _set(p, "off", 5, f"Flare on or at the edge of water: the satellite image on {r['ad']} shows water here and nothing burnt.", p.get("site", ""))
         elif r["verdict"] == "none":
             _set(p, p["c"], p["a"] - 10 if p["c"] in ("anom", "unex") else p["a"], p["why"] + f" No burn scar visible on {r['ad']}.", p.get("site", ""))
             if p["c"] == "anom" and p["a"] < ANOM_AT:
