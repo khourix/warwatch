@@ -1,0 +1,115 @@
+name: lab6
+# TEMPORARY, branch-only. lab5's commit step staged nothing (one unmatched path in a single git add; fixed in imagery.yml
+# and fireref.yml), so its results exist only as artifacts of run 38852782078. Each shard starts from its lab5 artifact,
+# adds radar history back to 1 March 2026 (sites with one pass every 12 days need 8 earlier passes for a z value), and the
+# merge commits everything, the lab5 fire results included. lab5's chips are already on the imagery branch. Removed before the PR.
+on:
+  push:
+    branches: [claude/hopeful-heisenberg-tpy723]
+    paths: [".github/workflows/lab6.yml"]
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: lab6
+  cancel-in-progress: false
+env:
+  LAB5_RUN: "38852782078"
+jobs:
+  bases:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m pip install --quiet --break-system-packages numpy scipy rasterio pillow
+      - uses: actions/download-artifact@v4
+        with:
+          name: bases_${{ matrix.shard }}
+          path: prev
+          run-id: ${{ env.LAB5_RUN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Start from lab5's rows for this shard
+        run: |
+          mkdir -p warwatch/history/cache
+          cp prev/warwatch/history/basewatch_scenes.csv prev/warwatch/history/basewatch_optical.csv warwatch/history/
+          cp prev/warwatch/history/cache/base_chips.csv warwatch/history/cache/
+          wc -l warwatch/history/basewatch_*.csv
+      - name: Sites in this shard
+        run: |
+          python3 -c "import json; ids = sorted(r['id'] for r in json.load(open('warwatch/data/bases.json'))); print('SITES=' + ','.join(ids[${{ matrix.shard }}::8]))" >> "$GITHUB_ENV"
+      - name: Radar history since March
+        run: echo "$SITES" && python3 -u warwatch/basewatch.py --site "$SITES" --backfill-from 2026-03-01 --budget 6000 --no-optical
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bases_${{ matrix.shard }}
+          path: |
+            warwatch/history/basewatch_scenes.csv
+            warwatch/history/basewatch_optical.csv
+            warwatch/history/cache/base_chips.csv
+  merge:
+    needs: [bases]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: parts
+      - uses: actions/download-artifact@v4
+        with:
+          name: fires
+          path: fires
+          run-id: ${{ env.LAB5_RUN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Merge shards
+        run: |
+          find parts fires -name '*.csv'
+          mkdir -p warwatch/history/cache
+          cp fires/warwatch/history/cache/*.csv warwatch/history/cache/
+          python3 -u - <<'EOF'
+          import csv, glob, os, sys
+          sys.path.insert(0, "warwatch")
+          import basewatch as B
+          def merge(name, out):
+              head, rows = None, []
+              for p in sorted(glob.glob(f"parts/bases_*/**/{name}", recursive=True)):
+                  with open(p, newline="") as f:
+                      r = list(csv.reader(f))
+                  if r:
+                      head = head or r[0]
+                      rows += [x for x in r[1:] if x]
+              seen = set()
+              rows = [x for x in rows if not (tuple(x) in seen or seen.add(tuple(x)))]
+              if head:
+                  with open(out, "w", newline="") as f:
+                      w = csv.writer(f, lineterminator="\n")
+                      w.writerow(head)
+                      w.writerows(rows)
+              print(name, len(rows))
+          merge("basewatch_scenes.csv", B.SCENES)
+          merge("basewatch_optical.csv", B.OPTICAL)
+          merge("base_chips.csv", os.path.join(B.CACHE, "base_chips.csv"))
+          st = B.rebuild(B.load_bases())
+          n = {}
+          for v in st.values():
+              n[v] = n.get(v, 0) + 1
+          print("states", n)
+          print("nodata:", sorted(k for k, v in st.items() if v == "nodata"))
+          EOF
+      - name: Commit results to this branch
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          for f in warwatch/history/basewatch_*.csv warwatch/history/cache/base_*.csv warwatch/history/cache/bases_*.csv \
+                   warwatch/history/cache/fire_review.csv warwatch/history/cache/fire_anoms.csv warwatch/history/cache/econ_war_fires.csv; do
+            if [ -e "$f" ]; then git add "$f"; fi
+          done
+          git status --short | head -20
+          git diff --cached --quiet && { echo "nothing staged"; exit 1; }
+          git commit -qm "lab6: base radar history since March, lab5 fire check results"
+          for i in 1 2 3 4 5; do git pull --rebase -q origin claude/hopeful-heisenberg-tpy723 && git push -q origin HEAD:claude/hopeful-heisenberg-tpy723 && exit 0; sleep $((i*10)); done
+          exit 1

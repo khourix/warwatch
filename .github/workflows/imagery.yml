@@ -59,8 +59,12 @@ jobs:
         run: |
           git config user.name "warwatch-bot"
           git config user.email "warwatch-bot@users.noreply.github.com"
-          git add warwatch/history/basewatch_*.csv warwatch/history/cache/base_*.csv warwatch/history/cache/bases_*.csv \
-                  warwatch/history/cache/fire_review.csv warwatch/history/cache/econ_war_fires.csv 2>/dev/null || true
+          # one path at a time: a single unmatched pattern (bases_*.csv is not written while alerts are off) makes git add
+          # stage nothing at all
+          for f in warwatch/history/basewatch_*.csv warwatch/history/cache/base_*.csv warwatch/history/cache/bases_*.csv \
+                   warwatch/history/cache/fire_review.csv warwatch/history/cache/econ_war_fires.csv; do
+            if [ -e "$f" ]; then git add "$f"; fi
+          done
           if ! git diff --cached --quiet; then
             git commit -qm "imagery: $(date -u +%FT%H:%MZ)"
             for i in 1 2 3; do
