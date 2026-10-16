@@ -29,3 +29,93 @@ olenya,Olenya Air Base,68.152,33.464,air,Russia,ukraine,,,Russian bomber base in
 shaykovka,Shaykovka Air Base,54.226,34.371,air,Russia,ukraine,,,Russian Tu-22M3 bomber base.
 mozdok,Mozdok Air Base,43.787,44.603,air,Russia,ukraine,,,Russian bomber base in the North Caucasus.
 novorossiysk,Novorossiysk naval base,44.700,37.790,naval,Russia,ukraine,,,Black Sea Fleet base since the fleet left Sevastopol.
+longtian,"Longtian Air Base, Fujian",25.5741,119.4599,air,China,taiwan,,,PLA air base closest to Taiwan (about 130 km); fighters surge here for Strait exercises.
+huian,"Huian Air Base, Fujian",25.0280,118.8061,air,China,taiwan,,,PLA fighter base facing Taiwan across the Strait.
+zhangzhou,"Zhangzhou Air Base, Fujian",24.5646,117.6555,air,China,taiwan,,,PLA fighter base opposite Kinmen and southern Taiwan.
+shuimen,"Shuimen Air Base, Fujian",26.9437,120.0757,air,China,taiwan,,,"PLA base in northern Fujian where drones (TB-001, BZK-005) fly from toward Taiwan."
+ningbo_zhuangqiao,Ningbo Zhuangqiao Air Base,29.9218,121.5716,air,China,taiwan,,,East Sea Fleet naval aviation base; patrols over the Taiwan Strait and East China Sea.
+hsinchu,"Hsinchu Air Base, Taiwan",24.8207,120.9407,air,Taiwan,taiwan,,,Taiwan Mirage 2000 base; dispersal shows readiness.
+ching_chuan_kang,"Ching Chuan Kang Air Base, Taiwan",24.2634,120.6242,air,Taiwan,taiwan,,,"Taiwan's largest air base (F-CK-1), central west coast."
+chiayi,"Chiayi Air Base, Taiwan",23.4608,120.3931,air,Taiwan,taiwan,,,Taiwan F-16V base in the south-west.
+hualien,"Hualien Air Base, Taiwan",24.0235,121.6183,air,Taiwan,taiwan,,,Taiwan F-16 base on the east coast with mountain shelters (Chiashan).
+chihhang,"Chihhang Air Base, Taitung",22.7953,121.1799,air,Taiwan,taiwan,,,Taiwan air base at Taitung on the south-east coast; jets move here in drills.
+zuoying,"Zuoying naval base, Taiwan",22.6900,120.2700,naval,Taiwan,taiwan,,,Taiwan's main naval base (Kaohsiung); ships leave port before major PLA drills.
+kadena,"Kadena Air Base, Okinawa",26.3556,127.7675,air,US/Japan,taiwan;korea,,,Largest US air base in the western Pacific; aircraft surge or disperse in a Taiwan or Korea crisis.
+andersen,"Andersen Air Force Base, Guam",13.5811,144.9244,air,US,taiwan,,,US bomber base on Guam; bombers deploy here in Pacific crises.
+yulin,"Yulin naval base, Hainan",18.2200,109.5500,naval,China,scs;taiwan,,,PLA submarine and carrier base on Hainan (Sanya); carriers sail from here.
+zhanjiang,Zhanjiang naval base (Southern Theater Navy),21.2000,110.4000,naval,China,scs,,,Headquarters port of the PLA Southern Theater Navy.
+woody_island,"Woody Island (Yongxing), Paracels",16.8342,112.3448,air+naval,China,scs,,,"Main Chinese base in the Paracels: runway, harbour and missile deployments."
+fiery_cross,"Fiery Cross Reef, Spratlys",9.5507,112.8874,air+naval,China,scs,,,Chinese artificial island in the Spratlys with a 3 km runway and harbour.
+subi,"Subi Reef, Spratlys",10.9232,114.0706,air+naval,China,scs,,,"Chinese artificial island in the Spratlys, near Philippine-held Thitu."
+mischief,"Mischief Reef, Spratlys",9.9215,115.5059,air+naval,China,scs,,,"Chinese artificial island near Second Thomas Shoal, where the Philippine resupply clashes happen."
+basa,"Basa Air Base, Philippines",14.9872,120.4931,air,Philippines,scs,,,Philippine fighter base (FA-50) on Luzon facing the South China Sea.
+bautista,"Antonio Bautista Air Base, Palawan",9.7424,118.7582,air,Philippines,scs,,,"Philippine air base on Palawan, closest to the Spratlys (EDCA site)."
+cam_ranh,"Cam Ranh naval and air base, Vietnam",11.9982,109.2191,air+naval,Vietnam,scs,,,Vietnam's main naval and air base on the South China Sea.
+sunan,Pyongyang Sunan Airport (air force side),39.2189,125.6725,air,North Korea,korea,,,North Korean air force side of Pyongyang airport; parades and drills mass aircraft here.
+sohae,Sohae Satellite Launching Station,39.6600,124.7100,launch,North Korea,korea,,,North Korea's satellite and engine-test site (Tongchang-ri); pad work comes before launches.
+wonsan_kalma,Wonsan-Kalma air base,39.1630,127.4863,air,North Korea,korea,,,North Korean air base on the east coast; ballistic missiles have been launched nearby.
+sinpo,Sinpo submarine base,40.0300,128.1800,naval,North Korea,korea,,,North Korean submarine base (submarine-launched missile tests).
+osan,"Osan Air Base, South Korea",37.0851,127.0302,air,US/South Korea,korea,,,US and South Korean air base south of Seoul.
+kunsan,"Kunsan Air Base, South Korea",35.9084,126.6233,air,US/South Korea,korea,,,US F-16 base on the west coast of South Korea.
+jinhae,"Jinhae naval base, South Korea",35.1400,128.6700,naval,South Korea,korea,,,South Korea's main naval base and fleet headquarters.
+rzeszow,"Rzeszow-Jasionka airport (Ukraine aid hub), Poland",50.1109,22.0215,air,NATO/Poland,europe_east;ukraine,,,Main NATO hub for weapons going into Ukraine; Patriot-defended.
+powidz,"Powidz Air Base, Poland",52.3801,17.8530,air,NATO/Poland,europe_east,,,NATO air base and US Army prepositioned stock in Poland.
+kogalniceanu,"Mihail Kogalniceanu Air Base, Romania",44.3588,28.4861,air,NATO/Romania,europe_east;ukraine,,,NATO air base by the Black Sea in Romania; US and allied rotations.
+siauliai,"Siauliai Air Base, Lithuania",55.8941,23.3914,air,NATO/Lithuania,europe_east,,,NATO Baltic Air Policing base in Lithuania.
+amari,"Amari Air Base, Estonia",59.2595,24.2051,air,NATO/Estonia,europe_east,,,NATO Baltic Air Policing base in Estonia.
+belbek,"Belbek air base, Crimea",44.6882,33.5715,air,Russia,ukraine,,,Russian fighter base on Crimea near Sevastopol; struck by Ukraine several times.
+saky,"Saky air base, Crimea",45.0940,33.5955,air,Russia,ukraine,,,Russian naval aviation base on Crimea; struck in August 2022.
+sevastopol,"Sevastopol naval base, Crimea",44.6200,33.5300,naval,Russia,ukraine,,,Black Sea Fleet main base; ships left it for Novorossiysk after Ukrainian strikes.
+baltiysk,"Baltiysk naval base, Kaliningrad",54.6500,19.9000,naval,Russia,europe_east;ukraine,,,Baltic Fleet main base in Kaliningrad.
+chkalovsk,"Chkalovsk air base, Kaliningrad",54.7676,20.3937,air,Russia,europe_east,,,Baltic Fleet air base in Kaliningrad.
+soltsy,Soltsy-2 air base,58.1386,30.3414,air,Russia,ukraine;europe_east,,,Russian Tu-22M3 bomber base near Novgorod; struck by drones in August 2023.
+severomorsk,Severomorsk naval base (Northern Fleet),69.0700,33.4200,naval,Russia,ukraine;europe_east,,,Northern Fleet headquarters on the Kola Peninsula.
+morozovsk,Morozovsk air base,48.3143,41.7905,air,Russia,ukraine,,,Russian Su-34 bomber base near the Ukrainian border.
+millerovo,Millerovo air base,48.9528,40.2963,air,Russia,ukraine,,,Russian fighter base next to the Ukrainian border; struck in 2022 and 2024.
+yeysk,Yeysk air base,46.6850,38.2257,air,Russia,ukraine,,,Russian naval aviation and drone base on the Sea of Azov.
+lipetsk,Lipetsk-2 air base,52.7018,39.5332,air,Russia,ukraine,,,"Russian air base (Su-34, training centre); struck by drones in 2024."
+baltimor,Voronezh Baltimor air base,51.6202,39.1473,air,Russia,ukraine,,,Russian Su-34 bomber base near Voronezh.
+khalino,Kursk Khalino air base,51.7549,36.2930,air,Russia,ukraine,,,Russian fighter base near the Kursk border.
+savasleyka,Savasleyka air base,55.4420,42.3088,air,Russia,ukraine,,,Russian MiG-31K base (Kinzhal missile carriers); take-offs trigger alerts across Ukraine.
+belaya,Belaya air base (Tu-22M3),52.9143,103.5618,air,Russia,ukraine,,,Russian Tu-22M3 bomber base in Siberia; struck in Ukraine's June 2025 drone operation.
+ukrainka,Ukrainka air base (Tu-95),51.1662,128.4499,air,Russia,ukraine,,,Russian Tu-95 bomber base in the Far East.
+machulishchy,"Machulishchy air base, Belarus",53.7728,27.5796,air,Russia/Belarus,ukraine;europe_east,,,Belarusian air base near Minsk that Russian aircraft have used against Ukraine.
+starokostiantyniv,"Starokostiantyniv air base, Ukraine",49.7470,27.2711,air,Ukraine,ukraine,,,Ukrainian Su-24 base (Storm Shadow carriers); a frequent Russian strike target.
+myrhorod,"Myrhorod air base, Ukraine",49.9321,33.6401,air,Ukraine,ukraine,,,Ukrainian Su-27 base; a frequent Russian strike target.
+vasylkiv,"Vasylkiv air base, Ukraine",50.2311,30.3010,air,Ukraine,ukraine,,,Ukrainian air base near Kyiv; struck in many missile waves.
+kulbakino,"Mykolaiv Kulbakino air base, Ukraine",46.9369,32.0929,air,Ukraine,ukraine,,,Ukrainian air base at Mykolaiv near the southern front.
+libertador,"El Libertador Air Base, Venezuela",10.1811,-67.5586,air,Venezuela,venezuela,,,"Main Venezuelan fighter base (F-16, Su-30) near Maracay."
+la_carlota,"La Carlota air base, Caracas",10.4853,-66.8435,air,Venezuela,venezuela,,,Venezuelan air base in Caracas.
+puerto_cabello,"Puerto Cabello naval base, Venezuela",10.4800,-68.0100,naval,Venezuela,venezuela,,,Main Venezuelan naval base.
+roosevelt_roads,"Roosevelt Roads, Puerto Rico",18.2474,-65.6429,air+naval,US,venezuela,,,Former US naval base in Puerto Rico reactivated for the 2025 Caribbean build-up.
+nur_khan,"PAF Base Nur Khan, Rawalpindi",33.6162,73.0962,air,Pakistan,southasia,,,Pakistani air base by Rawalpindi; struck by India in May 2025.
+sargodha,"PAF Base Mushaf, Sargodha",32.0465,72.6691,air,Pakistan,southasia,,,Pakistan's main fighter base (Mushaf); struck by India in May 2025.
+jacobabad,"PAF Base Shahbaz, Jacobabad",28.2855,68.4549,air,Pakistan,southasia,,,Pakistani F-16 base (Shahbaz); struck by India in May 2025.
+masroor,"PAF Base Masroor, Karachi",24.8908,66.9429,air,Pakistan,southasia,,,Pakistan's main air base in Karachi.
+ambala,"Ambala Air Force Station, India",30.3710,76.8156,air,India,southasia,,,Indian Rafale base near the Pakistan front.
+adampur,"Adampur Air Force Station, India",31.4353,75.7583,air,India,southasia,,,Indian fighter base in Punjab; in the May 2025 clashes.
+pathankot,"Pathankot Air Force Station, India",32.2355,75.6285,air,India,southasia,,,Indian fighter base near Kashmir.
+bhuj,"Bhuj Air Force Station, India",23.2759,69.6634,air,India,southasia,,,Indian air base near the Pakistan border in Gujarat.
+al_khadim,"Al-Khadim air base, Libya",31.9961,21.1966,air,LNA/UAE,libya,,,Libyan National Army air base in the east; UAE drones flew from here.
+al_jufra,"Al Jufra air base, Libya",29.1991,16.0008,air,LNA/Russia,libya,,,Central Libyan air base used by Russian aircraft and Wagner/Africa Corps.
+al_watiya,"Al-Watiya air base, Libya",32.4821,11.8933,air,GNU/Turkey,libya,,,Western Libyan air base used by Turkey.
+misrata,"Misrata air base, Libya",32.3256,15.0625,air,GNU/Turkey,libya,,,Western Libyan air base with Turkish drones.
+wadi_seidna,"Wadi Seidna air base, Sudan",15.8082,32.5060,air,SAF,sudan,,,Sudanese army air base north of Khartoum.
+merowe,"Merowe air base, Sudan",18.4427,31.8447,air,SAF,sudan,,,Sudanese army air base in the north; RSF drones struck it.
+port_sudan,Port Sudan airport and naval base,19.4345,37.2350,air+naval,SAF,sudan,19.615,37.225,Sudanese army's wartime seat; airport and port struck by RSF drones in May 2025.
+nyala,"Nyala airport, Sudan",12.0536,24.9562,air,RSF,sudan,,,RSF-held airport in Darfur used for drones and supply flights.
+tiyas,"Tiyas (T4) air base, Syria",34.5240,37.6276,air,Syria,syria;israel,,,Syrian (T4) air base struck many times by Israel.
+tartus,"Tartus naval base, Syria",34.9100,35.8700,naval,Russia/Syria,syria,,,Russia's naval base in Syria; ships left after the fall of Assad.
+erbil,"Erbil Air Base, Iraq",36.2409,43.9494,air,US/Iraq,iraq;iran,,,US-led coalition air base in Kurdistan; targeted by Iran-backed groups.
+tel_nof,"Tel Nof Air Base, Israel",31.8339,34.8218,air,Israel,israel;iran,,,"Israeli air base (F-15, helicopters) south of Tel Aviv."
+ramat_david,"Ramat David Air Base, Israel",32.6655,35.1806,air,Israel,israel;lebanon,,,Israeli F-16 base in the north; Hezbollah targeted it.
+palmachim,"Palmachim Air Base, Israel",31.9111,34.6995,air,Israel,israel;iran,,,Israeli drone and missile-test base; Arrow launches.
+haifa_naval,"Haifa naval base, Israel",32.8200,35.0000,naval,Israel,israel;lebanon,,,"Israel's main naval base (submarines, corvettes)."
+sanaa_dulaimi,"Al-Dulaimi air base, Sanaa",15.4750,44.2182,air,Houthis,yemen,,,"Houthi-held air base at Sanaa airport, struck by the US and Israel."
+shiraz_7tab,"Shiraz 7th Tactical Air Base, Iran",29.5407,52.5851,air,Iran,iran;gulf,,,Iranian air base (7th TAB) in the south.
+mashhad_14tab,"Mashhad 14th Tactical Air Base, Iran",36.2341,59.6423,air,Iran,iran,,,Iranian air base (14th TAB) in the north-east.
+omidiyeh_5tab,"Omidiyeh 5th Tactical Air Base, Iran",30.8454,49.5452,air,Iran,iran;iraq,,,Iranian air base (5th TAB) near the Iraqi border.
+konarak,"Konarak naval base (Chabahar), Iran",25.4400,60.3800,naval,Iran,iran;gulf,,,Iranian navy base near Chabahar on the Gulf of Oman.
+duqm,"Duqm port and naval base, Oman",19.6700,57.7000,naval,Oman/US/UK,gulf;yemen,,,Omani port with a UK base used by US and UK warships.
+berbera,"Berbera airport and port, Somaliland",10.3879,44.9407,air+naval,UAE,yemen,10.437,45.012,"UAE-built airport and port in Somaliland, across from Yemen."
+assab,"Assab air and naval base, Eritrea",13.0772,42.6425,air+naval,UAE/Eritrea,yemen,,,UAE air and naval base in Eritrea used in the Yemen war.
