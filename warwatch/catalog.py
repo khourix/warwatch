@@ -520,6 +520,22 @@ for th in C.FIRMS_BOX:
         "Infrared satellites see shelling, strikes, burning depots and refinery fires within hours. A sustained rise inside a war-risk box is an early read on kinetic activity.",
         _fires(th), needs=["FIRMS_MAP_KEY"], url="https://firms.modaps.eosdis.nasa.gov/map/", sub="Satellite")
 
+def _fires_anom(th):
+    def go():
+        import firecls
+        pts = firecls.series(th)
+        if not pts:
+            raise C.Pending("first refresh pending (the map run fills it; the archive replay seeds the history)")
+        return pts
+    return go
+
+
+for th in C.FIRMS_BOX:
+    add(f"firms_anom_{th}", f"Unusual satellite fire detections per day, {TH[th]} (NASA FIRMS, classified)", "geospatial", th, "daily", False,
+        "Only the heat with no usual reason: not a gas flare, plant, volcano or farm-burning season, or far hotter than a plant's normal. "
+        "Shown for reading; it carries no weight until it passes its test (docs/FIREANOM_PLAN.md).",
+        _fires_anom(th), needs=["FIRMS_MAP_KEY"], url="https://firms.modaps.eosdis.nasa.gov/map/", sub="Satellite")
+
 # ============ Evacuation and maritime-incident headlines (Google News, backfilled by the news job) ============
 SEA = {"iran": 'tanker OR vessel (attacked OR struck OR seized OR "boarded") (Hormuz OR "Gulf of Oman" OR "Persian Gulf" OR UKMTO)',
        "yemen": 'ship OR vessel OR tanker (attacked OR struck OR missile OR drone) ("Red Sea" OR "Gulf of Aden" OR Houthi OR UKMTO)',
@@ -601,6 +617,35 @@ for box, th, nm in (("hormuz", "iran", "the Strait of Hormuz"), ("bab_el_mandeb"
         "Free live AIS has no receivers here, but radar satellites see every ship, including those with transponders off. Scenes arrive about every two days. "
         "Counts include oil rigs and miss small boats; a fall means fewer ships, a rise means more.",
         _sar(box), direction="down", url="https://planetarycomputer.microsoft.com/dataset/sentinel-1-rtc", sub="Sea")
+
+# ============ Military bases watched by satellite (Sentinel-1 radar), filled by basewatch.py in the imagery workflow ============
+def _bases(sid):
+    def go():
+        pts = store.cache_load(sid)
+        if not pts:
+            raise C.Pending("waiting for the base-watch feasibility test (docs/BASESPIKE.md) and the imagery job")
+        return pts
+    return go
+
+
+def _base_theatres():
+    import csv as _csv
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "bases_seed.csv"), newline="", encoding="utf-8") as f:
+            return sorted({t for r in _csv.DictReader(f) for t in r["theatres"].split(";") if t in C.THEATRES})
+    except OSError:
+        return []
+
+
+import basewatch as _bw   # noqa: E402  (standard library at import)
+for th in (_base_theatres() if _bw.ALERTS else []):   # registered only after the feasibility test says GO (docs/BASESPIKE.md)
+    add(f"bases_out_{th}", f"Bases with far fewer aircraft or ships than usual, {TH[th]} (Sentinel-1 radar)", "geospatial", th, "daily", False,
+        "Sites where two radar passes in a week show far fewer bright objects on the aprons or in the harbour than that orbit usually sees. "
+        "Al Udeid emptied four days before Iran struck it in June 2025. Shown for reading; it carries no weight until it passes its test.",
+        _bases(f"bases_out_{th}"), url="https://planetarycomputer.microsoft.com/dataset/sentinel-1-rtc", sub="Satellite")
+    add(f"bases_in_{th}", f"Bases with far more aircraft or ships than usual, {TH[th]} (Sentinel-1 radar)", "geospatial", th, "daily", False,
+        "Sites where two radar passes in a week show far more bright objects than usual: aircraft or ships arriving. Shown for reading; no weight until tested.",
+        _bases(f"bases_in_{th}"), url="https://planetarycomputer.microsoft.com/dataset/sentinel-1-rtc", sub="Satellite")
 
 # ============ Vessel presence from Global Fishing Watch (fills the gaps where live AIS has no receivers) ============
 GFW_BOX = {"iran": (23, 29, 48, 60), "yemen": (11, 22, 37, 46), "israel": (31, 36, 29, 36), "ukraine": (41, 46, 27, 41), "taiwan": (21, 27, 117, 124),
@@ -760,7 +805,7 @@ for _s in SERIES:
 # Their noise-to-signal ratio on 78 labelled events (2018-2026) was 1 or more, so they raised false alarms without adding
 # warning (docs/METHODOLOGY.md, "Zero-weight families"). They stay on the page and keep being scored; the composite ignores
 # them until a refit shows they lead events. Remove an id here to give it weight again.
-ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_build_", "wheat_etf", "copper_etf", "brent_etf", "sar_")
+ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_build_", "wheat_etf", "copper_etf", "brent_etf", "sar_", "firms_anom_", "bases_")
 for _s in SERIES:
     if _s["id"].startswith(ZERO_WEIGHT):
         _s["scored"] = False

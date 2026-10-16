@@ -715,7 +715,7 @@ def bsky_series(theatre, min_posts=10000):
 
 # ---------------------------------------------------------------- NASA FIRMS thermal detections
 def parse_firms(text, keep_low=False):
-    """VIIRS CSV -> [{lat, lon, date, ts, frp}] without low-confidence hits (unless keep_low). ts is the satellite pass time, UTC."""
+    """VIIRS CSV -> [{lat, lon, date, ts, frp, daynight, bright_ti4}] without low-confidence hits (unless keep_low). ts is the satellite pass time, UTC."""
     out = []
     lines = text.strip().splitlines()
     if len(lines) < 2 or not lines[0].startswith("latitude"):
@@ -730,6 +730,8 @@ def parse_firms(text, keep_low=False):
             p = {"lat": float(f[ix["latitude"]]), "lon": float(f[ix["longitude"]]), "date": f[ix["acq_date"]], "frp": float(f[ix["frp"]] or 0)}
             hm = f[ix["acq_time"]].strip().zfill(4) if "acq_time" in ix else ""
             p["ts"] = f"{p['date']}T{hm[:2]}:{hm[2:]}Z" if len(hm) == 4 and hm.isdigit() else ""
+            p["daynight"] = f[ix["daynight"]].strip() if "daynight" in ix else ""
+            p["bright_ti4"] = float(f[ix["bright_ti4"]] or 0) if "bright_ti4" in ix else 0.0
             out.append(p)
         except (ValueError, IndexError, KeyError):
             continue
@@ -755,9 +757,9 @@ def mark_routine(pts, days=ROUTINE_DAYS):
     return pts
 
 
-def firms_url(key, box, days, date=None):
+def firms_url(key, box, days, date=None, source="VIIRS_SNPP_NRT"):
     la0, la1, lo0, lo1 = box
-    u = f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/VIIRS_SNPP_NRT/{lo0},{la0},{lo1},{la1}/{days}"
+    u = f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/{source}/{lo0},{la0},{lo1},{la1}/{days}"
     return u + (f"/{date}" if date else "")
 
 
@@ -812,34 +814,44 @@ def firms_series(theatre):
     return sorted(out.items())
 
 
-def fetch_fires(key, boxes, top=300, days=7, today=None):
-    """Last `days` days of detections across the theatre boxes for the map layer, each with its pass time and a routine flag.
-    FIRMS serves at most 5 days per call, so 7 days take two calls per box. Per box the newest unusual detections come
-    first, then the strongest routine ones."""
+MAP_SOURCES = ("VIIRS_SNPP_NRT", "VIIRS_NOAA20_NRT", "VIIRS_NOAA21_NRT")   # the map reads all three VIIRS satellites; the daily series stays S-NPP to match its archive
+
+
+def fetch_fires(key, boxes, top=300, days=7, today=None, sources=MAP_SOURCES):
+    """Last `days` days of detections across the theatre boxes for the map layer, classed by firecls (anomaly, unexplained,
+    industrial, seasonal...). FIRMS serves at most 5 days per call, so 7 days take two calls per box and satellite.
+    Per box: every anomaly (up to `top`), then unexplained ones by score, then the strongest explained ones."""
+    import firecls
     today = today or dt.datetime.now(dt.timezone.utc).date()
     pts, seen = [], set()
     for th, box in boxes.items():
-        got, left, end = [], days, today
-        while left > 0:
-            n = min(5, left)
-            start = end - dt.timedelta(days=n - 1)
-            try:
-                t = S.get(firms_url(key, box, n, start.isoformat()), raw=True, retries=2, wait=4)
-                for p in parse_firms(t.decode("utf-8", "replace") if isinstance(t, bytes) else t):
-                    k = (round(p["lat"], 3), round(p["lon"], 3), p["date"], p.get("ts", ""))
-                    if k in seen:
-                        continue
-                    seen.add(k)
-                    p["th"] = theatre_at(p["lat"], p["lon"]) or th
-                    got.append(p)
-            except Exception:
-                pass
-            left -= n
-            end = start - dt.timedelta(days=1)
-        mark_routine(got)
-        new = sorted((p for p in got if not p["routine"]), key=lambda p: (p.get("ts") or p["date"], p["frp"]), reverse=True)
-        old = sorted((p for p in got if p["routine"]), key=lambda p: -p["frp"])
-        pts.extend(new[:top] + old[:top // 3])
+        got = []
+        for src in sources:
+            left, end = days, today
+            while left > 0:
+                n = min(5, left)
+                start = end - dt.timedelta(days=n - 1)
+                try:
+                    t = S.get(firms_url(key, box, n, start.isoformat(), src), raw=True, retries=2, wait=4)
+                    for p in parse_firms(t.decode("utf-8", "replace") if isinstance(t, bytes) else t):
+                        k = (round(p["lat"], 3), round(p["lon"], 3), p["date"], p.get("ts", ""))
+                        if k in seen:
+                            continue
+                        seen.add(k)
+                        p["th"] = theatre_at(p["lat"], p["lon"]) or th
+                        p["sat"] = src.split("_")[1]
+                        got.append(p)
+                except Exception:
+                    pass
+                left -= n
+                end = start - dt.timedelta(days=1)
+        firecls.classify(got, th, today)
+        an = sorted((p for p in got if p["c"] in firecls.ANOMALY), key=lambda p: (-p["a"], -p["frp"]))
+        un = sorted((p for p in got if p["c"] == "unex"), key=lambda p: (-p["a"], -p["frp"]))
+        ok = sorted((p for p in got if p["c"] in firecls.EXPLAINED), key=lambda p: -p["frp"])
+        for p in an[:top] + un[:2 * top // 3] + ok[:top // 3]:
+            p["box"] = th
+            pts.append(p)
     return pts
 
 

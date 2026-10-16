@@ -130,7 +130,8 @@ TELLS = [
      "says": "Rocket, missile or air-raid alert waves in the last 7 days doubled against their usual count.",
      "cases": "Tzeva Adom and alerts.in.ua count the attacks themselves: a reading of tempo in wars already under way."},
     {"id": "bases", "name": "Aircraft leave a named base, ships leave port", "series": [], "rule": None,
-     "says": "Not watched yet: needs per-base aircraft traces and port presence.",
+     "says": "Not watched yet: the satellite base check did not pass its feasibility test (docs/BASESPIKE.md); the base layer shows images only. "
+             "Per-base aircraft traces would also do.",
      "cases": "Al Udeid emptied 19 Jun 2025, strike 23 Jun; every US ship left Bahrain 26 Feb 2026, strikes 28 Feb."},
     {"id": "civil", "name": "Civil-defence instructions", "series": [], "rule": None,
      "says": "Not watched yet: needs home-front and civil-defence notices.",

@@ -140,7 +140,7 @@ def main():
         if a.fetch_only:
             return
     res = evaluate(series)
-    ex = None if a.demo else extras.collect()
+    ex = demo.extras(a.demo) if a.demo else extras.collect()
     model_ran = False if a.demo else run_model(res, ex)
     try:   # the timing tells never set a level; like the model they must never break the build
         res["tells"] = tells.evaluate(res["series"])

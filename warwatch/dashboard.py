@@ -39,7 +39,9 @@ UPDATES = [   # (source, how often it is read, why that is enough / the free lim
     ("UKMTO incidents and maritime news", "every 30 minutes", "Incidents are posted within hours of the report."),
     ("Vessel presence (Global Fishing Watch)", "every 12 hours", "Free token; posts daily about four days late, one call per sea box."),
     ("Ships (aisstream.io, Finnish Digitraffic)", "every 30 minutes, 75-second sample", "Free key; streams only while connected. Baltic needs no key."),
-    ("NASA FIRMS fires and thermal detections", "every 30 minutes, last 7 days", "Satellite passes update every ~3 hours; free limit is 5,000 requests per 10 minutes, we use about 25."),
+    ("NASA FIRMS fires and thermal detections", "every 30 minutes, last 7 days", "All three VIIRS satellites, so a pass about every 50 minutes; free limit is 5,000 requests per 10 minutes, we use about 55."),
+    ("Fire classes: NASA FIRMS archive (2012 on), OpenStreetMap, World Bank flare list, WRI power plants", "rebuilt monthly", "Which places burn every day (gas flares, plants) or every season (farm fires). OpenStreetMap data (c) OpenStreetMap contributors, ODbL; WRI and Global Energy Monitor CC BY 4.0."),
+    ("Satellite images: Copernicus Sentinel-1 radar and Sentinel-2 (ESA)", "every 6 hours", "Free and open, via Microsoft Planetary Computer and Element 84 Earth Search. Contains modified Copernicus Sentinel data. Base outlines (c) OpenStreetMap contributors, ODbL."),
     ("Prediction-market odds and history", "every 30 minutes", "Polymarket and Kalshi public APIs; about 60 calls per run."),
     ("Hazard warnings (NGA), airspace bulletins (EASA), GPS-jamming and airliner counts", "every 30 minutes, averaged per day", "Snapshots are appended and averaged into a daily value."),
     ("Share prices (Yahoo Finance, else Twelve Data), Cboe VIX, FRED, ECB rates", "every 6 hours", "These publish one close per day; Yahoo refuses GitHub's runners (it answers 429 to every request), so Twelve Data does the work in practice."),
@@ -115,6 +117,19 @@ def theatre_json(t, v, res_series, base=None, change=None, tells=None):
             "tells": tells or []}
 
 
+def fire_json(m, xy):
+    """One map fire: position, heat, time, class (c), score (a), plain reason (why), nearby site, and the Sentinel-2 chips
+    when the imagery review has them. r = 1 for explained classes (industry, farm burning, volcano, offshore)."""
+    d = dict(xy=xy(m["lat"], m["lon"]), ll=[round(m["lat"], 3), round(m["lon"], 3)], p=m["frp"], d=m["date"], ts=m.get("ts", ""),
+             r=int(bool(m.get("routine"))), th=m.get("th", ""), c=m.get("c", "unex"), a=m.get("a", 0), why=m.get("why", ""), site=m.get("site", ""),
+             dn=m.get("daynight", ""))
+    rv = m.get("rv")
+    if rv and rv.get("verdict") in ("scar", "none", "unclear") and m.get("cid"):
+        b = f"img/fires/{m['cid']}"
+        d["img"] = {"b": b + "_b.jpg", "a": b + "_a.jpg", "s": b + "_s.jpg", "bd": rv.get("bd", ""), "ad": rv.get("ad", ""), "v": rv["verdict"]}
+    return d
+
+
 def map_json(topo, ex, levels_by_country):
     rm = geo.region_map(topo)
     pr = rm["proj"]
@@ -149,7 +164,9 @@ def map_json(topo, ex, levels_by_country):
             "ships": [dict(xy=xy(m["lat"], m["lon"]), n=m["n"], k=m["k"], loc=m.get("loc", ""), g=m.get("g", ""), d=m.get("d", ""), tx=m.get("tx", ""), u=m.get("u", ""),
                            flag=m.get("flag", ""), dest=m.get("dest", ""), spd=m.get("spd"), note=m.get("note", ""), th=m.get("th", "")) for m in ex.get("ships", [])],
             "inc": [dict(xy=xy(m["lat"], m["lon"]), t=m["t"], d=m["d"], src=m["src"], u=m["u"], loc=m["loc"], th=m["th"], tx=m.get("tx", "")) for m in ex.get("inc", [])],
-            "fires": [dict(xy=xy(m["lat"], m["lon"]), p=m["frp"], d=m["date"], ts=m.get("ts", ""), r=int(bool(m.get("routine"))), th=m.get("th", "")) for m in ex.get("fires", [])],
+            "fires": [fire_json(m, xy) for m in ex.get("fires", [])],
+            "bases": [dict({k: v for k, v in b.items() if k not in ("lat", "lon")}, xy=xy(b["lat"], b["lon"]), ll=[round(b["lat"], 3), round(b["lon"], 3)],
+                           th=(b.get("ths") or [""])[0]) for b in ex.get("bases", [])],
             "seas": [{"n": n, "xy": xy(la, lo)} for n, la, lo in C.SEAS],
             "nga": [{"xy": xy(m["lat"], m["lon"]), "id": m["id"], "tx": m["text"], "iss": m["issued"], "th": osint.theatre_at(m["lat"], m["lon"])} for m in ex.get("nga", [])],
             "czib": [{"xy": xy(z["lat"], z["lon"]), "n": z["name"], "u": z["updated"], "th": osint.theatre_at(z["lat"], z["lon"])} for z in ex.get("czib", [])],
