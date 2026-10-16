@@ -466,7 +466,7 @@ class TestOsmSource(unittest.TestCase):
     def test_geofabrik_points_pick_regions_by_box_and_filter_tags(self):
         import osmsource as O
         old = (O._GF["index"], dict(O._GF["regions"]), O._gf_region)
-        O._GF["index"] = [{"id": "iran", "url": "u", "bbox": (25, 40, 44, 63)}, {"id": "chile", "url": "u", "bbox": (-56, -17, -76, -66)}]
+        O._GF["index"] = [{"id": "iran", "url": "u", "boxes": [(25, 40, 44, 63)]}, {"id": "chile", "url": "u", "boxes": [(-56, -17, -76, -66)]}]
         O._GF["regions"].clear()
         asked = []
         def fake(r, groups, cache):

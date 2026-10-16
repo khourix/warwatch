@@ -1,5 +1,5 @@
 name: lab-osm
-# TEMPORARY, branch-only: the fireref site list from Geofabrik extracts, then the replay and case checks with the new
+# TEMPORARY, branch-only (run 2): the fireref site list from Geofabrik extracts, then the replay and case checks with the new
 # sites, committed to this branch. Removed before the PR.
 on:
   push:
@@ -35,7 +35,7 @@ jobs:
       - run: python3 -u warwatch/fireref.py replay --from 2018-01-01
       - name: Commit the replay
         run: |
-          for f in backfill/data/firecls warwatch/data/fire_sites.csv; do git add "$f"; done
+          for f in backfill/data/firecls warwatch/data/fire_sites.csv warwatch/data/fire_*.gz; do git add "$f"; done
           git diff --cached --quiet && exit 0
           git commit -qm "lab-osm: fire replay with Geofabrik and GEM sites $(date -u +%FT%H:%MZ)"
           for i in 1 2 3 4 5; do git pull --rebase -q origin claude/project-thread-szj3l8 && git push -q origin HEAD:claude/project-thread-szj3l8 && exit 0; sleep $((i*10)); done

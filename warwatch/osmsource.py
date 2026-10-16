@@ -256,8 +256,12 @@ def geofabrik_ready():
     return shutil.which("osmium") is not None
 
 
+GF_SKIP = {"dach", "alps", "britain-and-ireland", "us"}   # composite extracts that repeat smaller ones (12 GB for "us")
+
+
 def _gf_leaves():
-    """Geofabrik's smallest extracts (regions with no sub-regions) with their bounding boxes and .pbf URLs."""
+    """Geofabrik's smallest extracts (regions with no sub-regions, composites skipped) with one bounding box per polygon
+    (two for a polygon that crosses the antimeridian; one box for it would cover the whole globe) and their .pbf URLs."""
     if _GF["index"] is None:
         req = urllib.request.Request(GEOFABRIK, headers={"User-Agent": UA})
         feats = json.loads(urllib.request.urlopen(req, timeout=120).read())["features"]
@@ -265,24 +269,28 @@ def _gf_leaves():
         out = []
         for f in feats:
             pr, g = f["properties"], f.get("geometry")
-            if pr["id"] in parents or not g or "pbf" not in pr.get("urls", {}):
+            if pr["id"] in parents or pr["id"] in GF_SKIP or not g or "pbf" not in pr.get("urls", {}):
                 continue
-            xs, ys = [], []
-            def walk(c):
-                if c and isinstance(c[0], (int, float)):
-                    xs.append(c[0]); ys.append(c[1])
-                else:
-                    for x in c:
-                        walk(x)
-            walk(g["coordinates"])
-            out.append({"id": pr["id"], "url": pr["urls"]["pbf"], "bbox": (min(ys), max(ys), min(xs), max(xs))})
+            polys = g["coordinates"] if g["type"] == "MultiPolygon" else [g["coordinates"]]
+            boxes = []
+            for poly in polys:
+                xs = [c[0] for c in poly[0]]
+                ys = [c[1] for c in poly[0]]
+                if not xs:
+                    continue
+                if max(xs) - min(xs) <= 180:
+                    boxes.append((min(ys), max(ys), min(xs), max(xs)))
+                else:   # crosses the antimeridian: one box on each side
+                    boxes += [(min(ys), max(ys), min(x for x in xs if x >= 0), 180.0), (min(ys), max(ys), -180.0, max(x for x in xs if x < 0))]
+            if boxes:
+                out.append({"id": pr["id"], "url": pr["urls"]["pbf"], "boxes": boxes})
         _GF["index"] = out
     return _GF["index"]
 
 
 def gf_regions(bbox):
     la0, la1, lo0, lo1 = bbox
-    return [r for r in _gf_leaves() if r["bbox"][0] <= la1 and r["bbox"][1] >= la0 and r["bbox"][2] <= lo1 and r["bbox"][3] >= lo0]
+    return [r for r in _gf_leaves() if any(b[0] <= la1 and b[1] >= la0 and b[2] <= lo1 and b[3] >= lo0 for b in r["boxes"])]
 
 
 def _osmium_filters(groups):
