@@ -1,0 +1,30 @@
+name: lab-energy-bases
+# TEMPORARY (removed before the PR): energy-site fire tuning and the base-watch ground-part backfill, run on this branch only.
+on:
+  push:
+    branches: [claude/project-thread-szj3l8]
+    paths: [.github/workflows/lab-energy-bases.yml]
+permissions:
+  contents: write
+jobs:
+  tune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      FIRMS_ARCHIVE_CACHE: /tmp/firms-archive
+    steps:
+      - uses: actions/checkout@v4
+      - name: Which VIIRS archives exist
+        run: |
+          for s in snpp noaa20 noaa21; do for y in 2018 2021 2024; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -r 0-200 "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-$s/$y/viirs-${s}_${y}_Iran.csv"); echo "$s $y $code"; done; done | tee lab_probe.txt
+      - run: python3 -u warwatch/fireref.py tune 2>&1 | tee lab_tune.txt
+      - name: Commit the tuning result to the branch
+        if: always()
+        run: |
+          git config user.name "warwatch-bot"; git config user.email "warwatch-bot@users.noreply.github.com"
+          mkdir -p lab && mv lab_probe.txt lab/fire_probe.txt; tail -400 lab_tune.txt > lab/fire_tune.txt || true
+          git add lab backtest/fire_energy_tuning.json 2>/dev/null || git add lab
+          git commit -qm "lab: energy-site fire tuning"
+          git reset -q --hard HEAD
+          for i in 1 2 3 4 5 6; do git pull --rebase -q origin claude/project-thread-szj3l8 && git push -q origin HEAD:claude/project-thread-szj3l8 && break; sleep $((i * 7)); done

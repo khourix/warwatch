@@ -210,7 +210,10 @@ class TestFireCls(unittest.TestCase):
         F.save_daily(pts, today)
         self.assertEqual(dict(F.daily_series("iran"))["2026-10-14"], 1.0)    # S-NPP only
         self.assertEqual(dict(F.daily_series("iran"))["2026-10-13"], 0.0)
-        self.assertEqual(F.save_anoms(pts, today), 1)
+        import store
+        from unittest import mock
+        with mock.patch.object(store, "cache_rows", return_value=[]), mock.patch.object(store, "cache_rows_save"):
+            self.assertEqual(F.save_anoms(pts, today), 1)    # this run's clusters only, whatever the live cache holds
 
 
     def test_economist_war_fire_upgrades_a_seasonal_fire_in_ukraine_only(self):
@@ -406,6 +409,42 @@ class TestBaseWatch(unittest.TestCase):
         self.assertEqual([p for _, p in B.windows(far)], [["apron"], ["harbour"]])
         self.assertLess(B.site_bbox(far)[2] - B.site_bbox(far)[0], 0.05)      # chips stay on the air base
 
+    def test_ground_part_is_the_base_outside_aprons_and_harbour(self):
+        import basewatch as B
+        sq = lambda lo, la, k=0.01: [[lo, la], [lo + k, la], [lo + k, la + k], [lo, la + k], [lo, la]]    # noqa: E731
+        rec = {"lat": 35.53, "lon": 24.15, "aprons": [sq(24.15, 35.53, 0.005)], "outline": [sq(24.145, 35.525, 0.03)]}
+        self.assertEqual([p for _, p in B.windows(rec)], [["apron", "ground"]])
+        self.assertEqual([p for _, p in B.windows(rec, ["ground"])], [["ground"]])
+        huge = dict(rec, outline=[sq(24.0, 35.4, 0.3)])                   # a 30 km range is too big to read as one part
+        self.assertEqual([p for _, p in B.windows(huge)], [["apron"]])
+        if _have("numpy", "scipy", "rasterio"):
+            bbox, _ = B.windows(rec)[0]
+            w, h = B.I.grid(bbox, 10)
+            m = B.part_masks(rec, bbox, w, h)
+            self.assertFalse((m["ground"] & m["apron"]).any())
+            self.assertGreater(m["ground"].sum(), 3 * m["apron"].sum())
+
+    def test_each_part_gets_its_own_state(self):
+        import basewatch as B
+        d = tempfile.mkdtemp()
+        old = (B.SCENES, B.OPTICAL, B.CACHE)
+        B.SCENES, B.OPTICAL, B.CACHE = os.path.join(d, "s.csv"), os.path.join(d, "o.csv"), d
+        metric = f"{B.METRIC}@{B.T_DB:g}"
+        day = lambda k: (dt.date(2026, 6, 1) + dt.timedelta(days=6 * k)).isoformat()    # noqa: E731
+        rows = []
+        for k in range(20):
+            for part, v in (("apron", 10 + k % 2), ("ground", 30 + k % 3 if k < 18 else 2)):
+                rows.append({"scene_id": f"s{k}", "site": "x", "date": day(k), "orbit": "A1", "part": part, "area_m2": 1, metric: v})
+        B.append_csv(B.SCENES, B.SCENE_COLS, rows)
+        try:
+            B.rebuild([{"id": "x", "kind": "air", "theatres": ["zz"]}], dt.date.fromisoformat(day(19)))
+            st = {r["site"]: r for r in B.read_csv(os.path.join(d, "base_state.csv"))}["x"]
+        finally:
+            B.SCENES, B.OPTICAL, B.CACHE = old
+        self.assertEqual(st["state"], "normal")                    # the aircraft count did not move
+        parts = {p.split(":")[0]: p.split(":")[1] for p in st["parts"].split(";")}
+        self.assertEqual(parts, {"apron": "normal", "ground": "out"})    # the vehicle yards emptied
+
     def test_naval_site_view_is_the_harbour_not_the_compound(self):
         import basewatch as B
         sq = lambda lo, la: [[lo, la], [lo + 0.005, la], [lo + 0.005, la + 0.005], [lo, la]]    # noqa: E731
@@ -426,8 +465,9 @@ class TestBaseWatch(unittest.TestCase):
         old, alerts = B.CACHE, B.ALERTS
         B.CACHE, B.ALERTS = d, False
         try:
-            B.save_rows("base_state", ["site", "state", "dates", "last_radar", "last_optical", "z", "part", "note"],
-                        [["x", "changed", "2026-10-14", "2026-10-14", "2026-10-12", "-2.80", "apron", ""],
+            B.save_rows("base_state", ["site", "state", "dates", "last_radar", "last_optical", "z", "part", "note", "parts"],
+                        [["x", "changed", "2026-10-14", "2026-10-14", "2026-10-12", "-2.80", "apron", "",
+                          "apron:changed:-2.80:2026-10-14;ground:in:3.40:2026-10-08/2026-10-14"],
                          ["y", "out", "2026-10-08;2026-10-14", "2026-10-14", "", "-3.10", "harbour", ""]])
             B.save_series("base_x", [("2026-10-08", 0.2), ("2026-10-14", -2.8)])
             B.save_rows("base_chips", ["site", "kind", "date", "scene_id"], [["x", "a", "2026-10-12", "S2"]])
@@ -445,6 +485,11 @@ class TestBaseWatch(unittest.TestCase):
         self.assertEqual(items["x"]["img"], {"a": "img/bases/x_a.jpg", "ad": "2026-10-12"})
         self.assertIn("Ships may have left", items["y"]["why"])
         self.assertIn("2026-10-08 and 2026-10-14", items["y"]["why"])
+        gr = {x["p"]: x for x in items["x"]["pr"]}
+        self.assertEqual((gr["ground"]["w"], gr["ground"]["st"], gr["ground"]["t"]), ("Vehicles and equipment", "in", False))
+        self.assertIn("Vehicles and equipment on the rest of the base: more than usual", items["x"]["why"])
+        self.assertIn("not yet checked", items["x"]["why"])
+        self.assertEqual(items["y"]["pr"], [])
 
     def test_construction_note_needs_two_images_in_a_row(self):
         import basewatch as B

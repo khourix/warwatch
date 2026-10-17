@@ -50,7 +50,7 @@ ANOM_AT = 60          # an unexplained detection with this score or more is an a
 W = {"base": 30, "novel": 20, "rare_season": 10, "sensitive": 25, "frp50": 10, "frp200": 10, "cluster": 10, "night": 5, "seasonal": -15,
      "static_t2": 5, "static_days": 60, "static_years": 2, "spot_years": 3, "seas_p": 0.4, "rare_p": 0.1, "sens_km": 2.0, "ind_km": 1.0,
      # energy sites (2026-10-17, map only; after the frozen test): set from the plan, not tuned on the replay
-     "usual_days": 10, "site": 25, "similar_x": 2.0, "similar_add": 20, "similar_q": 0.9, "similar_n": 10}
+     "usual_days": 10, "site": 25, "similar_x": 2.0, "similar_add": 20, "similar_q": 0.9, "similar_n": 10, "hot_x": 3.0, "hot_add": 100, "energy_sens": 1}
 
 
 def fine(lat, lon):
@@ -395,7 +395,7 @@ def classify_one(p, ref, near_n, day):
         f95 = max([r["frp95"] for r in stat or rows] or [0.0])
         n95 = max([r["n95"] for r in stat or rows] or [0.0])
         if stat or rows:
-            hotter = frp >= max(3 * f95, f95 + 100) or near_n >= 3 * n95 + 3 or sat
+            hotter = frp >= max(W["hot_x"] * f95, f95 + W["hot_add"]) or near_n >= 3 * n95 + 3 or sat
         else:
             hotter = frp >= 300 or sat          # a listed flare with no fire record: only a very large fire counts
         ceil = ref.ceiling(ind["kind"]) if ind else None
@@ -412,7 +412,7 @@ def classify_one(p, ref, near_n, day):
         pct = burn_pct(stat or rows, year)
         tail = f": this spot burns on {pct}% of days." if pct else "."
         return _set(p, "ind", 10, f"{kind}{where}{tail}", name)
-    if site is None and sens and sens["kind"] in ENERGY and sens_km <= W["ind_km"]:
+    if site is None and W["energy_sens"] and sens and sens["kind"] in ENERGY and sens_km <= W["ind_km"]:
         site = sens
     sp = seasonal_p(ref, lat, lon, day)
     month = day.strftime("%B")

@@ -72,14 +72,15 @@ def get(url, data=None, timeout=120, tries=4, headers=None):
 
 
 # ---------------------------------------------------------------- archive files
-def archive_file(country, year, cache):
-    """Local path of the year's country file (downloaded once into the cache), or None when FIRMS has no such file."""
+def archive_file(country, year, cache, sat="snpp"):
+    """Local path of the year's country file (downloaded once into the cache), or None when FIRMS has no such file.
+    sat: snpp (the reference tables and replay), noaa20 or noaa21 (the other VIIRS satellites the live map also reads)."""
     os.makedirs(cache, exist_ok=True)
-    p = os.path.join(cache, f"viirs-snpp_{year}_{country}.csv")
+    p = os.path.join(cache, f"viirs-{sat}_{year}_{country}.csv")
     if os.path.exists(p):
         return p
     try:
-        body = get(ARCHIVE.format(y=year, c=country), timeout=600)
+        body = get(ARCHIVE.replace("viirs-snpp", f"viirs-{sat}").format(y=year, c=country), timeout=600)
     except urllib.error.HTTPError as e:
         if e.code == 404:
             return None
@@ -759,6 +760,132 @@ def cases(cache, path=os.path.join(F.DATA, "fire_cases.csv")):
     return out
 
 
+# ---------------------------------------------------------------- energy-site tuning (2026-10-17, docs/FIRE_ENERGY_TUNING.md)
+SATS = ("snpp", "noaa20", "noaa21")
+TUNE_CASES = os.path.join(F.DATA, "fire_energy_cases.csv")
+CALM_YEARS = (2018, 2019, 2020, 2021)
+GRID = {"usual_days": (0, 5, 10, 20, 40, 80), "site": (25, 30, 35), "similar": ((2.0, 20), (1.5, 10), (99, 0)),
+        "hot": ((3.0, 100), (2.0, 50)), "energy_sens": (0, 1)}
+
+
+def _energy_index():
+    kinds = F.INDUSTRIAL + F.ENERGY
+    return F.Sites([s for s in F.load_sites() if s["kind"] in kinds]), kinds
+
+
+def tune_points(cases, cache, log_=None):
+    """Detections the tuning needs, from all three VIIRS satellites: around each case on its day and the next, and within 4 km
+    of an energy or industrial site on every day of the calm years (case days +-3 left out)."""
+    idx, kinds = _energy_index()
+    days = {}
+    for k, c in enumerate(cases):
+        d = dt.date.fromisoformat(c["date"])
+        for x in (d, d + dt.timedelta(1)):
+            days.setdefault((c["box"], x.isoformat()), []).append(k)
+    skip = {(c["box"], (dt.date.fromisoformat(c["date"]) + dt.timedelta(k)).isoformat()) for c in cases for k in range(-3, 4)}
+    years = sorted(set(CALM_YEARS) | {int(c["date"][:4]) for c in cases})
+    case_pts = {k: [] for k in range(len(cases))}
+    calm = {}
+    for y in years:
+        for b in sorted({c["box"] for c in cases}):      # the boxes with cases; their calm years give the false alarms
+            box = C.FIRMS_BOX[b]
+            for sat in SATS:
+                for ctry in C.FIRE_COUNTRIES[b]:
+                    p = archive_file(ctry, y, cache, sat)
+                    if not p:
+                        continue
+                    for lat, lon, date, hhmm, frp, dn, _, b4 in rows(p, skip_low=True):
+                        if not inside(box, lat, lon):
+                            continue
+                        pt = None
+                        for k in days.get((b, date), ()):
+                            c = cases[k]
+                            if F.km(lat, lon, float(c["lat"]), float(c["lon"])) <= 6.0:
+                                pt = pt or {"lat": lat, "lon": lon, "date": date, "ts": f"{date}T{hhmm[:2]}:{hhmm[2:]}Z|{sat}", "frp": frp, "daynight": dn, "bright_ti4": b4}
+                                case_pts[k].append(pt)
+                        if y in CALM_YEARS and (b, date) not in skip and idx.near(lat, lon, kinds, 4.0)[0]:
+                            pt = pt or {"lat": lat, "lon": lon, "date": date, "ts": f"{date}T{hhmm[:2]}:{hhmm[2:]}Z|{sat}", "frp": frp, "daynight": dn, "bright_ti4": b4}
+                            calm.setdefault((b, date), []).append(pt)
+            (log_ or log)(y, b, "case points", sum(len(v) for v in case_pts.values()), "calm days", len(calm))
+    # same-pass neighbours are counted once on the wide set; only the points that can count are kept
+    for k, pts in case_pts.items():
+        n = F._same_pass(pts)
+        c = cases[k]
+        case_pts[k] = [dict(p, _n=n[id(p)]) for p in pts if F.km(float(c["lat"]), float(c["lon"]), p["lat"], p["lon"]) <= 3.0]
+    for key, pts in list(calm.items()):
+        n = F._same_pass(pts)
+        calm[key] = [dict(p, _n=n[id(p)]) for p in pts if idx.near(p["lat"], p["lon"], kinds, 2.0)[0]]
+    return case_pts, calm
+
+
+def _classify_raw(pts, ref):
+    for p in pts:
+        F.classify_one(p, ref, p["_n"], dt.date.fromisoformat(p["date"]))
+    return pts
+
+
+class _MemoSites:
+    """The site lookups of one box, remembered across the settings of the grid (the sites do not change between them)."""
+    def __init__(self, sites):
+        self.s, self.m, self.b = sites, {}, sites.b
+
+    def near(self, lat, lon, kinds, r_km):
+        k = (lat, lon, kinds, r_km)
+        if k not in self.m:
+            self.m[k] = self.s.near(lat, lon, kinds, r_km)
+        return self.m[k]
+
+
+def tune_score(cases, case_pts, calm, refs, setting):
+    """-> (case hits, cases seen, calm flags per year, [(case, best class, score)]) for one setting of the energy rule."""
+    old = dict(F.W)
+    F.W.update(setting)
+    try:
+        hits, seen, detail = 0, 0, []
+        for k, c in enumerate(cases):
+            la, lo = float(c["lat"]), float(c["lon"])
+            pts = [dict(p) for p in case_pts[k]]
+            _classify_raw(pts, refs[c["box"]])
+            near = pts
+            seen += bool(near)
+            best = max(near, key=lambda p: (p["c"] in F.ANOMALY, p["a"]), default=None)
+            hit = bool(best and best["c"] in F.ANOMALY)
+            hits += hit
+            detail.append((c, best["c"] if best else "none", best["a"] if best else 0))
+        flags = set()
+        for (b, date), pts in calm.items():
+            pts = [dict(p) for p in pts]
+            _classify_raw(pts, refs[b])
+            for p in pts:
+                if p["c"] in F.ANOMALY:
+                    flags.add((b, date, round(p["lat"] / 0.02), round(p["lon"] / 0.02)))
+        return hits, seen, len(flags) / len(CALM_YEARS), detail
+    finally:
+        F.W.clear()
+        F.W.update(old)
+
+
+def tune(cache, out=None):
+    with open(TUNE_CASES, newline="", encoding="utf-8") as f:
+        cases = [r for r in csv.DictReader(f) if r["box"] in C.FIRMS_BOX]
+    refs = {b: F.load(b) for b in C.FIRMS_BOX}
+    for r in refs.values():
+        r.ceiling("power")                  # fills the similar-plant table before the lookups are wrapped
+        r.sites = _MemoSites(r.sites)
+    case_pts, calm = tune_points(cases, cache)
+    res = []
+    import itertools
+    for ud, sw, (sx, sa), (hx, ha), es in itertools.product(GRID["usual_days"], GRID["site"], GRID["similar"], GRID["hot"], GRID["energy_sens"]):
+        st = {"usual_days": ud, "site": sw, "similar_x": sx, "similar_add": sa, "hot_x": hx, "hot_add": ha, "energy_sens": es}
+        h, s, fl, det = tune_score(cases, case_pts, calm, refs, st)
+        res.append((st, h, s, fl, det))
+        log(f"usual_days {ud:3} site {sw} similar {sx}x+{sa} hot {hx}x+{ha} energy_sens {es}: hits {h}/{len(cases)} (seen {s}), calm flags/yr {fl:.0f}")
+    with open(out or os.path.join(os.path.dirname(HERE), "backtest", "fire_energy_tuning.json"), "w") as f:
+        json.dump({"cases": len(cases), "runs": [{"setting": st, "hits": h, "seen": s, "calm_flags_per_year": fl,
+                                                   "detail": [[c["date"], c["name"], cl, a] for c, cl, a in det]} for st, h, s, fl, det in res]}, f, indent=1)
+    return res
+
+
 # ---------------------------------------------------------------- probe
 def probe():
     bad = 0
@@ -789,7 +916,7 @@ def probe():
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["probe", "build", "sites", "check", "replay", "econ", "cases", "osm-part", "merge-osm"])
+    ap.add_argument("cmd", choices=["probe", "build", "sites", "check", "replay", "econ", "cases", "osm-part", "merge-osm", "tune"])
     ap.add_argument("paths", nargs="*")
     ap.add_argument("--box", default=",".join(C.FIRMS_BOX))
     ap.add_argument("--years", default=f"2012-{dt.date.today().year - 1}")
@@ -814,6 +941,8 @@ def main(argv=None):
         cases(a.cache)
     elif a.cmd == "econ":
         log("Economist war fires, last 21 days:", F.econ_refresh())
+    elif a.cmd == "tune":
+        tune(a.cache)
     elif a.cmd == "replay":
         replay(names, a.start, years_arg(a.years), a.cache)
     return 0

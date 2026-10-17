@@ -166,14 +166,20 @@ def site_bbox(rec, margin_km=MARGIN_KM, part=None):
     apron = [p for g in rec.get("aprons", []) for p in g] or [p for g in rec.get("outline", []) for p in g]
     harbour = [p for k in ("harbour", "piers") for g in rec.get(k, []) for p in g]
     naval = rec.get("kind") in ("naval", "port")      # a naval site's view is its harbour, not the (often small) base compound
-    pts = {"apron": apron, "harbour": harbour}.get(part) if part else ((harbour or apron) if naval else (apron or harbour))
+    ground = [p for g in rec.get("outline", []) for p in g]
+    pts = {"apron": apron, "harbour": harbour, "ground": ground}.get(part) if part else ((harbour or apron) if naval else (apron or harbour))
     return _bbox(pts or [[rec["lon"], rec["lat"]]], margin_km)
 
 
-def windows(rec):
-    """[(bbox, [parts])]: one window for both parts when they lie together, one each when they are far apart (a naval
-    harbour 18 km from its air base)."""
-    parts = [k for k, have in (("apron", rec.get("aprons")), ("harbour", rec.get("harbour") or rec.get("piers"))) if have]
+GROUND_MAX_KM = 15      # the "ground" part (vehicles and equipment) is read only on outlines up to 15 x 15 km
+
+
+def windows(rec, only=None):
+    """[(bbox, [parts])]: one window for the parts that lie together, one each when they are far apart (a naval harbour
+    18 km from its air base). Parts: apron (aircraft), harbour (ships), ground (the rest of the base: vehicles, launchers,
+    equipment yards). `only` limits the parts read."""
+    parts = [k for k, have in (("apron", rec.get("aprons")), ("harbour", rec.get("harbour") or rec.get("piers")), ("ground", _ground_ok(rec))) if have]
+    parts = [k for k in parts if not only or k in only]
     if not parts:
         return []
     boxes = {k: site_bbox(rec, part=k) for k in parts}
@@ -183,6 +189,13 @@ def windows(rec):
     if len(parts) == 1 or (wide_km <= 12 and high_km <= 12):
         return [(u, parts)]
     return [(boxes[k], [k]) for k in parts]
+
+
+def _ground_ok(rec):
+    if not rec.get("outline"):
+        return False
+    lo0, la0, lo1, la1 = site_bbox(rec, part="ground", margin_km=0)
+    return (lo1 - lo0) * 111.32 * math.cos(math.radians((la0 + la1) / 2)) <= GROUND_MAX_KM and (la1 - la0) * 110.574 <= GROUND_MAX_KM
 
 
 def part_masks(rec, bbox, w, h):
@@ -195,6 +208,13 @@ def part_masks(rec, bbox, w, h):
         m = I.mask(rec.get("harbour", []), bbox, w, h) if rec.get("harbour") else None
         p = I.mask(rec.get("piers", []), bbox, w, h, buffer_px=PIER_PX) if rec.get("piers") else None
         out["harbour"] = m | p if m is not None and p is not None else (m if m is not None else p)
+    if _ground_ok(rec):
+        g = I.mask(rec["outline"], bbox, w, h)
+        if g is not None:
+            for k in ("apron", "harbour"):
+                if out.get(k) is not None:
+                    g = g & ~out[k]
+            out["ground"] = g
     return {k: v for k, v in out.items() if v is not None and v.any()}
 
 
@@ -213,15 +233,15 @@ def search_chunks(collection, bbox, start, end, days=60):
         d0 = e + dt.timedelta(days=1)
 
 
-def radar_rows(rec, start, end, budget, done=frozenset(), log=print):
+def radar_rows(rec, start, end, budget, done=frozenset(), log=print, parts=None):
     """Rows for new Sentinel-1 RTC scenes over a site (oldest first, at most `budget` scenes); each part is measured in its
     own window when the parts lie far apart."""
     import imagery as I
     import numpy as np
     wins = []
-    for bbox, parts in windows(rec):
+    for bbox, ps in windows(rec, parts):
         w, h = I.grid(bbox, 10)
-        masks = {k: v for k, v in part_masks(rec, bbox, w, h).items() if k in parts}
+        masks = {k: v for k, v in part_masks(rec, bbox, w, h).items() if k in ps}
         if masks:
             wins.append((bbox, w, h, masks))
     if not wins:
@@ -409,7 +429,8 @@ def chips(rec, optical, radar_items, log=print):
 def rebuild(sites, today=None):
     """Recomputes z per site, states, theatre counts and the state table from the scene files."""
     today = today or dt.datetime.now(dt.timezone.utc).date()
-    rows = read_csv(SCENES)
+    import basestudy as S
+    rows = S.load_scenes(live=SCENES)      # backfilled scenes plus the live ones, so each part's usual range starts full
     opt = read_csv(OPTICAL)
     metric = f"{METRIC}@{T_DB:g}"
     states, table = {}, []
@@ -428,6 +449,17 @@ def rebuild(sites, today=None):
                 per_day.setdefault(d, []).append(z)
         save_series(f"base_{s['id']}", [(d, sum(v) / len(v)) for d, v in sorted(per_day.items())])
         st, used = state(zs, today)
+        # every part on its own: aircraft on the aprons, ships in the harbour, vehicles and equipment on the rest of the base
+        parts = []
+        for part in PARTS:
+            if part == main or not any(r["part"] == part for r in sr):
+                pz, pst, pu = zs, st, used
+            else:
+                pz = [(d, z) for d, _, _, z in scene_z(sr, metric, part)]
+                pst, pu = state(pz, today)
+            if any(r["part"] == part for r in sr):
+                pl = next((z for d, z in reversed(pz) if z is not None), None)
+                parts.append(f"{part}:{pst}:{'' if pl is None else f'{pl:.2f}'}:{'/'.join(pu)}")
         so = sorted((o for o in opt if o["site"] == s["id"] and float(o.get("clear") or 0) >= 0.9), key=lambda o: o["date"])
         note = ""
         # one value per day (two tiles or satellites can image the same day), only measured ones
@@ -451,12 +483,11 @@ def rebuild(sites, today=None):
         last_r = max((r["date"] for r in sr), default="")
         last_o = so[-1]["date"] if so else ""
         zl = next((z for d, z in reversed(zs) if z is not None), None)
-        table.append([s["id"], st, ";".join(used), last_r, last_o, "" if zl is None else f"{zl:.2f}", main, note])
-    save_rows("base_state", ["site", "state", "dates", "last_radar", "last_optical", "z", "part", "note"], table)
+        table.append([s["id"], st, ";".join(used), last_r, last_o, "" if zl is None else f"{zl:.2f}", main, note, ";".join(parts)])
+    save_rows("base_state", ["site", "state", "dates", "last_radar", "last_optical", "z", "part", "note", "parts"], table)
     # theatre counts per day, replayed from 2022 over the backfilled scenes and the live ones (the history the model scores
     # against); a theatre has a row on days where at least one of its sites has a scored pass in the last 10 days
     if ALERTS:
-        import basestudy as S
         passes = S.site_passes(S.load_scenes(), sites)
         series = {}
         d = S.START
@@ -486,6 +517,7 @@ def main(argv=None):
     ap.add_argument("--days", type=int, default=30, help="look back this many days for new scenes")
     ap.add_argument("--backfill-from", default="")
     ap.add_argument("--until", default="", help="backfill: last day to read (default today)")
+    ap.add_argument("--parts", default="", help="backfill: read only these parts (apron,harbour,ground)")
     ap.add_argument("--budget", type=int, default=120, help="radar scene reads per run")
     ap.add_argument("--no-optical", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
@@ -499,7 +531,7 @@ def main(argv=None):
     chip_rows = {(r[0], r[1]): r for r in _chip_rows()}
     for s in sites:
         try:
-            rr = radar_rows(s, start, a.until or today.isoformat(), per, done_r)
+            rr = radar_rows(s, start, a.until or today.isoformat(), per, done_r, parts=a.parts.split(",") if a.parts else None)
         except Exception as e:
             print(s["id"], "radar search failed:", repr(e)[:160], flush=True)
             rr = []
@@ -540,6 +572,13 @@ def _chip_rows():
 
 
 # ---------------------------------------------------------------- for the dashboard build (standard library only)
+PARTS = ("apron", "harbour", "ground")
+PART_WHAT = {"apron": ("Aircraft", "on the aprons"), "harbour": ("Ships", "in the harbour"),
+             "ground": ("Vehicles and equipment", "on the rest of the base (vehicle parks, launcher and storage yards)")}
+GROUND_TESTED = False   # the ground part has not passed its backfill test yet (docs/BASEWATCH_STUDY_PLAN.md, ground amendment)
+PART_NOTE = {"out": "fewer than usual", "in": "more than usual", "changed": "one pass off its usual range",
+             "normal": "usual", "nodata": "no recent pass"}
+
 STATE_WHY = {
     "out": "Radar shows far fewer bright objects {where} than usual on two passes ({dates}). {what} may have left.",
     "in": "Radar shows far more bright objects {where} than usual on two passes ({dates}). {what} may have arrived.",
@@ -565,8 +604,7 @@ def layer(path=BASES):
         r = st.get(s["id"], {})
         state_ = r.get("state") or "nodata"
         part = r.get("part") or ("harbour" if s["kind"] in ("naval", "port") else "apron")
-        where = "in the harbour" if part == "harbour" else "on the aprons"
-        what = "Ships" if part == "harbour" else "Aircraft"
+        what, where = PART_WHAT.get(part, PART_WHAT["apron"])
         dates = " and ".join(x for x in (r.get("dates") or "").split(";") if x) or r.get("last_radar", "")
         pts = []
         try:
@@ -583,7 +621,18 @@ def layer(path=BASES):
         why_ = STATE_WHY.get(state_, "").format(where=where, what=what, dates=dates)
         if not ALERTS and state_ in ("out", "in", "changed"):
             why_ += " Not yet checked against past events, so it carries no weight in the risk numbers."
-        out.append({"id": s["id"], "n": s["name"], "lat": s["lat"], "lon": s["lon"], "k": s["kind"], "side": s["side"], "ths": s["theatres"],
+        prt = []
+        for x in (r.get("parts") or "").split(";"):
+            f = x.split(":")
+            if len(f) == 4 and f[0] in PART_WHAT:
+                prt.append({"p": f[0], "w": PART_WHAT[f[0]][0], "st": f[1], "z": float(f[2]) if f[2] else None,
+                            "d": f[3].replace("/", " and "), "s": PART_NOTE.get(f[1], f[1]),
+                            "t": f[0] != "ground" or GROUND_TESTED})
+        gr = next((x for x in prt if x["p"] == "ground" and x["st"] in ("out", "in")), None)
+        if gr and part != "ground":
+            why_ += (f" Vehicles and equipment on the rest of the base: {gr['s']} on two passes ({gr['d']})."
+                     + ("" if GROUND_TESTED else " That reading is not yet checked against past events and carries no weight."))
+        out.append({"id": s["id"], "n": s["name"], "pr": prt, "lat": s["lat"], "lon": s["lon"], "k": s["kind"], "side": s["side"], "ths": s["theatres"],
                     "st": state_, "z": float(r["z"]) if r.get("z") else None, "last": r.get("last_radar", ""), "lo": r.get("last_optical", ""),
                     "pts": pts, "why": why_, "note": r.get("note", ""),
                     "wy": s.get("why", ""), "img": img})
