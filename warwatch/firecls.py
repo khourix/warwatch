@@ -49,8 +49,9 @@ ANOM_AT = 60          # an unexplained detection with this score or more is an a
 # Starting weights (FIRECLASS_PLAN F2). Tuned only on 2018-2021 and frozen before the 2022+ test (docs/FIREANOM_PLAN.md).
 W = {"base": 30, "novel": 20, "rare_season": 10, "sensitive": 25, "frp50": 10, "frp200": 10, "cluster": 10, "night": 5, "seasonal": -15,
      "static_t2": 5, "static_days": 60, "static_years": 2, "spot_years": 3, "seas_p": 0.4, "rare_p": 0.1, "sens_km": 2.0, "ind_km": 1.0,
-     # energy sites (2026-10-17, map only; after the frozen test): set from the plan, not tuned on the replay
-     "usual_days": 10, "site": 25, "similar_x": 2.0, "similar_add": 20, "similar_q": 0.9, "similar_n": 10, "hot_x": 3.0, "hot_add": 100, "energy_sens": 1}
+     # energy sites (2026-10-17, map only): tuned on 41 past strikes by the rule fixed in docs/FIRE_ENERGY_TUNING.md;
+     # similar_x 99 turns the "hotter than similar plants" test off (it caught no strike there and added false alarms)
+     "usual_days": 5, "site": 30, "similar_x": 99, "similar_add": 0, "similar_q": 0.9, "similar_n": 10, "hot_x": 3.0, "hot_add": 100, "energy_sens": 0}
 
 
 def fine(lat, lon):

@@ -41,5 +41,38 @@ a false alarm. A false alarm is one distinct site cell (0.02 degrees) and day cl
    baseline.
 4. If no setting catches more cases than the baseline within that limit, the baseline stays.
 
-The result section below is filled in after the run, with the counts for the chosen setting and the baseline, and the
-cases neither can catch (most often no satellite saw the fire on the day).
+
+## Result (run of 2026-10-17)
+
+FIRMS publishes yearly country archives for Suomi NPP and NOAA-20 (`viirs-jpss1`) but not yet for NOAA-21, so the run
+read two of the three satellites. 216 settings were scored; the full table is `backtest/fire_energy_tuning.json`.
+
+| | Strikes caught (of 41) | Strikes with any detection | False alarms per year (2018–2021) |
+|---|---:|---:|---:|
+| PR #40 setting (baseline) | 5 | 17 | 1,865 |
+| **Chosen setting** | **6** | 17 | **1,820** |
+| Most caught by any setting | 7 | 17 | 2,379 (1.28 times the baseline, over the limit) |
+
+**Chosen:** `usual_days` 5, `site` 30, the similar-plants test off, `hot` unchanged (3x, +100 MW), and fuel depots and
+substations no longer count as energy sites (`energy_sens` off). It catches one more strike than the baseline with 2% fewer
+false alarms. The rule picked it; nothing was changed after reading the table.
+
+What moved:
+
+- Now caught: Belgorod oil depot (1 Apr 2022) and Burshtyn power plant (10 Oct 2022), both from "unexplained" to "unusual".
+- Lost: Shahran fuel depot (14 Jun 2025) drops from "unusual" (70) to "unexplained" (55), because depots no longer get the
+  energy-site score. It still shows on the map, marked unexplained.
+- The similar-plants test caught no strike in any setting and only added false alarms.
+
+Why most strikes stay uncaught:
+
+- **24 of 41 strikes had no detection** within 3 km on the day or the next from either satellite (cloud, smoke, a fire
+  out before the overpass, or a fire too small). No threshold can catch these.
+- **8 strikes look like routine heat**: Abqaiq, Shaybah, the Riyadh, Homs, Tehran and Bazan refineries and Khor Mor sit
+  on flares that burn most days, and the strike fire was not hot enough above their own record to stand out. Lowering the
+  "hotter than its own record" bar (2x, +50 MW) caught none of them.
+- 2 depot fires in Crimea and Luhansk fell in the farm-burning season.
+
+The false-alarm count is detections within 2 km of an energy or industrial site, so most of it is ordinary industry
+that the map already shows as unexplained or unusual; it is a yardstick for comparing settings, not the map's daily
+alert count.

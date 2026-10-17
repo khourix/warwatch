@@ -8,6 +8,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -110,7 +111,9 @@ class TestFireCls(unittest.TestCase):
         I, J = F.coarse(35.78, 51.30)
         depot = {"name": "Shahran depot", "kind": "fuel", "lat": 35.7845, "lon": 51.30}
         r = ref(coarse={(I, J): {y: 1 << 5 for y in range(2012, 2025)}}, sites=[depot], grid=full_grid(35.78, 51.30, years=(2015, 2019, 2022)))
-        p = F.classify([det(35.78, 51.30, frp=20, date="2025-06-14", dn="N")], "iran", ref=r)[0]
+        self.assertEqual(F.classify([det(35.78, 51.30, frp=20, date="2025-06-14", dn="N")], "iran", ref=r)[0]["c"], "unex")  # tuned default
+        with mock.patch.dict(F.W, energy_sens=1):            # depots as energy sites: off since the tuning (it cost more than it caught)
+            p = F.classify([det(35.78, 51.30, frp=20, date="2025-06-14", dn="N")], "iran", ref=r)[0]
         self.assertEqual(p["c"], "anom")
         self.assertEqual(p["esite"], 1)
         self.assertIn("At Shahran depot, a fuel depot that shows no routine heat", p["why"])
@@ -129,7 +132,7 @@ class TestFireCls(unittest.TestCase):
 
     def test_rarely_lit_spot_at_a_plant_is_scored_but_a_listed_flare_stays_routine(self):
         i, j = F.fine(30.0, 48.0)
-        cells = {(i, j): row(d={2023: 2, 2024: 3, 2025: 1})}       # 6 days in three years: under usual_days
+        cells = {(i, j): row(d={2023: 1, 2024: 2, 2025: 1})}       # 4 days in three years: under usual_days
         plant = {"name": "Refinery", "kind": "oilgas", "lat": 30.0, "lon": 48.0}
         p = F.classify([det(30.0, 48.0, frp=8)], "iran", ref=ref(dict(cells), sites=[plant]))[0]
         self.assertIn(p["c"], ("unex", "anom"))
@@ -148,6 +151,10 @@ class TestFireCls(unittest.TestCase):
             sites.append({"name": f"Plant {k}", "kind": "power", "lat": la, "lon": lo})
         r = ref(cells, sites=sites)
         self.assertEqual(r.ceiling("power"), 15.0)
+        self.assertEqual(F.classify([det(31.0, 50.0, frp=40)], "iran", ref=r)[0]["c"], "ind")      # the test is off by default
+        patch = mock.patch.dict(F.W, similar_x=2.0, similar_add=20)
+        patch.start()
+        self.addCleanup(patch.stop)
         # Plant 0 usually reaches 5 MW: 40 MW is under the old bar (105 MW) but twice its usual + 20 and over what similar plants reach
         p = F.classify([det(31.0, 50.0, frp=40)], "iran", ref=r)[0]
         self.assertEqual(p["c"], "hot")
