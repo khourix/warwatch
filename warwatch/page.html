@@ -38,19 +38,22 @@
 
 :root{
   color-scheme:dark;
-  --bg:oklch(0.15 0 0); --panel:oklch(0.185 0.004 260); --panel2:oklch(0.225 0.005 260); --panel3:oklch(0.265 0.006 260);
-  --line:oklch(0.3 0.006 260); --line2:oklch(0.4 0.01 255); --ink:oklch(0.96 0.004 250); --mute:oklch(0.74 0.01 255); --dim:oklch(0.64 0.01 255);
+  /* Night ops. Colour rules in docs/COLOUR.md: cool neutrals step back, one warm scale means "unusual", cyan means
+     "you can click this, or you picked it" and never carries data. */
+  --bg:#0b0e12; --panel:#12161b; --panel2:#181d23; --panel3:#20262d;
+  --line:#252c34; --line2:#343c46; --ink:#eef1f4; --mute:#b0b8c1; --dim:#868f99; --faint:#59626c;
   --sel:oklch(0.27 0.03 215); --accent:#3bdfef; --accent-ink:#04222b;
-  --ocean:#0b0d11; --land:url(#gLand); --land-th:url(#gLandTh); --border:#3d4853; --border-th:#8fa1b0;
-  /* Colour rules in docs/COLOUR.md. Hue = kind of thing, shape = type, fill = combat or strong, fading = age.
-     Every metric gets a colour; one that is not validated yet gets a dashed outline and a shadow tag, not grey. */
+  --ocean:#090c10; --land:url(#gLand); --land-th:url(#gLandTh); --border:#2d353e; --border-th:#46515c;
   --n1:#3b4148; --n2:#5a636c; --n3:#8a939c; --n4:#b6bec6; --n5:#e8ecf0;
-  --e1:#2b6d7c; --e2:#2992a4; --e3:#2bb8ca; --e4:#3bdfef;
-  /* categorical: hue = kind of thing, shape = type, fill = combat or strong, fade = age */
-  --c-air:#3bdfef; --c-sea:#6d8dff; --c-inc:#ff6fb1; --c-fire:#b8e04a; --c-warn:#b08cff; --c-strong:#ff6fb1; --c-tell:#b8e04a; --c-cov:#b08cff; --c-normal:#46c28a;
-  --r1:#f4d846; --r2:#fb8e22; --r3:#f0405a;
+  --e1:#38414a; --e2:#59626c; --e3:#b0b8c1; --e4:#eef1f4;
+  /* the warm scale: s0 and s1 are the calm steps, then Watch, Elevated, Critical. t1 to t3 are the same three over land, as
+     map tints. Context marks (aircraft, ships, routine fires) are near-white with a dark halo; shape tells their kind. */
+  --s0:#222930; --s1:#38414a; --t1:#504132; --t2:#4e3327; --t3:#4b282a; --ctx:#dfe5ea; --halo:#07090c;
+  --c-air:var(--ctx); --c-sea:var(--ctx); --c-inc:var(--r2); --c-fire:var(--r1); --c-warn:var(--ctx); --c-strong:var(--r2); --c-tell:var(--r1); --c-cov:var(--mute); --c-normal:#6b747e;
+  --r1:#f4ad62; --r2:#ec7838; --r3:#e14d44;
+  --ease:cubic-bezier(.2,.7,.2,1); --d1:120ms; --d2:200ms; --d3:320ms;
   --normal:var(--c-normal); --watch:var(--r1); --elevated:var(--r2); --critical:var(--r3); --na:var(--n2);
-  --glass:rgba(22,24,28,.95); --tell:var(--c-tell);
+  --glass:rgba(18,22,27,.96); --tell:var(--c-tell);
   --mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --dh:200px;
@@ -70,8 +73,11 @@ a{color:var(--accent)}
 #app{display:flex;height:100%}
 #col{flex:1;min-width:0;display:flex;flex-direction:column}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--c);display:inline-block;flex:none}
-.lv{display:inline-flex;align-items:center;border-radius:999px;padding:1px 8px;font:600 10.5px/1.5 var(--sans);letter-spacing:.06em;color:#0b0b0c;background:var(--c);white-space:nowrap}
-.lv.n{background:color-mix(in oklab,var(--c) 22%,transparent);color:var(--ink);box-shadow:none;outline:1.5px dashed var(--c);outline-offset:-1.5px}
+.lv{display:inline-flex;align-items:center;border-radius:999px;padding:1px 8px;font:600 10.5px/1.5 var(--sans);letter-spacing:.06em;color:#1a1009;background:var(--c);white-space:nowrap}
+.lv.n{background:transparent;color:var(--mute);box-shadow:none;outline:1px solid var(--line2);outline-offset:-1px}
+.act{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:1px 8px;font:600 10.5px/1.5 var(--sans);letter-spacing:.06em;color:var(--mute);outline:1px dashed var(--line2);outline-offset:-1px;white-space:nowrap;cursor:help;vertical-align:middle}
+.act.on{color:var(--r1);outline-color:var(--r1)}
+.act i{font-style:normal;font-weight:500;color:var(--dim);letter-spacing:.04em}
 .shadowb{font:500 11px var(--mono);border:1px dashed var(--line2);color:var(--mute);border-radius:6px;padding:3px 8px;white-space:nowrap;flex:none;cursor:help}
 .tchip{display:inline-flex;align-items:center;font:500 10.5px/1.5 var(--mono);color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:0 7px;white-space:nowrap;flex:none}
 .tchip.on{color:#1a0d02;background:var(--tell);border-color:var(--tell);font-weight:600}
@@ -103,7 +109,7 @@ a{color:var(--accent)}
 .chip.on{border-color:var(--accent);color:var(--ink);background:var(--sel)}
 .chip b{font:500 10.5px var(--mono);color:var(--dim)}
 .ty{font-size:10.5px;padding:1px 6px;border-radius:5px;border:1px solid var(--line);color:var(--mute);white-space:nowrap}
-.ty.ld{border-color:oklch(0.55 0.1 205);color:var(--accent)}
+.ty.ld{border-color:var(--line2);color:var(--ink)}
 .sh{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin:6px 0;display:flex;align-items:center;gap:6px}
 .sh small{margin-left:auto;text-transform:none;letter-spacing:0;font-size:11px}
 .empty{color:var(--mute);padding:14px 8px;font-size:12.5px}
@@ -244,29 +250,37 @@ main{flex:1;min-height:0;display:flex;position:relative}
 #map{width:100%;height:100%;display:block;cursor:grab;touch-action:none;user-select:none}
 #map.drag{cursor:grabbing}
 .c{fill:var(--land);stroke:var(--border);stroke-width:.8px;vector-effect:non-scaling-stroke;stroke-linejoin:round;cursor:pointer}
-.c.th{fill:var(--land-th);stroke:var(--border-th);stroke-width:1.4px}
+.c.th{fill:var(--land-th);stroke:var(--border-th);stroke-width:1px}
 .c:hover{fill:url(#gHover)}
-.c.a2{fill:#242435}.c.a3{fill:#2d2a45}.c.a4{fill:#383158}
-.c.th.a2{fill:#2e3245}.c.th.a3{fill:#363553}.c.th.a4{fill:#413a66}
+/* US travel advice: a third party's judgement, so a neutral lift by step that never reads as a WarWatch level */
+.c.a2{fill:#1f262e}.c.a3{fill:#262e37}.c.a4{fill:#2e3741}
+.c.th.a2{fill:#232a33}.c.th.a3{fill:#2a323c}.c.th.a4{fill:#323b46}
+/* a theatre's land takes its level: a soft tint, a soft inner glow and a crisp rim (paintTints) */
+.c.th.l2{fill:url(#gT1)}.c.th.l3{fill:url(#gT2)}.c.th.l4{fill:url(#gT3)}
+.c.th.l2:hover,.c.th.l3:hover,.c.th.l4:hover{filter:brightness(1.18)}
+.rim{fill:none;stroke-width:1.4px;stroke-opacity:.9;vector-effect:non-scaling-stroke;stroke-linejoin:round;pointer-events:none}
+.glow{fill:none;stroke-width:9px;stroke-opacity:.16;vector-effect:non-scaling-stroke;pointer-events:none}
 .lab{font-weight:600;fill:#b9c3cc;paint-order:stroke;stroke:url(#gInk);stroke-linejoin:round;pointer-events:none;text-anchor:middle;letter-spacing:.01em}
-.lab.city{text-anchor:start;fill:#e6d9ae;font-weight:500}
+.lab.city{text-anchor:start;fill:#d3d9df;font-weight:500}
 .lab.sea{fill:#5f7b93;font-style:italic;font-weight:500}
 .cityd{fill:#b9c2cc;stroke:url(#gInk);stroke-width:1.5px}
 .mk{cursor:pointer}
 .mk:hover .sc{filter:brightness(1.5)}
-.hub{fill:none;stroke:#5fb4d8;stroke-width:1.2px;stroke-dasharray:5 4;vector-effect:non-scaling-stroke;pointer-events:visibleStroke;cursor:pointer;opacity:.8}
+.hub{fill:none;stroke:#8a949e;stroke-width:1.2px;stroke-dasharray:5 4;vector-effect:non-scaling-stroke;pointer-events:visibleStroke;cursor:pointer;opacity:.8}
 @keyframes pulse{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(2.4)}}
 .pulse{animation:pulse 1.9s ease-out infinite;transform-box:fill-box;transform-origin:center}
 #pins{position:absolute;inset:0;pointer-events:none;z-index:5}
-.pdot{position:absolute;left:0;top:0;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:#dfe5eb;border:1.5px solid #0b0d11;box-shadow:0 0 0 1px #0007;pointer-events:auto;cursor:pointer}
+.pdot{position:absolute;left:0;top:0;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--ctx);border:1.5px solid var(--halo);box-shadow:0 0 0 1px #0007;pointer-events:auto;cursor:pointer}
 .pdot::after{content:'';position:absolute;inset:-9px}
 .plab.w{animation:pd 2s ease-out infinite}
 @keyframes pd{0%{box-shadow:0 0 0 0 color-mix(in oklab,var(--c) 55%,transparent),0 2px 10px #0008}100%{box-shadow:0 0 0 7px transparent,0 2px 10px #0008}}
-.plab{position:absolute;left:0;top:0;display:flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:999px;background:rgba(14,16,19,.93);border:1px solid var(--c);white-space:nowrap;font-size:12px;pointer-events:auto;cursor:pointer;box-shadow:0 2px 10px #0008}
-.plab:hover,.plab.hl{background:#1d2228;box-shadow:0 0 0 3px color-mix(in oklab,var(--c) 35%,transparent);z-index:2}
-.plab b{font:600 12.5px var(--mono)}
-.plab span{color:var(--mute)}.plab .tnm{color:var(--ink)}
-.pline{position:absolute;left:0;top:0;height:1.5px;margin-top:-.75px;background:#dfe5eb;transform-origin:0 50%;opacity:.55;pointer-events:none}
+.plab{position:absolute;left:0;top:0;display:flex;align-items:center;gap:7px;height:26px;padding:0 10px 0 8px;border-radius:999px;background:rgba(13,16,20,.93);border:1.5px solid var(--c);white-space:nowrap;font-size:12px;pointer-events:auto;cursor:pointer;box-shadow:0 2px 10px #0008}
+.plab:hover,.plab.hl{background:#181d23;box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 35%,transparent);z-index:2;transition:box-shadow var(--d1) var(--ease)}
+.plab b{font:600 10.5px var(--sans);letter-spacing:.06em;color:var(--c)}
+.plab i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
+.plab.n{--c:#3a424b}.plab.n i{background:#6b747e}
+.plab span{color:var(--mute)}.plab .tnm{color:var(--ink);font-weight:500}
+.pline{position:absolute;left:0;top:0;height:1.5px;margin-top:-.75px;background:var(--ctx);transform-origin:0 50%;opacity:.55;pointer-events:none}
 #hcard{position:absolute;z-index:20;width:350px;background:var(--glass);border:1px solid var(--line2);border-radius:12px;box-shadow:0 18px 50px #000b;backdrop-filter:blur(8px);padding:12px 14px;display:none}
 #hcard .top{display:flex;align-items:center;gap:8px}
 #hcard h3{margin:0;font-size:15px;flex:1}
@@ -281,7 +295,7 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .drv div{display:grid;grid-template-columns:minmax(0,1fr) 80px;gap:8px;align-items:center;font-size:12px;color:#c9cfd5}
 .drv span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .drv u{display:block;height:6px;border-radius:3px;background:var(--panel3);position:relative;overflow:hidden;text-decoration:none}
-.drv u i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:3px}
+.drv u i{position:absolute;left:0;top:0;bottom:0;background:#b0b8c1;border-radius:3px}
 .rail{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:6px;z-index:8}
 .rail button{width:38px;height:38px;border-radius:10px;background:var(--glass);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--mute);position:relative}
 .rail button:hover,.rail button.on{color:var(--ink);border-color:var(--line2)}
@@ -380,18 +394,59 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .stabs b{font:500 10.5px var(--mono);background:var(--panel3);border-radius:6px;padding:0 5px;color:var(--mute)}
 .stabs b.hot{background:color-mix(in oklab,var(--critical) 40%,var(--panel3));color:#fff}
 .pbody{flex:1;min-height:0;overflow:auto;padding:10px 16px 16px;scrollbar-width:thin}
-.dom{display:grid;grid-template-columns:92px minmax(0,1fr) 46px 36px;gap:2px 10px;align-items:center;padding:6px 8px;border-radius:8px;border:1px solid transparent;cursor:pointer}
-.dom:hover{background:var(--panel2);border-color:var(--line)}
-.dom .nm{font-size:12.5px}
-.dom .nm small{display:block;color:var(--dim);font-size:10.5px}
-.zbar{height:12px;position:relative}
-.zbar .trk{position:absolute;left:0;right:0;top:4px;height:4px;background:var(--panel3);border-radius:2px}
-.zbar i{position:absolute;top:2px;height:8px;left:0;border-radius:3px;background:var(--c)}
-.zbar u{position:absolute;top:0;bottom:0;width:1px;background:#8a949e;text-decoration:none}
-.zv{font:600 12.5px var(--mono);text-align:right}
-.wt{font:11px var(--mono);color:var(--dim);text-align:right}
-.drow{font-size:11.5px;color:var(--dim);grid-column:1/-1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.drow a{color:var(--mute);text-decoration:none}.drow a:hover{color:var(--ink);text-decoration:underline}
+/* the ladder: the five signal groups slow to fast, one line each, each opens in place */
+.lgh,.lgr{display:grid;grid-template-columns:118px minmax(0,1fr) 52px;gap:10px;align-items:center}
+.lgh{padding:0 6px 4px;font:500 10px var(--mono);color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.lgh .ax{display:flex;justify-content:space-between}.lgh>span:last-child{text-align:right}
+.lgr{padding:5px 6px;border-radius:6px;cursor:pointer;transition:background var(--d1) var(--ease);outline:none;border:0;background:none;color:inherit;font:inherit;text-align:left;width:100%}
+.lgr:hover,.lgr:focus-visible,.lgr[aria-expanded="true"]{background:var(--panel2)}
+.lgr:focus-visible{box-shadow:inset 0 0 0 1px var(--accent)}
+.lgr[aria-expanded="true"]{border-radius:6px 6px 0 0}
+.lgn{display:flex;gap:7px;align-items:center;min-width:0}
+.lgn b{color:var(--ink);font-weight:600;font-size:13px;white-space:nowrap}
+.lgn .ic{color:var(--mute)}
+.lgn .ic.cv{width:10px;height:10px;color:var(--dim);transition:transform var(--d2) var(--ease)}
+.lgr[aria-expanded="true"] .cv{transform:rotate(90deg)}
+.lgs{position:relative;height:18px;display:grid;grid-template-columns:repeat(var(--n),1fr);gap:1px}
+.lgs i{border-radius:1px}.lgs i.na{background:repeating-linear-gradient(135deg,#1c2229 0 2px,transparent 2px 4px)}
+.lgs u{position:absolute;top:-3px;bottom:-3px;width:1.5px;background:var(--ink);opacity:.55;border-radius:1px}
+.lgv{text-align:right}
+.lgv .zc{display:inline-block;min-width:40px;text-align:center;font:600 11.5px var(--mono);padding:2px 5px;border-radius:4px}
+.lgw{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--d2) var(--ease)}
+.lgw.on{grid-template-rows:1fr}.lgw>div{overflow:hidden;min-height:0}
+.lgd{margin:0 0 6px;padding:8px 10px 10px 30px;background:var(--panel2);border-radius:0 0 6px 6px;border-top:1px solid var(--line);display:grid;gap:7px;font-size:12px;color:var(--mute)}
+.lgd .q{color:var(--ink);font-weight:500}
+.lgd a{color:var(--mute);cursor:pointer}.lgd a:hover{color:var(--ink)}
+.lgf{display:grid;grid-template-columns:minmax(0,1fr) 84px 44px;gap:10px;align-items:center;font-size:11.5px;color:var(--mute);cursor:pointer;padding:2px 0}
+.lgf>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lgf:hover>span:first-child{color:var(--ink)}
+.lgf .bar{height:6px;background:var(--panel3);border-radius:3px;position:relative;overflow:hidden}.lgf .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+.lgf b{font:600 11.5px var(--mono);text-align:right}
+.lga{background:none;border:0;padding:2px 0;color:var(--accent);font:500 12px var(--sans);cursor:pointer;justify-self:start;display:inline-flex;align-items:center;gap:3px;text-transform:none;letter-spacing:0}
+.lga:hover{text-decoration:underline}
+/* the feed: what changed, newest first */
+.fx{display:grid;grid-template-columns:44px 14px minmax(0,1fr);gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--line);cursor:pointer;transition:background var(--d1) var(--ease)}
+.fx:hover{background:var(--panel2)}
+.fx time{color:var(--dim);font:11px var(--mono)}
+.fx .sp{width:10px;height:10px;border-radius:3px;justify-self:center;box-shadow:0 0 0 1.5px #fff,0 0 0 3px var(--halo)}
+.fx .sp.c{background:var(--halo);box-shadow:0 0 0 1.5px var(--ctx),0 0 0 3px var(--halo)}
+.fx>span:last-child{min-width:0}
+.fx b{display:block;color:var(--ink);font-weight:500;font-size:12.5px;line-height:1.35}
+.fx small{display:block;color:var(--dim);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* the region matrix: theatres by groups, warm only where something moved */
+.mx{width:100%;border-collapse:separate;border-spacing:3px;font-size:12px}
+.mx th{background:none;padding:0 0 2px;text-align:center;font:500 10px var(--sans);color:var(--dim);border:0;text-transform:none;letter-spacing:0;white-space:nowrap}
+.mx th .ic{display:block;margin:0 auto 2px;width:15px;height:15px;color:var(--mute)}
+.mx th:first-child{text-align:left;vertical-align:bottom}
+.mx td{padding:0;border:0}
+.mx td.n{padding:5px 4px 5px 0;cursor:pointer;max-width:150px}
+.mx td.n .dot{margin-right:7px;vertical-align:1px}
+.mx td.n .mcz{display:block;margin-left:15px;color:var(--dim);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mx td.c{height:26px;border-radius:4px;cursor:pointer;text-align:center;font:600 11px var(--mono);color:var(--dim);min-width:36px;transition:filter var(--d1) var(--ease)}
+.mx td.c.w{color:#1a1009}.mx td.c:hover{filter:brightness(1.25)}
+.mx td.r{text-align:right;font:600 11.5px var(--mono);padding-left:4px}
+.mx tbody tr{transition:opacity var(--d1) var(--ease)}.mx tbody:hover tr:not(:hover){opacity:.6}
+.mx tr:hover td.n .tnm{color:var(--accent)}
 .tool{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 8px}
 .tool input{flex:1;min-width:140px;height:30px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:0 10px;outline:none}
 .tool input:focus{border-color:var(--accent)}
@@ -420,7 +475,6 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .cmp .r{text-align:right}
 .cmp .cause{color:var(--mute)}
 .tw{overflow-x:auto;scrollbar-width:thin}
-.cmp.rgt{table-layout:auto}.cmp.rgt td,.cmp.rgt th{white-space:nowrap;padding-left:5px;padding-right:5px}.cmp.rgt td.cause{white-space:normal;min-width:120px;font-size:12px;line-height:1.35}
 .about p{margin:0 0 10px;color:#c4cad0;font-size:12.5px;line-height:1.55}
 .about b{color:var(--ink)}
 
@@ -675,7 +729,6 @@ table.st td:last-child{text-align:right;font-weight:600}
   .prow .r{display:flex;flex-direction:column;align-items:flex-end;gap:3px}.prow .r .xu{font:11px var(--mono);color:var(--mute)}
 }
 @media(max-width:560px){
-  .cmp.rgt .cv{display:none}
   .hs{grid-template-columns:repeat(2,minmax(0,1fr))}
   .k3w b{font-size:18px}
   .ttl h1{font-size:14px}
@@ -695,11 +748,9 @@ table.st td:last-child{text-align:right;font-weight:600}
 .ping{fill:none;stroke:#e9f4ff;stroke-width:1.6;transform-box:fill-box;transform-origin:center;opacity:0;animation:ping 1.5s ease-out .3s 3;pointer-events:none}
 #tip.nf{animation:none}
 ::view-transition-old(root),::view-transition-new(root){animation-duration:.2s}
-.cmp .cz{display:none}
 @media(max-width:900px){
   /* phone: the region table puts a theatre's main cause under its name, two lines at most, instead of a tall column */
   .cmp th.cause,.cmp td.cause{display:none}
-  .cmp .cz{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;font-size:11.5px;line-height:1.3;color:var(--mute);font-weight:400;margin-top:2px}
   .cmp td:first-child{white-space:normal}
   /* a grab handle says a sheet can be dragged down */
   #pop.on::before,#card::before,#modal .box::before{content:"";position:absolute;top:6px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--line2);pointer-events:none;z-index:3}
@@ -718,11 +769,13 @@ table.st td:last-child{text-align:right;font-weight:600}
 <body>
 <!-- Dark fills are drawn through gradients and patterns: browsers with a forced dark mode lighten plain dark fills, which washed out the map and its label outlines. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-<linearGradient id="gLand"><stop offset="0" stop-color="#1b2128"/><stop offset="1" stop-color="#1b2128"/></linearGradient>
-<linearGradient id="gLandTh"><stop offset="0" stop-color="#27313b"/><stop offset="1" stop-color="#27313b"/></linearGradient>
-<linearGradient id="gHover"><stop offset="0" stop-color="#2c3640"/><stop offset="1" stop-color="#2c3640"/></linearGradient>
+<linearGradient id="gLand"><stop offset="0" stop-color="#161b21"/><stop offset="1" stop-color="#161b21"/></linearGradient>
+<linearGradient id="gLandTh"><stop offset="0" stop-color="#1d242c"/><stop offset="1" stop-color="#1d242c"/></linearGradient>
+<linearGradient id="gHover"><stop offset="0" stop-color="#262e37"/><stop offset="1" stop-color="#262e37"/></linearGradient>
+<linearGradient id="gT1"><stop offset="0" stop-color="#504132"/><stop offset="1" stop-color="#504132"/></linearGradient>
+<linearGradient id="gT2"><stop offset="0" stop-color="#4e3327"/><stop offset="1" stop-color="#4e3327"/></linearGradient>
+<linearGradient id="gT3"><stop offset="0" stop-color="#4b282a"/><stop offset="1" stop-color="#4b282a"/></linearGradient>
 <linearGradient id="gInk"><stop offset="0" stop-color="#050506"/><stop offset="1" stop-color="#050506"/></linearGradient>
-<!-- US travel advice: the reference family (a third party's judgement), a muted violet tint that steps up by level. It never reads as a WarWatch level or an observation, and stays quiet under the markers. -->
 </defs></svg>
 <div id="app">
 <aside id="sb"></aside>
@@ -768,10 +821,11 @@ const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySel
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const store = {get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }, set(k, v){ try { localStorage.setItem(k, v); } catch (e) {} }};
 const PM = D.model && D.model.active ? D.model : null;
-/* Nothing is coloured by a measure that has not passed its release checks (part 3 of the review). While the model runs in
-   shadow mode the level keeps its word and gets the neutral ramp; warm colours mean a validated level and nothing else. */
-const LEVEL = {'Critical':'#f0405a','Elevated':'#fb8e22','Watch':'#f4d846','Normal':'#46c28a','insufficient data':'#5a636c'};   // the same colours in shadow; shadow is marked by a dashed outline
-const TELLC = '#b8e04a';
+/* One warm scale for everything unusual (docs/COLOUR.md). A level says how unusual a theatre's signals are now; it is a
+   description, not a forecast, so it is coloured whether or not the 30-day model has passed its release checks. */
+const LEVEL = {'Critical':'#e14d44','Elevated':'#ec7838','Watch':'#f4ad62','Normal':'#6b747e','insufficient data':'#3d454e'};
+const TELLC = '#f4ad62';
+const CTX = '#dfe5ea', HALO = '#07090c', WARMINK = '#1a1009';
 const RANKL = {'insufficient data':0, 'Normal':1, 'Watch':2, 'Elevated':3, 'Critical':4};
 const T_WATCH = D.thresholds[0], T_SIG = D.thresholds[1];
 const BANDS = (D.model && D.model.bands) || [0.05, 0.1, 0.25];
@@ -791,8 +845,11 @@ function pct(p){ return p == null ? '–' : (p < 0.1 ? (100 * p).toFixed(1) : Ma
 const ppt = d => (d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(100 * d).toFixed(1);
 const fs = s => s == null ? '–' : Math.round(s);
 const fmtz = z => z == null ? 'n/a' : (z > 0 ? '+' : '') + z.toFixed(1);
-const zcol = z => z == null ? '#5a636c' : z >= T_SIG ? '#ff6fb1' : z >= T_WATCH ? '#3bdfef' : z >= 1 ? '#c9d1d9' : '#7d8790';   // pink = strong, cyan = unusual, light = mild, grey = normal
-const zsty = z => z != null && z >= T_SIG ? 'color:#2a0618;background:#ff6fb1;border-radius:4px;padding:0 4px;font-weight:700' : z != null && z >= T_WATCH ? 'color:#3bdfef;font-weight:700' : 'color:' + zcol(z);
+/* the warm scale in SD from normal: grey below 1, light 1 to 2, then Watch amber from 2 (unusual), Elevated orange from 3
+   (strong) and Critical red from 4.5. zcell is the same scale as a cell fill, with two calm steps below 2. */
+const zcol = z => z == null ? '#59626c' : z >= 4.5 ? '#e14d44' : z >= T_SIG ? '#ec7838' : z >= T_WATCH ? '#f4ad62' : z >= 1 ? '#b0b8c1' : '#868f99';
+const zsty = z => z != null && z >= T_SIG ? `color:${WARMINK};background:${zcol(z)};border-radius:4px;padding:0 4px;font-weight:700` : z != null && z >= T_WATCH ? `color:${zcol(z)};font-weight:700` : 'color:' + zcol(z);
+const zcell = z => z == null ? 'transparent' : z >= T_WATCH ? zcol(z) : z >= 1.5 ? '#38414a' : '#222930';
 const lc = s => String(s).replace(/^([A-Z])([a-z])/, (m, a, b) => a.toLowerCase() + b);
 const shortL = s => String(s || '').replace(/ \([^()]*\)$/, '');
 /* Advisory steps and CrisisWatch ratings are actions or judgements, not levels: they read as what happened and when, never as SD. */
@@ -894,11 +951,14 @@ const ICON = {
   search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>', group:'<path d="M4 6h16M4 12h10M4 18h6"/>',
   health:'<path d="M3 12h4l3-7 4 14 3-7h4"/>', book:'<path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM4 5v16"/>', gap:'<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>',
   check:'<path d="M4 6h10M4 12h7M4 18h7"/><path d="M14 15l3 3 5-6"/>', more:'<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>', back:'<path d="M15 6l-6 6 6 6"/>', link:'<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>',
-  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', ext:'<path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/>'
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  g_log:'<path d="M3.6 7.8 12 3.6l8.4 4.2v8.4L12 20.4l-8.4-4.2z M3.6 7.8 12 12l8.4-4.2 M12 12v8.4"/>', g_mkt:'<path d="M3.6 18l4.8-6 3.6 3.6 7.2-9.6 M15.6 6h3.6v3.6"/>',
+  g_ppl:'<circle cx="12" cy="7.8" r="3.6"/><path d="M4.8 20.4c.7-4.1 3.6-6 7.2-6s6.5 1.9 7.2 6"/>', g_news:'<path d="M4.8 4.8h14.4v14.4H4.8z M8.4 9.6h7.2 M8.4 13.2h7.2 M8.4 16.8h3.6"/>',
+  g_phy:'<circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="4.2" opacity=".6"/><path d="M12 12l6-6"/>', ext:'<path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/>'
 };
 const ic = (n, c) => `<svg class="ic ${c || ''}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
 const inf = t => `<i class="info" data-tip="${esc(t)}">i</i>`;
-const lvPill = l => `<span class="lv ${PM ? '' : 'n'}" style="--c:${LEVEL[l]}">${esc(String(l).toUpperCase())}</span>`;
+const lvPill = l => `<span class="lv${RANKL[l] < 2 ? ' n' : ''}" style="--c:${LEVEL[l]}">${esc(String(l).toUpperCase())}</span>`;
 const dot = l => `<span class="dot" style="--c:${LEVEL[l]}"></span>`;
 /* a theatre name carries its own state: tinted by level when the model is live (in shadow the levels stay uncoloured), and an
    orange contour around it when a timing tell fired this week. No separate dot in front of it. Rows that already show the
@@ -932,6 +992,16 @@ function changeTxt(t, cls){
    them are fitted: pooled with their region's theatres because too few events happened on their ground. */
 const SUBT = D.sub || {}, SPILL = D.spill || {};
 const isSpill = t => !!SPILL[t];
+const ACTF = {adsb_fighter:'Fighter aircraft', wiki:'Wikipedia attention', gdelt_accel:'Severe-event share in the news record', tells:'Timing tells', adsb_tanker:'Tanker aircraft', base:'Bases by satellite radar'};
+const actChip = t => {   // Activity v1 (docs/ACTIVITY.md): experimental, beside the level, never instead of it
+  const a = D.theatres[t] && D.theatres[t].act; if (!a) return '';
+  const k = Object.keys(ACTF), on = k.filter(f => a.f[f]), miss = k.filter(f => a.f[f] == null);
+  const tip = `Activity index, experimental: ${a.i.toFixed(1)} of 100, ${a.on ? 'active' : 'quiet'} this week. `
+    + (on.length ? `On: ${on.map(f => ACTF[f]).join(', ')}. ` : 'No family on. ')
+    + (miss.length ? `No recent data: ${miss.map(f => ACTF[f]).join(', ')}. ` : '')
+    + 'Before new events it was active 23% of the time against 15% of calm weeks. It marks a busy theatre, not an attack date, and it does not change the level.';
+  return `<span class="act${a.on ? ' on' : ''}" data-tip="${esc(tip)}" tabindex="0" aria-label="${esc(tip)}">${a.on ? 'ACTIVE' : 'QUIET'}<i>EXP</i></span>`;
+};
 const spillTag = (cls) => `<span class="${cls || 'subl'}" data-tip="No war of its own: at risk because a neighbour's war reaches it">spillover</span>`;
 function gateWhy(){
   const G = (D.model || {}).gates || {}, why = [];
@@ -984,13 +1054,13 @@ const fireShown = f => !fireExpl(f) || layerState.firesx;
 const isoDay = (d, k) => new Date(Date.parse(String(d).slice(0, 10) + 'T00:00:00Z') + k * 864e5).toISOString().slice(0, 10);
 const cbUrl = (ll, d, layer, zoom) => `https://browser.dataspace.copernicus.eu/?zoom=${zoom || 14}&lat=${ll[0]}&lng=${ll[1]}&themeId=DEFAULT-THEME&datasetId=S2_L2A_CDAS&layerId=${layer || '1_TRUE_COLOR'}&fromTime=${isoDay(d, -10)}T00%3A00%3A00.000Z&toTime=${isoDay(d, 10)}T23%3A59%3A59.999Z&dateMode=TIME%20RANGE`;
 const wvUrl = (ll, d) => `https://worldview.earthdata.nasa.gov/?v=${(ll[1] - .15).toFixed(3)},${(ll[0] - .1).toFixed(3)},${(ll[1] + .15).toFixed(3)},${(ll[0] + .1).toFixed(3)}&l=VIIRS_SNPP_Thermal_Anomalies_375m_All,VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_NOAA21_Thermal_Anomalies_375m_All,VIIRS_SNPP_CorrectedReflectance_TrueColor&t=${String(d).slice(0, 10)}-T00%3A00%3A00Z`;
-/* military bases watched by satellite (basewatch.py): grey = usual or no data, purple = one pass differed, pink = two passes agree */
-const BASEC = {out: '#ff6fb1', in: '#ff6fb1', changed: '#b08cff', normal: '#8a949e', nodata: '#5a636c', optical: '#8a949e', viewer: '#8a949e'};
+/* military bases watched by satellite (basewatch.py): a hollow white square = usual, amber = one pass differed, orange = two passes agree */
+const BASEC = {out: '#ec7838', in: '#ec7838', changed: '#f4ad62', normal: CTX, nodata: '#868f99', optical: '#868f99', viewer: '#868f99'};
 const BASEN = {out: 'Far fewer than usual on two passes', in: 'Far more than usual on two passes', changed: 'One pass differed from usual', normal: 'Usual', nodata: 'No recent radar pass', optical: 'Optical images only', viewer: 'Images to look at (no automated check)'};
 const BASEK = {air: 'Air base', naval: 'Naval base', 'air+naval': 'Air and naval base', launch: 'Launch site', port: 'Port', missile: 'Missile base', airdef: 'Air-defence site', depot: 'Army depot'};
 const chipImg = (src, cap) => `<figure class="chip-i"><img src="${esc(src)}" alt="${esc(cap)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',textContent:'No image yet'}))"><figcaption>${esc(cap)}</figcaption></figure>`;
 const chipRow = (pairs) => `<div class="chips-i">${pairs.filter(p => p[0]).map(p => chipImg(p[0], p[1])).join('')}</div><p class="hint" style="margin:2px 0 8px">Contains modified Copernicus Sentinel data ${new Date().getUTCFullYear()}.</p>`;
-const KIND = {sqk:['plane','#f0405a','Air'], inc:['anchor','#ff6fb1','Sea'], ships:['ship','#6d8dff','Sea'], nga:['warn','#b08cff','Warnings'], czib:['diamond','#b08cff','Warnings'], fires:['fire','#b8e04a','Ground'], bases:['base','#ff6fb1','Ground']};
+const KIND = {sqk:['plane','#e14d44','Air'], inc:['anchor','#ec7838','Sea'], ships:['ship',CTX,'Sea'], nga:['warn','#b0b8c1','Warnings'], czib:['diamond','#b0b8c1','Warnings'], fires:['fire','#f4ad62','Ground'], bases:['base','#ec7838','Ground']};
 function buildAlerts(){
   const out = [], M = D.map;
   if (!M) return out;
@@ -1296,7 +1366,7 @@ document.addEventListener('click', e => {
 let tipEl = null;
 document.addEventListener('click', e => {
   if (!matchMedia('(hover: none)').matches) return;
-  const el = e.target.closest('.info,.shadowb');
+  const el = e.target.closest('.info,.shadowb,.act');
   if (el && el.dataset.tip) { e.stopPropagation(); e.preventDefault(); if (tipEl === el) { tipHide(); tipEl = null; } else { tipShow(el, esc(el.dataset.tip)); tipEl = el; } return; }
   if (tipEl) { tipHide(); tipEl = null; }
 }, true);
@@ -1343,9 +1413,9 @@ const LAYERS = [
   ['Air and sea', [['mil', 'Military aircraft', 'plane'], ['sqk', 'Emergency squawks', 'warn'], ['ships', 'Warships and tracked ships', 'ship'], ['inc', 'Maritime incidents', 'anchor']]],
   ['Warnings and ground', [['nga', 'Hazard warnings (NGA)', 'warn'], ['czib', 'Airspace bulletins (EASA)', 'diamond'], ['fires', 'Fires and heat (NASA)', 'fire'], ['firesx', 'Explained fires (industry, farm)', 'fire'], ['bases', 'Military bases (satellite)', 'base'], ['choke', 'Chokepoints', 'pin']]],
   ['Background', [['zones', 'Theatre areas', 'zones'], ['adv', 'US travel advice', 'hatch'], ['hubs', 'GPS-jamming sample zones', 'jam'], ['cities', 'Cities', 'city'], ['labels', 'Country names', 'text']]]];
-/* aircraft and ships: e4 combat roles and warships, e2 support roles, n3 the rest; the role is in the legend and the card */
-const CLS = {lift:['Airlift','#3bdfef'], tanker:['Air refuelling','#3bdfef'], isr:['Surveillance','#3bdfef'], fighter:['Fighter','#3bdfef'],
-  bomber:['Bomber','#3bdfef'], uav:['Drone','#3bdfef'], heli:['Helicopter','#3bdfef'], other:['Other military','#8a939c']};
+/* aircraft and ships are context: near-white shapes with a dark halo, so they read on any tint. Shape = role, hollow = support */
+const CLS = {lift:['Airlift',CTX], tanker:['Air refuelling',CTX], isr:['Surveillance',CTX], fighter:['Fighter',CTX],
+  bomber:['Bomber',CTX], uav:['Drone',CTX], heli:['Helicopter',CTX], other:['Other military','#aab3bc']};
 const CLSWHY = {
   lift:'Airlifters move troops and equipment. A surge, followed by empty return flights, shows a deployment.',
   tanker:'Tankers refuel fighters and bombers in the air. Tankers, fighters and surveillance aircraft together can show a strike package.',
@@ -1355,7 +1425,7 @@ const CLSWHY = {
   uav:'Long-endurance drones collect intelligence and can strike.',
   heli:'Military helicopters: local operations, rescue and special forces.',
   other:'Other military aircraft: trainers, liaison, VIP and special missions.'};
-const SHIPK = {carrier:['Aircraft carrier','#6d8dff'], amphib:['Amphibious group','#6d8dff'], navy:['Naval vessel','#6d8dff'], tanker:['Oil tanker','#6d8dff'], cargo:['Cargo ship','#6d8dff'], other:['Vessel','#6d8dff']};
+const SHIPK = {carrier:['Aircraft carrier',CTX], amphib:['Amphibious group',CTX], navy:['Naval vessel',CTX], tanker:['Oil tanker',CTX], cargo:['Cargo ship',CTX], other:['Vessel',CTX]};
 const OBJ = {mil:[], sqk:[], ships:[], inc:[], nga:[], czib:[], fires:[], bases:[], choke:[], city:[], hub:[], country:[]};
 const classOff = {};
 const thOfCountry = {};
@@ -1454,16 +1524,19 @@ function zoomAt(f, cx, cy){
   view = {x: view.x + fx * (view.w - nw), y: view.y + fy * (h - nh), w: nw}; clampView(); applyView();
 }
 const AIRP = {fighter: 'M0,-8L5.5,6L0,3L-5.5,6Z', bomber: 'M0,-7L9,3L3,2L0,7L-3,2L-9,3Z', uav: 'M0,-5L4,4L-4,4Z', lift: 'M0,-8L1.6,-2L8,1L8,3L1.6,1.5L1.2,6L3,7.5L-3,7.5L-1.2,6L-1.6,1.5L-8,3L-8,1L-1.6,-2Z', tanker: 'M0,-8L1.6,-2L8,1L8,3L1.6,1.5L1.2,6L3,7.5L-3,7.5L-1.2,6L-1.6,1.5L-8,3L-8,1L-1.6,-2Z', isr: 'M0,-7L4.6,6L0,3.6L-4.6,6Z', heli: 'M-7,-7L7,7M7,-7L-7,7', other: 'M0,-4L4,0L0,4L-4,0Z'};
+/* a context mark: the shape drawn twice, first as a wide dark halo, then in near-white. Hollow = support role or civil ship. */
+const haloed = (tag, at, col, hollow) => `<${tag} ${at} fill="none" stroke="${HALO}" stroke-width="${hollow ? 4.5 : 3.5}" stroke-linejoin="round"/>` +
+  `<${tag} ${at} fill="${hollow ? HALO : col}" stroke="${hollow ? col : 'none'}" stroke-width="1.5" stroke-linejoin="round"/>`;
 const AIR = (trk, col, c) => { const k = AIRP[c] ? c : 'other', hollow = k === 'lift' || k === 'tanker' || k === 'isr', rot = `rotate(${trk == null ? 0 : trk})`;
-  if (k === 'heli') return `<circle r="4" fill="${col}" stroke="url(#gInk)"/><path d="${AIRP.heli}" stroke="${col}" stroke-width="1.6" transform="${rot}"/>`;
-  return (k === 'isr' ? `<circle r="9" fill="none" stroke="${col}" stroke-width="1" stroke-dasharray="2 2"/>` : '') + `<path d="${AIRP[k]}" fill="${hollow ? '#0b0d11' : col}" stroke="${hollow ? col : 'url(#gInk)'}" stroke-width="${hollow ? 1.5 : 1}" transform="${rot}"/>`; };
+  if (k === 'heli') return haloed('circle', 'r="4"', col) + `<path d="${AIRP.heli}" stroke="${HALO}" stroke-width="4" transform="${rot}"/><path d="${AIRP.heli}" stroke="${col}" stroke-width="1.6" transform="${rot}"/>`;
+  return (k === 'isr' ? `<circle r="9" fill="none" stroke="${HALO}" stroke-width="3"/><circle r="9" fill="none" stroke="${col}" stroke-width="1" stroke-dasharray="2 2"/>` : '') + `<g transform="${rot}">${haloed('path', `d="${AIRP[k]}"`, col, hollow)}</g>`; };
 function shipSvg(k){ const c = (SHIPK[k] || SHIPK.other)[1]; const big = k === 'carrier' || k === 'amphib';
-  return big ? `<path d="M-13,3L-9,-3L9,-3L13,0L9,5L-9,5Z" fill="${c}" stroke="url(#gInk)" stroke-width="1.4"/><rect x="-5" y="-6" width="6" height="3" fill="${c}" stroke="#04080c" stroke-width="1"/>`
-    : k === 'navy' ? `<path d="M-7,2L-4,-3L5,-3L8,0L5,4L-5,4Z" fill="${c}" stroke="url(#gInk)" stroke-width="1.2"/>` : `<path d="M-7,2L-4,-3L5,-3L8,0L5,4L-5,4Z" fill="#0b0d11" stroke="${c}" stroke-width="1.5"/>`; }
+  return big ? haloed('path', 'd="M-13,3L-9,-3L9,-3L13,0L9,5L-9,5Z"', c) + `<rect x="-5" y="-6" width="6" height="3" fill="${c}" stroke="${HALO}" stroke-width="1"/>`
+    : haloed('path', 'd="M-7,2L-4,-3L5,-3L8,0L5,4L-5,4Z"', c, k !== 'navy'); }
 /* recency reads the same way everywhere on the map: new = bright, solid, on top; old = faded, translucent, underneath.
-   fires come in three age bands, all lime and fading with age (last 24 h with a glow, 1 to 3 days, 3 to 7 days), size = radiative power,
-   a hollow grey ring = a routine source (burns on most days). City dots are neutral grey so a fire never reads as a city. */
-const FIRE_BANDS = [[24, '#b8e04a', 1, 'Last 24 hours'], [72, '#b8e04a', .55, '1 to 3 days ago'], [Infinity, '#b8e04a', .28, '3 to 7 days ago']];
+   fires come in three age bands that fade with age (last 24 h, 1 to 3 days, 3 to 7 days), size = radiative power. An unusual fire
+   is warm with a white ring; unexplained heat is a small grey context dot; a dashed grey ring = a routine source. */
+const FIRE_BANDS = [[24, '#f4ad62', 1, 'Last 24 hours'], [72, '#f4ad62', .6, '1 to 3 days ago'], [Infinity, '#f4ad62', .32, '3 to 7 days ago']];
 const fireBand = h => FIRE_BANDS.find(b => (h == null ? 36 : h) <= b[0]);
 const fireCol = h => fireBand(h)[1];
 const fireOp = h => fireBand(h)[2];
@@ -1476,10 +1549,13 @@ const isFresh = (d, hours) => { const h = ageH(d); return h != null && h <= hour
 const AGE_TIERS = [[24, 'Last 24 hours', 'New, last 24 hours'], [72, '1 to 3 days ago', '1 to 3 days old: dimmed'], [Infinity, 'More than 3 days ago', 'Older: faint outline']];
 const ageTier = h => h == null ? 1 : AGE_TIERS.findIndex(b => h <= b[0]);
 const byAge = (arr, f) => (arr || []).map((n, i) => [n, i, ageH(f(n))]).sort((a, b) => (b[2] == null ? 48 : b[2]) - (a[2] == null ? 48 : a[2]));
-/* draws one shape in its tier style; glyph is an optional inner mark (the '!' or the bar) */
-function ageShape(s, tag, at, col, ink, tier){
-  if (tier === 0) mk(tag, Object.assign({}, at, {fill: col, 'fill-opacity': .2, stroke: col, 'stroke-opacity': .35, 'stroke-width': 5}), s);   // halo
-  mk(tag, Object.assign({}, at, tier < 2 ? {fill: col, stroke: ink, 'stroke-width': 1.4} : {fill: col, 'fill-opacity': .1, stroke: col, 'stroke-width': 1, 'stroke-opacity': .45}), s);
+/* draws one shape in its tier style, readable on any tint: a dark halo under everything, then the shape. An alert pin (warm)
+   carries a white ring; a context mark (hollow) is a near-white outline. Older tiers fade. */
+function ageShape(s, tag, at, col, ink, tier, hollow){
+  if (tier === 0 && !hollow) mk(tag, Object.assign({}, at, {fill: col, 'fill-opacity': .18, stroke: col, 'stroke-opacity': .3, 'stroke-width': 9}), s);   // soft glow: new alerts only
+  mk(tag, Object.assign({}, at, {fill: 'none', stroke: HALO, 'stroke-width': hollow ? 4.5 : 6, 'stroke-linejoin': 'round', 'stroke-opacity': tier < 2 ? 1 : .6}), s);
+  mk(tag, Object.assign({}, at, hollow ? {fill: HALO, stroke: col, 'stroke-width': 1.6, 'stroke-linejoin': 'round'}
+    : tier < 2 ? {fill: col, stroke: '#fff', 'stroke-width': 1.8, 'stroke-linejoin': 'round'} : {fill: col, 'fill-opacity': .25, stroke: col, 'stroke-width': 1.2}), s);
 }
 const ageOp = t => [1, .72, 1][t];
 const ping = (s, d, r) => { if (isNewSince(d)) mk('circle', {r, class: 'ping'}, s); };   // new since your last visit
@@ -1487,9 +1563,10 @@ const ageChip = (d, live) => { const t = live ? 0 : ageTier(ageH(d)); return `<d
 function buildMap(){
   if (!M) { svg.outerHTML = '<div class="empty" style="padding:40px">The basemap is not available in this build.</div>'; return; }
   svg.innerHTML = '';
-  mk('rect', {x: -M.w, y: -M.h, width: M.w * 3, height: M.h * 3, fill: '#0b0d11'}, svg);
+  mk('rect', {x: -M.w, y: -M.h, width: M.w * 3, height: M.h * 3, fill: '#090c10'}, svg);
   const g = mk('g', {id: 'land'}, svg);
-  M.countries.forEach((c, i) => { const p = mk('path', {d: c.d, class: 'c', 'data-k': 'country:' + i}, g); c._el = p; OBJ.country.push(c); });
+  M.countries.forEach((c, i) => { const p = mk('path', {d: c.d, class: 'c', 'data-k': 'country:' + i}, g); c._el = p; c._i = i; OBJ.country.push(c); });
+  mk('g', {id: 'tints', 'pointer-events': 'none'}, svg);
   for (const th in M.theatres) (M.theatres[th].countries || []).forEach(n => { if (!thOfCountry[n]) thOfCountry[n] = th; });
   const lab = mk('g', {id: 'labels'}, svg);
   M.countries.forEach(c => { const t = mk('text', {class: 'lab'}, lab); t.textContent = c.name; labs.push({el: t, kind: 'country', x: c.cx, y: c.cy, area: c.area, text: c.name, th: thOfCountry[c.name] || ''}); });
@@ -1503,30 +1580,34 @@ function buildMap(){
     const m = mk('g', {transform: `translate(${f.xy[0]},${f.xy[1]})`, class: 'mk', 'data-k': 'fires:' + i}, gf); const s = scg(m);
     const h = fireAge(f), r = fireR(f);
     if (fireExpl(f)) mk('circle', {r, fill: 'none', stroke: '#8a949e', 'stroke-width': 1.3, 'stroke-dasharray': '2 1.6', opacity: .55}, s);
-    else { const glow = fireAnom(f);
-      if (glow) mk('circle', {r: r + 3.2, fill: fireCol(h), 'fill-opacity': .22 * (fireOp(h) < 1 ? .6 : 1)}, s);   // a soft glow: anomalies only
-      mk('circle', {r: glow ? r : r * .85, fill: fireCol(h), 'fill-opacity': fireOp(h), stroke: glow ? '#f2ffd6' : '#0b0d11', 'stroke-width': glow ? 1 : .6, 'stroke-opacity': glow ? .9 : .5}, s); }
+    else if (fireAnom(f)) {   // unusual: warm, white ring, dark halo, a soft glow while new
+      mk('circle', {r: r + 3.2, fill: fireCol(h), 'fill-opacity': .2 * (fireOp(h) < 1 ? .5 : 1)}, s);
+      mk('circle', {r: r + 1.5, fill: HALO, 'fill-opacity': fireOp(h)}, s);
+      mk('circle', {r, fill: fireCol(h), 'fill-opacity': fireOp(h), stroke: '#fff', 'stroke-width': 1.2, 'stroke-opacity': fireOp(h)}, s); }
+    else { mk('circle', {r: r * .8 + 1.4, fill: HALO, 'fill-opacity': .8 * fireOp(h)}, s); mk('circle', {r: r * .8, fill: '#aab3bc', 'fill-opacity': fireOp(h)}, s); }   // unexplained heat: context
     if (fireAnom(f)) ping(s, f.ts || f.d, r + 2); f._el = m; f._h = h; OBJ.fires[i] = f; scaleEls.push(s); });
   const gb = L('bases');
   (M.bases || []).forEach((b, i) => { const m = mk('g', {transform: `translate(${b.xy[0]},${b.xy[1]})`, class: 'mk', 'data-k': 'bases:' + i}, gb); const s = scg(m);
     const col = BASEC[b.st] || BASEC.normal, hot = b.st === 'out' || b.st === 'in';
-    if (hot) mk('rect', {x: -9, y: -9, width: 18, height: 18, rx: 4, fill: col, 'fill-opacity': .2}, s);
-    mk('rect', {x: -5.5, y: -5.5, width: 11, height: 11, rx: 2, fill: hot ? col : '#0b0d11', stroke: col, 'stroke-width': 1.6}, s);
-    mk('circle', {r: 1.8, fill: hot ? '#0b0d11' : col}, s);
+    const warm = hot || b.st === 'changed';
+    if (hot) mk('rect', {x: -10, y: -10, width: 20, height: 20, rx: 5, fill: col, 'fill-opacity': .18}, s);
+    mk('rect', {x: -5.5, y: -5.5, width: 11, height: 11, rx: 2, fill: 'none', stroke: HALO, 'stroke-width': warm ? 6 : 4.5}, s);
+    mk('rect', {x: -5.5, y: -5.5, width: 11, height: 11, rx: 2, fill: warm ? col : HALO, stroke: warm ? '#fff' : col, 'stroke-width': warm ? 1.8 : 1.6}, s);
+    mk('circle', {r: 1.8, fill: warm ? WARMINK : col}, s);
     b._el = m; OBJ.bases[i] = b; scaleEls.push(s); });
   const gc = L('choke');
   M.choke.forEach((c, i) => { const m = mk('g', {transform: `translate(${c.xy[0]},${c.xy[1]})`, class: 'mk', 'data-k': 'choke:' + i}, gc); const s = scg(m);
-    mk('circle', {r: 9, fill: 'none', stroke: '#b6bec6', 'stroke-width': 2}, s); mk('circle', {r: 3.5, fill: '#b6bec6'}, s); OBJ.choke.push(c); scaleEls.push(s);
+    mk('circle', {r: 9, fill: 'none', stroke: HALO, 'stroke-width': 4.5}, s); mk('circle', {r: 9, fill: 'none', stroke: '#b6bec6', 'stroke-width': 2}, s); mk('circle', {r: 3.5, fill: '#b6bec6', stroke: HALO, 'stroke-width': 1.5}, s); OBJ.choke.push(c); scaleEls.push(s);
     const t = mk('text', {class: 'lab'}, lab); t.textContent = c.n; labs.push({el: t, kind: 'choke', x: c.xy[0], y: c.xy[1] - 14, area: 0, text: c.n, th: c.t}); });
   const gn = L('nga');
   byAge(M.nga, n => n.iss).forEach(([n, i, h]) => { const t = ageTier(h); const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'nga:' + i, opacity: ageOp(t)}, gn); const s = scg(m);
-    ageShape(s, 'path', {d: 'M0,-9L9,7L-9,7Z'}, '#b08cff', '#15181b', t); if (t < 2) mk('rect', {x: -1.2, y: -3, width: 2.4, height: 5.5, fill: '#15181b'}, s); ping(s, n.iss, 10); OBJ.nga[i] = n; scaleEls.push(s); });
+    ageShape(s, 'path', {d: 'M0,-9L9,7L-9,7Z'}, '#c9d0d7', HALO, t, true); if (t < 2) mk('rect', {x: -1.1, y: -3, width: 2.2, height: 5.5, fill: '#c9d0d7'}, s); ping(s, n.iss, 10); OBJ.nga[i] = n; scaleEls.push(s); });
   const gz = L('czib');
   byAge(M.czib, n => n.u).forEach(([n, i, h]) => { const t = ageTier(h); const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'czib:' + i, opacity: ageOp(t)}, gz); const s = scg(m);
-    ageShape(s, 'path', {d: 'M0,-9L9,0L0,9L-9,0Z'}, '#b08cff', '#15181b', t); ping(s, n.u, 10); OBJ.czib[i] = n; scaleEls.push(s); });
+    ageShape(s, 'path', {d: 'M0,-9L9,0L0,9L-9,0Z'}, '#c9d0d7', HALO, t, true); ping(s, n.u, 10); OBJ.czib[i] = n; scaleEls.push(s); });
   const gi = L('inc');
   byAge(M.inc, n => n.d).forEach(([n, i, h]) => { const t = ageTier(h); const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'inc:' + i, opacity: ageOp(t)}, gi); const s = scg(m);
-    ageShape(s, 'path', {d: 'M0,-10L10,0L0,10L-10,0Z'}, '#ff6fb1', '#2a0618', t); const tx = mk('text', {y: 4.5, 'text-anchor': 'middle', style: 'font-size:12px;font-weight:800;fill:' + (t < 2 ? '#2a0618' : 'rgba(255,111,177,.5)')}, s); tx.textContent = '!'; ping(s, n.d, 10); n._el = m; OBJ.inc[i] = n; scaleEls.push(s); });
+    ageShape(s, 'path', {d: 'M0,-10L10,0L0,10L-10,0Z'}, '#ec7838', HALO, t); const tx = mk('text', {y: 4.5, 'text-anchor': 'middle', style: 'font-size:12px;font-weight:800;fill:' + (t < 2 ? WARMINK : 'rgba(236,120,56,.6)')}, s); tx.textContent = '!'; ping(s, n.d, 10); n._el = m; OBJ.inc[i] = n; scaleEls.push(s); });
   const gs = L('ships');
   byAge(M.ships, n => n.d).forEach(([n, i, h]) => { const t = n.d ? ageTier(h) : 0; const m = mk('g', {transform: `translate(${n.xy[0]},${n.xy[1]})`, class: 'mk', 'data-k': 'ships:' + i, opacity: [1, .72, .4][t]}, gs); const s = scg(m);
     s.innerHTML = shipSvg(n.k); ping(s, n.d, 11); OBJ.ships[i] = n; scaleEls.push(s);
@@ -1535,8 +1616,8 @@ function buildMap(){
   M.mil.forEach((a, i) => { const m = mk('g', {transform: `translate(${a.xy[0]},${a.xy[1]})`, class: 'mk', 'data-k': 'mil:' + i}, gm); const s = scg(m);
     s.innerHTML = AIR(a.trk, (CLS[a.c] || CLS.other)[1], a.c); OBJ.mil.push(a); a._el = m; scaleEls.push(s); });
   const gq = L('sqk');
-  (M.sqk || []).forEach((a, i) => { const col = a.sq === '7600' ? '#5a636c' : '#f0405a'; const m = mk('g', {transform: `translate(${a.xy[0]},${a.xy[1]})`, class: 'mk', 'data-k': 'sqk:' + i}, gq); const s = scg(m);
-    if (a.sq !== '7600') mk('circle', {r: 15, fill: col, class: 'pulse'}, s); mk('circle', {r: 10, fill: col, stroke: '#fff', 'stroke-width': 2}, s);
+  (M.sqk || []).forEach((a, i) => { const col = a.sq === '7600' ? '#6b747e' : '#e14d44'; const m = mk('g', {transform: `translate(${a.xy[0]},${a.xy[1]})`, class: 'mk', 'data-k': 'sqk:' + i}, gq); const s = scg(m);
+    if (a.sq !== '7600') mk('circle', {r: 15, fill: col, class: 'pulse'}, s); mk('circle', {r: 12, fill: HALO}, s); mk('circle', {r: 10, fill: col, stroke: '#fff', 'stroke-width': 2}, s);
     const t = mk('text', {y: 4, 'text-anchor': 'middle', style: 'font-size:9.5px;font-weight:800;fill:#fff;font-family:var(--mono)'}, s); t.textContent = a.sq; OBJ.sqk.push(a); scaleEls.push(s); });
   const gy = L('cities');
   M.cities.forEach((c, i) => { const m = mk('g', {transform: `translate(${c.xy[0]},${c.xy[1]})`, 'data-k': 'city:' + i}, gy); const s = scg(m);
@@ -1550,8 +1631,22 @@ function paintCountries(){
   M.countries.forEach(c => {
     const th = thOfCountry[c.name];
     const inTab = hl.length ? hl.includes(th) : !!th && th !== 'global';
-    c._el.setAttribute('class', 'c' + (inTab && layerState.zones ? ' th' : '') + (layerState.adv && lv[c.name] >= 2 ? ' a' + lv[c.name] : ''));
+    const tl = inTab && layerState.zones && th && D.theatres[th] ? RANKL[D.theatres[th].level] : 0;
+    c._el.setAttribute('class', 'c' + (inTab && layerState.zones ? ' th' : '') + (tl >= 2 ? ' l' + tl : '') + (layerState.adv && lv[c.name] >= 2 ? ' a' + lv[c.name] : ''));
+    c._tl = tl;
   });
+  paintTints();
+}
+/* the glow is the level colour along the inside of the border (a wide stroke clipped to the country), the rim a crisp line on it */
+function paintTints(){
+  const g = $('#tints'); if (!g) return;
+  const key = M.countries.map(c => c._tl >= 2 ? c._tl : 0).join('');
+  if (g.dataset.key === key) return; g.dataset.key = key; g.innerHTML = '';
+  const defs = mk('defs', {}, g), gl = mk('g', {}, g), rm = mk('g', {}, g), col = ['', '', LEVEL.Watch, LEVEL.Elevated, LEVEL.Critical];
+  M.countries.forEach(c => { if (!(c._tl >= 2)) return;
+    const cp = mk('clipPath', {id: 'tc' + c._i}, defs); mk('path', {d: c.d}, cp);
+    mk('path', {d: c.d, class: 'glow', stroke: col[c._tl], 'clip-path': `url(#tc${c._i})`}, gl);
+    mk('path', {d: c.d, class: 'rim', stroke: col[c._tl]}, rm); });
 }
 function syncFireZoom(){ const g = $('#Lfires'); if (g) g.style.display = layerState.fires && !(wideView() && view.w > M.w * 0.42) ? '' : 'none'; }
 /* a layer that was just switched on fades its markers in, sweeping left to right across the screen, so you see what it added */
@@ -1594,22 +1689,23 @@ function renderRail(){
 function popLayers(){
   const preset = ['none', 'default', 'all'].find(k => Object.keys(layerState).every(x => layerState[x] === (k === 'all' ? true : k === 'none' ? x === 'labels' || x === 'zones' : DEFAULTS[x])));
   const row = ([k, n, icn]) => { const c = layerCount(k), dis = (k === 'hubs' && wideView()) || (k === 'fires' && wideView() && view.w > M.w * 0.42);
-    return `<div class="lrow ${dis ? 'dis' : ''}" data-layer="${k}" ${dis ? `data-tip="${k === 'fires' ? 'Zoom in to see fires' : 'Shown in theatre views'}"` : ''}><span style="color:${({mil: '#3bdfef', sqk: '#f0405a', ships: '#6d8dff', inc: '#ff6fb1', nga: '#b08cff', czib: '#b08cff', fires: '#b8e04a', firesx: '#8a949e', bases: '#ff6fb1', adv: '#9c8dca'})[k] || 'var(--mute)'}">${ic(icn, 's')}</span><span>${esc(n)}</span><small>${c == null ? '' : c}</small><span class="tog ${layerState[k] ? 'on' : ''}"></span></div>`; };
+    return `<div class="lrow ${dis ? 'dis' : ''}" data-layer="${k}" ${dis ? `data-tip="${k === 'fires' ? 'Zoom in to see fires' : 'Shown in theatre views'}"` : ''}><span style="color:${({mil: CTX, sqk: '#e14d44', ships: CTX, inc: '#ec7838', nga: '#b0b8c1', czib: '#b0b8c1', fires: '#f4ad62', firesx: '#868f99', bases: '#ec7838', zones: '#ec7838'})[k] || 'var(--mute)'}">${ic(icn, 's')}</span><span>${esc(n)}</span><small>${c == null ? '' : c}</small><span class="tog ${layerState[k] ? 'on' : ''}"></span></div>`; };
   return `<div class="ph"><h4>Map layers</h4><span class="seg">${['none', 'default', 'all'].map(k => `<button class="${preset === k ? 'on' : ''}" data-preset="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</span></div><div class="pb" style="padding:0 0 8px">` +
     LAYERS.map(([g, list]) => `<div class="lgrp">${g}</div>` + list.map(row).join('')).join('') + `</div>`;
 }
 function popLegend(){
   let h = `<div class="ph"><h4>Legend</h4><small>layers that are on</small></div><div class="pb" style="padding:0 0 6px">`;
-  h += PM ? `<div class="lgrp">Theatre level · 30-day chance</div><div class="lkey">${['Normal', 'Watch', 'Elevated', 'Critical'].map((l, i) => `${dot(l).replace('class="dot"', 'class="dot" style="width:12px;height:12px;--c:' + LEVEL[l] + '"')}<span><b style="color:var(--ink)">${l}</b> · ${[`below ${pct(BANDS[0])}`, `${pct(BANDS[0])} to ${pct(BANDS[1])}`, `${pct(BANDS[1])} to ${pct(BANDS[2])}`, `${pct(BANDS[2])} or more`][i]}</span>`).join('')}</div>` : `<div class="lgrp">Theatre labels</div><div class="lkey"><svg width="16" height="16"><rect x="1" y="3" width="14" height="10" rx="5" fill="none" stroke="#5a636c"/></svg><span>Number = signal pressure (0 to 100)</span><svg width="16" height="16"><rect x="1" y="3" width="14" height="10" rx="5" fill="none" stroke="${TELLC}" stroke-width="1.5"/></svg><span>Orange outline = a timing tell fired this week</span><span></span><span style="color:var(--dim)">Levels stay uncoloured while the model is in shadow.</span></div>`;
+  const tint = ['#1d242c', '#504132', '#4e3327', '#4b282a'];
+  h += `<div class="lgrp">Theatre level · ${PM ? '30-day chance' : 'how unusual the signals are'}</div><div class="lkey">${['Normal', 'Watch', 'Elevated', 'Critical'].map((l, i) => `<svg width="16" height="16"><rect x="1.5" y="1.5" width="13" height="13" rx="3" fill="${tint[i]}" stroke="${i ? LEVEL[l] : '#46515c'}" stroke-width="1.5"/></svg><span><b style="color:var(--ink)">${l}</b> · ${PM ? [`below ${pct(BANDS[0])}`, `${pct(BANDS[0])} to ${pct(BANDS[1])}`, `${pct(BANDS[1])} to ${pct(BANDS[2])}`, `${pct(BANDS[2])} or more`][i] : ['the usual range', 'top 10% of calm days', 'top 5%', 'top 1%, several groups agree'][i]}</span>`).join('')}<svg width="16" height="16"><rect x="1" y="3" width="14" height="10" rx="5" fill="none" stroke="${TELLC}" stroke-width="1.5"/></svg><span>Amber ring round a name = a timing tell fired this week</span><span></span><span style="color:var(--dim)">Warm always means unusual: amber, then orange, then red. Grey and white are context.</span></div>`;
   if (layerState.mil) h += `<div class="lgrp">Aircraft · shape = role, hollow = support · click to hide</div><div class="lkey">${Object.keys(CLS).filter(k => classOff[k] || M.mil.some(a => a.c === k)).map(k => `<svg width="18" height="18" viewBox="-10 -10 20 20">${AIR(0, CLS[k][1], k)}</svg><span data-cls="${k}" class="${classOff[k] ? 'off' : ''}">${CLS[k][0]} <span style="color:var(--dim)">${M.mil.filter(a => a.c === k).length}</span></span>`).join('')}</div>`;
-  if (layerState.sqk) h += `<div class="lgrp">Emergency squawks</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#f0405a" stroke="#fff" stroke-width="1.5"/></svg><span>7500 hijack · 7700 emergency (pulsing)</span><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#5a636c" stroke="#fff" stroke-width="1.5"/></svg><span>7600 radio failure</span></div>`;
-  if (layerState.ships) h += `<div class="lgrp">Ships</div><div class="lkey">${['carrier', 'amphib', 'navy', 'tanker'].map(k => `<svg width="16" height="12" viewBox="-9 -6 18 12"><path d="M-8,2L-5,-3L6,-3L8,0L6,4L-5,4Z" fill="${SHIPK[k][1]}"/></svg><span>${SHIPK[k][0]}</span>`).join('')}</div>`;
-  if (layerState.fires) h += `<div class="lgrp">Fires and heat · fainter = older</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="7.6" fill="#b8e04a" fill-opacity=".22"/><circle cx="8" cy="8" r="5" fill="#b8e04a" stroke="#f2ffd6" stroke-width="1"/></svg><span><b style="color:var(--ink)">Unusual</b>: no usual reason to burn here, or far hotter than usual</span><svg width="16" height="16"><circle cx="8" cy="8" r="4.3" fill="#b8e04a"/></svg><span>Unexplained: not a known source, not the burning season</span><svg width="16" height="16"><circle cx="8" cy="8" r="5" fill="none" stroke="#8a949e" stroke-width="1.5" stroke-dasharray="2 1.6"/></svg><span>Explained: gas flare, industry, farm burning, volcano, offshore</span>${FIRE_BANDS.slice(1).map(([, c, o, n]) => `<svg width="16" height="16"><circle cx="8" cy="8" r="4.3" fill="${c}" fill-opacity="${o}"/></svg><span>${n}</span>`).join('')}<span></span><span style="color:var(--dim)">Larger dot: more heat (MW). Click a fire for the reason and satellite images.</span></div>`;
-  if (layerState.bases) h += `<div class="lgrp">Military bases · satellite radar against the usual</div><div class="lkey">${[['out', 'Two passes far from usual (aircraft or ships left or arrived)'], ['changed', 'One pass differed: waiting for the next'], ['normal', 'Usual, or no recent pass']].map(([k, n]) => `<svg width="16" height="16"><rect x="2.5" y="2.5" width="11" height="11" rx="2" fill="${k === 'out' ? BASEC[k] : '#0b0d11'}" stroke="${BASEC[k]}" stroke-width="1.6"/></svg><span>${n}</span>`).join('')}<span></span><span style="color:var(--dim)">10 m images: aircraft in shelters do not show.</span></div>`;
-  if (layerState.inc) h += `<div class="lgrp">Maritime</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#ff6fb1"/></svg><span>Maritime incident (UKMTO, news)</span></div>`;
-  if (layerState.nga || layerState.czib) h += `<div class="lgrp">Warnings</div><div class="lkey">${layerState.nga ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,6L-8,6Z" fill="#b08cff"/></svg><span>Hazard warning (NGA)</span>` : ''}${layerState.czib ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-8L8,0L0,8L-8,0Z" fill="#b6bec6"/></svg><span>Airspace bulletin (EASA)</span>` : ''}</div>`;
+  if (layerState.sqk) h += `<div class="lgrp">Emergency squawks</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="7.5" fill="${HALO}"/><circle cx="8" cy="8" r="6" fill="#e14d44" stroke="#fff" stroke-width="1.5"/></svg><span>7500 hijack · 7700 emergency (pulsing)</span><svg width="16" height="16"><circle cx="8" cy="8" r="7.5" fill="${HALO}"/><circle cx="8" cy="8" r="6" fill="#6b747e" stroke="#fff" stroke-width="1.5"/></svg><span>7600 radio failure</span></div>`;
+  if (layerState.ships) h += `<div class="lgrp">Ships · hollow = civil</div><div class="lkey">${['carrier', 'navy', 'tanker'].map(k => `<svg width="18" height="14" viewBox="-14 -8 28 16">${shipSvg(k)}</svg><span>${SHIPK[k][0]}</span>`).join('')}</div>`;
+  if (layerState.fires) h += `<div class="lgrp">Fires and heat · fainter = older</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="7.6" fill="#f4ad62" fill-opacity=".2"/><circle cx="8" cy="8" r="6" fill="${HALO}"/><circle cx="8" cy="8" r="4.6" fill="#f4ad62" stroke="#fff" stroke-width="1.2"/></svg><span><b style="color:var(--ink)">Unusual</b>: no usual reason to burn here, or far hotter than usual</span><svg width="16" height="16"><circle cx="8" cy="8" r="4.8" fill="${HALO}"/><circle cx="8" cy="8" r="3.4" fill="#aab3bc"/></svg><span>Unexplained: not a known source, not the burning season</span><svg width="16" height="16"><circle cx="8" cy="8" r="5" fill="none" stroke="#8a949e" stroke-width="1.5" stroke-dasharray="2 1.6"/></svg><span>Explained: gas flare, industry, farm burning, volcano, offshore</span>${FIRE_BANDS.slice(1).map(([, c, o, n]) => `<svg width="16" height="16"><circle cx="8" cy="8" r="4.3" fill="${c}" fill-opacity="${o}"/></svg><span>${n}</span>`).join('')}<span></span><span style="color:var(--dim)">Larger dot: more heat (MW). Click a fire for the reason and satellite images.</span></div>`;
+  if (layerState.bases) h += `<div class="lgrp">Military bases · satellite radar against the usual</div><div class="lkey">${[['out', 'Two passes far from usual (aircraft or ships left or arrived)'], ['changed', 'One pass differed: waiting for the next'], ['normal', 'Usual, or no recent pass']].map(([k, n]) => `<svg width="16" height="16"><rect x="2.5" y="2.5" width="11" height="11" rx="2" fill="${k === 'normal' ? HALO : BASEC[k]}" stroke="${k === 'normal' ? BASEC[k] : '#fff'}" stroke-width="1.6"/></svg><span>${n}</span>`).join('')}<span></span><span style="color:var(--dim)">10 m images: aircraft in shelters do not show.</span></div>`;
+  if (layerState.inc) h += `<div class="lgrp">Maritime</div><div class="lkey"><svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-7.5L7.5,0L0,7.5L-7.5,0Z" fill="#ec7838" stroke="#fff" stroke-width="1.5"/></svg><span>Maritime incident (UKMTO, news)</span></div>`;
+  if (layerState.nga || layerState.czib) h += `<div class="lgrp">Warnings</div><div class="lkey">${layerState.nga ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-7L7,6L-7,6Z" fill="${HALO}" stroke="#c9d0d7" stroke-width="1.5"/></svg><span>Hazard warning (NGA)</span>` : ''}${layerState.czib ? `<svg width="16" height="16" viewBox="-9 -9 18 18"><path d="M0,-7L7,0L0,7L-7,0Z" fill="${HALO}" stroke="#c9d0d7" stroke-width="1.5"/></svg><span>Airspace bulletin (EASA)</span>` : ''}</div>`;
   if (layerState.inc || layerState.nga || layerState.czib || layerState.ships) h += `<div class="lgrp">Age · incidents, warnings, bulletins and ships</div><div class="lkey">${AGE_TIERS.map((b, t) => `<svg width="16" height="16" class="agek t${t}"><circle cx="8" cy="8" r="${t ? 5 : 4.6}"${t ? '' : ' stroke-width="4"'}/>${t ? '' : '<circle cx="8" cy="8" r="4.6"/>'}</svg><span>${b[2]}</span>`).join('')}<span></span><span style="color:var(--dim)">Aircraft and squawks are live positions.</span></div>`;
-  if (layerState.choke) h += `<div class="lgrp">Shipping</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="#2bb8ca" stroke-width="2"/><circle cx="8" cy="8" r="2.5" fill="#2bb8ca"/></svg><span>Chokepoint (daily transits)</span></div>`;
+  if (layerState.choke) h += `<div class="lgrp">Shipping</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="#b6bec6" stroke-width="2"/><circle cx="8" cy="8" r="2.5" fill="#b6bec6"/></svg><span>Chokepoint (daily transits)</span></div>`;
   if (layerState.adv) h += `<div class="lgrp">US travel advice · stronger = higher</div><div class="lkey">${[2, 3, 4].map(l => `<svg width="16" height="16"><rect width="16" height="16" class="c a${l}"/></svg><span>Level ${l}${l === 4 ? ': do not travel' : l === 3 ? ': reconsider travel' : ': more caution'}</span>`).join('')}</div>`;
   return h + `</div>`;
 }
@@ -1764,8 +1860,9 @@ function buildPins(){
     /* the pin is a small neutral point at the true place, a short leader line, and the label: level and tells live on the label */
     const d = document.createElement('i'); d.className = 'pdot'; d.dataset.pin = p.key;
     const ln = document.createElement('i'); ln.className = 'pline';
-    const b = document.createElement('div'); b.className = 'plab' + ((PM ? th.level !== 'Normal' && th.level !== 'insufficient data' : tl) ? ' w' : ''); b.style.setProperty('--c', tl && !PM ? 'var(--tell)' : col); b.dataset.pin = p.key;
-    b.innerHTML = `<b data-n="l:${p.th}">${esc(l.txt)}</b>${tnm(p.name.replace(/ \(.*$/, ''), th.level, false)}`;
+    const calm = RANKL[th.level] < 2;
+    const b = document.createElement('div'); b.className = 'plab' + (calm ? ' n' : '') + (th.level === 'Critical' ? ' w' : ''); b.style.setProperty('--c', col); b.dataset.pin = p.key;
+    b.innerHTML = `<i></i>${tnm(p.name.replace(/ \(.*$/, ''), null, tl)}${calm ? '' : `<b>${esc(th.level.toUpperCase())}</b>`}`;
     box.appendChild(ln); box.appendChild(d); box.appendChild(b);
     PINS.push(Object.assign(p, {dot: d, ln, el: b, rank: RANKL[th.level] * 10 + Math.max(0, l.v)}));
   });
@@ -1855,7 +1952,7 @@ function renderDock(){
     : `<div class="dk"><div class="dh">Theatres ${inf('Ordered by timing tells this week, then by unusual readings (0 to 100, not a chance). The grey multiple is the standing risk against the usual chance here; it is not validated.')}<small>tells · unusual · risk</small>${tog}</div><div class="dc">${RANKW().map(thRowN).join('')}</div></div>`;
   const wkPanel = `<div class="dk"><div class="dh">This week ${inf('Timing tells seen, strong readings and new ratings in the last 7 days. Click a line to see the signal.')}<small>last 7 days</small>${tog}</div><div class="dc">${weekKpis()}<div class="feed">${feedRows(weekFeed(), 8)}</div></div></div>`;
   const movRows = movers.map(s => `<div class="mv" data-id="${esc(s.id)}"><span class="n">${esc(shortL(s.l))}<small>${esc(thName(s.t))} · ${esc(rawTxt(s))}</small></span><span>${spark(s.pts && s.pts.slice(-30), zcol(s.z), 54, 18)}</span><span class="sdv" style="${zsty(s.z)}">${fmtz(s.z)}</span></div>`).join('') || '<div class="empty">No signal has a score yet.</div>';
-  const mkRows = mks.map(m => `<div class="mv" data-mi="${D.markets.indexOf(m)}"><span class="n">${esc(m.q)}<small>${esc(m.src)} · ${m.theatre ? esc(thName(m.theatre)) : 'Global'}${m.end ? ' · ends ' + esc(m.end) : ''}</small></span><span>${spark(m.h, '#3bdfef', 54, 18)}</span><span class="sdv">${Math.round(m.p * 100)}%</span></div>`).join('') || '<div class="empty">No open war or military markets were found.</div>';
+  const mkRows = mks.map(m => `<div class="mv" data-mi="${D.markets.indexOf(m)}"><span class="n">${esc(m.q)}<small>${esc(m.src)} · ${m.theatre ? esc(thName(m.theatre)) : 'Global'}${m.end ? ' · ends ' + esc(m.end) : ''}</small></span><span>${spark(m.h, '#b0b8c1', 54, 18)}</span><span class="sdv">${Math.round(m.p * 100)}%</span></div>`).join('') || '<div class="empty">No open war or military markets were found.</div>';
   const pizza = D.pizza && D.pizza[0] != null ? `<div class="hint" style="padding:6px 6px 0">Pentagon pizza index: <b style="color:var(--ink)">${Math.round(D.pizza[0])}</b>/100, ${D.pizza[1]} active spike${D.pizza[1] === 1 ? '' : 's'}. A weak signal.</div>` : '';
   const thirdPanel = `<div class="dk"><div class="dh"><span class="dtabs"><button class="${dockTab === 'mov' ? 'on' : ''}" data-dtab="mov">Biggest movers</button><button class="${dockTab === 'mk' ? 'on' : ''}" data-dtab="mk">Markets <b>${mks.length}</b></button></span>${inf(dockTab === 'mov' ? 'Signals furthest from their own normal level, in standard deviations (SD), with the raw value. At most two per theatre; stale copies and events are left out.' : 'What traders with money at stake think. Shown for context. Not part of the score.')}<small>${dockTab === 'mov' ? 'SD from normal' : 'odds now'}</small>${tog}</div><div class="dc">${dockTab === 'mov' ? movRows : mkRows + pizza}</div></div>`;
   d.innerHTML = PM ? thPanel + `<div class="dk"><div class="dh">Biggest movers ${inf('Signals furthest from their own normal level, in standard deviations (SD), with the raw value. At most two per theatre.')}<small>SD from normal</small>${tog}</div><div class="dc">${movRows}</div></div><div class="dk"><div class="dh">Prediction markets ${inf('What traders with money at stake think. Shown for context. Not part of the score.')}<small>odds now</small>${tog}</div><div class="dc">${mkRows}${pizza}</div></div>`
@@ -1921,18 +2018,18 @@ function renderPanel(){
   h += mapt;
   if (R.v === 'region') { P.innerHTML = h + regionBody(r); tabInd(); countNums(P); return; }
   const t = R.id, th = D.theatres[t], m = META[t];
-  h += `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}${r ? `<a data-nav="${r.kids.length > 1 ? 'region/' + r.id : r.kids[0]}">${esc(r.name)}</a>${ic('chev', 's')}` : ''}<span>${esc(thName(t))}</span><button class="cp" data-copy="1" aria-label="Copy a link to this view">${ic('link', 's')} Link</button></div><h2>${esc(thName(t))} ${lvPill(th.level)}${isSpill(t) ? spillTag() : ''}</h2><p>${steSummary(t)}</p></div>`;
+  h += `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}${r ? `<a data-nav="${r.kids.length > 1 ? 'region/' + r.id : r.kids[0]}">${esc(r.name)}</a>${ic('chev', 's')}` : ''}<span>${esc(thName(t))}</span><button class="cp" data-copy="1" aria-label="Copy a link to this view">${ic('link', 's')} Link</button></div><h2>${esc(thName(t))} ${lvPill(th.level)} ${actChip(t)}${isSpill(t) ? spillTag() : ''}</h2><p>${steSummary(t)}</p></div>`;
   const cov = Math.round((1 - (th.miss || 0)) * 100);
   const xu = th.xu != null ? `${th.xu.toFixed(1)}×` : pct(th.p);
-  const k1 = th.p != null && !PM ? `<button class="kp kpsh" data-pop="kp-p" style="--k:${LEVEL[th.level]}"><small>Standing risk ${inf('The model\'s chance of a qualifying event in the next 30 days, as a multiple of this theatre\'s usual chance. It has not passed its release checks, so it does not set the level and is shown for reference only. Click to see what drives it.')}</small><b style="color:${LEVEL[th.level]}">${xu}<sub>usual</sub></b><span>${esc(th.level)} <i class="shg">shadow</i></span></button>`
+  const k1 = th.p != null && !PM ? `<button class="kp kpsh" data-pop="kp-p" style="--k:var(--line2)"><small>Standing risk ${inf('The model\'s chance of a qualifying event in the next 30 days, as a multiple of this theatre\'s usual chance. It has not passed its release checks, so it does not set the level and is shown for reference only. Click to see what drives it.')}</small><b style="color:var(--mute)">${xu}<sub>usual</sub></b><span>not validated <i class="shg">shadow</i></span></button>`
     : th.p != null ? `<button class="kp" data-pop="kp-p"><small>Standing risk ${inf('The chance of a qualifying event in the next 30 days, as a multiple of this theatre\'s usual chance. Click to see what drives it.')}</small><b style="color:${LEVEL[th.level]}">${xu}<sub>usual</sub></b><span>${pct(th.p)} (${pct(th.plo)} to ${pct(th.phi)})</span></button>`
     : `<div class="kp"><small>30-day chance ${inf('The model gives no chance for this view. It covers the 13 theatres only.')}</small><b style="color:var(--dim)">n/a</b><span>no model here</span></div>`;
   const tc = tellsCount(t);
-  const kTells = `<button class="kp" data-nav="${t}/drivers" style="--k:#b8e04a"><small>◆ Timing tells ${inf('Costly, hard-to-reverse actions that came days before strikes in past cases. Each is a fixed yes-or-no rule over the last 7 days. They do not set the level.')}</small><b style="color:${tc.on.length ? 'var(--tell)' : 'var(--ink)'}">${tc.on.length}<sub>/${tc.n}</sub></b><span>${tc.n ? 'this week' : 'none watched here'}</span></button>`;
-  const kPress = `<button class="kp" data-pop="kp-s" style="--k:#3bdfef"><small>${PM ? 'Pressure' : 'Unusual readings'} ${inf('How unusual the signals are, all together, from 0 to 100. 50 is the Watch line and 90 is the Critical line. It is not a chance. Click for details.')}</small><b style="color:#3bdfef"><span data-n="sc:${t}">${fs(th.score)}</span><sub>/100</sub></b><span>${th.score == null ? 'no score' : PM ? (th.score >= 90 ? 'above Critical' : th.score >= 50 ? 'above Watch' : 'below Watch') : 'not a chance'}</span></button>`;
-  const kGroups = `<button class="kp" data-pop="kp-g" style="--k:#3bdfef"><small>Unusual ${inf('Signal groups at 2 SD or more from their normal level. Click to see all five.')}</small><b>${th.firing.length}<sub>/${th.scorable}</sub></b><span>${th.firing.length ? th.firing.map(d => GN[d]).join(', ') : 'none'}</span></button>`;
+  const kTells = `<button class="kp" data-nav="${t}/drivers" style="--k:${tc.on.length ? 'var(--tell)' : 'var(--line)'}"><small>◆ Timing tells ${inf('Costly, hard-to-reverse actions that came days before strikes in past cases. Each is a fixed yes-or-no rule over the last 7 days. They do not set the level.')}</small><b style="color:${tc.on.length ? 'var(--tell)' : 'var(--ink)'}">${tc.on.length}<sub>/${tc.n}</sub></b><span>${tc.n ? 'this week' : 'none watched here'}</span></button>`;
+  const kPress = `<button class="kp" data-pop="kp-s" style="--k:${RANKL[th.level] >= 2 ? LEVEL[th.level] : 'var(--line)'}"><small>${PM ? 'Pressure' : 'Unusual readings'} ${inf('How unusual the signals are, all together, from 0 to 100. 50 is the Watch line and 90 is the Critical line. It is not a chance. Click for details.')}</small><b style="color:${RANKL[th.level] >= 2 ? LEVEL[th.level] : 'var(--ink)'}"><span data-n="sc:${t}">${fs(th.score)}</span><sub>/100</sub></b><span>${th.score == null ? 'no score' : PM ? (th.score >= 90 ? 'above Critical' : th.score >= 50 ? 'above Watch' : 'below Watch') : 'not a chance'}</span></button>`;
+  const kGroups = `<button class="kp" data-pop="kp-g" style="--k:${th.firing.length ? 'var(--r1)' : 'var(--line)'}"><small>Unusual ${inf('Signal groups at 2 SD or more from their normal level. Click to see all five.')}</small><b>${th.firing.length}<sub>/${th.scorable}</sub></b><span>${th.firing.length ? th.firing.map(d => GN[d]).join(', ') : 'none'}</span></button>`;
   h += `<div class="kpis">${PM ? k1 + kPress + kGroups : kTells + kPress + k1}
-    <button class="kp" data-pop="kp-c" style="--k:#b08cff"><small>Coverage ${inf('The share of this theatre\'s signals that have a score now. Low coverage makes the result less certain. Click for details.')}</small><b style="color:#b08cff">${cov}%</b><span>${m.scored} of ${m.n}</span></button></div>`;
+    <button class="kp" data-pop="kp-c" style="--k:var(--line)"><small>Coverage ${inf('The share of this theatre\'s signals that have a score now. Low coverage makes the result less certain. Click for details.')}</small><b>${cov}%</b><span>${m.scored} of ${m.n}</span></button></div>`;
   const al = ALERTS.filter(a => t === 'global' ? !a.th : a.th === t), mk = marketsFor(t), hot = al.some(a => a.sev >= 70);
   const hw = historyItems(t).filter(x => ageH(x.d) != null && ageH(x.d) <= 24 * 7).length;
   let sub = R.sub || 'drivers'; if (sub === 'markets' && !mk.length) sub = 'drivers';
@@ -2010,20 +2107,76 @@ function tempoBody(t){
   return h + `<div class="tempo" ${SERIES[T.id] ? `data-id="${esc(T.id)}"` : ''} role="img" aria-label="${esc(T.n)}, last 12 weeks">` + T.w.map(([d, v, thr]) => `<div class="tb ${v != null && thr != null && v >= thr ? 'on' : ''}" data-tip="${esc(shortDate(d))}: ${v == null ? 'no reading' : v + ' waves in 7 days'}${thr != null ? ' · rule line ' + thr : ''}"><i style="height:${(v || 0) / mx * 100}%"></i>${thr != null && thr <= mx ? `<u style="bottom:${thr / mx * 100}%"></u>` : ''}</div>`).join('') +
     `</div><div class="tempox"><span>${esc(shortDate(T.w[0][0]))}</span><span>now ${now[1] == null ? 'n/a' : now[1]} in 7 days${now[2] != null ? ` · line ${now[2]}` : ''}</span></div>` + (now[2] == null ? `<p class="hint" style="margin:-8px 0 14px">The rule's line appears once 30 days of history are held; ${T.w.filter(w => w[1] != null).length} week${T.w.filter(w => w[1] != null).length === 1 ? '' : 's'} so far.</p>` : '');
 }
+/* ------------------------------------------------------------ the ladder: five signal groups, slow to fast */
+/* Slow groups sit at the top, so a build-up reads from top to bottom. Each line opens in place; "Expand all" sticks between theatres. */
+const LADDER = ['logistics', 'financial', 'behavioral', 'information', 'geospatial'];
+const GQ = {logistics: ['Are they preparing?', 'weeks to months'], financial: ['Is money pricing it in?', 'days'], behavioral: ['Are governments and people acting?', 'days'],
+  information: ['Is the talk escalating?', 'hours to days'], geospatial: ['Is the military moving?', 'hours']};
+const GI = {logistics: 'g_log', financial: 'g_mkt', behavioral: 'g_ppl', information: 'g_news', geospatial: 'g_phy'};
+const LOPEN = new Set();
+function stripHTML(t, d){
+  const h = (D.theatres[t].doms[d] || {}).h || [], n = h.length; if (!n) return '<span class="hint">no history yet</span>';
+  const end = Date.parse((D.strip_end || '') + 'T00:00:00Z') || GEN, day = i => new Date(end - (n - 1 - i) * 864e5).toISOString().slice(0, 10);
+  const ev = evFor(t).filter(e => e[0] >= day(0) && e[0] <= day(n - 1)).map(e => { const i = Math.round((Date.parse(e[0] + 'T00:00:00Z') - Date.parse(day(0) + 'T00:00:00Z')) / 864e5);
+    return `<u style="left:calc(${(i + .5) / n * 100}% - .75px)" data-tip="${esc(shortDate(e[0]) + ': ' + e[4])}"></u>`; });
+  return `<span class="lgs" style="--n:${n}" role="img" aria-label="${esc(GN[d])}, distance from normal on each of the last ${n} days">${h.map((z, i) => `<i${z == null ? ' class="na"' : ` style="background:${zcell(z)}"`} data-tip="${esc(shortDate(day(i)))}: ${z == null ? 'no reading' : fmtz(z) + ' SD'}"></i>`).join('')}${ev.join('')}</span>`;
+}
+function ladderDet(t, d){
+  const x = D.theatres[t].doms[d], q = GQ[d], fam = {};
+  seriesOf(t, d).filter(s => s.z != null).forEach(s => { const k = s.s || GN[d]; (fam[k] = fam[k] || []).push(s); });
+  const rows = Object.entries(fam).map(([k, L]) => { const b = L.filter(s => !isEv(s)).sort((a, c) => c.z - a.z)[0], ev = L.find(s => isEv(s) && s.z > 0);
+    return {k, n: L.length, z: b ? b.z : null, id: (b || ev || L[0]).id, ev: !!ev}; }).sort((a, b) => (b.z == null ? -9 : b.z) - (a.z == null ? -9 : a.z));
+  const fr = r => `<div class="lgf" data-id="${esc(r.id)}"><span>${esc(r.k)} <span style="color:var(--dim)">${r.n}</span></span><span class="bar"><i style="width:${r.z == null ? 0 : Math.max(2, Math.min(100, r.z / 5 * 100))}%;background:${zcol(r.z)}"></i></span><b style="${r.z == null ? 'color:' + (r.ev ? 'var(--ink)' : 'var(--dim)') : zsty(r.z)}">${r.z == null ? (r.ev ? 'event' : '–') : fmtz(r.z)}</b></div>`;
+  const dr = (x.drivers || []).filter(y => y[1] > 0 && SERIES[y[0]]).slice(0, 2);
+  return `<div class="lgd"><div><span class="q">${esc(q[0])}</span> It moves over ${esc(q[1])}. ${esc(DOM[d] ? DOM[d].help : '')}</div>
+    <div>Now <b style="${zsty(x.z)}">${fmtz(x.z)} SD</b> from normal${x.z != null && x.z >= T_WATCH ? ', unusual' : ''} · ${x.n} signals · weight ${Math.round(x.w * 100)}%</div>
+    ${rows.length ? `<div>${rows.slice(0, 6).map(fr).join('')}</div>` : '<p class="hint" style="margin:0">No signal in this group has a score yet.</p>'}
+    ${dr.length ? `<div>Led by ${dr.map(y => `<a data-id="${esc(y[0])}">${esc(shortL(SERIES[y[0]].l))}</a> <span class="num" style="${zsty(y[1])}">${zTxt(SERIES[y[0]])}</span>`).join(' · ')}</div>` : ''}
+    <button class="lga" data-dom="${d}">All ${x.n} signals in ${GN[d]} ${ic('chev', 's')}</button></div>`;
+}
+function ladderBody(t){
+  const th = D.theatres[t], n = ((th.doms[LADDER[0]] || {}).h || []).length, all = LADDER.every(d => LOPEN.has(d));
+  let h = `<div class="sh">Signal groups, slow to fast ${inf(`Each line is one group of signals. The strip shows how far the group was from its normal on each of the last ${n} days: grey is usual, amber from 2 SD (unusual), orange from 3 SD (strong), red from 4.5 SD. Slow groups sit at the top, so a build-up reads from top to bottom. A white tick marks an event in the list. Click a line to open it.`)}<small><button class="lga" data-lgall="1">${all ? 'Close all' : 'Expand all'}</button></small></div>`;
+  h += `<div class="lgh"><span>Group</span><span class="ax"><span>${n} days ago</span><span>today</span></span><span>SD now</span></div>`;
+  h += LADDER.map(d => { const x = th.doms[d], on = LOPEN.has(d);
+    return `<button class="lgr" data-lg="${d}" aria-expanded="${on}"><span class="lgn">${ic('chev', 'cv')}${ic(GI[d], 's')}<b>${GN[d]}</b></span>${stripHTML(t, d)}<span class="lgv"><span class="zc" style="${zsty(x.z)}">${fmtz(x.z)}</span></span></button><div class="lgw${on ? ' on' : ''}" data-lgw="${d}"><div>${ladderDet(t, d)}</div></div>`; }).join('');
+  return h;
+}
+function ladderToggle(d){
+  const all = d === '*', open = all ? !LADDER.every(x => LOPEN.has(x)) : !LOPEN.has(d);
+  (all ? LADDER : [d]).forEach(x => { if (open) LOPEN.add(x); else LOPEN.delete(x);
+    const b = $(`[data-lg="${x}"]`), w = $(`[data-lgw="${x}"]`); if (b) b.setAttribute('aria-expanded', String(open)); if (w) w.classList.toggle('on', open); });
+  const a = $('[data-lgall]'); if (a) a.textContent = LADDER.every(x => LOPEN.has(x)) ? 'Close all' : 'Expand all';
+}
+/* ------------------------------------------------------------ the feed: what changed, newest first */
+const inWin = (d, h) => { const a = ageH(d); return a != null && a <= h + (String(d).length <= 10 ? 24 : 0); };
+function feedFor(kids, hours){
+  const out = [];
+  ALERTS.filter(a => kids.includes(a.th) && (a.live || inWin(a.ts, hours))).forEach(a => out.push({d: a.ts, t: a.th, title: a.title, sub: KIND[a.k][2] + (a.sub ? ' · ' + a.sub : ''), al: a.id, c: KIND[a.k][1], ctx: ['ships', 'nga', 'czib'].includes(a.k)}));
+  kids.forEach(t => tellsOf(t).filter(x => x.on && x.date && inWin(x.date, hours)).forEach(x => out.push({d: x.date, t, title: x.n, sub: 'Timing tell', id: x.src && SERIES[x.src] ? x.src : null, c: TELLC})));
+  kids.forEach(t => (((D.hist || {})[t] || {}).items || []).forEach(([d, k, tx, id]) => { if (['advisory', 'advice', 'rating', 'wave'].includes(k) && inWin(d, hours)) out.push({d, t, title: tx, sub: HK[k][0], id: SERIES[id] ? id : null, ctx: k !== 'wave', c: TELLC}); }));
+  D.series.filter(s => kids.includes(s.t) && !isEv(s) && !s.lag && !s.stale && s.z != null && s.z >= T_SIG && s.last && inWin(s.last, hours))
+    .forEach(s => out.push({d: s.last, t: s.t, title: `${shortL(s.l)}: ${rawTxt(s)}`, sub: `Strong reading, ${fmtz(s.z)} SD · ${GN[s.d]}`, id: s.id, c: zcol(s.z)}));
+  return out.sort((a, b) => String(b.d).localeCompare(String(a.d)));
+}
+function feedBody(kids, multi){
+  let hrs = 24, L = feedFor(kids, 24);
+  if (!L.length) { hrs = 168; L = feedFor(kids, 168); }
+  const tm = d => !d ? '' : String(d).length > 10 && ageH(d) < 24 ? locHM(new Date(d)) : shortDate(d);
+  const row = f => `<div class="fx" ${f.al ? `data-alert="${esc(f.al)}"` : f.id ? `data-id="${esc(f.id)}"` : `data-nav="${f.t}"`}><time>${esc(tm(f.d))}</time><span class="sp${f.ctx ? ' c' : ''}"${f.ctx ? '' : ` style="background:${f.c}"`}></span><span><b>${multi ? esc(thName(f.t)) + ' · ' : ''}${esc(f.title)}</b><small>${esc(f.sub)}</small></span></div>`;
+  return `<div class="sh" style="margin-top:16px">${hrs === 24 ? 'Last 24 hours' : 'Last 7 days'} ${inf('Live alerts, timing tells, official steps and strong fast readings, newest first. When nothing happened in the last 24 hours, the last 7 days show.')}<small>${L.length} item${L.length === 1 ? '' : 's'}</small></div>` +
+    (L.slice(0, 8).map(row).join('') || '<p class="hint">Nothing new in the last 7 days.</p>') + (L.length > 8 ? `<details class="more"><summary>Show all ${L.length}</summary>${L.slice(8).map(row).join('')}</details>` : '') + '<div style="height:14px"></div>';
+}
 function driversBody(t){
-  const th = D.theatres[t]; let h = tellsBody(t) + tempoBody(t) + strongBody(t) + officialBody(t);
+  const th = D.theatres[t]; let h = ladderBody(t) + feedBody([t]) + tellsBody(t) + tempoBody(t) + strongBody(t) + officialBody(t);
   const wf = PM ? waterfall(t) : null;
   if (!PM && th.p != null) h += `<p class="hint" style="margin:0 0 4px">What moves the standing risk is in its <a data-pop="kp-p" style="color:var(--accent);cursor:pointer">pop-up</a>, while the model is in shadow.</p>`;
   if (wf) {
     const mx = Math.max(...wf.steps.filter(s => !s.rest).map(s => s.d), .0001);
     h += `<div class="sh">What moves the chance ${inf('Each bar shows how many percentage points one signal family adds to the 30-day chance. Click a row to see the signal.')}<small>${PM ? 'points added' : 'model not validated'}</small></div>`;
-    h += wf.steps.filter(s => !s.rest).map(s => { const sid = familySeries(t, s.n); return `<div class="wf" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''}><span title="${esc(s.n)}">${esc(shortL(s.n))}</span><span class="bar"><i style="width:${Math.max(2, s.d / mx * 100)}%;background:var(--accent)"></i></span><b style="color:var(--mute)">${ppt(s.d)}</b></div>`; }).join('') || '<p class="hint">No signal family pushes the chance up now.</p>';
+    h += wf.steps.filter(s => !s.rest).map(s => { const sid = familySeries(t, s.n); return `<div class="wf" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''}><span title="${esc(s.n)}">${esc(shortL(s.n))}</span><span class="bar"><i style="width:${Math.max(2, s.d / mx * 100)}%;background:#b0b8c1"></i></span><b style="color:var(--mute)">${ppt(s.d)}</b></div>`; }).join('') || '<p class="hint">No signal family pushes the chance up now.</p>';
     h += `<p class="hint" style="margin:6px 0 0">The chance starts from the long-run rate here, ${pct(wf.base)}. ${PM ? 'Open "30-day chance" above' : 'Open Standing risk above'} for every step.</p>`;
   } else if (PM && th.why && th.why.length) h += `<div class="sh">What moves the chance</div>` + drvBars(t, 6);
-  h += `<div class="sh" style="margin-top:16px">Signal groups ${inf('Each group combines its strongest signals. The ticks mark 2 SD (unusual) and 3 SD (strong). Click a group to see its signals.')}<small>SD from normal · weight</small></div>`;
-  h += D.domains.map(d => { const x = th.doms[d.id], z = x.z, w = z == null ? 0 : Math.max(0, Math.min(100, z / 5 * 100));
-    const dr = (x.drivers || []).filter(q => q[1] > 0 && SERIES[q[0]]).slice(0, 2);
-    return `<div class="dom" data-dom="${d.id}" data-tip="${esc(d.help)}"><span class="nm">${GN[d.id]}<small>${x.n} signals</small></span><span class="zbar"><span class="trk"></span><i style="width:${w}%;--c:${zcol(z)}"></i><u style="left:${T_WATCH / 5 * 100}%"></u><u style="left:${T_SIG / 5 * 100}%"></u></span><span class="zv" style="${zsty(z)}">${fmtz(z)}</span><span class="wt">${Math.round(x.w * 100)}%</span>${dr.length ? `<span class="drow">Led by ${dr.map(q => `<a data-id="${esc(q[0])}">${esc(shortL(SERIES[q[0]].l))}</a> <span class="num" style="${zsty(q[1])}">${zTxt(SERIES[q[0]])}</span>`).join(' · ')}</span>` : ''}</div>`; }).join('');
   return h;
 }
 const HK = {tell: ['Timing tell', 'var(--tell)'], wave: ['Strike wave', 'var(--tell)'], advisory: ['US advisory', 'var(--ink)'], advice: ['UK advice', 'var(--mute)'], rating: ['CrisisWatch', 'var(--ink)'], alert: ['Live alert', 'var(--mute)'], event: ['Event in the list', 'var(--ink)']};
@@ -2047,7 +2200,7 @@ function historyBody(t){
   if (t !== 'global') {
     const rk = H.risk.filter(r => r[1] != null);
     h += `<div class="sh" style="margin-top:16px">Standing risk over time ${inf('The model\'s 30-day chance as a multiple of this theatre\'s usual chance, as logged each day in the forward record before anything happened.')}<small>${PM ? '× usual' : 'not validated'}</small></div>`;
-    h += rk.length >= 2 ? chartBlock(`Times usual, from ${shortDate(rk[0][0])}`, rk.map(r => [r[0], r[1]]), {h: 150, c: PM ? '#3bdfef' : '#8a939c', fy: v => v.toFixed(1) + '×', min: 0, lines: [{y: 1, c: '#7f93a8', t: 'usual', d: '2 3', left: true}]}, null)
+    h += rk.length >= 2 ? chartBlock(`Times usual, from ${shortDate(rk[0][0])}`, rk.map(r => [r[0], r[1]]), {h: 150, c: PM ? '#c9d0d7' : '#8a939c', fy: v => v.toFixed(1) + '×', min: 0, lines: [{y: 1, c: '#7f93a8', t: 'usual', d: '2 3', left: true}]}, null)
       : `<p class="hint">The forward record has ${rk.length} day${rk.length === 1 ? '' : 's'} here so far; the line appears from the second day.</p>`;
   }
   const er = e => `<div class="pe"><time>${esc(e[0])}</time><span>${esc(e[4])}<small>${esc(EVT[e[3]] || e[3])}${sitesOf(e).includes(t) && e[1] !== t ? ` · happened here, part of ${esc(thName(e[1]))}'s war` : sitesOf(e).length ? ` · happened in ${sitesOf(e).map(x => esc(thName(x))).join(' and ')}` : ''}${e[5] ? ' · moved markets' : ''}</small></span></div>`;
@@ -2097,7 +2250,7 @@ function mchg(m){
 }
 function marketRows(list){
   if (!list.length) return `<div class="empty">No open war or military prediction market matches this theatre.</div>`;
-  return list.map(m => `<div class="mk2" data-mi="${D.markets.indexOf(m)}"><span>${esc(m.q)}<small>${esc(m.src)} · volume $${fmtv(m.vol)}${m.end ? ' · ends ' + esc(m.end) : ''} · ${esc(mchg(m))}</small></span><span>${spark(m.h, '#3bdfef', 60, 18)}</span><b style="color:${m.p >= .5 ? 'var(--e4)' : 'var(--ink)'}">${Math.round(m.p * 100)}%</b></div>`).join('');
+  return list.map(m => `<div class="mk2" data-mi="${D.markets.indexOf(m)}"><span>${esc(m.q)}<small>${esc(m.src)} · volume $${fmtv(m.vol)}${m.end ? ' · ends ' + esc(m.end) : ''} · ${esc(mchg(m))}</small></span><span>${spark(m.h, '#b0b8c1', 60, 18)}</span><b style="color:${m.p >= .5 ? 'var(--e4)' : 'var(--ink)'}">${Math.round(m.p * 100)}%</b></div>`).join('');
 }
 function aboutBody(t){
   const th = D.theatres[t], m = META[t], st = m.st;
@@ -2129,18 +2282,18 @@ function regionBody(r){
   const sum = PM ? `${hasP(top) && leadP() ? `${esc(thName(top))} has the highest chance in this region: <b>${pct(D.theatres[top].p)}</b> in the next 30 days.` : `${esc(thName(top))} has the highest signal pressure in this region: <b>${fs(D.theatres[top].score)}</b>.`} The region level is the highest level of its ${r.kids.length} theatres.`
     : `${tl.length ? `<b>Timing tells this week in ${tl.map(k => esc(thName(k))).join(' and ')}.</b>` : '<b>No timing tell this week.</b>'} ${hot.length ? `${hot.map(k => esc(thName(k))).join(' and ')} ${hot.length > 1 ? 'have' : 'has'} the most unusual readings.` : 'No theatre has many unusual readings.'} The region level is the highest level of its theatres.${subs.length ? ` ${subs.map(k => esc(thName(k))).join(' and ')} ${subs.length > 1 ? 'are spillover theatres' : 'is a spillover theatre'}, at risk from the wars of ${r.kids.filter(k => !isSpill(k)).map(k => esc(thName(k))).join(', ')}.` : ''}`;
   let h = `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}<span>${esc(r.name)}</span></div><h2>${esc(r.name)} ${lvPill(lv)}</h2><p>${sum}</p></div><div class="pbody">`;
-  const czx = k => { const w = ownWhy(k)[0]; return w ? `<div class="cz">${esc(causeL(k, w[0]))}</div>` : ''; };
-  const nm = k => `<td><b style="font-weight:600">${thn(k, null, false)}</b>${isSpill(k) ? ' ' + spillTag() : ''}${czx(k)}</td>`;
+  const nm = k => `<td><b style="font-weight:600">${thn(k, null, false)}</b>${isSpill(k) ? ' ' + spillTag() : ''}</td>`;
   const cov = k => `<td class="r num cv">${Math.round((1 - (D.theatres[k].miss || 0)) * 100)}%</td>`;
   const cause = k => { const w = ownWhy(k)[0]; return `<td class="cause" title="${esc(w ? w[0] : '')}">${esc(w ? causeL(k, w[0]) : '–')}</td>`; };
   if (PM) h += `<table class="cmp"><thead><tr><th class="c1">Theatre</th><th class="r cn">${leadP() ? '30 days' : 'Pressure'}</th><th class="r cn">Change</th><th class="cause">Own main cause</th><th class="r cv" data-tip="Share of signals with a score now">Coverage</th></tr></thead><tbody>` +
     kids.map(k => `<tr data-go="${k}">${nm(k)}<td class="r num" style="color:${LEVEL[D.theatres[k].level]};font-weight:600">${esc(lead(k).txt)}</td><td class="r">${changeTxt(k)}</td>${cause(k)}${cov(k)}</tr>`).join('') + `</tbody></table>`;
-  else h += `<div class="tw"><table class="cmp rgt"><thead><tr><th class="c1">Theatre</th><th data-tip="Timing tells seen in the last 7 days, of those watched">Tells</th><th class="r" data-tip="Unusual readings, 0 to 100 (signal pressure). Not a chance.">Unusual</th><th class="r" data-tip="Standing risk: the model's 30-day chance as a multiple of this theatre's usual chance. Not validated.">Risk</th><th class="cause" data-tip="The theatre's own strongest signal family. World tempo, the same for every theatre, is left out.">Own main cause</th><th class="r cv" data-tip="Share of signals with a score now">Cover</th></tr></thead><tbody>` +
-    kids.map(k => { const th = D.theatres[k]; return `<tr data-go="${k}">${nm(k)}<td>${tellChip(k, 1)}</td><td class="r num">${fs(th.score)}</td><td class="r num" style="color:var(--mute)">${th.xu != null ? th.xu.toFixed(1) + '×' : '–'}</td>${cause(k)}${cov(k)}</tr>`; }).join('') + `</tbody></table></div>`;
+  const mrow = k => { const th = D.theatres[k], w = ownWhy(k)[0];
+    return `<tr><td class="n" data-go="${k}">${dot(th.level)}${thn(k, null, false)}${isSpill(k) ? ' ' + spillTag() : ''}${w ? `<span class="mcz" title="${esc(w[0])}">${esc(causeL(k, w[0]))}</span>` : ''}</td>${LADDER.map(d => { const z = th.doms[d].z;
+      return `<td class="c${z != null && z >= T_WATCH ? ' w' : ''}" style="background:${z == null ? 'transparent' : zcell(z)}" data-cell="${k}:${d}" data-tip="${esc(thName(k) + ', ' + GN[d] + ': ' + (z == null ? 'no score' : fmtz(z) + ' SD from normal'))}">${z == null ? '–' : z.toFixed(1)}</td>`; }).join('')}<td>${tellChip(k, 1)}</td><td class="r">${fs(th.score)}</td></tr>`; };
+  h += `<div class="sh"${PM ? ' style="margin-top:16px"' : ''}>Theatres by signal group ${inf('Each cell is a group\'s distance from its normal now, in SD, on the warm scale: grey is usual, amber from 2 SD, orange from 3 SD, red from 4.5 SD. Groups run slow to fast, left to right. Click a name to open the theatre, or a cell for that group\'s signals.')}<small>SD from normal</small></div><div class="tw"><table class="mx"><thead><tr><th>Theatre</th>${LADDER.map(d => `<th data-tip="${esc(GN[d] + ': ' + GQ[d][0])}">${ic(GI[d])}${GN[d]}</th>`).join('')}<th data-tip="Timing tells seen in the last 7 days, of those watched">Tells</th><th style="text-align:right" data-tip="Unusual readings, 0 to 100 (signal pressure). Not a chance.">Unusual</th></tr></thead><tbody>${kids.map(mrow).join('')}</tbody></table></div>`;
   const wt = (D.theatres[top].why || []).find(WORLDW);
   if (wt) h += `<p class="hint" style="margin:6px 0 0">World tempo (markets, defence orders and tenders) moves every theatre by the same amount, so it is not listed as a theatre's cause.</p>`;
-  h += `<div class="sh" style="margin-top:16px">Signal groups across the region ${inf('Distance from normal in standard deviations (SD). 2 SD or more is unusual.')}<small>SD from normal</small></div><div class="tw"><table class="cmp"><thead><tr><th>Group</th>${kids.map(k => `<th class="r">${esc(thName(k))}</th>`).join('')}</tr></thead><tbody>` +
-    D.domains.map(d => `<tr><td data-tip="${esc(d.help)}">${GN[d.id]}</td>${kids.map(k => { const z = D.theatres[k].doms[d.id].z; return `<td class="r num" style="${z != null && z >= T_SIG ? 'color:#2a0618;background:#ff6fb1;font-weight:700' : z != null && z >= T_WATCH ? 'color:#3bdfef;background:rgba(59,223,239,.16);font-weight:700' : 'color:' + zcol(z)}">${fmtz(z)}</td>`; }).join('')}</tr>`).join('') + `</tbody></table></div>`;
+  h += feedBody(r.kids, true);
   const al = ALERTS.filter(a => r.kids.includes(a.th));
   h += `<div class="sh" style="margin-top:16px">Alerts in the region<small>${al.length}</small></div>` + alertRows(al);
   const mk = D.markets.filter(m => r.kids.includes(m.theatre));
@@ -2155,7 +2308,7 @@ function popChance(t){
       <div class="big" style="margin:0 0 8px"><b style="color:var(--mute)">${th.xu != null ? th.xu.toFixed(1) + '×' : pct(th.p)}</b><small>${th.xu != null ? `this theatre's usual chance · ${pct(th.p)} in 30 days (model range ${pct(th.plo)} to ${pct(th.phi)})` : 'in 30 days'}</small></div>`;
   if (wf) {
     const hi = Math.max(th.phi || th.p, th.p, wf.base, ...wf.steps.map(s => Math.max(s.a, s.b))) * 1.05;
-    h += `<div class="wf"><span>Start: the long-run rate here</span><span class="bar"><i style="left:0;width:${wf.base / hi * 100}%;background:#3bdfef"></i></span><b>${pct(wf.base)}</b></div>`;
+    h += `<div class="wf"><span>Start: the long-run rate here</span><span class="bar"><i style="left:0;width:${wf.base / hi * 100}%;background:#6b747e"></i></span><b>${pct(wf.base)}</b></div>`;
     h += wf.steps.map(s => { const lo = Math.min(s.a, s.b), w = Math.abs(s.d); const sid = s.rest ? null : familySeries(t, s.n);
       return `<div class="wf ${WORLDW([s.n]) ? 'wd' : ''}" ${sid ? `data-id="${esc(sid)}" style="cursor:pointer"` : ''}><span title="${esc(s.n)}">${esc(WORLDW([s.n]) ? 'World tempo, the same for every theatre' : shortL(s.n))}</span><span class="bar"><i style="left:${lo / hi * 100}%;width:${Math.max(1.5, w / hi * 100)}%;background:${s.d < 0 ? 'var(--n2)' : 'var(--n4)'}"></i></span><b>${ppt(s.d)}</b></div>`; }).join('');
     h += `<div class="wf t"><span>Chance now</span><span class="bar"><i style="left:0;width:${th.p / hi * 100}%;background:${LEVEL[th.level]}"></i></span><b style="color:${LEVEL[th.level]}">${pct(th.p)}</b></div>`;
@@ -2195,6 +2348,8 @@ function popCoverage(t){
 }
 $('#panel').addEventListener('click', e => {
   if (e.target.closest('[data-mapt]')) { mapOpen = !mapOpen; syncPhoneMap(); renderPanel(); if (mapOpen && M) { syncLayers(); buildPins(); fitTab(false); window.scrollTo(0, 0); } return; }
+  const lg = e.target.closest('[data-lg],[data-lgall]'); if (lg) { ladderToggle(lg.dataset.lg || '*'); return; }
+  const cl = e.target.closest('[data-cell]'); if (cl) { const [k, d] = cl.dataset.cell.split(':'); selDom = d; TS = Object.assign({}, SF0); nav(k + '/signals'); return; }
   const n = e.target.closest('[data-nav]'); if (n && !e.target.closest('[data-pop]')) { nav(n.dataset.nav); return; }
   const g = e.target.closest('[data-go]'); if (g) { nav(g.dataset.go); return; }
   const a = e.target.closest('[data-alert]'); if (a) { openAlert(ALERTS.find(x => x.id === a.dataset.alert)); return; }
@@ -2254,7 +2409,7 @@ function areaChart(pts, o){
   const fsz = o.fs || 12;
   let s = `<svg viewBox="0 0 ${W} ${H}" data-ch="${id}">`;
   (o.bands || []).forEach(b => { const y0 = Y(Math.min(b.b, hi)), y1 = Y(Math.max(b.a, lo)); s += `<rect x="${L}" y="${y0}" width="${W - L - Rm}" height="${Math.max(0, y1 - y0)}" fill="${b.c}"/>`; });
-  for (let i = 0; i <= 4; i++) { const v = lo + pad + (hi - lo - 2 * pad) * i / 4; s += `<line x1="${L}" x2="${W - Rm}" y1="${Y(v)}" y2="${Y(v)}" stroke="#1c2b39"/><text x="${L - 7}" y="${Y(v) + 4}" text-anchor="end" fill="#7d93a8" font-size="${fsz}">${o.fy ? o.fy(v) : fmtv(v)}</text>`; }
+  for (let i = 0; i <= 4; i++) { const v = lo + pad + (hi - lo - 2 * pad) * i / 4; s += `<line x1="${L}" x2="${W - Rm}" y1="${Y(v)}" y2="${Y(v)}" stroke="#222930"/><text x="${L - 7}" y="${Y(v) + 4}" text-anchor="end" fill="#868f99" font-size="${fsz}">${o.fy ? o.fy(v) : fmtv(v)}</text>`; }
   (o.lines || []).forEach((l, k) => { if (l.y >= lo && l.y <= hi) s += `<line x1="${L}" x2="${W - Rm}" y1="${Y(l.y)}" y2="${Y(l.y)}" stroke="${l.c}" stroke-dasharray="${l.d || '5 4'}" stroke-width="1.3"/>${l.t ? `<text x="${l.left ? L + 6 : W - Rm - 4}" y="${Y(l.y) + (l.below ? 13 : -5)}" text-anchor="${l.left ? 'start' : 'end'}" fill="${l.c}" font-size="${fsz - 0.5}" paint-order="stroke" stroke="#0e0e10" stroke-width="3">${esc(l.t)}</text>` : ''}`; });
   if (o.ev && n > 1) {   // events from the list: a dashed line and a marker at the top, named on hover
     const labs = pts.map(p => String(p[0])), f = labs[0], l = labs[n - 1]; CH[id].ev = {};
@@ -2263,12 +2418,12 @@ function areaChart(pts, o){
       s += `<g class="evm"><line x1="${x}" x2="${x}" y1="${T}" y2="${H - B}" stroke="#e8ecf0" stroke-opacity=".3" stroke-dasharray="2 3"/><path d="M${x - 4.5},${T - 2} L${x + 4.5},${T - 2} L${x},${T + 5} Z" fill="#e8ecf0" fill-opacity=".8"><title>${esc(e[0] + ': ' + e[4])}</title></path></g>`; });
   }
   const line = pts.map((p, i) => X(i).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' ');
-  const col = o.c || '#3bdfef', y0 = Y(lo < 0 && hi > 0 ? 0 : lo);
+  const col = o.c || '#c9d0d7', y0 = Y(lo < 0 && hi > 0 ? 0 : lo);
   if (o.area !== false) s += `<polygon points="${L},${y0} ${line} ${X(n - 1)},${y0}" fill="${col}" fill-opacity=".13"/>`;
   s += `<polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" points="${line}"/>`;
   if (o.dots) pts.forEach((p, i) => { if (o.dots(p[1])) s += `<circle cx="${X(i)}" cy="${Y(p[1])}" r="3.2" fill="${zcol(p[1])}"/>`; });
   s += `<circle cx="${X(n - 1)}" cy="${Y(vals[n - 1])}" r="4.6" fill="${col}" stroke="#05080c" stroke-width="1.5"/>`;
-  [0, Math.floor((n - 1) / 2), n - 1].forEach((i, k) => { s += `<text x="${X(i)}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === 2 ? 'end' : 'middle'}" fill="#7d93a8" font-size="${fsz}">${esc(pts[i][0])}</text>`; });
+  [0, Math.floor((n - 1) / 2), n - 1].forEach((i, k) => { s += `<text x="${X(i)}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === 2 ? 'end' : 'middle'}" fill="#868f99" font-size="${fsz}">${esc(pts[i][0])}</text>`; });
   s += `<line class="hl" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="#c4dcf2" stroke-width="1" style="display:none"/><circle class="hd" r="5" fill="#fff" stroke="${col}" stroke-width="2" style="display:none"/></svg>`;
   return s;
 }
@@ -2345,7 +2500,7 @@ function openModal0(id, list){
   }
   h += `<p class="say"><b>${esc(s.why)}</b><br><span style="color:var(--mute)">${isEv(s) ? (s.tf === 'event' ? 'A conflict-risk alert counts 2 and a deteriorated situation 1; the newest issue is the reading.' : 'A raise in the advisory level counts when it is made and goes quiet after 14 days.') : dirTxt(s) + ' ' + trigTxt(s)}</span></p>`;
   if (s.pts && s.pts.length > 1) {
-    const vo = {h: 200, c: '#3bdfef', ev: evFor(s.t)};
+    const vo = {h: 200, c: '#c9d0d7', ev: evFor(s.t)};
     if (s.base) { vo.bands = [{a: s.base.med - 2 * s.base.sd, b: s.base.med + 2 * s.base.sd, c: 'rgba(59,223,239,.13)'}, {a: s.base.med - 3 * s.base.sd, b: s.base.med + 3 * s.base.sd, c: 'rgba(59,223,239,.07)'}];
       vo.lines = [{y: s.base.med, c: '#7f93a8', t: 'normal', d: '2 3', left: true}, {y: s.base.med + 3 * s.base.sd, c: '#8a939c', t: '+3 SD', d: '4 3'}, {y: s.base.med - 3 * s.base.sd, c: '#8a939c', t: '−3 SD', below: true, d: '4 3'}];
       vo.extra = [s.base.med + 3 * s.base.sd, s.base.med - 3 * s.base.sd]; }
@@ -2355,7 +2510,7 @@ function openModal0(id, list){
     h += chartBlock('Score history in standard deviations (what the dashboard showed each day)', s.zh,
       {h: 170, c: '#e6edf3', min: -3, max: 6, fy: v => v.toFixed(0), unit: 'SD', dots: v => v >= T_WATCH, area: false, ev: evFor(s.t),
        bands: [{a: T_SIG, b: 99, c: 'rgba(255,77,79,.15)'}, {a: T_WATCH, b: T_SIG, c: 'rgba(255,138,31,.13)'}],
-       lines: [{y: T_SIG, c: '#ff6fb1', t: 'strong ' + T_SIG.toFixed(0) + ' SD'}, {y: T_WATCH, c: '#3bdfef', d: '4 3', t: 'unusual ' + T_WATCH.toFixed(0) + ' SD', left: true, below: true}, {y: 0, c: '#52667a', t: '', d: '2 3'}]}, null);
+       lines: [{y: T_SIG, c: '#ec7838', t: 'strong ' + T_SIG.toFixed(0) + ' SD'}, {y: T_WATCH, c: '#f4ad62', d: '4 3', t: 'unusual ' + T_WATCH.toFixed(0) + ' SD', left: true, below: true}, {y: 0, c: '#52667a', t: '', d: '2 3'}]}, null);
   }
   const rel = modalList.filter(x => x !== id).slice(0, 8).map(x => SERIES[x]);
   const row = (a, b) => `<tr><td>${a}</td><td>${b}</td></tr>`;
@@ -2382,7 +2537,7 @@ function openMarket(i){
     (hh.length > 2 ? [['1 day', 1], ['7 days', 7], ['30 days', 30]].map(([n, d]) => { const t = Date.parse(hh[hh.length - 1][0]); let ref = null; for (const p of hh) { if (Date.parse(p[0]) <= t - d * 864e5) ref = p; }
       const c = ref ? Math.round((hh[hh.length - 1][1] - ref[1]) * 100) : null; return `<div class="kp"><small>Change, ${n}</small><b style="color:${'var(--ink)'}">${c == null ? 'n/a' : (c > 0 ? '+' : '') + c + ' pts'}</b><span>${ref ? 'was ' + Math.round(ref[1] * 100) + '%' : 'not enough history'}</span></div>`; }).join('') : '') +
     (hh.length > 2 ? `<div class="kp"><small>Highest / lowest</small><b>${Math.round(Math.max(...hh.map(p => p[1])) * 100)}% / ${Math.round(Math.min(...hh.map(p => p[1])) * 100)}%</b><span>in the period shown</span></div>` : '') + `</div>`;
-  if (hh.length > 2) h += chartBlock('Odds over time (the chance the market gives, %)', hh, {h: 240, c: '#3bdfef', fy: v => Math.round(v * 100) + '%', min: 0, max: 1}, hh.length > 40 ? [['30', '30'], ['90', '90'], ['all', 'All']] : null);
+  if (hh.length > 2) h += chartBlock('Odds over time (the chance the market gives, %)', hh, {h: 240, c: '#c9d0d7', fy: v => Math.round(v * 100) + '%', min: 0, max: 1}, hh.length > 40 ? [['30', '30'], ['90', '90'], ['all', 'All']] : null);
   else h += `<div class="warnbox">The market gave no price history.</div>`;
   h += `<p class="say" style="color:var(--mute)">Prediction markets give context. They are not part of the score. They show what traders with money at stake think, and they react to news as much as they predict it.</p><div class="row" style="margin-top:10px"><a class="btn" target="_blank" rel="noopener" href="${esc(m.url)}">Open on ${esc(m.src)} ${ic('ext', 's')}</a></div>`;
   clearTimeout(modalT); $('#modal').classList.remove('out');
@@ -2456,7 +2611,7 @@ function drawer(s){
   const vals = (s.pts || []).map(p => p[1]), last = vals.length ? vals[vals.length - 1] : null;
   return `<div class="drawer"><div class="dhh"><div class="row" style="justify-content:space-between"><span class="hint">${esc(thName(s.t))} · ${GN[s.d]}</span><button class="x" data-dclose="1" aria-label="Close">&times;</button></div><h3>${esc(s.l)}</h3><div class="row" style="margin-top:6px"><span class="ty ${s.lag ? '' : 'ld'}">${s.lag ? 'confirms' : 'leads'}</span><span class="hint">${esc(s.s || '')} · ${s.kind}</span></div></div>
     <div class="db">${statusBox(s)}<div class="k3"><div class="kp"><small>Now ${inf(s.kind === 'daily' ? 'The 7-day average' : 'The latest month')}</small><b>${s.z != null ? fmtv(s.val) : last != null ? fmtv(last) : 'n/a'}</b></div><div class="kp"><small>SD ${inf('Distance from its own normal level, in standard deviations')}</small><b style="${zsty(s.z)}">${fmtz(s.z)}</b></div><div class="kp"><small>Percentile</small><b>${pctNow(s) ? pctNow(s).p + '%' : 'n/a'}</b></div></div>
-    ${s.pts && s.pts.length > 2 ? `<div class="cwrap" style="padding:6px 8px">${areaChart(s.pts.slice(-120), {w: 330, h: 120, fs: 10, c: s.z == null ? '#6b7a8a' : '#3bdfef', bands: s.base ? [{a: s.base.med - 2 * s.base.sd, b: s.base.med + 2 * s.base.sd, c: 'rgba(59,223,239,.13)'}] : null})}<div class="cbub"></div></div>` : ''}
+    ${s.pts && s.pts.length > 2 ? `<div class="cwrap" style="padding:6px 8px">${areaChart(s.pts.slice(-120), {w: 330, h: 120, fs: 10, c: s.z == null ? '#6b7a8a' : '#c9d0d7', bands: s.base ? [{a: s.base.med - 2 * s.base.sd, b: s.base.med + 2 * s.base.sd, c: 'rgba(59,223,239,.13)'}] : null})}<div class="cbub"></div></div>` : ''}
     <p class="hint">${s.z != null ? `This value is ${({'strong signal': 'a strong signal', 'unusual': 'unusual', 'a little high': 'a little high', 'normal range': 'in the normal range'})[verdict(s)]}.` : ''} ${dirTxt(s)} ${s.lag ? 'It is late data, so it confirms a build-up.' : 'It is fast data, so it can move before events.'}</p>
     ${kv('Normal level', s.base ? `<span class="num">${fmtv(s.base.med)}</span>` : 'n/a')}${s.base ? kv('Strong signal from', `<span class="num">${fmtv(s.dir === 'down' ? s.base.med - T_SIG * s.base.sd : s.base.med + T_SIG * s.base.sd)}</span>`) : ''}${kv('Method', esc(s.method || 'no score yet'))}${kv('Last value', esc(s.last || 'none') + (s.last ? ' · ' + esc(ago(s.last)) : ''))}
     <div class="row" style="margin-top:10px"><button class="btn pri" data-open="${esc(s.id)}">Open full detail</button><button class="btn" data-nav="${s.t}/signals" data-dom="${s.d}">Show in ${esc(thName(s.t))}</button>${s.url ? `<a class="btn" target="_blank" rel="noopener" href="${esc(s.url)}">Source ${ic('ext', 's')}</a>` : ''}</div></div></div>`;
@@ -2507,7 +2662,7 @@ function renderActivity(){
     ${ks('Warships tracked', warships.length, `${carriers} carrier${carriers === 1 ? '' : 's'} · USNI, weekly`)}
     ${ks('Sea incidents · 7 days', inc7.length, inc7.length ? Array.from(new Set(inc7.map(n => n.th ? thName(n.th) : n.loc))).slice(0, 2).join(', ') : 'none reported', inc7.length ? 'var(--c-inc)' : null)}
     ${ks('Fires · ' + win, fw.length, `${fu} unusual · ${fw.length - fu - fx} unexplained · ${fx} explained`, fu ? 'var(--c-fire)' : null, 'NASA satellite heat detections in the theatre boxes. Unusual: no usual reason to burn there. Explained: gas flares, industry, farm burning.')}
-    ${BS.length ? ks('Bases watched by satellite', BS.length, `${bFar} far from usual · ${bOne} one pass differed`, bFar ? '#ff6fb1' : bOne ? '#b08cff' : null, 'Sentinel-1 radar and Sentinel-2 images of military bases, each against its own recent passes. Two passes far from usual can mean aircraft or ships left or arrived.') : ''}
+    ${BS.length ? ks('Bases watched by satellite', BS.length, `${bFar} far from usual · ${bOne} one pass differed`, bFar ? '#ec7838' : bOne ? '#f4ad62' : null, 'Sentinel-1 radar and Sentinel-2 images of military bases, each against its own recent passes. Two passes far from usual can mean aircraft or ships left or arrived.') : ''}
     ${ks('Alert waves · 7 days', wv.sum, wv.txt, wv.hot ? 'var(--tell)' : null, 'Alert waves counted by Tzeva Adom (Israel) and alerts.in.ua (Ukraine) over the last 7 days.')}
     ${ks('Sea warnings · 30 days', sea.sum, 'firing and launch areas', null, 'Navigational warnings for firing, missile or launch areas in force over the last 30 days, across the watched waters.')}</div><div class="grid4">`;
   const cards = [], quiet = [];
@@ -2528,7 +2683,7 @@ function renderActivity(){
       sw.v ? `<div class="ln"><span>${ic('anchor', 's')} Warnings at sea, 30 days${sw.m ? ` · usual ${Math.round(sw.m)}` : ''}</span><b>${Math.round(sw.v)}</b></div>` : '',
       fires.length ? `<div class="ln"><span>${ic('fire', 's')} Fires, unusual of all</span><b>${unus}<span style="color:var(--dim);font-weight:400"> / ${fires.length}</span></b></div>` : '',
       warn ? `<div class="ln"><span>${ic('warn', 's')} Warnings and bulletins</span><b>${warn}</b></div>` : '',
-      bf || b1 ? `<div class="ln"><span>${ic('base', 's')} Bases far from usual · one pass</span><b style="${bf ? 'color:#ff6fb1' : ''}">${bf} · ${b1}<span style="color:var(--dim);font-weight:400"> / ${bs.length}</span></b></div>` : '',
+      bf || b1 ? `<div class="ln"><span>${ic('base', 's')} Bases far from usual · one pass</span><b style="${bf ? 'color:#ec7838' : ''}">${bf} · ${b1}<span style="color:var(--dim);font-weight:400"> / ${bs.length}</span></b></div>` : '',
       ships || incs ? `<div class="ln"><span>${ic('ship', 's')} Warships · incidents (7 d)</span><b>${ships} · ${incs}</b></div>` : ''].filter(Boolean);
     if (!lines.length) { quiet.push(t); return; }
     cards.push({t, u, h: `<button class="ac" data-nav="${t}" style="--c:${PM ? LEVEL[th.level] : u >= 1.5 ? 'var(--tell)' : 'var(--line2)'}"><h4><span>${esc(th.name)}</span><small>${u >= 1.2 ? u.toFixed(1) + '× usual' : 'about usual'}</small></h4>${lines.join('')}</button>`});

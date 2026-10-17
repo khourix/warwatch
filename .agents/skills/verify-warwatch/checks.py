@@ -318,9 +318,10 @@ def c_model_runs(r):
 
 
 def c_forward_chain(r):
-    p = sh([sys.executable, "-c", "import sys; sys.path.insert(0,'warwatch'); import model\n"
+    p = sh([sys.executable, "-c", "import sys; sys.path.insert(0,'warwatch'); import model, activity\n"
             "for f in (model.FORWARD, model.FORWARD_ARMED, model.FORWARD_WAVE):\n"
-            "    ok, bad, rows = model.forward_verify(f); print(f.split('/')[-1], ok, bad, len(rows))"])
+            "    ok, bad, rows = model.forward_verify(f); print(f.split('/')[-1], ok, bad, len(rows))\n"
+            "ok, bad, rows = activity.forward_verify(); print(activity.FORWARD.split('/')[-1], ok, bad, len(rows))"])
     assert p.returncode == 0, p.stderr.strip()[-200:]
     rows = [l.split() for l in p.stdout.strip().splitlines()]
     broken = [f"{n} row {b}" for n, ok, b, _ in rows if ok != "True"]
