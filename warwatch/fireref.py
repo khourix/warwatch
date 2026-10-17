@@ -709,6 +709,8 @@ def replay(box_names, start, years, cache, out_dir=None):
                 k = counts.setdefault(date, {})
                 for p in pts:
                     k[p["c"]] = k.get(p["c"], 0) + 1
+                    if p["c"] in F.ANOMALY and (p.get("esite") or p["c"] == "hot"):
+                        k["esite"] = k.get("esite", 0) + 1      # unusual at an energy or industrial site (map rule of 2026-10-17)
             log(b, y, "days", len(by_day))
         os.makedirs(out_dir, exist_ok=True)
         if not counts:
@@ -720,7 +722,7 @@ def replay(box_names, start, years, cache, out_dir=None):
             for d in days:
                 k = counts.get(d, {})
                 w.writerow([d, k.get("anom", 0) + k.get("hot", 0)])
-        cls = ["anom", "hot", "unex", "seas", "ind", "volc", "off"]
+        cls = ["anom", "hot", "unex", "seas", "ind", "volc", "off", "esite"]
         with open(os.path.join(out_dir, f"firms_cls_{b}.csv"), "w", newline="") as f:
             w = csv.writer(f, lineterminator="\n")
             w.writerow(["date"] + cls)

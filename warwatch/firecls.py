@@ -11,6 +11,11 @@ NASA FIRMS VIIRS S-NPP archive (2012 to last year) and from public site lists (O
 Each detection gets c (class), a (score 0 to 100), why (plain reason) and site (name, or "").
 Classes: anom (unusual), hot (much hotter than usual at an industrial site), unex (unexplained), seas (seasonal farm or
 grass fire), ind (routine industrial heat), volc (volcano), off (offshore platform or flare).
+
+Energy and industrial sites (2026-10-17): a listed plant counts as routine heat only where its own ~1 km spot burned on
+W["usual_days"] days or more in the three years before. A fire at a plant that does not usually burn is scored like any
+unexplained fire, with the site's weight and without the farm-season discount. At a plant that does burn, "hot" also
+fires when the heat is twice its own usual and above what similar plants of the box usually reach.
 """
 import calendar
 import csv
@@ -34,12 +39,18 @@ EXPLAINED = ("seas", "ind", "volc", "off")
 ANOMALY = ("anom", "hot")
 INDUSTRIAL = ("flare", "platform", "oilgas", "steel", "power", "cement")
 SENSITIVE = ("military", "airfield", "port", "fuel", "substation")
+KINDS_NAME = {"flare": "gas flares", "platform": "offshore platforms", "oilgas": "oil and gas plants", "steel": "steel works", "power": "power plants",
+              "cement": "cement works"}
+ALWAYS_LIT = ("flare", "platform")      # listed flares burn by design: a new or rarely lit one is still routine
+ENERGY = ("fuel", "substation")         # sensitive kinds that are energy sites: within ind_km, no farm-season discount
 KIND_NAME = {"flare": "Gas flare", "platform": "Offshore oil and gas platform", "oilgas": "Oil and gas plant", "steel": "Steel works", "power": "Power plant", "cement": "Cement works",
              "military": "military site", "airfield": "airfield", "port": "port", "fuel": "fuel depot", "substation": "power substation"}
 ANOM_AT = 60          # an unexplained detection with this score or more is an anomaly
 # Starting weights (FIRECLASS_PLAN F2). Tuned only on 2018-2021 and frozen before the 2022+ test (docs/FIREANOM_PLAN.md).
 W = {"base": 30, "novel": 20, "rare_season": 10, "sensitive": 25, "frp50": 10, "frp200": 10, "cluster": 10, "night": 5, "seasonal": -15,
-     "static_t2": 5, "static_days": 60, "static_years": 2, "spot_years": 3, "seas_p": 0.4, "rare_p": 0.1, "sens_km": 2.0, "ind_km": 1.0}
+     "static_t2": 5, "static_days": 60, "static_years": 2, "spot_years": 3, "seas_p": 0.4, "rare_p": 0.1, "sens_km": 2.0, "ind_km": 1.0,
+     # energy sites (2026-10-17, map only; after the frozen test): set from the plan, not tuned on the replay
+     "usual_days": 10, "site": 25, "similar_x": 2.0, "similar_add": 20, "similar_q": 0.9, "similar_n": 10}
 
 
 def fine(lat, lon):
@@ -68,6 +79,23 @@ class Ref:
     def __init__(self, box, cells, years, grid, coarse, cyears, sites):
         self.box, self.cells, self.years, self.coarse, self.cyears, self.sites = box, cells, years, coarse, cyears, sites
         self.grid = grid       # (i0, j0, rows, cols, array of 16-bit year masks) or None
+        self._ceil = None
+
+    def ceiling(self, kind):
+        """What plants of this kind in the box usually reach: the similar_q quantile, over the kind's sites that burn,
+        of the highest usual heat (frp95) within ~1 km of each site. None with fewer than similar_n such sites."""
+        if self._ceil is None:
+            per = {}
+            for grp in self.sites.b.values():
+                for s in grp:
+                    if s["kind"] not in INDUSTRIAL:
+                        continue
+                    i, j = fine(s["lat"], s["lon"])
+                    v = max((self.cells[(i + a, j + b)]["frp95"] for a in (-1, 0, 1) for b in (-1, 0, 1) if (i + a, j + b) in self.cells), default=0.0)
+                    if v > 0:
+                        per.setdefault(s["kind"], []).append(v)
+            self._ceil = {k: sorted(v)[min(len(v) - 1, int(W["similar_q"] * len(v)))] for k, v in per.items() if len(v) >= W["similar_n"]}
+        return self._ceil.get(kind)
 
     def year_mask(self, i, j):
         """Bit k set = the fine cell burned in 2012 + k; None when outside the grid."""
@@ -245,6 +273,11 @@ def persistent(row, year):
     return sum(1 for y in range(year - 5, year) if row["d"].get(y, 0) >= W["static_days"]) >= W["static_years"]
 
 
+def usual_days(rows, year):
+    """Most days any neighbouring cell burned in the three years before `year`."""
+    return max((sum(r["d"].get(y, 0) for y in range(year - 3, year)) for r in rows), default=0)
+
+
 def burn_pct(rows, year):
     """Share of days the busiest neighbouring cell burned over the 3 years before `year`, in percent."""
     best = 0.0
@@ -352,39 +385,57 @@ def classify_one(p, ref, near_n, day):
         return _set(p, "off", 5, "Offshore platform or flare: NASA marks this spot as an offshore heat source.")
     stat = [r for r in rows if static_row(r, year)]
     ind, _ = ref.sites.near(lat, lon, INDUSTRIAL, W["ind_km"])
-    if stat or ind:
+    # routine heat needs this spot to burn: a listed plant whose spot did not burn in the last three years is not "the usual"
+    usual = bool(stat) or usual_days(rows, year) >= W["usual_days"] or (ind is not None and ind["kind"] in ALWAYS_LIT)
+    site = None                  # a listed plant with no usual heat here: scored below with the site's weight
+    if ind and not usual:
+        site = ind
+    elif stat or ind:
         name = _name(ind) if ind else ""
         f95 = max([r["frp95"] for r in stat or rows] or [0.0])
         n95 = max([r["n95"] for r in stat or rows] or [0.0])
         if stat or rows:
             hotter = frp >= max(3 * f95, f95 + 100) or near_n >= 3 * n95 + 3 or sat
         else:
-            hotter = frp >= 300 or sat          # a listed plant with no fire record: only a very large fire counts
-        if hotter:
-            usual = f"{f95:.0f} MW" if f95 else "no usual fire"
+            hotter = frp >= 300 or sat          # a listed flare with no fire record: only a very large fire counts
+        ceil = ref.ceiling(ind["kind"]) if ind else None
+        similar = ceil is not None and (stat or rows) and frp >= W["similar_x"] * f95 + W["similar_add"] and frp >= ceil
+        if hotter or similar:
+            usual_ = f"{f95:.0f} MW" if f95 else "no usual fire"
             what = f"{frp:.0f} MW" if not sat else "a saturated (very hot) pixel"
-            return _set(p, "hot", 75, f"Much more heat than usual at {name or 'this industrial site'}: {what} against a usual {usual}.", name)
+            tail = ""
+            if similar and not hotter:
+                tail = f" Similar {KINDS_NAME[ind['kind']]} in this region usually stay under {ceil:.0f} MW."
+            return _set(p, "hot", 75, f"Much more heat than usual at {name or 'this industrial site'}: {what} against a usual {usual_}.{tail}", name)
         kind = KIND_NAME.get(ind["kind"], "Industrial heat") if ind else "Industrial heat"
         where = f" at {ind['name']}" if ind and ind["name"] else ""
         pct = burn_pct(stat or rows, year)
         tail = f": this spot burns on {pct}% of days." if pct else "."
         return _set(p, "ind", 10, f"{kind}{where}{tail}", name)
+    if site is None and sens and sens["kind"] in ENERGY and sens_km <= W["ind_km"]:
+        site = sens
     sp = seasonal_p(ref, lat, lon, day)
     month = day.strftime("%B")
     ny = spot_years(ref, i, j, year)
     nv = None if ny is None else ny == 0
     # seasonal needs the area to burn in this season AND this spot (~3 km) to burn in several years: a depot in a city ringed by
     # fields does not become "the usual farm fire" because the fields burn every June
-    if sp is not None and sp >= W["seas_p"] and (ny is None or ny >= W["spot_years"]) and not sens and frp < 100:
+    if sp is not None and sp >= W["seas_p"] and (ny is None or ny >= W["spot_years"]) and not sens and not site and frp < 100:
         return _set(p, "seas", 15, f"This area burns in most years in {month} (farm and grass fires).")
     a, why = W["base"], []
     if nv:
         a += W["novel"]
-        why.append(f"No fire here in {year - Y0} years of records")
+        why.append(f"no fire here in {year - Y0} years of records")
     if sp is not None and sp < W["rare_p"]:
         a += W["rare_season"]
         why.append(f"this area rarely burns in {month}")
-    if sens:
+    if site:
+        # a fire at a plant or depot that does not usually burn: what strikes on energy sites look like
+        a += W["site"]
+        k = KIND_NAME[site["kind"]].lower()
+        k = ("an " if k[0] in "aeio" else "a ") + k
+        why.insert(0, (f"At {site['name']}, {k}" if site["name"] else f"At {k}") + " that shows no routine heat in the satellite record")
+    elif sens:
         a += W["sensitive"]
         why.append(f"{sens_km:.1f} km from {sens['name'] or KIND_NAME[sens['kind']]}")
     if frp >= 50 or sat:
@@ -396,7 +447,7 @@ def classify_one(p, ref, near_n, day):
         why.append(f"{near_n} hot spots together")
     if p.get("daynight") == "N":
         a += W["night"]
-    if sp is not None and sp >= W["seas_p"]:
+    if sp is not None and sp >= W["seas_p"] and not site:     # farms do not burn inside a plant or depot
         a += W["seasonal"]
         why.append(f"this area often burns in {month}")
     heat = "a saturated (very hot) pixel" if sat else f"{frp:.0f} MW"
@@ -404,7 +455,8 @@ def classify_one(p, ref, near_n, day):
     lead = "; ".join(why)
     text = (lead[0].upper() + lead[1:] + f", {heat}{night}." if lead else f"Not a known industrial site or farm-burning area, {heat}{night}.")
     c = "anom" if a >= ANOM_AT else "unex"
-    return _set(p, c, a, text, sens["name"] if sens else "")
+    p["esite"] = 1 if site else 0
+    return _set(p, c, a, text, _name(site) if site else (sens["name"] if sens else ""))
 
 
 def _fallback(pts):

@@ -17,9 +17,11 @@ Runs in imagery.yml (numpy, scipy, rasterio, Pillow); the dashboard build only r
     python3 warwatch/basewatch.py --backfill-from 2022-01-01 --site al_udeid
     python3 warwatch/basewatch.py --dry-run
 
-The radar metric and threshold are frozen from the feasibility test (docs/BASESPIKE.md). Until it says GO, ALERTS is
-False: the job still writes scenes, chips and z values for people to look at, but no site enters "out" or "in", and the
-theatre counts stay empty, so the tell and alerts cannot fire.
+The radar metric and threshold are frozen from the feasibility test (docs/BASESPIKE.md). Since 2026-10-17 the map shows
+movement: a site whose last two radar passes within a week both read far fewer (or far more) bright objects than usual is
+"out" (or "in"), with a note that the check has not passed its test. ALERTS still gates the theatre counts
+(bases_out_<t>, bases_in_<t>), so the tell and the model only see them once the backfill test passes
+(docs/BASEWATCH_STUDY_PLAN.md, run by basestudy.py).
 """
 import argparse
 import csv
@@ -111,7 +113,7 @@ def scene_z(rows, metric, part=None):
     return out
 
 
-def state(zs, today, alerts=ALERTS):
+def state(zs, today, alerts=True):
     """zs: [(date, z)] scored scenes, newest last -> (state, dates used). 'out'/'in' need the last two scored scenes within
     7 days to agree beyond Z_AT; 'changed' when only the latest does; 'nodata' when nothing was scored in 10 days."""
     sc = [(d, z) for d, z in zs if z is not None]
@@ -196,6 +198,20 @@ def part_masks(rec, bbox, w, h):
 
 
 # ---------------------------------------------------------------- reading scenes
+def search_chunks(collection, bbox, start, end, days=60):
+    """STAC items over a long range, searched 60 days at a time (one search returns at most 250 items), oldest first."""
+    import imagery as I
+    d0, d1 = dt.date.fromisoformat(start), dt.date.fromisoformat(end)
+    seen = set()
+    while d0 <= d1:
+        e = min(d1, d0 + dt.timedelta(days=days - 1))
+        for it in I.stac_search(collection, bbox, d0.isoformat(), e.isoformat()):
+            if it["id"] not in seen:
+                seen.add(it["id"])
+                yield it
+        d0 = e + dt.timedelta(days=1)
+
+
 def radar_rows(rec, start, end, budget, done=frozenset(), log=print):
     """Rows for new Sentinel-1 RTC scenes over a site (oldest first, at most `budget` scenes); each part is measured in its
     own window when the parts lie far apart."""
@@ -211,7 +227,7 @@ def radar_rows(rec, start, end, budget, done=frozenset(), log=print):
         return []
     union = (min(b[0][0] for b in wins), min(b[0][1] for b in wins), max(b[0][2] for b in wins), max(b[0][3] for b in wins))
     rows = []
-    for it in I.stac_search("sentinel-1-rtc", union, start, end):
+    for it in search_chunks("sentinel-1-rtc", union, start, end):
         if budget <= 0:
             break
         if (it["id"], rec["id"]) in done or not I.has(it, "vv"):
@@ -460,6 +476,7 @@ def main(argv=None):
     ap.add_argument("--site", default="")
     ap.add_argument("--days", type=int, default=30, help="look back this many days for new scenes")
     ap.add_argument("--backfill-from", default="")
+    ap.add_argument("--until", default="", help="backfill: last day to read (default today)")
     ap.add_argument("--budget", type=int, default=120, help="radar scene reads per run")
     ap.add_argument("--no-optical", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
@@ -473,7 +490,7 @@ def main(argv=None):
     chip_rows = {(r[0], r[1]): r for r in _chip_rows()}
     for s in sites:
         try:
-            rr = radar_rows(s, start, today.isoformat(), per, done_r)
+            rr = radar_rows(s, start, a.until or today.isoformat(), per, done_r)
         except Exception as e:
             print(s["id"], "radar search failed:", repr(e)[:160], flush=True)
             rr = []
@@ -554,13 +571,9 @@ def layer(path=BASES):
             if k in c:
                 img[k] = f"img/bases/{s['id']}_{k}.jpg"
                 img[k + "d"] = c[k]
-        if not ALERTS and state_ in ("out", "in", "changed", "normal"):
-            zt = f"{float(r['z']):+.1f}" if r.get("z") else "n/a"
-            state_ = "viewer"
-            why_ = (f"Latest radar pass {r.get('last_radar') or 'n/a'}: z {zt} against this orbit's usual count of bright objects {where}. "
-                    "Shown for looking only: the automated check did not pass its test (docs/BASESPIKE.md).")
-        else:
-            why_ = STATE_WHY.get(state_, "").format(where=where, what=what, dates=dates)
+        why_ = STATE_WHY.get(state_, "").format(where=where, what=what, dates=dates)
+        if not ALERTS and state_ in ("out", "in", "changed"):
+            why_ += " Not yet checked against past events, so it carries no weight in the risk numbers."
         out.append({"id": s["id"], "n": s["name"], "lat": s["lat"], "lon": s["lon"], "k": s["kind"], "side": s["side"], "ths": s["theatres"],
                     "st": state_, "z": float(r["z"]) if r.get("z") else None, "last": r.get("last_radar", ""), "lo": r.get("last_optical", ""),
                     "pts": pts, "why": why_, "note": r.get("note", ""),
