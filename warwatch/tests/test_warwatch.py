@@ -368,6 +368,19 @@ class TestGeoAndPage(unittest.TestCase):
         self.assertEqual(len(d["series"]), len(catalog.SERIES))
         self.assertIsNone(d["map"])
 
+    def test_ladder_strip_ends_on_the_group_value(self):
+        """The ladder rebuilds each day the way the engine scores today, so its last day must equal the group's value now."""
+        res = run.evaluate(demo.scenario("buildup"))
+        ser = [dashboard.series_json(s) for s in res["series"]]
+        end = max(s["points"][-1][0] for s in res["series"] if s["kind"] == "daily" and s["points"])
+        strips = dashboard.dom_strips(res, ser, end + " 12:00 UTC")
+        for t, v in res["theatres"].items():
+            for dom in C.DOMAINS:
+                row, z = strips[t][dom], v["doms"][dom]["z"]
+                self.assertEqual(len(row), dashboard.STRIP_DAYS)
+                if z is not None:
+                    self.assertAlmostEqual(row[-1], z, delta=0.03, msg=f"{t} {dom}")   # the score history is kept to 2 decimals
+
     def test_series_detail_has_history_and_sd_bands(self):
         res = run.evaluate(demo.scenario("buildup"))
         d = dashboard.build_data(res, "now", True, None, None)

@@ -117,6 +117,54 @@ def theatre_json(t, v, res_series, base=None, change=None, tells=None):
             "tells": tells or []}
 
 
+STRIP_DAYS = 60
+
+
+def _day(generated):
+    try:
+        return dt.date.fromisoformat(str(generated)[:10])
+    except ValueError:
+        return dt.datetime.now(dt.timezone.utc).date()
+
+
+def dom_strips(res, ser_json, generated, days=STRIP_DAYS):
+    """{theatre: {group: [z or None, one per day, oldest first]}} for the ladder strips. Each day is built the way
+    engine.theatre_composite builds today: every series' own score history (zh) carried forward to that day, kept in the
+    warning direction and cut to a quarter for late data, correlated series averaged, then the strongest of them combined.
+    The groups are today's. Display only: no level, chance or record reads it."""
+    import bisect
+    zh = {}
+    for s in ser_json:
+        h = s.get("zh") or []
+        zh[s["id"]] = ([p[0] for p in h], [p[1] for p in h])
+    end = _day(generated)
+    labels = [(end - dt.timedelta(days=days - 1 - k)).isoformat() for k in range(days)]
+
+    def at(i, day):
+        labs, vals = zh.get(i["id"], ([], []))
+        j = bisect.bisect_right(labs, day if i["kind"] == "daily" else day[:7]) - 1
+        if j < 0 or (i["kind"] == "daily" and (dt.date.fromisoformat(day) - dt.date.fromisoformat(labs[j])).days > 30):
+            return None
+        return max(0.0, vals[j]) * i["k"]       # zh is already turned to the warning direction
+
+    out = {}
+    for t in res["theatres"]:
+        items, per = engine.theatre_items(res["series"], t), {}
+        for dom in C.DOMAINS:
+            grp, _ = engine.groups_of([i for i in items if i["domain"] == dom])
+            row = []
+            for day in labels:
+                zs = []
+                for g in grp:
+                    v = [x for x in (at(i, day) for i in g) if x is not None]
+                    if v:
+                        zs.append(sum(v) / len(v))
+                row.append(round(engine.domain_score(zs)[0], 2) if zs else None)
+            per[dom] = row
+        out[t] = per
+    return out
+
+
 def fire_json(m, xy):
     """One map fire: position, heat, time, class (c), score (a), plain reason (why), nearby site, and the Sentinel-2 chips
     when the imagery review has them. r = 1 for explained classes (industry, farm burning, volcano, offshore)."""
@@ -244,8 +292,12 @@ def build_data(res, generated, demo, ex, topo):
     by_id = {s["id"]: s for s in res["series"]}
     data["tempo"] = tempo_json(by_id)
     data["hist"] = {} if demo else hist_json(res, by_id)
+    strips = dom_strips(res, data["series"], generated)
     for t, v in data["theatres"].items():
         v["official"] = official_json(by_id, t)
+        for dom, row in strips.get(t, {}).items():
+            v["doms"][dom]["h"] = row
+    data["strip_end"] = _day(generated).isoformat()
     return data
 
 

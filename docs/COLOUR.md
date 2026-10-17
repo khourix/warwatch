@@ -1,31 +1,58 @@
 # Colour
 
-The tokens live in `warwatch/page.html` (`:root`). The rule: **hue says what kind of thing it is, shape says which type, fill says combat or strong, fading says age.** Every metric gets a colour, validated or not; a metric that is not validated yet is marked by a dashed outline and a "shadow" tag, not by greying it out.
+The tokens live in `warwatch/page.html` (`:root`). The look is "night ops": cool neutrals that step back, so the few warm marks stand out. There are three rules.
 
-## Categorical palette (dark background)
+1. **Warm means unusual, and nothing else.** One warm scale carries every measure: amber, then orange, then red. Grey and near-white are the calm state and context.
+2. **Cyan means you can click it, or you picked it.** Links, the selected tab, focus rings and buttons. Cyan never carries data.
+3. **Groups are told apart by name, icon and position, not by colour.** The five signal groups have no hue of their own.
 
-| Hue | Hex | Map | Metrics |
-|---|---|---|---|
-| Cyan (brand) | #3bdfef | Military aircraft, a silhouette per role; combat filled, airlift and tankers hollow, surveillance with a dashed ring | Unusual readings (2 to 3 SD, bold); the unusual-readings tile; chart lines |
-| Blue | #6d8dff | Ships; warships filled, merchant ships hollow | |
-| Pink | #ff6fb1 | Maritime incidents (diamond with "!") | Strong readings (3 SD or more, filled pill) |
-| Lime | #b8e04a | Fires and heat (dots sized by heat, fading with age) | Timing tells (◆) |
-| Violet | #b08cff | Hazard warnings and airspace bulletins (triangle, diamond) | Coverage tile |
-| Grey | #b6bec6 | Chokepoints, cities (structure, not activity) | Readings below 2 SD (#c9d1d9 mild, #7d8790 normal) |
+## Neutrals
 
-Checked with the dataviz palette validator against the map's land colour (#1b2128): cyan, blue, pink and lime clear the colour-blind target in every pairing (worst ΔE 10.1, target 8) and the normal-vision floor (worst 20.6, floor 15). Violet vs blue and lime vs the yellow Watch level are too close for some colour-blind readers, so they always differ in shape: triangles vs hulls, small dots vs labelled pills.
+| Token | Hex | Use |
+|---|---|---|
+| `--bg` | #0b0e12 | Page |
+| `--panel` · `--panel2` · `--panel3` | #12161b · #181d23 · #20262d | Panels, rows on hover, raised controls |
+| `--line` · `--line2` | #252c34 · #343c46 | Dividers, outlines |
+| `--ink` | #eef1f4 | Main text (16:1 on the panel) |
+| `--mute` | #b0b8c1 | Secondary text (9.1:1) |
+| `--dim` | #868f99 | Labels and hints (5.5:1) |
+| `--faint` | #59626c | Decoration only, never text (2.9:1) |
+| `--ocean` · land · theatre land | #090c10 · #161b21 · #1d242c | Map |
 
-## Levels
+## The warm scale
 
-Normal #46c28a · Watch #f4d846 · Elevated #fb8e22 · Critical #f0405a, always with the word. The same colours are used while the model is in shadow, with a dashed outline. Red with an icon also marks a failed feed or an emergency squawk.
+| Step | Hex | Means |
+|---|---|---|
+| Calm | #222930 | Below 1.5 SD from normal (a cell fill) |
+| Mild | #38414a | 1.5 to 2 SD |
+| Watch | #f4ad62 | 2 SD or more: unusual. Also a fired timing tell |
+| Elevated | #ec7838 | 3 SD or more: strong |
+| Critical | #e14d44 | 4.5 SD or more |
 
-## Reference
+The theatre levels use the same three colours, always with the word: Watch #f4ad62, Elevated #ec7838, Critical #e14d44. Normal is grey #6b747e and shows as an outlined pill. A level says how unusual a theatre's signals are now. It is a description, not a forecast, so it is coloured whether or not the 30-day model has passed its release checks. The standing risk, which comes from that model, stays grey until it passes.
 
-The US travel advisory is a muted violet tint on the map: #242435, #2d2a45, #383158 (#2e3245, #363553, #413a66 on theatre land), subdued so it sits under the other layers.
+Text on a warm fill is #1a1009: 9.8:1 on Watch, 6.5:1 on Elevated, 4.8:1 on Critical.
 
-## Neutral
+## The map
 
-`n1` #3b4148 · `n2` #5a636c · `n3` #8a939c · `n4` #b6bec6 · `n5` #e8ecf0 for structure, borders and data quality (stale, collecting, needs a key).
+A theatre's land takes its level: a tint of the level colour at about 26% over land (#504132, #4e3327, #4b282a), a soft glow along the inside of the border (the level colour, 9 px, 16% opacity, clipped to the country) and a crisp 1.4 px rim in the full colour. Normal theatres get a slightly lighter land (#1d242c) and no rim.
+
+Every mark must read on every tint, so every mark has a dark halo (#07090c) under it.
+
+- **Alert pins** are warm, with a white ring: emergency squawks (red circle), maritime incidents (orange diamond with "!"), unusual fires (amber dot), bases where satellite passes differ from usual (amber square for one pass, orange for two). A warm pin on a warm tint can fall to 2.5:1, so the white ring, not the fill, carries the contrast: 9.8:1 or more on every tint.
+- **Context marks** are near-white (#dfe5ea, 7.7:1 or more on every tint): aircraft by role silhouette, ships by hull, hazard warnings (triangle), airspace bulletins (diamond), bases with nothing unusual (hollow square), chokepoints. Hollow means a support role or a civil ship. Unexplained heat is a small grey dot (#aab3bc); explained heat is a dashed grey ring.
+- **Labels** are dark pills: a dot and a rim in the level colour, the name, and the level word when it is not Normal. Only Critical pulses. An amber ring round a name means a timing tell fired this week.
+- **US travel advice** is a third party's judgement, so it is a neutral lift of the land by step (#1f262e, #262e37, #2e3741), never warm.
+
+Fainter means older on every alert layer: last 24 hours solid, 1 to 3 days dimmed, older a faint outline.
+
+## Panels
+
+The theatre panel leads with the ladder: the five signal groups ordered slow to fast (Logistics, Markets, People, News, Physical), each with a strip of its distance from normal on each of the last 60 days on the warm scale. The region panel leads with the matrix: theatres by groups, a grey cell unless a group moved. Charts draw their line in light grey (#c9d0d7) with the warm scale for thresholds.
+
+## Motion
+
+`--d1` 120 ms for hover and highlights, `--d2` 200 ms for a ladder line opening or closing, `--d3` 320 ms kept for larger moves. Easing `--ease` is cubic-bezier(.2,.7,.2,1). With reduced motion on (the system setting or Settings > Motion), nothing moves.
 
 ## Structure
 
