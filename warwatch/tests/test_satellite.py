@@ -431,6 +431,18 @@ class TestBaseWatch(unittest.TestCase):
             self.assertFalse((m["ground"] & m["apron"]).any())
             self.assertGreater(m["ground"].sum(), 3 * m["apron"].sum())
 
+    def test_part_counts_give_latest_usual_and_range_per_track(self):
+        import basewatch as B
+        m = f"{B.METRIC}@{B.T_DB:g}"
+        day = lambda k: (dt.date(2026, 6, 1) + dt.timedelta(days=3 * k)).isoformat()    # noqa: E731
+        rows = [{"date": day(k), "orbit": "A" if k % 2 else "D", "part": "apron", m: (10 + k % 3) if k % 2 else 40} for k in range(30)]
+        rows.append({"date": day(30), "orbit": "A", "part": "apron", m: 3})
+        c = B.scene_counts(rows, m, "apron")
+        self.assertEqual(c[0][2:], (None, None, None))               # no usual before 8 earlier passes on the track
+        d, now, usual, lo, hi = c[-1]
+        self.assertEqual((now, usual), (3.0, 11.0))                  # against its own track (A), not the other one (40)
+        self.assertTrue(lo <= usual <= hi < 40)
+
     def test_each_part_gets_its_own_state(self):
         import basewatch as B
         d = tempfile.mkdtemp()
@@ -451,6 +463,7 @@ class TestBaseWatch(unittest.TestCase):
         self.assertEqual(st["state"], "normal")                    # the aircraft count did not move
         parts = {p.split(":")[0]: p.split(":")[1] for p in st["parts"].split(";")}
         self.assertEqual(parts, {"apron": "normal", "ground": "out"})    # the vehicle yards emptied
+        self.assertEqual(len(st["parts"].split(";")[1].split(":")), 8)    # state, z, dates, then latest, usual, low, high
 
     def test_naval_site_view_is_the_harbour_not_the_compound(self):
         import basewatch as B

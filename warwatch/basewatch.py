@@ -114,6 +114,24 @@ def scene_z(rows, metric, part=None):
     return out
 
 
+def scene_counts(rows, metric, part):
+    """[(date, count, usual, low, high)] in date order for one part: the count of bright objects on each pass, and the
+    median and 10th to 90th percentile of the same orbit's earlier passes within PREV_DAYS (None with fewer than MIN_PREV)."""
+    out, hist = [], {}
+    for r in sorted(rows, key=lambda r: r["date"]):
+        if r["part"] != part or r.get(metric) in (None, ""):
+            continue
+        x, d = float(r[metric]), dt.date.fromisoformat(r["date"])
+        prev = sorted([v for dd, v in hist.get(r["orbit"], []) if (d - dd).days <= PREV_DAYS][-MAX_PREV:])   # as scene_z
+        if len(prev) >= MIN_PREV:
+            q = lambda f: prev[min(len(prev) - 1, int(f * len(prev)))]    # noqa: E731
+            out.append((r["date"], x, q(0.5), q(0.1), q(0.9)))
+        else:
+            out.append((r["date"], x, None, None, None))
+        hist.setdefault(r["orbit"], []).append((d, x))
+    return out
+
+
 def state(zs, today, alerts=True):
     """zs: [(date, z)] scored scenes, newest last -> (state, dates used). 'out'/'in' need the last two scored scenes within
     7 days to agree beyond Z_AT; 'changed' when only the latest does; 'nodata' when nothing was scored in 10 days."""
@@ -460,7 +478,15 @@ def rebuild(sites, today=None):
                 pst, pu = state(pz, today)
             if any(r["part"] == part for r in sr):
                 pl = next((z for d, z in reversed(pz) if z is not None), None)
-                parts.append(f"{part}:{pst}:{'' if pl is None else f'{pl:.2f}'}:{'/'.join(pu)}")
+                cn = scene_counts(sr, metric, part)
+                byd = {}
+                for d, x, u, lo, hi in cn:          # one pass a day: the last one
+                    byd[d] = (x, u, lo, hi)
+                save_rows(f"base_{s['id']}_{part}", ["date", "count", "usual", "low", "high"],
+                          [[d, f"{x:g}"] + ["" if v is None else f"{v:g}" for v in rest] for d, (x, *rest) in sorted(byd.items())[-60:]])
+                last = next(((x, u, lo, hi) for _, x, u, lo, hi in reversed(cn) if u is not None), None)
+                nums = ":".join("" if v is None else f"{v:g}" for v in (last or (None,) * 4))
+                parts.append(f"{part}:{pst}:{'' if pl is None else f'{pl:.2f}'}:{'/'.join(pu)}:{nums}")
         so = sorted((o for o in opt if o["site"] == s["id"] and float(o.get("clear") or 0) >= 0.9), key=lambda o: o["date"])
         note = ""
         # one value per day (two tiles or satellites can image the same day), only measured ones
@@ -632,10 +658,19 @@ def layer(path=BASES):
         prt = []
         for x in (r.get("parts") or "").split(";"):
             f = x.split(":")
-            if len(f) == 4 and f[0] in PART_WHAT:
+            if len(f) in (4, 8) and f[0] in PART_WHAT:
+                num = lambda k: float(f[k]) if len(f) == 8 and f[k] else None    # noqa: E731
+                hist = []
+                try:
+                    with open(os.path.join(CACHE, f"base_{s['id']}_{f[0]}.csv"), newline="") as fh:
+                        hist = [[x["date"], float(x["count"]), float(x["usual"]) if x["usual"] else None]
+                                for x in csv.DictReader(fh)][-30:]
+                except OSError:
+                    pass
                 prt.append({"p": f[0], "w": PART_WHAT[f[0]][0], "st": f[1], "z": float(f[2]) if f[2] else None,
                             "d": f[3].replace("/", " and "), "s": PART_NOTE.get(f[1], f[1]),
-                            "t": f[0] != "ground" or GROUND_TESTED})
+                            "t": f[0] != "ground" or GROUND_TESTED,
+                            "now": num(4), "u": num(5), "lo": num(6), "hi": num(7), "h": hist})
         gr = next((x for x in prt if x["p"] == "ground" and x["st"] in ("out", "in")), None)
         if gr and part != "ground":
             why_ += (f" Vehicles and equipment on the rest of the base: {gr['s']} on two passes ({gr['d']})."
