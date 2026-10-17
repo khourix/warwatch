@@ -1,248 +1,248 @@
 2018 iran case points 0 calm days 365
 2018 israel case points 0 calm days 730
-2018 ukraine case points 0 calm days 1085
-2018 yemen case points 0 calm days 1450
-2019 iran case points 8 calm days 1801
-2019 israel case points 8 calm days 2159
-2019 ukraine case points 8 calm days 2521
-2019 yemen case points 8 calm days 2886
-2020 iran case points 8 calm days 3252
-2020 israel case points 12 calm days 3611
-2020 ukraine case points 12 calm days 3974
-2020 yemen case points 12 calm days 4333
-2021 iran case points 14 calm days 4691
-2021 israel case points 49 calm days 5049
-2021 ukraine case points 49 calm days 5407
-2021 yemen case points 49 calm days 5772
-2022 iran case points 49 calm days 5772
-2022 israel case points 49 calm days 5772
-2022 ukraine case points 49 calm days 5772
-2022 yemen case points 53 calm days 5772
-2023 iran case points 53 calm days 5772
-2023 israel case points 53 calm days 5772
-2023 ukraine case points 53 calm days 5772
-2023 yemen case points 53 calm days 5772
-2024 iran case points 53 calm days 5772
-2024 israel case points 53 calm days 5772
-2024 ukraine case points 78 calm days 5772
-2024 yemen case points 78 calm days 5772
-2025 iran case points 109 calm days 5772
-2025 israel case points 110 calm days 5772
-2025 ukraine case points 113 calm days 5772
-2025 yemen case points 113 calm days 5772
-usual_days   0 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 350
-usual_days   0 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 512
-usual_days   0 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 383
-usual_days   0 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 544
-usual_days   0 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 614
-usual_days   0 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 776
-usual_days   0 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 620
-usual_days   0 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 781
-usual_days   0 site 25 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 297
-usual_days   0 site 25 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 458
-usual_days   0 site 25 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 369
-usual_days   0 site 25 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 530
-usual_days   0 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 350
-usual_days   0 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 666
-usual_days   0 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 383
-usual_days   0 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 698
-usual_days   0 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 614
-usual_days   0 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 930
-usual_days   0 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 620
-usual_days   0 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 935
-usual_days   0 site 30 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 297
-usual_days   0 site 30 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 612
-usual_days   0 site 30 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 369
-usual_days   0 site 30 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 684
-usual_days   0 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 350
-usual_days   0 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 666
-usual_days   0 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 383
-usual_days   0 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 698
-usual_days   0 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 614
-usual_days   0 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 930
-usual_days   0 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 620
-usual_days   0 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 935
-usual_days   0 site 35 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 297
-usual_days   0 site 35 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 612
-usual_days   0 site 35 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 1/41 (seen 13), calm flags/yr 369
-usual_days   0 site 35 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 3/41 (seen 13), calm flags/yr 684
-usual_days   5 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 950
-usual_days   5 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1109
-usual_days   5 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 982
-usual_days   5 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1141
-usual_days   5 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1214
-usual_days   5 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1373
-usual_days   5 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1220
-usual_days   5 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1378
-usual_days   5 site 25 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 896
-usual_days   5 site 25 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1055
-usual_days   5 site 25 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 969
-usual_days   5 site 25 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1127
-usual_days   5 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1170
-usual_days   5 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1483
-usual_days   5 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1203
-usual_days   5 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1515
-usual_days   5 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1434
-usual_days   5 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1747
-usual_days   5 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1440
-usual_days   5 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1752
-usual_days   5 site 30 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1117
-usual_days   5 site 30 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1429
-usual_days   5 site 30 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1189
-usual_days   5 site 30 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1502
-usual_days   5 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1170
-usual_days   5 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1483
-usual_days   5 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1203
-usual_days   5 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1515
-usual_days   5 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1434
-usual_days   5 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1747
-usual_days   5 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1440
-usual_days   5 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1752
-usual_days   5 site 35 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1117
-usual_days   5 site 35 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1429
-usual_days   5 site 35 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1189
-usual_days   5 site 35 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1502
-usual_days  10 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 976
-usual_days  10 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1134
-usual_days  10 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1008
-usual_days  10 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1166
-usual_days  10 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1240
-usual_days  10 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1398
-usual_days  10 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1246
-usual_days  10 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1404
-usual_days  10 site 25 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 922
-usual_days  10 site 25 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1081
-usual_days  10 site 25 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 994
-usual_days  10 site 25 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1153
-usual_days  10 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1197
-usual_days  10 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1509
-usual_days  10 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1229
-usual_days  10 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1541
-usual_days  10 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1461
-usual_days  10 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1773
-usual_days  10 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1466
-usual_days  10 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1779
-usual_days  10 site 30 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1143
-usual_days  10 site 30 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1456
-usual_days  10 site 30 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1216
-usual_days  10 site 30 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1528
-usual_days  10 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1197
-usual_days  10 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1509
-usual_days  10 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1229
-usual_days  10 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1541
-usual_days  10 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1461
-usual_days  10 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1773
-usual_days  10 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1466
-usual_days  10 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1779
-usual_days  10 site 35 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1143
-usual_days  10 site 35 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1456
-usual_days  10 site 35 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1216
-usual_days  10 site 35 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1528
-usual_days  20 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 999
-usual_days  20 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1158
-usual_days  20 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1031
-usual_days  20 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1190
-usual_days  20 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1263
-usual_days  20 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1422
-usual_days  20 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1269
-usual_days  20 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1427
-usual_days  20 site 25 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 945
-usual_days  20 site 25 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1104
-usual_days  20 site 25 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1018
-usual_days  20 site 25 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1176
-usual_days  20 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1221
-usual_days  20 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1534
-usual_days  20 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1253
-usual_days  20 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1566
-usual_days  20 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1485
-usual_days  20 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1798
-usual_days  20 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1491
-usual_days  20 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1803
-usual_days  20 site 30 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1167
-usual_days  20 site 30 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1480
-usual_days  20 site 30 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1240
-usual_days  20 site 30 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1552
-usual_days  20 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1221
-usual_days  20 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1534
-usual_days  20 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1253
-usual_days  20 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1566
-usual_days  20 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1485
-usual_days  20 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1798
-usual_days  20 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1491
-usual_days  20 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1803
-usual_days  20 site 35 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1167
-usual_days  20 site 35 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1480
-usual_days  20 site 35 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1240
-usual_days  20 site 35 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1552
-usual_days  40 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1037
-usual_days  40 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1196
-usual_days  40 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1069
-usual_days  40 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1228
-usual_days  40 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1300
-usual_days  40 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1459
-usual_days  40 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1306
-usual_days  40 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1465
-usual_days  40 site 25 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 983
-usual_days  40 site 25 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1142
-usual_days  40 site 25 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1056
-usual_days  40 site 25 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1214
-usual_days  40 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1261
-usual_days  40 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1573
-usual_days  40 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1293
-usual_days  40 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1605
-usual_days  40 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1524
-usual_days  40 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1837
-usual_days  40 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1530
-usual_days  40 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1842
-usual_days  40 site 30 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1207
-usual_days  40 site 30 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1520
-usual_days  40 site 30 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1280
-usual_days  40 site 30 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1592
-usual_days  40 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1261
-usual_days  40 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1573
-usual_days  40 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1293
-usual_days  40 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1605
-usual_days  40 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1524
-usual_days  40 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1837
-usual_days  40 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1530
-usual_days  40 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1842
-usual_days  40 site 35 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1207
-usual_days  40 site 35 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1520
-usual_days  40 site 35 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1280
-usual_days  40 site 35 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1592
-usual_days  80 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1100
-usual_days  80 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1258
-usual_days  80 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1132
-usual_days  80 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1290
-usual_days  80 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1363
-usual_days  80 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1522
-usual_days  80 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1369
-usual_days  80 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1527
-usual_days  80 site 25 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1046
-usual_days  80 site 25 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1204
-usual_days  80 site 25 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1118
-usual_days  80 site 25 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1276
-usual_days  80 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1327
-usual_days  80 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1639
-usual_days  80 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1359
-usual_days  80 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1671
-usual_days  80 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1590
-usual_days  80 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1902
-usual_days  80 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1596
-usual_days  80 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1908
-usual_days  80 site 30 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1273
-usual_days  80 site 30 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1585
-usual_days  80 site 30 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1346
-usual_days  80 site 30 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1657
-usual_days  80 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1327
-usual_days  80 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1639
-usual_days  80 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1359
-usual_days  80 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1671
-usual_days  80 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1590
-usual_days  80 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1902
-usual_days  80 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1596
-usual_days  80 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1908
-usual_days  80 site 35 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1273
-usual_days  80 site 35 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1585
-usual_days  80 site 35 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 3/41 (seen 13), calm flags/yr 1346
-usual_days  80 site 35 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 13), calm flags/yr 1657
+2018 ukraine case points 0 calm days 1089
+2018 yemen case points 0 calm days 1454
+2019 iran case points 17 calm days 1805
+2019 israel case points 18 calm days 2163
+2019 ukraine case points 18 calm days 2528
+2019 yemen case points 18 calm days 2893
+2020 iran case points 18 calm days 3259
+2020 israel case points 22 calm days 3618
+2020 ukraine case points 22 calm days 3983
+2020 yemen case points 22 calm days 4342
+2021 iran case points 28 calm days 4700
+2021 israel case points 85 calm days 5058
+2021 ukraine case points 85 calm days 5423
+2021 yemen case points 85 calm days 5788
+2022 iran case points 85 calm days 5788
+2022 israel case points 85 calm days 5788
+2022 ukraine case points 88 calm days 5788
+2022 yemen case points 100 calm days 5788
+2023 iran case points 100 calm days 5788
+2023 israel case points 100 calm days 5788
+2023 ukraine case points 100 calm days 5788
+2023 yemen case points 100 calm days 5788
+2024 iran case points 100 calm days 5788
+2024 israel case points 100 calm days 5788
+2024 ukraine case points 142 calm days 5788
+2024 yemen case points 142 calm days 5788
+2025 iran case points 195 calm days 5788
+2025 israel case points 198 calm days 5788
+2025 ukraine case points 206 calm days 5788
+2025 yemen case points 206 calm days 5788
+usual_days   0 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 586
+usual_days   0 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 859
+usual_days   0 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 648
+usual_days   0 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 922
+usual_days   0 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 1087
+usual_days   0 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1361
+usual_days   0 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 1095
+usual_days   0 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1369
+usual_days   0 site 25 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 484
+usual_days   0 site 25 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 757
+usual_days   0 site 25 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 619
+usual_days   0 site 25 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 892
+usual_days   0 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 586
+usual_days   0 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1152
+usual_days   0 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 648
+usual_days   0 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1216
+usual_days   0 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 1087
+usual_days   0 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1654
+usual_days   0 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 1095
+usual_days   0 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1662
+usual_days   0 site 30 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 484
+usual_days   0 site 30 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1051
+usual_days   0 site 30 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 619
+usual_days   0 site 30 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1186
+usual_days   0 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 586
+usual_days   0 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1152
+usual_days   0 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 648
+usual_days   0 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1216
+usual_days   0 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 1087
+usual_days   0 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1654
+usual_days   0 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 1095
+usual_days   0 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1662
+usual_days   0 site 35 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 484
+usual_days   0 site 35 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1051
+usual_days   0 site 35 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 2/41 (seen 17), calm flags/yr 619
+usual_days   0 site 35 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 4/41 (seen 17), calm flags/yr 1186
+usual_days   5 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1552
+usual_days   5 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1820
+usual_days   5 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1615
+usual_days   5 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1882
+usual_days   5 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 2054
+usual_days   5 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2321
+usual_days   5 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 2062
+usual_days   5 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2329
+usual_days   5 site 25 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1450
+usual_days   5 site 25 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1718
+usual_days   5 site 25 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1586
+usual_days   5 site 25 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1853
+usual_days   5 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1922
+usual_days   5 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2480
+usual_days   5 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1984
+usual_days   5 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2544
+usual_days   5 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2423
+usual_days   5 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2982
+usual_days   5 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2431
+usual_days   5 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2990
+usual_days   5 site 30 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1820
+usual_days   5 site 30 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2379
+usual_days   5 site 30 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1955
+usual_days   5 site 30 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2514
+usual_days   5 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1922
+usual_days   5 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2480
+usual_days   5 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1984
+usual_days   5 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2544
+usual_days   5 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2423
+usual_days   5 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2982
+usual_days   5 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2431
+usual_days   5 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2990
+usual_days   5 site 35 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1820
+usual_days   5 site 35 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2379
+usual_days   5 site 35 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1955
+usual_days   5 site 35 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2514
+usual_days  10 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1598
+usual_days  10 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1864
+usual_days  10 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1660
+usual_days  10 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1928
+usual_days  10 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 2099
+usual_days  10 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2366
+usual_days  10 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 2107
+usual_days  10 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2374
+usual_days  10 site 25 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1496
+usual_days  10 site 25 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1763
+usual_days  10 site 25 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1631
+usual_days  10 site 25 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1898
+usual_days  10 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1968
+usual_days  10 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2527
+usual_days  10 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2031
+usual_days  10 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2590
+usual_days  10 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2470
+usual_days  10 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3028
+usual_days  10 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2478
+usual_days  10 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3036
+usual_days  10 site 30 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1866
+usual_days  10 site 30 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2425
+usual_days  10 site 30 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2002
+usual_days  10 site 30 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2560
+usual_days  10 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1968
+usual_days  10 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2527
+usual_days  10 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2031
+usual_days  10 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2590
+usual_days  10 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2470
+usual_days  10 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3028
+usual_days  10 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2478
+usual_days  10 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3036
+usual_days  10 site 35 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1866
+usual_days  10 site 35 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2425
+usual_days  10 site 35 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2002
+usual_days  10 site 35 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2560
+usual_days  20 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1640
+usual_days  20 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1906
+usual_days  20 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1702
+usual_days  20 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1970
+usual_days  20 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 2141
+usual_days  20 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2408
+usual_days  20 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 2149
+usual_days  20 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2416
+usual_days  20 site 25 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1538
+usual_days  20 site 25 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1805
+usual_days  20 site 25 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1673
+usual_days  20 site 25 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1940
+usual_days  20 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2011
+usual_days  20 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2570
+usual_days  20 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2074
+usual_days  20 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2633
+usual_days  20 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2513
+usual_days  20 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3072
+usual_days  20 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2521
+usual_days  20 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3080
+usual_days  20 site 30 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1910
+usual_days  20 site 30 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2469
+usual_days  20 site 30 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2045
+usual_days  20 site 30 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2604
+usual_days  20 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2011
+usual_days  20 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2570
+usual_days  20 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2074
+usual_days  20 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2633
+usual_days  20 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2513
+usual_days  20 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3072
+usual_days  20 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2521
+usual_days  20 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3080
+usual_days  20 site 35 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1910
+usual_days  20 site 35 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2469
+usual_days  20 site 35 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2045
+usual_days  20 site 35 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2604
+usual_days  40 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1704
+usual_days  40 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1971
+usual_days  40 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1767
+usual_days  40 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2034
+usual_days  40 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 2205
+usual_days  40 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2472
+usual_days  40 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 2213
+usual_days  40 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2480
+usual_days  40 site 25 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1602
+usual_days  40 site 25 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1870
+usual_days  40 site 25 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1737
+usual_days  40 site 25 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2004
+usual_days  40 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2078
+usual_days  40 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2637
+usual_days  40 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2141
+usual_days  40 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2700
+usual_days  40 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2579
+usual_days  40 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3138
+usual_days  40 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2587
+usual_days  40 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3146
+usual_days  40 site 30 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1977
+usual_days  40 site 30 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2536
+usual_days  40 site 30 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2112
+usual_days  40 site 30 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2670
+usual_days  40 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2078
+usual_days  40 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2637
+usual_days  40 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2141
+usual_days  40 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2700
+usual_days  40 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2579
+usual_days  40 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3138
+usual_days  40 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2587
+usual_days  40 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3146
+usual_days  40 site 35 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 1977
+usual_days  40 site 35 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2536
+usual_days  40 site 35 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2112
+usual_days  40 site 35 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2670
+usual_days  80 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1790
+usual_days  80 site 25 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2057
+usual_days  80 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1854
+usual_days  80 site 25 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2120
+usual_days  80 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 2292
+usual_days  80 site 25 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2558
+usual_days  80 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 2300
+usual_days  80 site 25 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2566
+usual_days  80 site 25 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1689
+usual_days  80 site 25 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 1956
+usual_days  80 site 25 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 4/41 (seen 17), calm flags/yr 1824
+usual_days  80 site 25 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 5/41 (seen 17), calm flags/yr 2090
+usual_days  80 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2171
+usual_days  80 site 30 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2729
+usual_days  80 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2234
+usual_days  80 site 30 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2792
+usual_days  80 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2672
+usual_days  80 site 30 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3230
+usual_days  80 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2680
+usual_days  80 site 30 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3238
+usual_days  80 site 30 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2070
+usual_days  80 site 30 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2628
+usual_days  80 site 30 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2204
+usual_days  80 site 30 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2763
+usual_days  80 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2171
+usual_days  80 site 35 similar 2.0x+20 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2729
+usual_days  80 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2234
+usual_days  80 site 35 similar 2.0x+20 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2792
+usual_days  80 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2672
+usual_days  80 site 35 similar 1.5x+10 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3230
+usual_days  80 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2680
+usual_days  80 site 35 similar 1.5x+10 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 3238
+usual_days  80 site 35 similar 99x+0 hot 3.0x+100 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2070
+usual_days  80 site 35 similar 99x+0 hot 3.0x+100 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2628
+usual_days  80 site 35 similar 99x+0 hot 2.0x+50 energy_sens 0: hits 6/41 (seen 17), calm flags/yr 2204
+usual_days  80 site 35 similar 99x+0 hot 2.0x+50 energy_sens 1: hits 7/41 (seen 17), calm flags/yr 2763
