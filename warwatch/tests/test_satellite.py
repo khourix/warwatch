@@ -423,8 +423,8 @@ class TestBaseWatch(unittest.TestCase):
         with open(bases, "w") as f:
             json.dump([{"id": "x", "name": "X Air Base", "lat": 25.1, "lon": 51.3, "kind": "air", "side": "US", "theatres": ["iran", "gulf"], "why": "test"},
                        {"id": "y", "name": "Y port", "lat": 26.2, "lon": 50.6, "kind": "naval", "side": "US", "theatres": ["gulf"], "why": ""}], f)
-        old = B.CACHE
-        B.CACHE = d
+        old, alerts = B.CACHE, B.ALERTS
+        B.CACHE, B.ALERTS = d, False
         try:
             B.save_rows("base_state", ["site", "state", "dates", "last_radar", "last_optical", "z", "part", "note"],
                         [["x", "changed", "2026-10-14", "2026-10-14", "2026-10-12", "-2.80", "apron", ""],
@@ -435,7 +435,7 @@ class TestBaseWatch(unittest.TestCase):
             B.ALERTS = True
             items = {i["id"]: i for i in B.layer(bases)}
         finally:
-            B.CACHE, B.ALERTS = old, False
+            B.CACHE, B.ALERTS = old, alerts
         self.assertEqual(untested["y"]["st"], "out")
         self.assertIn("Ships may have left", untested["y"]["why"])
         self.assertIn("carries no weight", untested["y"]["why"])

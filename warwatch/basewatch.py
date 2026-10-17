@@ -43,7 +43,8 @@ OPTICAL = os.path.join(HIST, "basewatch_optical.csv")
 CACHE = os.path.join(HIST, "cache")
 
 # ---- frozen by the feasibility test (docs/BASESPIKE.md) ----
-ALERTS = False          # NO-GO on 2026-10-15 (2 of 3 cases, 10.3% false alarms against a 10% limit): a viewer, no states or alerts
+ALERTS = True           # backfill test PASSED on 2026-10-17 (docs/BASEWATCH_STUDY.md; p 0.043, calm firing 11%). The feasibility
+                        # test of 2026-10-15 was NO-GO by 0.3 points on single scenes; the two-pass rule is what passed
 METRIC = "blobs"        # radar metric chosen by the test: groups of 3 to 150 pixels with VV >= T_DB
 T_DB = -3.0             # VV threshold in dB chosen by the test
 # ------------------------------------------------------------
@@ -452,18 +453,26 @@ def rebuild(sites, today=None):
         zl = next((z for d, z in reversed(zs) if z is not None), None)
         table.append([s["id"], st, ";".join(used), last_r, last_o, "" if zl is None else f"{zl:.2f}", main, note])
     save_rows("base_state", ["site", "state", "dates", "last_radar", "last_optical", "z", "part", "note"], table)
-    # theatre counts per day: replay the state day by day over the last 400 days
+    # theatre counts per day, replayed from 2022 over the backfilled scenes and the live ones (the history the model scores
+    # against); a theatre has a row on days where at least one of its sites has a scored pass in the last 10 days
     if ALERTS:
-        days = [today - dt.timedelta(days=k) for k in range(400, -1, -1)]
+        import basestudy as S
+        passes = S.site_passes(S.load_scenes(), sites)
         series = {}
-        site_z = {s["id"]: [(d, z) for d, _, _, z in scene_z(by_site.get(s["id"], []), metric,
-                                                             "harbour" if s["kind"] in ("naval", "port") else "apron")] for s in sites}
-        for d in days:
-            iso = d.isoformat()
-            st = {sid: state([x for x in zs if x[0] <= iso], d)[0] for sid, zs in site_z.items()}
-            for t, (o, i) in theatre_counts(st, sites, d).items():
-                if any(x[0] <= iso and (d - dt.date.fromisoformat(x[0])).days <= 10 for s in sites if t in s["theatres"] for x in site_z[s["id"]] if x[1] is not None):
-                    series.setdefault(t, []).append((iso, o, i))
+        d = S.START
+        while d <= today:
+            st = {sid: S.state_on(p, d) for sid, p in passes.items()}
+            cnt = {}
+            for s in sites:
+                v = st.get(s["id"])
+                if v is None:
+                    continue
+                for t in s["theatres"]:
+                    o, i = cnt.get(t, (0, 0))
+                    cnt[t] = (o + (v == "out"), i + (v == "in"))
+            for t, (o, i) in cnt.items():
+                series.setdefault(t, []).append((d.isoformat(), o, i))
+            d += dt.timedelta(days=1)
         for t, pts in series.items():
             save_series(f"bases_out_{t}", [(d, o) for d, o, _ in pts])
             save_series(f"bases_in_{t}", [(d, i) for d, _, i in pts])

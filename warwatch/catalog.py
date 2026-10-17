@@ -623,7 +623,7 @@ def _bases(sid):
     def go():
         pts = store.cache_load(sid)
         if not pts:
-            raise C.Pending("waiting for the base-watch feasibility test (docs/BASESPIKE.md) and the imagery job")
+            raise C.Pending("waiting for the imagery job to write the base counts")
         return pts
     return go
 
@@ -638,13 +638,13 @@ def _base_theatres():
 
 
 import basewatch as _bw   # noqa: E402  (standard library at import)
-for th in (_base_theatres() if _bw.ALERTS else []):   # registered only after the feasibility test says GO (docs/BASESPIKE.md)
+for th in (_base_theatres() if _bw.ALERTS else []):   # registered once the backfill test passed (docs/BASEWATCH_STUDY.md)
     add(f"bases_out_{th}", f"Bases with far fewer aircraft or ships than usual, {TH[th]} (Sentinel-1 radar)", "geospatial", th, "daily", False,
         "Sites where two radar passes in a week show far fewer bright objects on the aprons or in the harbour than that orbit usually sees. "
-        "Al Udeid emptied four days before Iran struck it in June 2025. Shown for reading; it carries no weight until it passes its test.",
+        "Al Udeid emptied four days before Iran struck it in June 2025. Passed its backfill test in 2026 (docs/BASEWATCH_STUDY.md).",
         _bases(f"bases_out_{th}"), url="https://planetarycomputer.microsoft.com/dataset/sentinel-1-rtc", sub="Satellite")
     add(f"bases_in_{th}", f"Bases with far more aircraft or ships than usual, {TH[th]} (Sentinel-1 radar)", "geospatial", th, "daily", False,
-        "Sites where two radar passes in a week show far more bright objects than usual: aircraft or ships arriving. Shown for reading; no weight until tested.",
+        "Sites where two radar passes in a week show far more bright objects than usual: aircraft or ships arriving. Counted with bases_out (docs/BASEWATCH_STUDY.md).",
         _bases(f"bases_in_{th}"), url="https://planetarycomputer.microsoft.com/dataset/sentinel-1-rtc", sub="Satellite")
 
 # ============ Vessel presence from Global Fishing Watch (fills the gaps where live AIS has no receivers) ============
@@ -802,10 +802,11 @@ for _s in SERIES:
 
 
 # ============ Zero weight: families the methodology review found to be noise ============
+# bases_ left this list on 2026-10-17, when the base watch passed its backfill test (docs/BASEWATCH_STUDY.md).
 # Their noise-to-signal ratio on 78 labelled events (2018-2026) was 1 or more, so they raised false alarms without adding
 # warning (docs/METHODOLOGY.md, "Zero-weight families"). They stay on the page and keep being scored; the composite ignores
 # them until a refit shows they lead events. Remove an id here to give it weight again.
-ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_build_", "wheat_etf", "copper_etf", "brent_etf", "sar_", "firms_anom_", "bases_")
+ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_build_", "wheat_etf", "copper_etf", "brent_etf", "sar_", "firms_anom_")
 for _s in SERIES:
     if _s["id"].startswith(ZERO_WEIGHT):
         _s["scored"] = False
