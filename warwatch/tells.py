@@ -129,9 +129,11 @@ TELLS = [
      "series": ["tzeva_{t}", "uaair_{t}"], "rule": lambda p, d: surge(p, d, 2, 5, recent=1),
      "says": "Rocket, missile or air-raid alert waves in the last 7 days doubled against their usual count.",
      "cases": "Tzeva Adom and alerts.in.ua count the attacks themselves: a reading of tempo in wars already under way."},
-    {"id": "bases", "name": "Aircraft leave a named base, ships leave port", "series": [], "rule": None,
-     "says": "Not watched yet: the satellite base check did not pass its feasibility test (docs/BASESPIKE.md); the base layer shows images only. "
-             "Per-base aircraft traces would also do.",
+    {"id": "bases", "name": "Aircraft leave a named base, ships leave port", "series": ["bases_out_{t}", "bases_in_{t}"],
+     "rule": lambda p, d: any(v >= 1 for v in _vals(p, d, 1)),
+     "says": "A watched base had two Sentinel-1 radar passes within a week both reading far fewer (or far more) aircraft or ships "
+             "than usual. Passed its test on 2022-2026 backfill: fired before 17% of events against 11% of calm windows "
+             "(docs/BASEWATCH_STUDY.md).",
      "cases": "Al Udeid emptied 19 Jun 2025, strike 23 Jun; every US ship left Bahrain 26 Feb 2026, strikes 28 Feb."},
     {"id": "civil", "name": "Civil-defence instructions", "series": [], "rule": None,
      "says": "Not watched yet: needs home-front and civil-defence notices.",

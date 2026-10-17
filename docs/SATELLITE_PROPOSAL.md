@@ -207,3 +207,32 @@ One PR per stage. Each stage in the plans lists its files, data formats, thresho
   sites (55,539 in all). The files stay out of git (`data/raw/` is ignored); a rebuild without them keeps the GEM rows.
 - **Fire test rerun with both:** still fails (added events 55% against 51% calm false alarms); the case checks are
   unchanged (Shahran 55 near "Fuel tanks").
+
+## 7. Energy sites and base movement (2026-10-17)
+
+Asked for by the owner after attacks in the Middle East aimed at power plants and oil and gas sites.
+
+**Fires at energy sites (map rule).** A listed plant (oil and gas, power, steel, cement) counted as routine heat whenever a
+fire fell within 1 km of it, even where the plant's own spot had never burned. Now:
+- a plant counts as routine heat only where its ~1 km spot burned on 10 days or more in the three years before; listed gas
+  flares and platforms stay routine;
+- a fire at a plant, fuel depot or substation that does not usually burn is scored like any unexplained fire, with the
+  site's weight (+25) and no farm-season discount, and the map says "At X, a power plant that shows no routine heat";
+- at a plant that does burn, "hot" also fires when the heat is twice its own usual plus 20 MW and above what similar plants
+  in the box usually reach (the 90th percentile of their usual heat).
+
+Case checks (`fireref.py cases`): Shahran depot (14 Jun 2025) is now unusual (score 70, was 55). Baba Gurgur and Rumaila stay
+routine. Abqaiq, Hodeidah, Zmiivska (22 Mar 2024) and Trypilska (11 Apr 2024) have no S-NPP detection of the attack fire
+on the day (a data limit: one satellite, two passes a day). Bazan, Haifa (16 Jun 2025): a 7 MW detection at the refinery's
+power station, whose spot burned on about 1% of days, stays routine. Cost: on the 2018–2025 replay unusual detections rise
+by about 3 a day in the Iran box (Iran, Iraq, the Gulf) and 1 a day in Ukraine. The unusual-fire count is a sign that
+something is happening, not a forecast, so it stays at zero weight ([FIREANOM.md](FIREANOM.md)).
+
+**Base movement.** The base watch had missed its feasibility test by 0.3 points on single scenes. The two-pass rule the
+monitor actually uses was then tested on Sentinel-1 radar from 2021-09 to 2026-10 at 113 bases (42,888 backfilled scenes),
+to the plan fixed before the backfill was read ([BASEWATCH_STUDY_PLAN.md](BASEWATCH_STUDY_PLAN.md)). It **passed narrowly**:
+a base was out or in during the 14 days before 17% of events against 11% of calm windows (p 0.043; original events 19%,
+added events 14%) ([BASEWATCH_STUDY.md](BASEWATCH_STUDY.md)). As the plan says, `basewatch.ALERTS` is on, the
+`bases_out_<t>` and `bases_in_<t>` series count in the composite, and the "bases" tell fires when a base was out or in in
+the last 7 days. The signal is weak: it fires in one calm fortnight in nine, and most hits are arrivals ("in") somewhere
+in a large theatre. Al Udeid before the June 2025 strikes is its clearest case.

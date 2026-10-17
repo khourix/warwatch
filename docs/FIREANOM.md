@@ -4,6 +4,11 @@ Written by `warwatch/sourcestudy.py fireanom` to the plan fixed before the count
 
 This run uses the site list of 16 Oct 2026 evening: OpenStreetMap from Geofabrik's extracts plus 1,997 Global Energy Monitor plants, fields and terminals (55,539 sites). Earlier runs: without OpenStreetMap (15 Oct) 70% / 53% hits against 50% false alarms; with OpenStreetMap from QLever (16 Oct) 76% / 57% against 51%. Both are compared in [FIREANOM_PLAN.md](FIREANOM_PLAN.md).
 
+**After the test (17 Oct 2026, map rule, not a new test).** Fires at energy and industrial sites that do not usually burn
+are now scored as unusual (`firecls.py`, docstring). The replay files in `backfill/data/firecls` were rebuilt with that rule,
+and this test run again on them for the record: firms_anom then hits 58% of original and 51% of added events against 46%
+false alarms (p 0.118 and 0.275), so it still fails and stays at zero weight. The table below is the frozen run.
+
 Hit = z reached 2 in the 30 days before an event; false-alarm rate = share of calm 30-day windows where it did.
 
 | Family | Calm windows | False-alarm rate | Original events | Hit rate | p | AUC | Added events | Hit rate | p | AUC | Passes |

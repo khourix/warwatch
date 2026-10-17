@@ -24,3 +24,50 @@ events with the firing rate in calm windows (one-sided Fisher exact test).
 Also reported, with no pass mark: each feasibility case, and each site's firing count (a site that fires often in calm
 times is the first to look at). A failure is recorded and not tuned: no change to sites, metric, threshold or windows.
 The tell keeps its place on the page either way, because tells never set a level, but its record will show the result.
+
+## Amendment (2026-10-17): run it after the NO-GO, at the owner's request. Fixed before any backfilled scene is read.
+
+The feasibility test missed GO by 0.3 points (10.3% false alarms on single scenes against 10%). It also scored single
+scenes, while the monitor's rule needs two passes to agree. On 17 Oct 2026 the owner asked for base movements (aircraft
+and equipment) to count as a sign of coming military action, so this test is now run as written above, with these
+details fixed before reading:
+
+- **Scenes.** Sentinel-1 RTC (Planetary Computer) from 2021-09-01 to 2026-02-28 for every site in
+  `warwatch/data/bases.json` (120 sites today, not the 30 of the first draft), read by `basewatch.py --backfill-from
+  2021-09-01 --until 2026-02-28 --no-optical`, plus the live scenes in `warwatch/history/basewatch_scenes.csv` from
+  2026-03-01. The backfill is kept in `backfill/data/basewatch/scenes.csv.gz`. Sites with no radar coverage drop out.
+- **Frozen from the feasibility test:** `blobs` at VV ≥ −3 dB, z against the same orbit and part (8 to 20 earlier scenes
+  within 240 days), two scored passes within 7 days both beyond ±2.5, and the state needs a pass in the last 10 days.
+- **Events.** Every distinct (date, theatre) row of `warwatch/data/events.csv` (which holds the added events too) dated
+  2022-03-01 or later, up to the last scene date, in a theatre listed by at least one site. An event whose 14 days
+  before hold no scored pass at any of its theatre's sites is counted as "no data" and left out (reported).
+- **Calm windows.** Per theatre, 14-day windows starting 2022-03-01 and stepped every 14 days, with no event of that
+  theatre from 30 days before the window starts to 30 days after it ends. Same "no data" rule.
+- **Test and pass rule:** unchanged (one-sided Fisher exact test; p < 0.05 and calm firing ≤ 15%). Original and added
+  events are also reported apart, with no pass mark.
+- **On a pass:** `basewatch.ALERTS` becomes `True` (the `bases_out_<t>` and `bases_in_<t>` series appear), the "bases"
+  tell gets the rule "a base out or in on any of the last 7 days", and `bases_` leaves `catalog.ZERO_WEIGHT`, so the
+  composite counts it. **On a failure:** recorded, not tuned. The map keeps showing two-pass movement with a note that it
+  carries no weight.
+
+`warwatch/basestudy.py` runs it and writes `docs/BASEWATCH_STUDY.md`.
+
+## Amendment 2 (2026-10-17): vehicles and equipment, the "ground" part. Fixed before any ground scene is read.
+
+On 17 Oct 2026 the owner asked to see movement of equipment (launchers, air defence), vehicles, aircraft and ships at
+bases. Aircraft (aprons) and ships (harbour) are the parts tested above. This amendment adds a third part, **ground**:
+each site's outline minus its aprons and harbour, where vehicle parks, launcher and storage yards sit. Outlines larger
+than 15 × 15 km are left out (3 sites today). Missile, air-defence and depot sites added to `bases.json` on the same day,
+before any ground scene is read, are in the test too; their outline is a circle drawn from published coordinates.
+
+- **Scenes.** The ground part of every eligible site, from 2021-09-01 to 2026-10-16, read by `basewatch.py
+  --backfill-from 2021-09-01 --parts ground --no-optical`, merged into `backfill/data/basewatch/scenes.csv.gz`.
+- **Frozen from the test above:** the metric, threshold, z rule, two-pass state, events, calm windows, 14-day lead, test
+  and pass rule. Only the part read changes. A site counts as firing on a day when its ground part is out or in.
+- **What it can see.** At 10 m, a single launcher, radar or air-defence vehicle is one or two pixels; the metric counts
+  groups of 3 to 150 bright pixels, so it sees parked groups of vehicles and equipment, not single ones.
+- **On a pass:** `basewatch.GROUND_TESTED` becomes `True`. The ground state then counts in `bases_out_<t>` and
+  `bases_in_<t>` (a site counts once a day when its main part or its ground part is out or in), and the map drops the
+  "not yet checked" note on it. **On a failure:** recorded, not tuned. The map keeps showing the ground state with that note.
+
+`python3 warwatch/basestudy.py ground` runs it and writes `docs/BASEWATCH_GROUND_STUDY.md`.

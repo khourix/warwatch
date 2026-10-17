@@ -8,6 +8,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -99,11 +100,67 @@ class TestFireCls(unittest.TestCase):
 
     def test_seasonal_but_next_to_a_depot_stays_unexplained(self):
         I, J = F.coarse(36.4, 40.9)
-        depot = {"name": "Fuel tanks", "kind": "fuel", "lat": 36.405, "lon": 40.9}
+        depot = {"name": "Fuel tanks", "kind": "fuel", "lat": 36.4135, "lon": 40.9}      # 1.5 km: near, not at the depot
         r = ref(coarse={(I, J): {y: 1 << 5 for y in range(2012, 2026)}}, sites=[depot])
         p = F.classify([det(36.4, 40.9, date="2026-06-15")], "iran", ref=r)[0]
         self.assertIn(p["c"], ("unex", "anom"))
         self.assertIn("often burns in June", p["why"])
+
+    def test_fire_at_a_depot_in_farm_season_gets_no_farm_discount(self):
+        # Shahran, 14 Jun 2025: the depot fire scored 55 because the area's June farm burning took 15 off
+        I, J = F.coarse(35.78, 51.30)
+        depot = {"name": "Shahran depot", "kind": "fuel", "lat": 35.7845, "lon": 51.30}
+        r = ref(coarse={(I, J): {y: 1 << 5 for y in range(2012, 2025)}}, sites=[depot], grid=full_grid(35.78, 51.30, years=(2015, 2019, 2022)))
+        self.assertEqual(F.classify([det(35.78, 51.30, frp=20, date="2025-06-14", dn="N")], "iran", ref=r)[0]["c"], "unex")  # tuned default
+        with mock.patch.dict(F.W, energy_sens=1):            # depots as energy sites: off since the tuning (it cost more than it caught)
+            p = F.classify([det(35.78, 51.30, frp=20, date="2025-06-14", dn="N")], "iran", ref=r)[0]
+        self.assertEqual(p["c"], "anom")
+        self.assertEqual(p["esite"], 1)
+        self.assertIn("At Shahran depot, a fuel depot that shows no routine heat", p["why"])
+        self.assertNotIn("often burns", p["why"])
+
+    def test_fire_at_a_power_plant_that_does_not_usually_burn_is_not_routine(self):
+        # Trypilska, 11 Apr 2024: a coal plant whose spot shows no fire record; it was "routine industrial heat" before
+        site = {"name": "Trypilska", "kind": "power", "lat": 50.135, "lon": 30.745}
+        r = ref(sites=[site], box="ukraine", grid=full_grid(50.135, 30.745))
+        p = F.classify([det(50.135, 30.745, frp=35, date="2024-04-11")], "ukraine", ref=r)[0]
+        self.assertEqual(p["c"], "anom")
+        self.assertFalse(p["routine"])
+        self.assertIn("At Trypilska, a power plant", p["why"])
+        self.assertIn("no fire here in 12 years", p["why"])
+        self.assertEqual(p["site"], "Trypilska")
+
+    def test_rarely_lit_spot_at_a_plant_is_scored_but_a_listed_flare_stays_routine(self):
+        i, j = F.fine(30.0, 48.0)
+        cells = {(i, j): row(d={2023: 1, 2024: 2, 2025: 1})}       # 4 days in three years: under usual_days
+        plant = {"name": "Refinery", "kind": "oilgas", "lat": 30.0, "lon": 48.0}
+        p = F.classify([det(30.0, 48.0, frp=8)], "iran", ref=ref(dict(cells), sites=[plant]))[0]
+        self.assertIn(p["c"], ("unex", "anom"))
+        self.assertGreaterEqual(p["a"], 55)
+        flare = {"name": "New flare", "kind": "flare", "lat": 30.0, "lon": 48.0}
+        self.assertEqual(F.classify([det(30.0, 48.0, frp=8)], "iran", ref=ref(dict(cells), sites=[flare]))[0]["c"], "ind")
+        busy = {(i, j): row(d={2023: 9, 2024: 4, 2025: 1})}        # 14 days: the plant's usual heat
+        self.assertEqual(F.classify([det(30.0, 48.0, frp=8)], "iran", ref=ref(busy, sites=[plant]))[0]["c"], "ind")
+
+    def test_hotter_than_its_usual_and_than_similar_plants_is_hot(self):
+        sites, cells = [], {}
+        for k in range(12):                                         # twelve power plants whose usual heat is 5 to 16 MW
+            la, lo = 31.0 + k * 0.1, 50.0
+            i, j = F.fine(la, lo)
+            cells[(i, j)] = row(t2=10, frp95=5.0 + k, d={y: 100 for y in range(2012, 2026)})
+            sites.append({"name": f"Plant {k}", "kind": "power", "lat": la, "lon": lo})
+        r = ref(cells, sites=sites)
+        self.assertEqual(r.ceiling("power"), 15.0)
+        self.assertEqual(F.classify([det(31.0, 50.0, frp=40)], "iran", ref=r)[0]["c"], "ind")      # the test is off by default
+        patch = mock.patch.dict(F.W, similar_x=2.0, similar_add=20)
+        patch.start()
+        self.addCleanup(patch.stop)
+        # Plant 0 usually reaches 5 MW: 40 MW is under the old bar (105 MW) but twice its usual + 20 and over what similar plants reach
+        p = F.classify([det(31.0, 50.0, frp=40)], "iran", ref=r)[0]
+        self.assertEqual(p["c"], "hot")
+        self.assertIn("Similar power plants in this region usually stay under 15 MW", p["why"])
+        self.assertEqual(F.classify([det(31.0, 50.0, frp=14)], "iran", ref=r)[0]["c"], "ind")     # under 2 x 5 + 20
+        self.assertEqual(F.classify([det(32.1, 50.0, frp=40)], "iran", ref=r)[0]["c"], "ind")     # Plant 11: 16 MW usual, 40 < 2 x 16 + 20
 
     def test_volcano_and_offshore(self):
         i, j = F.fine(13.4, 41.7)
@@ -160,7 +217,10 @@ class TestFireCls(unittest.TestCase):
         F.save_daily(pts, today)
         self.assertEqual(dict(F.daily_series("iran"))["2026-10-14"], 1.0)    # S-NPP only
         self.assertEqual(dict(F.daily_series("iran"))["2026-10-13"], 0.0)
-        self.assertEqual(F.save_anoms(pts, today), 1)
+        import store
+        from unittest import mock
+        with mock.patch.object(store, "cache_rows", return_value=[]), mock.patch.object(store, "cache_rows_save"):
+            self.assertEqual(F.save_anoms(pts, today), 1)    # this run's clusters only, whatever the live cache holds
 
 
     def test_economist_war_fire_upgrades_a_seasonal_fire_in_ukraine_only(self):
@@ -296,8 +356,35 @@ class TestBaseWatch(unittest.TestCase):
         self.assertEqual(B.state([("2026-02-10", -3.0), ("2026-02-26", -3.1)], today, alerts=True)[0], "changed")
         self.assertEqual(B.state([("2026-02-20", 0.5), ("2026-02-26", 3.1)], today, alerts=True)[0], "changed")
         self.assertEqual(B.state([("2026-02-20", 3.0), ("2026-02-26", 3.1)], today, alerts=True)[0], "in")
-        self.assertEqual(B.state([("2026-02-20", -3.0), ("2026-02-26", -3.1)], today, alerts=False)[0], "changed")   # before GO
+        self.assertEqual(B.state([("2026-02-20", -3.0), ("2026-02-26", -3.1)], today, alerts=False)[0], "changed")
+        self.assertEqual(B.state([("2026-02-20", -3.0), ("2026-02-26", -3.1)], today)[0], "out")    # the map shows movement by default
         self.assertEqual(B.state([("2026-02-01", 0.1)], today)[0], "nodata")
+
+    def test_base_study_replays_the_two_pass_rule_and_scores_events_against_calm(self):
+        import basestudy as S
+        sites = [{"id": "a", "name": "A", "kind": "air", "theatres": ["iran"]}]
+        rows, d = [], dt.date(2021, 9, 1)
+        k = 0
+        while d <= dt.date(2023, 12, 31):
+            v = 30.0 + (k % 3)                                         # a steady apron: 30 to 32 bright objects
+            if dt.date(2022, 6, 10) <= d <= dt.date(2022, 6, 20):
+                v = 5.0                                                # emptied before the 2022-06-25 event
+            rows.append({"scene_id": f"s{k}", "site": "a", "date": d.isoformat(), "orbit": "A1", "part": "apron", "blobs@-3": str(v)})
+            d += dt.timedelta(days=6)
+            k += 1
+        st = S.site_passes(rows, sites)["a"]
+        self.assertEqual(S.state_on(st, dt.date(2022, 6, 20)), "out")
+        self.assertEqual(S.state_on(st, dt.date(2022, 5, 1)), "other")
+        self.assertIsNone(S.state_on(st, dt.date(2024, 3, 1)))         # no pass in 10 days
+        ser = S.daily(sites, {"a": st}, dt.date(2022, 6, 1), dt.date(2022, 6, 30))
+        self.assertTrue(S.fired(ser["iran"], dt.date(2022, 6, 25)))
+        self.assertFalse(S.fired(ser["iran"], dt.date(2022, 6, 8)))
+        self.assertIsNone(S.fired({}, dt.date(2022, 6, 8)))
+        self.assertAlmostEqual(S.fisher_greater(5, 0, 0, 5), 1 / 252, places=6)
+        self.assertAlmostEqual(S.fisher_greater(0, 5, 5, 0), 1.0)
+        calm = S.calm_windows({"iran"}, [{"theatre": "iran", "date": dt.date(2022, 6, 25)}], dt.date(2022, 12, 31))
+        self.assertTrue(all(not (dt.date(2022, 5, 26) <= e <= dt.date(2022, 8, 8)) for _, e in calm))
+        self.assertIn(("iran", dt.date(2022, 3, 15)), calm)
 
     def test_theatre_counts_use_each_sites_own_theatres(self):
         import basewatch as B
@@ -329,6 +416,42 @@ class TestBaseWatch(unittest.TestCase):
         self.assertEqual([p for _, p in B.windows(far)], [["apron"], ["harbour"]])
         self.assertLess(B.site_bbox(far)[2] - B.site_bbox(far)[0], 0.05)      # chips stay on the air base
 
+    def test_ground_part_is_the_base_outside_aprons_and_harbour(self):
+        import basewatch as B
+        sq = lambda lo, la, k=0.01: [[lo, la], [lo + k, la], [lo + k, la + k], [lo, la + k], [lo, la]]    # noqa: E731
+        rec = {"lat": 35.53, "lon": 24.15, "aprons": [sq(24.15, 35.53, 0.005)], "outline": [sq(24.145, 35.525, 0.03)]}
+        self.assertEqual([p for _, p in B.windows(rec)], [["apron", "ground"]])
+        self.assertEqual([p for _, p in B.windows(rec, ["ground"])], [["ground"]])
+        huge = dict(rec, outline=[sq(24.0, 35.4, 0.3)])                   # a 30 km range is too big to read as one part
+        self.assertEqual([p for _, p in B.windows(huge)], [["apron"]])
+        if _have("numpy", "scipy", "rasterio"):
+            bbox, _ = B.windows(rec)[0]
+            w, h = B.I.grid(bbox, 10)
+            m = B.part_masks(rec, bbox, w, h)
+            self.assertFalse((m["ground"] & m["apron"]).any())
+            self.assertGreater(m["ground"].sum(), 3 * m["apron"].sum())
+
+    def test_each_part_gets_its_own_state(self):
+        import basewatch as B
+        d = tempfile.mkdtemp()
+        old = (B.SCENES, B.OPTICAL, B.CACHE)
+        B.SCENES, B.OPTICAL, B.CACHE = os.path.join(d, "s.csv"), os.path.join(d, "o.csv"), d
+        metric = f"{B.METRIC}@{B.T_DB:g}"
+        day = lambda k: (dt.date(2026, 6, 1) + dt.timedelta(days=6 * k)).isoformat()    # noqa: E731
+        rows = []
+        for k in range(20):
+            for part, v in (("apron", 10 + k % 2), ("ground", 30 + k % 3 if k < 18 else 2)):
+                rows.append({"scene_id": f"s{k}", "site": "x", "date": day(k), "orbit": "A1", "part": part, "area_m2": 1, metric: v})
+        B.append_csv(B.SCENES, B.SCENE_COLS, rows)
+        try:
+            B.rebuild([{"id": "x", "kind": "air", "theatres": ["zz"]}], dt.date.fromisoformat(day(19)))
+            st = {r["site"]: r for r in B.read_csv(os.path.join(d, "base_state.csv"))}["x"]
+        finally:
+            B.SCENES, B.OPTICAL, B.CACHE = old
+        self.assertEqual(st["state"], "normal")                    # the aircraft count did not move
+        parts = {p.split(":")[0]: p.split(":")[1] for p in st["parts"].split(";")}
+        self.assertEqual(parts, {"apron": "normal", "ground": "out"})    # the vehicle yards emptied
+
     def test_naval_site_view_is_the_harbour_not_the_compound(self):
         import basewatch as B
         sq = lambda lo, la: [[lo, la], [lo + 0.005, la], [lo + 0.005, la + 0.005], [lo, la]]    # noqa: E731
@@ -346,26 +469,34 @@ class TestBaseWatch(unittest.TestCase):
         with open(bases, "w") as f:
             json.dump([{"id": "x", "name": "X Air Base", "lat": 25.1, "lon": 51.3, "kind": "air", "side": "US", "theatres": ["iran", "gulf"], "why": "test"},
                        {"id": "y", "name": "Y port", "lat": 26.2, "lon": 50.6, "kind": "naval", "side": "US", "theatres": ["gulf"], "why": ""}], f)
-        old = B.CACHE
-        B.CACHE = d
+        old, alerts = B.CACHE, B.ALERTS
+        B.CACHE, B.ALERTS = d, False
         try:
-            B.save_rows("base_state", ["site", "state", "dates", "last_radar", "last_optical", "z", "part", "note"],
-                        [["x", "changed", "2026-10-14", "2026-10-14", "2026-10-12", "-2.80", "apron", ""],
+            B.save_rows("base_state", ["site", "state", "dates", "last_radar", "last_optical", "z", "part", "note", "parts"],
+                        [["x", "changed", "2026-10-14", "2026-10-14", "2026-10-12", "-2.80", "apron", "",
+                          "apron:changed:-2.80:2026-10-14;ground:in:3.40:2026-10-08/2026-10-14"],
                          ["y", "out", "2026-10-08;2026-10-14", "2026-10-14", "", "-3.10", "harbour", ""]])
             B.save_series("base_x", [("2026-10-08", 0.2), ("2026-10-14", -2.8)])
             B.save_rows("base_chips", ["site", "kind", "date", "scene_id"], [["x", "a", "2026-10-12", "S2"]])
-            viewer = {i["id"]: i for i in B.layer(bases)}           # NO-GO: images to look at, no states
+            untested = {i["id"]: i for i in B.layer(bases)}         # before the backfill test: movement shown, with no weight
             B.ALERTS = True
             items = {i["id"]: i for i in B.layer(bases)}
         finally:
-            B.CACHE, B.ALERTS = old, False
-        self.assertEqual({i["st"] for i in viewer.values()}, {"viewer"})
-        self.assertIn("z -3.1", viewer["y"]["why"])
+            B.CACHE, B.ALERTS = old, alerts
+        self.assertEqual(untested["y"]["st"], "out")
+        self.assertIn("Ships may have left", untested["y"]["why"])
+        self.assertIn("carries no weight", untested["y"]["why"])
+        self.assertNotIn("carries no weight", items["y"]["why"])
         self.assertEqual(items["x"]["pts"], [0.2, -2.8])
         self.assertIn("One radar pass (2026-10-14)", items["x"]["why"])
         self.assertEqual(items["x"]["img"], {"a": "img/bases/x_a.jpg", "ad": "2026-10-12"})
         self.assertIn("Ships may have left", items["y"]["why"])
         self.assertIn("2026-10-08 and 2026-10-14", items["y"]["why"])
+        gr = {x["p"]: x for x in items["x"]["pr"]}
+        self.assertEqual((gr["ground"]["w"], gr["ground"]["st"], gr["ground"]["t"]), ("Vehicles and equipment", "in", False))
+        self.assertIn("Vehicles and equipment on the rest of the base: more than usual", items["x"]["why"])
+        self.assertIn("not yet checked", items["x"]["why"])
+        self.assertEqual(items["y"]["pr"], [])
 
     def test_construction_note_needs_two_images_in_a_row(self):
         import basewatch as B
