@@ -74,7 +74,7 @@ def get(url, data=None, timeout=120, tries=4, headers=None):
 # ---------------------------------------------------------------- archive files
 def archive_file(country, year, cache, sat="snpp"):
     """Local path of the year's country file (downloaded once into the cache), or None when FIRMS has no such file.
-    sat: snpp (the reference tables and replay), noaa20 or noaa21 (the other VIIRS satellites the live map also reads)."""
+    sat: snpp (the reference tables and replay), jpss1 (NOAA-20) or jpss2 (NOAA-21), the other VIIRS satellites the live map reads."""
     os.makedirs(cache, exist_ok=True)
     p = os.path.join(cache, f"viirs-{sat}_{year}_{country}.csv")
     if os.path.exists(p):
@@ -761,7 +761,7 @@ def cases(cache, path=os.path.join(F.DATA, "fire_cases.csv")):
 
 
 # ---------------------------------------------------------------- energy-site tuning (2026-10-17, docs/FIRE_ENERGY_TUNING.md)
-SATS = ("snpp", "noaa20", "noaa21")
+SATS = ("snpp", "jpss1", "jpss2")     # FIRMS names NOAA-20 jpss1 and NOAA-21 jpss2 (viirs-noaa20 is a 404)
 TUNE_CASES = os.path.join(F.DATA, "fire_energy_cases.csv")
 CALM_YEARS = (2018, 2019, 2020, 2021)
 GRID = {"usual_days": (0, 5, 10, 20, 40, 80), "site": (25, 30, 35), "similar": ((2.0, 20), (1.5, 10), (99, 0)),

@@ -8,7 +8,6 @@ permissions:
   contents: write
 jobs:
   tune:
-    if: false      # ran in run 3
     runs-on: ubuntu-latest
     timeout-minutes: 340
     env:
@@ -17,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Which VIIRS archives exist
         run: |
-          for s in snpp noaa20 noaa21; do for y in 2018 2021 2024; do
+          for s in snpp jpss1 jpss2 noaa20 noaa-20 j1; do for y in 2018 2021 2024; do
             code=$(curl -s -o /dev/null -w '%{http_code}' -r 0-200 "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-$s/$y/viirs-${s}_${y}_Iran.csv"); echo "$s $y $code"; done; done | tee lab_probe.txt
       - run: python3 -u warwatch/fireref.py tune 2>&1 | tee lab_tune.txt
       - name: Commit the tuning result to the branch
@@ -26,10 +25,11 @@ jobs:
           git config user.name "warwatch-bot"; git config user.email "warwatch-bot@users.noreply.github.com"
           mkdir -p lab && mv lab_probe.txt lab/fire_probe.txt; tail -400 lab_tune.txt > lab/fire_tune.txt || true
           git add lab backtest/fire_energy_tuning.json 2>/dev/null || git add lab
-          git commit -qm "lab: energy-site fire tuning"
+          git commit -qm "lab: energy-site fire tuning (three satellites)"
           git reset -q --hard HEAD
           for i in 1 2 3 4 5 6; do git pull --rebase -q origin claude/project-thread-szj3l8 && git push -q origin HEAD:claude/project-thread-szj3l8 && break; sleep $((i * 7)); done
   ground:
+    if: false      # ran in run 4
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
