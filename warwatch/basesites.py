@@ -3,6 +3,7 @@
 
     python3 warwatch/basesites.py build          # data/bases_seed.csv + OpenStreetMap outlines -> data/bases.json, docs/BASES_REVIEW.md
     python3 warwatch/basesites.py build al_udeid # rebuild named sites only (a plain build skips sites it already has)
+    python3 warwatch/basesites.py add sites.csv  # missile, air-defence and depot sites with no OSM outline: a circle each
 
 For each seed site it asks Overpass for the military or aerodrome outline, the aprons (aeroway=apron) and, for naval
 sites, piers and quays. Hand-drawn shapes in data/bases_manual.geojson (properties: id, part = outline|apron|harbour|pier)
@@ -246,6 +247,49 @@ def save(recs):
     os.replace(OUT + ".part", OUT)
 
 
+def circle(lat, lon, r_km, n=24):
+    """A closed lon/lat ring of radius r_km around a point."""
+    dla, dlo = r_km / 110.574, r_km / (111.320 * math.cos(math.radians(lat)))
+    ring = [[round(lon + dlo * math.cos(2 * math.pi * k / n), 5), round(lat + dla * math.sin(2 * math.pi * k / n), 5)] for k in range(n)]
+    return ring + [ring[0]]
+
+
+ADD_COLS = ["id", "name", "lat", "lon", "kind", "side", "theatres", "radius_km", "why", "source"]
+
+
+def add(path):
+    """Sites from a CSV (ADD_COLS) whose outline is a circle drawn from published coordinates: appended to the seed list
+    and the hand-drawn file, then recorded with no OpenStreetMap query (the radar reads them as the "ground" part)."""
+    with open(path, newline="", encoding="utf-8") as f:
+        new = [r for r in csv.DictReader(f)]
+    have = {s["id"] for s in seeds()}
+    new = [r for r in new if r["id"] not in have]
+    with open(SEED, "a", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        for r in new:
+            w.writerow([r["id"], r["name"], r["lat"], r["lon"], r["kind"], r["side"], r["theatres"], "", "", r["why"]])
+    with open(MANUAL, encoding="utf-8") as f:
+        fc = json.load(f)
+    for r in new:
+        fc["features"].append({"type": "Feature", "properties": {"id": r["id"], "part": "outline", "name": f"{r['radius_km']} km circle",
+                                                                 "src": f"circle around published coordinates: {r['source']}"},
+                               "geometry": {"type": "Polygon", "coordinates": [circle(float(r["lat"]), float(r["lon"]), float(r["radius_km"]))]}})
+    with open(MANUAL, "w", encoding="utf-8") as f:
+        f.write('{"type": "FeatureCollection", "name": ' + json.dumps(fc.get("name", "")) + ', "features": [\n'
+                + ",\n".join(json.dumps(ft, ensure_ascii=False) for ft in fc["features"]) + "\n]}\n")
+    man = manual()
+    recs = []
+    for s in seeds():
+        if s["id"] in {r["id"] for r in new}:
+            rec = record(s, {"outline": [], "aprons": [], "harbour": [], "piers": []}, man)
+            rec["src"] = "Published coordinates; outline is a circle (no OpenStreetMap outline)"
+            recs.append(rec)
+    save(recs)
+    with open(OUT, encoding="utf-8") as f:
+        write_review(json.load(f))
+    print("added", len(recs), "sites")
+
+
 def build(only=None):
     man = manual()
     try:
@@ -279,7 +323,10 @@ def build(only=None):
 
 
 if __name__ == "__main__":
-    if sys.argv[1:2] != ["build"]:
+    if sys.argv[1:2] == ["add"] and len(sys.argv) == 3:
+        add(sys.argv[2])
+    elif sys.argv[1:2] == ["build"]:
+        build(set(sys.argv[2:]) or None)
+    else:
         print(__doc__)
         sys.exit(2)
-    build(set(sys.argv[2:]) or None)

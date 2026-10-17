@@ -51,3 +51,23 @@ details fixed before reading:
   carries no weight.
 
 `warwatch/basestudy.py` runs it and writes `docs/BASEWATCH_STUDY.md`.
+
+## Amendment 2 (2026-10-17): vehicles and equipment, the "ground" part. Fixed before any ground scene is read.
+
+On 17 Oct 2026 the owner asked to see movement of equipment (launchers, air defence), vehicles, aircraft and ships at
+bases. Aircraft (aprons) and ships (harbour) are the parts tested above. This amendment adds a third part, **ground**:
+each site's outline minus its aprons and harbour, where vehicle parks, launcher and storage yards sit. Outlines larger
+than 15 × 15 km are left out (3 sites today). Missile, air-defence and depot sites added to `bases.json` on the same day,
+before any ground scene is read, are in the test too; their outline is a circle drawn from published coordinates.
+
+- **Scenes.** The ground part of every eligible site, from 2021-09-01 to 2026-10-16, read by `basewatch.py
+  --backfill-from 2021-09-01 --parts ground --no-optical`, merged into `backfill/data/basewatch/scenes.csv.gz`.
+- **Frozen from the test above:** the metric, threshold, z rule, two-pass state, events, calm windows, 14-day lead, test
+  and pass rule. Only the part read changes. A site counts as firing on a day when its ground part is out or in.
+- **What it can see.** At 10 m, a single launcher, radar or air-defence vehicle is one or two pixels; the metric counts
+  groups of 3 to 150 bright pixels, so it sees parked groups of vehicles and equipment, not single ones.
+- **On a pass:** `basewatch.GROUND_TESTED` becomes `True`. The ground state then counts in `bases_out_<t>` and
+  `bases_in_<t>` (a site counts once a day when its main part or its ground part is out or in), and the map drops the
+  "not yet checked" note on it. **On a failure:** recorded, not tuned. The map keeps showing the ground state with that note.
+
+`python3 warwatch/basestudy.py ground` runs it and writes `docs/BASEWATCH_GROUND_STUDY.md`.

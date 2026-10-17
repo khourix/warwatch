@@ -441,7 +441,8 @@ def rebuild(sites, today=None):
         main = "harbour" if s["kind"] in ("naval", "port") else "apron"
         sr = by_site.get(s["id"], [])
         if not any(r["part"] == main for r in sr):
-            main = "harbour" if any(r["part"] == "harbour" for r in sr) else "apron"
+            have = {r["part"] for r in sr}
+            main = next((k for k in ("harbour", "apron", "ground") if k in have), main)   # launch sites have only ground
         zs = [(d, z) for d, _, _, z in scene_z(sr, metric, main)]
         per_day = {}
         for d, z in zs:
@@ -488,11 +489,18 @@ def rebuild(sites, today=None):
     # theatre counts per day, replayed from 2022 over the backfilled scenes and the live ones (the history the model scores
     # against); a theatre has a row on days where at least one of its sites has a scored pass in the last 10 days
     if ALERTS:
-        passes = S.site_passes(S.load_scenes(), sites)
+        passes = S.site_passes(rows, sites)
+        gpass = S.site_passes(rows, sites, "ground") if GROUND_TESTED else {}
         series = {}
         d = S.START
         while d <= today:
             st = {sid: S.state_on(p, d) for sid, p in passes.items()}
+            for sid, p in gpass.items():            # a site counts once: its main part or its ground part moved
+                g = S.state_on(p, d)
+                if g in ("out", "in") and st.get(sid) not in ("out", "in"):
+                    st[sid] = g
+                elif g is not None and st.get(sid) is None:
+                    st[sid] = g
             cnt = {}
             for s in sites:
                 v = st.get(s["id"])
@@ -619,7 +627,7 @@ def layer(path=BASES):
                 img[k] = f"img/bases/{s['id']}_{k}.jpg"
                 img[k + "d"] = c[k]
         why_ = STATE_WHY.get(state_, "").format(where=where, what=what, dates=dates)
-        if not ALERTS and state_ in ("out", "in", "changed"):
+        if (not ALERTS or (part == "ground" and not GROUND_TESTED)) and state_ in ("out", "in", "changed"):
             why_ += " Not yet checked against past events, so it carries no weight in the risk numbers."
         prt = []
         for x in (r.get("parts") or "").split(";"):
@@ -632,7 +640,7 @@ def layer(path=BASES):
         if gr and part != "ground":
             why_ += (f" Vehicles and equipment on the rest of the base: {gr['s']} on two passes ({gr['d']})."
                      + ("" if GROUND_TESTED else " That reading is not yet checked against past events and carries no weight."))
-        out.append({"id": s["id"], "n": s["name"], "pr": prt, "lat": s["lat"], "lon": s["lon"], "k": s["kind"], "side": s["side"], "ths": s["theatres"],
+        out.append({"id": s["id"], "n": s["name"], "pr": prt, "mp": part, "lat": s["lat"], "lon": s["lon"], "k": s["kind"], "side": s["side"], "ths": s["theatres"],
                     "st": state_, "z": float(r["z"]) if r.get("z") else None, "last": r.get("last_radar", ""), "lo": r.get("last_optical", ""),
                     "pts": pts, "why": why_, "note": r.get("note", ""),
                     "wy": s.get("why", ""), "img": img})

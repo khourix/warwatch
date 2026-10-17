@@ -22,6 +22,7 @@ import basewatch as B  # noqa: E402
 ROOT = os.path.dirname(HERE)
 BACKFILL = os.path.join(ROOT, "backfill", "data", "basewatch", "scenes.csv.gz")
 OUT = os.path.join(ROOT, "docs", "BASEWATCH_STUDY.md")
+OUT_GROUND = os.path.join(ROOT, "docs", "BASEWATCH_GROUND_STUDY.md")
 EVENTS = os.path.join(HERE, "data", "events.csv")
 ADDED = os.path.join(HERE, "data", "events_added.csv")
 START = dt.date(2022, 3, 1)
@@ -43,8 +44,8 @@ def load_scenes(backfill=BACKFILL, live=B.SCENES):
     return list(rows.values())
 
 
-def site_passes(rows, sites):
-    """{site id: ([dates], [z]) of scored passes on the site's main part, oldest first}."""
+def site_passes(rows, sites, part=None):
+    """{site id: ([dates], [z]) of scored passes on the site's main part (or on `part`), oldest first}."""
     metric = f"{B.METRIC}@{B.T_DB:g}"
     by = {}
     for r in rows:
@@ -55,6 +56,7 @@ def site_passes(rows, sites):
         main = "harbour" if s["kind"] in ("naval", "port") else "apron"
         if not any(r["part"] == main for r in sr):
             main = "harbour" if any(r["part"] == "harbour" for r in sr) else "apron"
+        main = part or main
         sc = [(d, z) for d, _, _, z in B.scene_z(sr, metric, main) if z is not None]
         if sc:
             out[s["id"]] = ([dt.date.fromisoformat(d) for d, _ in sc], [z for _, z in sc])
@@ -141,10 +143,11 @@ def calm_windows(theatres, evs, d1):
     return out
 
 
-def study(rows=None, sites=None, write=True):
+def study(rows=None, sites=None, write=True, part=None, out=None):
+    """part: None tests the main part (aircraft or ships); "ground" tests vehicles and equipment (plan amendment 2)."""
     sites = sites if sites is not None else B.load_bases()
     rows = rows if rows is not None else load_scenes()
-    passes = site_passes(rows, sites)
+    passes = site_passes(rows, sites, part)
     if not passes:
         raise SystemExit("no scored scenes: run the backfill first")
     d1 = max(ds[-1] for ds, _ in passes.values())
@@ -177,8 +180,9 @@ def study(rows=None, sites=None, write=True):
         sub = [e for e in scored if e["added"] == flag]
         k = sum(e["fired"] for e in sub)
         res[lab] = (k, len(sub), fisher_greater(k, len(sub) - k, c, len(cs) - c))
+    res["part"] = part
     if write:
-        write_md(res, sites)
+        write_md(res, sites, out or (OUT_GROUND if part == "ground" else OUT))
     return res
 
 
@@ -188,9 +192,10 @@ def _pct(a, n):
 
 def write_md(r, sites, path=OUT):
     names = {s["id"]: s["name"] for s in sites}
-    L = ["# Base watch against past events: result", "",
+    gr = r.get("part") == "ground"
+    L = [f"# Base watch{' (vehicles and equipment)' if gr else ''} against past events: result", "",
          f"Written by `warwatch/basestudy.py` on {dt.date.today().isoformat()} to the plan fixed before the backfill was read "
-         "([BASEWATCH_STUDY_PLAN.md](BASEWATCH_STUDY_PLAN.md), amendment of 2026-10-17).", "",
+         f"([BASEWATCH_STUDY_PLAN.md](BASEWATCH_STUDY_PLAN.md), {'amendment 2: the ground part' if gr else 'amendment of 2026-10-17'}).", "",
          f"**Verdict: {'PASS' if r['pass'] else 'FAIL'}.** A base was out or in during the 14 days before "
          f"{r['hit']} of {r['n_ev']} events ({_pct(r['hit'], r['n_ev'])}), against {r['calm_fired']} of {r['n_calm']} calm windows "
          f"({_pct(r['calm_fired'], r['n_calm'])}); one-sided Fisher p = {r['p']:.3f}. The rule needs p < {P_MAX} and calm firing "
@@ -220,5 +225,5 @@ def write_md(r, sites, path=OUT):
 
 
 if __name__ == "__main__":
-    r = study()
+    r = study(part=sys.argv[1] if len(sys.argv) > 1 else None)
     print(f"{'PASS' if r['pass'] else 'FAIL'}: events {r['hit']}/{r['n_ev']}, calm {r['calm_fired']}/{r['n_calm']}, p {r['p']:.4f}")
