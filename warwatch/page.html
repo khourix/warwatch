@@ -75,6 +75,9 @@ a{color:var(--accent)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--c);display:inline-block;flex:none}
 .lv{display:inline-flex;align-items:center;border-radius:999px;padding:1px 8px;font:600 10.5px/1.5 var(--sans);letter-spacing:.06em;color:#1a1009;background:var(--c);white-space:nowrap}
 .lv.n{background:transparent;color:var(--mute);box-shadow:none;outline:1px solid var(--line2);outline-offset:-1px}
+.act{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:1px 8px;font:600 10.5px/1.5 var(--sans);letter-spacing:.06em;color:var(--mute);outline:1px dashed var(--line2);outline-offset:-1px;white-space:nowrap;cursor:help;vertical-align:middle}
+.act.on{color:var(--r1);outline-color:var(--r1)}
+.act i{font-style:normal;font-weight:500;color:var(--dim);letter-spacing:.04em}
 .shadowb{font:500 11px var(--mono);border:1px dashed var(--line2);color:var(--mute);border-radius:6px;padding:3px 8px;white-space:nowrap;flex:none;cursor:help}
 .tchip{display:inline-flex;align-items:center;font:500 10.5px/1.5 var(--mono);color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:0 7px;white-space:nowrap;flex:none}
 .tchip.on{color:#1a0d02;background:var(--tell);border-color:var(--tell);font-weight:600}
@@ -989,6 +992,16 @@ function changeTxt(t, cls){
    them are fitted: pooled with their region's theatres because too few events happened on their ground. */
 const SUBT = D.sub || {}, SPILL = D.spill || {};
 const isSpill = t => !!SPILL[t];
+const ACTF = {adsb_fighter:'Fighter aircraft', wiki:'Wikipedia attention', gdelt_accel:'Severe-event share in the news record', tells:'Timing tells', adsb_tanker:'Tanker aircraft', base:'Bases by satellite radar'};
+const actChip = t => {   // Activity v1 (docs/ACTIVITY.md): experimental, beside the level, never instead of it
+  const a = D.theatres[t] && D.theatres[t].act; if (!a) return '';
+  const k = Object.keys(ACTF), on = k.filter(f => a.f[f]), miss = k.filter(f => a.f[f] == null);
+  const tip = `Activity index, experimental: ${a.i.toFixed(1)} of 100, ${a.on ? 'active' : 'quiet'} this week. `
+    + (on.length ? `On: ${on.map(f => ACTF[f]).join(', ')}. ` : 'No family on. ')
+    + (miss.length ? `No recent data: ${miss.map(f => ACTF[f]).join(', ')}. ` : '')
+    + 'Before new events it was active 23% of the time against 15% of calm weeks. It marks a busy theatre, not an attack date, and it does not change the level.';
+  return `<span class="act${a.on ? ' on' : ''}" data-tip="${esc(tip)}" tabindex="0" aria-label="${esc(tip)}">${a.on ? 'ACTIVE' : 'QUIET'}<i>EXP</i></span>`;
+};
 const spillTag = (cls) => `<span class="${cls || 'subl'}" data-tip="No war of its own: at risk because a neighbour's war reaches it">spillover</span>`;
 function gateWhy(){
   const G = (D.model || {}).gates || {}, why = [];
@@ -1353,7 +1366,7 @@ document.addEventListener('click', e => {
 let tipEl = null;
 document.addEventListener('click', e => {
   if (!matchMedia('(hover: none)').matches) return;
-  const el = e.target.closest('.info,.shadowb');
+  const el = e.target.closest('.info,.shadowb,.act');
   if (el && el.dataset.tip) { e.stopPropagation(); e.preventDefault(); if (tipEl === el) { tipHide(); tipEl = null; } else { tipShow(el, esc(el.dataset.tip)); tipEl = el; } return; }
   if (tipEl) { tipHide(); tipEl = null; }
 }, true);
@@ -2005,7 +2018,7 @@ function renderPanel(){
   h += mapt;
   if (R.v === 'region') { P.innerHTML = h + regionBody(r); tabInd(); countNums(P); return; }
   const t = R.id, th = D.theatres[t], m = META[t];
-  h += `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}${r ? `<a data-nav="${r.kids.length > 1 ? 'region/' + r.id : r.kids[0]}">${esc(r.name)}</a>${ic('chev', 's')}` : ''}<span>${esc(thName(t))}</span><button class="cp" data-copy="1" aria-label="Copy a link to this view">${ic('link', 's')} Link</button></div><h2>${esc(thName(t))} ${lvPill(th.level)}${isSpill(t) ? spillTag() : ''}</h2><p>${steSummary(t)}</p></div>`;
+  h += `<div class="thd"><div class="crumb"><a data-nav="overview">World</a>${ic('chev', 's')}${r ? `<a data-nav="${r.kids.length > 1 ? 'region/' + r.id : r.kids[0]}">${esc(r.name)}</a>${ic('chev', 's')}` : ''}<span>${esc(thName(t))}</span><button class="cp" data-copy="1" aria-label="Copy a link to this view">${ic('link', 's')} Link</button></div><h2>${esc(thName(t))} ${lvPill(th.level)} ${actChip(t)}${isSpill(t) ? spillTag() : ''}</h2><p>${steSummary(t)}</p></div>`;
   const cov = Math.round((1 - (th.miss || 0)) * 100);
   const xu = th.xu != null ? `${th.xu.toFixed(1)}×` : pct(th.p);
   const k1 = th.p != null && !PM ? `<button class="kp kpsh" data-pop="kp-p" style="--k:var(--line2)"><small>Standing risk ${inf('The model\'s chance of a qualifying event in the next 30 days, as a multiple of this theatre\'s usual chance. It has not passed its release checks, so it does not set the level and is shown for reference only. Click to see what drives it.')}</small><b style="color:var(--mute)">${xu}<sub>usual</sub></b><span>not validated <i class="shg">shadow</i></span></button>`

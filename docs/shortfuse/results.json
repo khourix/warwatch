@@ -1,0 +1,1764 @@
+{
+ "made": "2026-10-17",
+ "plan": "PLAN.md",
+ "alpha_bonferroni": 0.0033333333333333335,
+ "k_tests": 15,
+ "fa_max": 0.2,
+ "candidates": {
+  "base": {
+   "name": "base",
+   "span": [
+    "2022-01-31",
+    "2026-10-17"
+   ],
+   "theatres": [
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "scs",
+    "southasia",
+    "sudan",
+    "taiwan",
+    "ukraine",
+    "venezuela",
+    "yemen"
+   ],
+   "calm_blocks": 2095,
+   "calm_fired": 266,
+   "fa": 0.1269689737470167,
+   "orig": {
+    "n": 45,
+    "hits": 6,
+    "hit_rate": 0.13333333333333333,
+    "lift": 1.050125313283208,
+    "p": 0.5176431378833856
+   },
+   "added": {
+    "n": 43,
+    "hits": 6,
+    "hit_rate": 0.13953488372093023,
+    "lift": 1.0989683511103339,
+    "p": 0.4721045420660352
+   },
+   "pooled": {
+    "n": 88,
+    "hits": 12,
+    "hit_rate": 0.13636363636363635,
+    "lift": 1.073991797676008,
+    "p": 0.44713132896040825
+   },
+   "on_day_before": {
+    "events": 88,
+    "share": 0.07954545454545454
+   },
+   "auc_within": 0.47819972066674926,
+   "hit_events": [
+    [
+     "ukraine",
+     "2024-11-21",
+     "Oreshnik IRBM on Dnipro"
+    ],
+    [
+     "ukraine",
+     "2025-06-01",
+     "Operation Spiderweb"
+    ],
+    [
+     "israel",
+     "2026-03-02",
+     "Hezbollah-Israel war resumes"
+    ],
+    [
+     "iran",
+     "2024-04-13",
+     "Iran first direct attack on Israel"
+    ],
+    [
+     "iran",
+     "2025-06-13",
+     "Twelve-Day War"
+    ],
+    [
+     "iran",
+     "2026-07-08",
+     "Ceasefire collapse in Hormuz"
+    ],
+    [
+     "europe_east",
+     "2025-12-31",
+     "Helsinki-Tallinn telecom cable damaged; Finland seizes Fitburg"
+    ],
+    [
+     "ukraine",
+     "2022-04-13",
+     "Russian flagship Moskva hit by Neptune missiles, sinks next day"
+    ],
+    [
+     "ukraine",
+     "2022-08-29",
+     "Ukraine launches Kherson counteroffensive"
+    ],
+    [
+     "israel",
+     "2022-08-05",
+     "Operation Breaking Dawn in Gaza"
+    ],
+    [
+     "iran",
+     "2022-05-27",
+     "Iran seizes two Greek tankers"
+    ],
+    [
+     "iran",
+     "2023-04-27",
+     "Iran seizes tanker Advantage Sweet"
+    ]
+   ],
+   "passes": false,
+   "close": false
+  },
+  "firms_anom": {
+   "name": "firms_anom",
+   "span": [
+    "2018-07-01",
+    "2026-01-01"
+   ],
+   "theatres": [
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "ukraine",
+    "yemen"
+   ],
+   "calm_blocks": 1931,
+   "calm_fired": 213,
+   "fa": 0.11030554117037804,
+   "orig": {
+    "n": 34,
+    "hits": 3,
+    "hit_rate": 0.08823529411764706,
+    "lift": 0.7999171499585751,
+    "p": 0.7400289530124621
+   },
+   "added": {
+    "n": 52,
+    "hits": 6,
+    "hit_rate": 0.11538461538461539,
+    "lift": 1.0460455037919827,
+    "p": 0.5209430910450187
+   },
+   "pooled": {
+    "n": 86,
+    "hits": 9,
+    "hit_rate": 0.10465116279069768,
+    "lift": 0.9487389452997053,
+    "p": 0.6184831496450839
+   },
+   "on_day_before": {
+    "events": 86,
+    "share": 0.046511627906976744
+   },
+   "auc_within": 0.48853221868473024,
+   "hit_events": [
+    [
+     "iran",
+     "2019-06-13",
+     "Gulf of Oman tanker attacks"
+    ],
+    [
+     "yemen",
+     "2024-07-20",
+     "Israel strikes Hodeidah"
+    ],
+    [
+     "korea",
+     "2022-03-24",
+     "First ICBM since 2017"
+    ],
+    [
+     "ukraine",
+     "2022-04-13",
+     "Russian flagship Moskva hit by Neptune missiles, sinks next day"
+    ],
+    [
+     "ukraine",
+     "2023-06-04",
+     "Ukrainian summer counteroffensive begins"
+    ],
+    [
+     "ukraine",
+     "2024-05-10",
+     "Russian Kharkiv offensive"
+    ],
+    [
+     "europe_east",
+     "2022-09-26",
+     "Nord Stream pipelines sabotaged"
+    ],
+    [
+     "yemen",
+     "2023-10-19",
+     "Houthis' first missiles and drones at Israel; USS Carney intercepts"
+    ],
+    [
+     "israel",
+     "2022-08-05",
+     "Operation Breaking Dawn in Gaza"
+    ]
+   ],
+   "passes": false,
+   "close": false
+  },
+  "adsb_tanker": {
+   "name": "adsb_tanker",
+   "span": [
+    "2024-09-17",
+    "2026-10-16"
+   ],
+   "theatres": [
+    "drc",
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "scs",
+    "southasia",
+    "sudan",
+    "taiwan",
+    "ukraine",
+    "venezuela",
+    "yemen"
+   ],
+   "calm_blocks": 997,
+   "calm_fired": 26,
+   "fa": 0.026078234704112337,
+   "orig": {
+    "n": 27,
+    "hits": 1,
+    "hit_rate": 0.037037037037037035,
+    "lift": 1.4202279202279202,
+    "p": 0.5185323682178427
+   },
+   "added": {
+    "n": 14,
+    "hits": 1,
+    "hit_rate": 0.07142857142857142,
+    "lift": 2.739010989010989,
+    "p": 0.31713821703956874
+   },
+   "pooled": {
+    "n": 41,
+    "hits": 2,
+    "hit_rate": 0.04878048780487805,
+    "lift": 1.8705440900562853,
+    "p": 0.3042242485615601
+   },
+   "on_day_before": {
+    "events": 41,
+    "share": 0.04878048780487805
+   },
+   "auc_within": 0.4588158528931136,
+   "hit_events": [
+    [
+     "iran",
+     "2026-07-08",
+     "Ceasefire collapse in Hormuz"
+    ],
+    [
+     "israel",
+     "2025-07-14",
+     "Israel strikes Syrian forces in Sweida, then defence ministry in Damascus"
+    ]
+   ],
+   "passes": false,
+   "close": false
+  },
+  "adsb_fighter": {
+   "name": "adsb_fighter",
+   "span": [
+    "2024-09-17",
+    "2026-10-16"
+   ],
+   "theatres": [
+    "drc",
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "scs",
+    "southasia",
+    "sudan",
+    "taiwan",
+    "ukraine",
+    "venezuela",
+    "yemen"
+   ],
+   "calm_blocks": 997,
+   "calm_fired": 6,
+   "fa": 0.006018054162487462,
+   "orig": {
+    "n": 27,
+    "hits": 2,
+    "hit_rate": 0.07407407407407407,
+    "lift": 12.308641975308642,
+    "p": 0.017006763012534336
+   },
+   "added": {
+    "n": 14,
+    "hits": 0,
+    "hit_rate": 0.0,
+    "lift": 0.0,
+    "p": 1.0
+   },
+   "pooled": {
+    "n": 41,
+    "hits": 2,
+    "hit_rate": 0.04878048780487805,
+    "lift": 8.10569105691057,
+    "p": 0.036662404960049515
+   },
+   "on_day_before": {
+    "events": 41,
+    "share": 0.04878048780487805
+   },
+   "auc_within": 0.490207717369194,
+   "hit_events": [
+    [
+     "israel",
+     "2024-11-27",
+     "HTS offensive and fall of Assad"
+    ],
+    [
+     "israel",
+     "2025-09-09",
+     "Israeli strike in Doha"
+    ]
+   ],
+   "passes": false,
+   "close": false
+  },
+  "adsb_lift": {
+   "name": "adsb_lift",
+   "span": [
+    "2024-09-17",
+    "2026-10-16"
+   ],
+   "theatres": [
+    "drc",
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "scs",
+    "southasia",
+    "sudan",
+    "taiwan",
+    "ukraine",
+    "venezuela",
+    "yemen"
+   ],
+   "calm_blocks": 997,
+   "calm_fired": 109,
+   "fa": 0.10932798395185557,
+   "orig": {
+    "n": 27,
+    "hits": 2,
+    "hit_rate": 0.07407407407407407,
+    "lift": 0.6775399252463472,
+    "p": 0.8105341189919009
+   },
+   "added": {
+    "n": 14,
+    "hits": 0,
+    "hit_rate": 0.0,
+    "lift": 0.0,
+    "p": 1.0
+   },
+   "pooled": {
+    "n": 41,
+    "hits": 2,
+    "hit_rate": 0.04878048780487805,
+    "lift": 0.44618482882076527,
+    "p": 0.9461180915131395
+   },
+   "on_day_before": {
+    "events": 41,
+    "share": 0.024390243902439025
+   },
+   "auc_within": 0.4354576873613157,
+   "hit_events": [
+    [
+     "ukraine",
+     "2025-06-01",
+     "Operation Spiderweb"
+    ],
+    [
+     "iran",
+     "2026-07-08",
+     "Ceasefire collapse in Hormuz"
+    ]
+   ],
+   "passes": false,
+   "close": false
+  },
+  "nga": {
+   "name": "nga",
+   "span": [
+    "2018-07-30",
+    "2024-05-11"
+   ],
+   "theatres": [
+    "drc",
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "scs",
+    "southasia",
+    "sudan",
+    "taiwan",
+    "ukraine",
+    "venezuela",
+    "yemen"
+   ],
+   "calm_blocks": 3219,
+   "calm_fired": 242,
+   "fa": 0.07517862690276483,
+   "orig": {
+    "n": 23,
+    "hits": 1,
+    "hit_rate": 0.043478260869565216,
+    "lift": 0.5783327344592166,
+    "p": 0.8344229865826588
+   },
+   "added": {
+    "n": 51,
+    "hits": 7,
+    "hit_rate": 0.13725490196078433,
+    "lift": 1.8257170636849782,
+    "p": 0.08895804931605171
+   },
+   "pooled": {
+    "n": 74,
+    "hits": 8,
+    "hit_rate": 0.10810810810810811,
+    "lift": 1.43801652892562,
+    "p": 0.19602473194411868
+   },
+   "on_day_before": {
+    "events": 74,
+    "share": 0.0945945945945946
+   },
+   "auc_within": 0.47990425141590465,
+   "hit_events": [
+    [
+     "taiwan",
+     "2022-08-04",
+     "PLA drills after Pelosi"
+    ],
+    [
+     "ukraine",
+     "2022-08-29",
+     "Ukraine launches Kherson counteroffensive"
+    ],
+    [
+     "ukraine",
+     "2023-06-04",
+     "Ukrainian summer counteroffensive begins"
+    ],
+    [
+     "israel",
+     "2019-05-04",
+     "May 2019 Gaza-Israel clashes (700 rockets)"
+    ],
+    [
+     "israel",
+     "2019-08-24",
+     "Israeli strike on Quds Force drone team near Damascus and drones in Beirut; Hezbollah ATGM reply 1 Sept"
+    ],
+    [
+     "israel",
+     "2020-02-27",
+     "Balyun airstrike kills 33 Turkish soldiers; Turkey strikes Syrian forces"
+    ],
+    [
+     "yemen",
+     "2019-08-07",
+     "STC seizes Aden from government forces"
+    ],
+    [
+     "scs",
+     "2023-12-09",
+     "Water cannon at Scarborough and ramming at Second Thomas Shoal"
+    ]
+   ],
+   "passes": false,
+   "close": false
+  },
+  "sar": {
+   "name": "sar",
+   "span": [
+    "2018-07-01",
+    "2026-10-07"
+   ],
+   "theatres": [
+    "iran",
+    "israel",
+    "korea",
+    "scs",
+    "taiwan",
+    "ukraine",
+    "venezuela",
+    "yemen"
+   ],
+   "calm_blocks": 2546,
+   "calm_fired": 20,
+   "fa": 0.007855459544383346,
+   "orig": {
+    "n": 43,
+    "hits": 0,
+    "hit_rate": 0.0,
+    "lift": 0.0,
+    "p": 1.0
+   },
+   "added": {
+    "n": 52,
+    "hits": 0,
+    "hit_rate": 0.0,
+    "lift": 0.0,
+    "p": 1.0
+   },
+   "pooled": {
+    "n": 95,
+    "hits": 0,
+    "hit_rate": 0.0,
+    "lift": 0.0,
+    "p": 1.0
+   },
+   "on_day_before": {
+    "events": 95,
+    "share": 0.0
+   },
+   "auc_within": 0.5023293086853824,
+   "hit_events": [],
+   "passes": false,
+   "close": false
+  },
+  "gdelt_accel": {
+   "name": "gdelt_accel",
+   "span": [
+    "2018-07-01",
+    "2026-10-09"
+   ],
+   "theatres": [
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "scs",
+    "southasia",
+    "sudan",
+    "taiwan",
+    "ukraine",
+    "venezuela",
+    "yemen"
+   ],
+   "calm_blocks": 4013,
+   "calm_fired": 119,
+   "fa": 0.02965362571642163,
+   "orig": {
+    "n": 54,
+    "hits": 3,
+    "hit_rate": 0.05555555555555555,
+    "lift": 1.8734827264239027,
+    "p": 0.21952299086333155
+   },
+   "added": {
+    "n": 65,
+    "hits": 1,
+    "hit_rate": 0.015384615384615385,
+    "lift": 0.5188106011635424,
+    "p": 0.858724043490471
+   },
+   "pooled": {
+    "n": 119,
+    "hits": 4,
+    "hit_rate": 0.03361344537815126,
+    "lift": 1.1335357672480757,
+    "p": 0.47586334224146315
+   },
+   "on_day_before": {
+    "events": 119,
+    "share": 0.025210084033613446
+   },
+   "auc_within": 0.5188348631192554,
+   "hit_events": [
+    [
+     "korea",
+     "2022-10-04",
+     "Missile over Japan"
+    ],
+    [
+     "yemen",
+     "2023-11-19",
+     "Red Sea attacks begin"
+    ],
+    [
+     "iran",
+     "2024-01-16",
+     "Iran-Pakistan border strikes"
+    ],
+    [
+     "scs",
+     "2023-12-09",
+     "Water cannon at Scarborough and ramming at Second Thomas Shoal"
+    ]
+   ],
+   "passes": false,
+   "close": false
+  },
+  "wiki": {
+   "name": "wiki",
+   "span": [
+    "2018-07-01",
+    "2026-10-09"
+   ],
+   "theatres": [
+    "drc",
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "scs",
+    "southasia",
+    "sudan",
+    "taiwan",
+    "ukraine",
+    "venezuela",
+    "yemen"
+   ],
+   "calm_blocks": 4421,
+   "calm_fired": 343,
+   "fa": 0.07758425695543994,
+   "orig": {
+    "n": 57,
+    "hits": 10,
+    "hit_rate": 0.17543859649122806,
+    "lift": 2.261265408419007,
+    "p": 0.012394555213537172
+   },
+   "added": {
+    "n": 68,
+    "hits": 7,
+    "hit_rate": 0.10294117647058823,
+    "lift": 1.3268307322929171,
+    "p": 0.27766898448526606
+   },
+   "pooled": {
+    "n": 125,
+    "hits": 17,
+    "hit_rate": 0.136,
+    "lift": 1.7529329446064144,
+    "p": 0.018553174812655
+   },
+   "on_day_before": {
+    "events": 125,
+    "share": 0.104
+   },
+   "auc_within": 0.5338742210245983,
+   "hit_events": [
+    [
+     "southasia",
+     "2019-02-26",
+     "Balakot"
+    ],
+    [
+     "southasia",
+     "2025-05-07",
+     "Operation Sindoor"
+    ],
+    [
+     "ukraine",
+     "2022-02-24",
+     "Russia full-scale invasion"
+    ],
+    [
+     "venezuela",
+     "2025-09-02",
+     "First US boat strike"
+    ],
+    [
+     "taiwan",
+     "2022-08-04",
+     "PLA drills after Pelosi"
+    ],
+    [
+     "sudan",
+     "2025-05-04",
+     "Drone strikes on Port Sudan"
+    ],
+    [
+     "libya",
+     "2020-01-18",
+     "Oil port blockade"
+    ],
+    [
+     "yemen",
+     "2023-11-19",
+     "Red Sea attacks begin"
+    ],
+    [
+     "yemen",
+     "2026-10-06",
+     "Houthi missile and drone campaign on Saudi airports (Jazan, Abha, Riyadh), the deadliest attacks on Saudi soil in a decade"
+    ],
+    [
+     "drc",
+     "2025-03-13",
+     "Bisie tin mine halted"
+    ],
+    [
+     "europe_east",
+     "2022-02-10",
+     "Allied Resolve 2022 (Russia-Belarus)"
+    ],
+    [
+     "ukraine",
+     "2022-10-08",
+     "Crimean Bridge truck-bomb explosion"
+    ],
+    [
+     "ukraine",
+     "2023-06-04",
+     "Ukrainian summer counteroffensive begins"
+    ],
+    [
+     "yemen",
+     "2023-10-19",
+     "Houthis' first missiles and drones at Israel; USS Carney intercepts"
+    ],
+    [
+     "iran",
+     "2021-06-27",
+     "US strikes militias on Iraq-Syria border"
+    ],
+    [
+     "iran",
+     "2022-09-28",
+     "IRGC missile and drone strikes on Kurdish groups in Iraq"
+    ],
+    [
+     "iran",
+     "2023-10-17",
+     "Militia attacks on US forces in Iraq and Syria begin"
+    ]
+   ],
+   "passes": false,
+   "close": false
+  },
+  "tells": {
+   "name": "tells",
+   "span": [
+    "2014-09-29",
+    "2026-10-18"
+   ],
+   "theatres": [
+    "drc",
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "scs",
+    "southasia",
+    "sudan",
+    "taiwan",
+    "ukraine",
+    "venezuela",
+    "yemen"
+   ],
+   "calm_blocks": 4227,
+   "calm_fired": 264,
+   "fa": 0.06245564229950319,
+   "orig": {
+    "n": 55,
+    "hits": 5,
+    "hit_rate": 0.09090909090909091,
+    "lift": 1.4555785123966942,
+    "p": 0.261913619493678
+   },
+   "added": {
+    "n": 67,
+    "hits": 7,
+    "hit_rate": 0.1044776119402985,
+    "lift": 1.6728290366350067,
+    "p": 0.127366125529832
+   },
+   "pooled": {
+    "n": 122,
+    "hits": 12,
+    "hit_rate": 0.09836065573770492,
+    "lift": 1.5748882265275708,
+    "p": 0.08428606580824871
+   },
+   "on_day_before": {
+    "events": 122,
+    "share": 0.05737704918032787
+   },
+   "auc_within": null,
+   "hit_events": [
+    [
+     "taiwan",
+     "2024-05-23",
+     "Joint Sword-2024A"
+    ],
+    [
+     "israel",
+     "2021-05-10",
+     "11-day Gaza war"
+    ],
+    [
+     "israel",
+     "2024-11-27",
+     "HTS offensive and fall of Assad"
+    ],
+    [
+     "israel",
+     "2026-03-02",
+     "Hezbollah-Israel war resumes"
+    ],
+    [
+     "iran",
+     "2026-07-08",
+     "Ceasefire collapse in Hormuz"
+    ],
+    [
+     "venezuela",
+     "2019-04-30",
+     "Guaido uprising attempt"
+    ],
+    [
+     "israel",
+     "2018-11-11",
+     "Gaza flare-up after botched Khan Younis raid (460 rockets)"
+    ],
+    [
+     "israel",
+     "2019-11-12",
+     "Operation Black Belt (PIJ commander killed)"
+    ],
+    [
+     "israel",
+     "2020-02-27",
+     "Balyun airstrike kills 33 Turkish soldiers; Turkey strikes Syrian forces"
+    ],
+    [
+     "israel",
+     "2023-05-09",
+     "Operation Shield and Arrow in Gaza"
+    ],
+    [
+     "korea",
+     "2022-12-26",
+     "North Korean drones penetrate Seoul airspace"
+    ],
+    [
+     "scs",
+     "2024-08-19",
+     "Collisions at Sabina Shoal"
+    ]
+   ],
+   "passes": false,
+   "close": false
+  },
+  "fire_site": {
+   "name": "fire_site",
+   "span": [
+    "2018-07-01",
+    "2026-01-01"
+   ],
+   "theatres": [
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "ukraine",
+    "yemen"
+   ],
+   "calm_blocks": 1931,
+   "calm_fired": 146,
+   "fa": 0.07560849300880373,
+   "orig": {
+    "n": 34,
+    "hits": 2,
+    "hit_rate": 0.058823529411764705,
+    "lift": 0.7780016116035454,
+    "p": 0.7395915786024492
+   },
+   "added": {
+    "n": 52,
+    "hits": 2,
+    "hit_rate": 0.038461538461538464,
+    "lift": 0.5086933614330874,
+    "p": 0.9109046737484868
+   },
+   "pooled": {
+    "n": 86,
+    "hits": 4,
+    "hit_rate": 0.046511627906976744,
+    "lift": 0.6151640649888499,
+    "p": 0.8952491757297434
+   },
+   "on_day_before": {
+    "events": 86,
+    "share": 0.03488372093023256
+   },
+   "auc_within": 0.4897049690989474,
+   "hit_events": [
+    [
+     "europe_east",
+     "2025-09-09",
+     "Russian drones into Poland"
+    ],
+    [
+     "korea",
+     "2022-03-24",
+     "First ICBM since 2017"
+    ],
+    [
+     "ukraine",
+     "2022-04-13",
+     "Russian flagship Moskva hit by Neptune missiles, sinks next day"
+    ],
+    [
+     "ukraine",
+     "2024-05-10",
+     "Russian Kharkiv offensive"
+    ]
+   ],
+   "passes": false,
+   "close": false
+  },
+  "conv2": {
+   "name": "conv2",
+   "span": [
+    "2018-07-01",
+    "2026-10-17"
+   ],
+   "theatres": [
+    "drc",
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "scs",
+    "southasia",
+    "sudan",
+    "taiwan",
+    "ukraine",
+    "venezuela",
+    "yemen"
+   ],
+   "calm_blocks": 4444,
+   "calm_fired": 155,
+   "fa": 0.034878487848784875,
+   "orig": {
+    "n": 57,
+    "hits": 1,
+    "hit_rate": 0.017543859649122806,
+    "lift": 0.5029994340690436,
+    "p": 0.8678012778819275
+   },
+   "added": {
+    "n": 68,
+    "hits": 7,
+    "hit_rate": 0.10294117647058823,
+    "lift": 2.9514231499051236,
+    "p": 0.010390506810503339
+   },
+   "pooled": {
+    "n": 125,
+    "hits": 8,
+    "hit_rate": 0.064,
+    "lift": 1.8349419354838712,
+    "p": 0.07674022869098504
+   },
+   "on_day_before": {
+    "events": 125,
+    "share": 0.048
+   },
+   "auc_within": 0.5183923787629761,
+   "hit_events": [
+    [
+     "iran",
+     "2026-07-08",
+     "Ceasefire collapse in Hormuz"
+    ],
+    [
+     "ukraine",
+     "2022-04-13",
+     "Russian flagship Moskva hit by Neptune missiles, sinks next day"
+    ],
+    [
+     "ukraine",
+     "2022-08-29",
+     "Ukraine launches Kherson counteroffensive"
+    ],
+    [
+     "ukraine",
+     "2023-06-04",
+     "Ukrainian summer counteroffensive begins"
+    ],
+    [
+     "israel",
+     "2020-02-27",
+     "Balyun airstrike kills 33 Turkish soldiers; Turkey strikes Syrian forces"
+    ],
+    [
+     "israel",
+     "2022-08-05",
+     "Operation Breaking Dawn in Gaza"
+    ],
+    [
+     "yemen",
+     "2023-10-19",
+     "Houthis' first missiles and drones at Israel; USS Carney intercepts"
+    ],
+    [
+     "scs",
+     "2023-12-09",
+     "Water cannon at Scarborough and ramming at Second Thomas Shoal"
+    ]
+   ],
+   "passes": false,
+   "close": false
+  },
+  "conv3": {
+   "name": "conv3",
+   "span": [
+    "2018-07-01",
+    "2026-10-16"
+   ],
+   "theatres": [
+    "drc",
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "scs",
+    "southasia",
+    "sudan",
+    "taiwan",
+    "ukraine",
+    "venezuela",
+    "yemen"
+   ],
+   "calm_blocks": 4225,
+   "calm_fired": 8,
+   "fa": 0.001893491124260355,
+   "orig": {
+    "n": 57,
+    "hits": 0,
+    "hit_rate": 0.0,
+    "lift": 0.0,
+    "p": 1.0
+   },
+   "added": {
+    "n": 66,
+    "hits": 0,
+    "hit_rate": 0.0,
+    "lift": 0.0,
+    "p": 1.0
+   },
+   "pooled": {
+    "n": 123,
+    "hits": 0,
+    "hit_rate": 0.0,
+    "lift": 0.0,
+    "p": 1.0
+   },
+   "on_day_before": {
+    "events": 123,
+    "share": 0.0
+   },
+   "auc_within": 0.51942783550532,
+   "hit_events": [],
+   "passes": false,
+   "close": false
+  },
+  "sat_air": {
+   "name": "sat_air",
+   "span": [
+    "2024-09-17",
+    "2026-10-16"
+   ],
+   "theatres": [
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "scs",
+    "southasia",
+    "sudan",
+    "taiwan",
+    "ukraine",
+    "venezuela",
+    "yemen"
+   ],
+   "calm_blocks": 923,
+   "calm_fired": 26,
+   "fa": 0.028169014084507043,
+   "orig": {
+    "n": 26,
+    "hits": 1,
+    "hit_rate": 0.038461538461538464,
+    "lift": 1.3653846153846154,
+    "p": 0.532645807671264
+   },
+   "added": {
+    "n": 13,
+    "hits": 0,
+    "hit_rate": 0.0,
+    "lift": 0.0,
+    "p": 1.0
+   },
+   "pooled": {
+    "n": 39,
+    "hits": 1,
+    "hit_rate": 0.02564102564102564,
+    "lift": 0.9102564102564102,
+    "p": 0.6779707837939786
+   },
+   "on_day_before": {
+    "events": 38,
+    "share": 0.02631578947368421
+   },
+   "auc_within": 0.48163486199430805,
+   "hit_events": [
+    [
+     "iran",
+     "2026-07-08",
+     "Ceasefire collapse in Hormuz"
+    ]
+   ],
+   "passes": false,
+   "close": false
+  },
+  "index": {
+   "name": "index",
+   "span": [
+    "2014-09-29",
+    "2026-10-18"
+   ],
+   "theatres": [
+    "drc",
+    "europe_east",
+    "iran",
+    "israel",
+    "korea",
+    "libya",
+    "scs",
+    "southasia",
+    "sudan",
+    "taiwan",
+    "ukraine",
+    "venezuela",
+    "yemen"
+   ],
+   "calm_blocks": 4592,
+   "calm_fired": 704,
+   "fa": 0.15331010452961671,
+   "orig": {
+    "n": 57,
+    "hits": 18,
+    "hit_rate": 0.3157894736842105,
+    "lift": 2.0598086124401913,
+    "p": 0.0017421395582296738
+   },
+   "added": {
+    "n": 71,
+    "hits": 16,
+    "hit_rate": 0.22535211267605634,
+    "lift": 1.4699103713188222,
+    "p": 0.07146067152687906
+   },
+   "pooled": {
+    "n": 128,
+    "hits": 34,
+    "hit_rate": 0.265625,
+    "lift": 1.7325994318181819,
+    "p": 0.0008987037672188757
+   },
+   "on_day_before": {
+    "events": 128,
+    "share": 0.203125
+   },
+   "auc_within": 0.5505096991534005,
+   "hit_events": [
+    [
+     "southasia",
+     "2019-02-26",
+     "Balakot"
+    ],
+    [
+     "southasia",
+     "2025-05-07",
+     "Operation Sindoor"
+    ],
+    [
+     "ukraine",
+     "2022-02-24",
+     "Russia full-scale invasion"
+    ],
+    [
+     "venezuela",
+     "2025-09-02",
+     "First US boat strike"
+    ],
+    [
+     "taiwan",
+     "2022-08-04",
+     "PLA drills after Pelosi"
+    ],
+    [
+     "taiwan",
+     "2024-05-23",
+     "Joint Sword-2024A"
+    ],
+    [
+     "israel",
+     "2021-05-10",
+     "11-day Gaza war"
+    ],
+    [
+     "israel",
+     "2024-11-27",
+     "HTS offensive and fall of Assad"
+    ],
+    [
+     "israel",
+     "2025-09-09",
+     "Israeli strike in Doha"
+    ],
+    [
+     "israel",
+     "2026-03-02",
+     "Hezbollah-Israel war resumes"
+    ],
+    [
+     "sudan",
+     "2025-05-04",
+     "Drone strikes on Port Sudan"
+    ],
+    [
+     "korea",
+     "2022-10-04",
+     "Missile over Japan"
+    ],
+    [
+     "libya",
+     "2020-01-18",
+     "Oil port blockade"
+    ],
+    [
+     "yemen",
+     "2023-11-19",
+     "Red Sea attacks begin"
+    ],
+    [
+     "yemen",
+     "2026-10-06",
+     "Houthi missile and drone campaign on Saudi airports (Jazan, Abha, Riyadh), the deadliest attacks on Saudi soil in a decade"
+    ],
+    [
+     "iran",
+     "2024-01-16",
+     "Iran-Pakistan border strikes"
+    ],
+    [
+     "iran",
+     "2026-07-08",
+     "Ceasefire collapse in Hormuz"
+    ],
+    [
+     "drc",
+     "2025-03-13",
+     "Bisie tin mine halted"
+    ],
+    [
+     "europe_east",
+     "2022-02-10",
+     "Allied Resolve 2022 (Russia-Belarus)"
+    ],
+    [
+     "ukraine",
+     "2022-10-08",
+     "Crimean Bridge truck-bomb explosion"
+    ],
+    [
+     "ukraine",
+     "2023-06-04",
+     "Ukrainian summer counteroffensive begins"
+    ],
+    [
+     "venezuela",
+     "2019-04-30",
+     "Guaido uprising attempt"
+    ],
+    [
+     "israel",
+     "2018-11-11",
+     "Gaza flare-up after botched Khan Younis raid (460 rockets)"
+    ],
+    [
+     "israel",
+     "2019-11-12",
+     "Operation Black Belt (PIJ commander killed)"
+    ],
+    [
+     "israel",
+     "2020-02-27",
+     "Balyun airstrike kills 33 Turkish soldiers; Turkey strikes Syrian forces"
+    ],
+    [
+     "israel",
+     "2023-05-09",
+     "Operation Shield and Arrow in Gaza"
+    ],
+    [
+     "israel",
+     "2025-07-14",
+     "Israel strikes Syrian forces in Sweida, then defence ministry in Damascus"
+    ],
+    [
+     "korea",
+     "2022-12-26",
+     "North Korean drones penetrate Seoul airspace"
+    ],
+    [
+     "yemen",
+     "2023-10-19",
+     "Houthis' first missiles and drones at Israel; USS Carney intercepts"
+    ],
+    [
+     "iran",
+     "2021-06-27",
+     "US strikes militias on Iraq-Syria border"
+    ],
+    [
+     "iran",
+     "2022-09-28",
+     "IRGC missile and drone strikes on Kurdish groups in Iraq"
+    ],
+    [
+     "iran",
+     "2023-10-17",
+     "Militia attacks on US forces in Iraq and Syria begin"
+    ],
+    [
+     "scs",
+     "2023-12-09",
+     "Water cannon at Scarborough and ramming at Second Thomas Shoal"
+    ],
+    [
+     "scs",
+     "2024-08-19",
+     "Collisions at Sabina Shoal"
+    ]
+   ],
+   "passes": false,
+   "close": false,
+   "weights": {
+    "base": 0.049,
+    "firms_anom": 0.0,
+    "adsb_tanker": 0.351,
+    "adsb_fighter": 2.51,
+    "adsb_lift": 0.0,
+    "nga": 0.0,
+    "sar": 0.0,
+    "gdelt_accel": 0.628,
+    "wiki": 0.816,
+    "tells": 0.375
+   },
+   "cut": 1.03616
+  }
+ },
+ "ranked_by_pooled_p": [
+  "index",
+  "wiki",
+  "adsb_fighter",
+  "conv2",
+  "tells",
+  "nga",
+  "adsb_tanker",
+  "base",
+  "gdelt_accel",
+  "firms_anom",
+  "sat_air",
+  "fire_site",
+  "adsb_lift",
+  "sar",
+  "conv3"
+ ],
+ "top3": [
+  "index",
+  "wiki",
+  "adsb_fighter"
+ ],
+ "profiles": {
+  "index": {
+   "days": {
+    "-14": {
+     "n": 128,
+     "mean_score": 3.7760692006766754,
+     "share_on": 0.21875
+    },
+    "-13": {
+     "n": 128,
+     "mean_score": 3.722212677098752,
+     "share_on": 0.2109375
+    },
+    "-12": {
+     "n": 128,
+     "mean_score": 3.468789648974413,
+     "share_on": 0.1953125
+    },
+    "-11": {
+     "n": 128,
+     "mean_score": 3.3177931380841614,
+     "share_on": 0.1875
+    },
+    "-10": {
+     "n": 128,
+     "mean_score": 3.2449381475999153,
+     "share_on": 0.1953125
+    },
+    "-9": {
+     "n": 128,
+     "mean_score": 3.191081624021992,
+     "share_on": 0.1953125
+    },
+    "-8": {
+     "n": 128,
+     "mean_score": 3.0052270564601393,
+     "share_on": 0.1796875
+    },
+    "-7": {
+     "n": 128,
+     "mean_score": 3.2748400824698667,
+     "share_on": 0.1953125
+    },
+    "-6": {
+     "n": 128,
+     "mean_score": 2.9634304292662295,
+     "share_on": 0.1875
+    },
+    "-5": {
+     "n": 128,
+     "mean_score": 3.001096954958765,
+     "share_on": 0.1953125
+    },
+    "-4": {
+     "n": 128,
+     "mean_score": 3.16679662719391,
+     "share_on": 0.2109375
+    },
+    "-3": {
+     "n": 128,
+     "mean_score": 3.3096981391414673,
+     "share_on": 0.21875
+    },
+    "-2": {
+     "n": 128,
+     "mean_score": 3.6961104356100654,
+     "share_on": 0.21875
+    },
+    "-1": {
+     "n": 128,
+     "mean_score": 3.499352400084584,
+     "share_on": 0.203125
+    },
+    "0": {
+     "n": 128,
+     "mean_score": 3.7768952209769506,
+     "share_on": 0.21875
+    }
+   },
+   "calm": {
+    "n": 32597,
+    "mean_score": 1.6000555247009312,
+    "share_on": 0.11080774304383839
+   },
+   "score_is": "index value 0-100"
+  },
+  "wiki": {
+   "days": {
+    "-14": {
+     "n": 125,
+     "mean_score": 0.8623661767859306,
+     "share_on": 0.136
+    },
+    "-13": {
+     "n": 125,
+     "mean_score": 0.8804716851673398,
+     "share_on": 0.136
+    },
+    "-12": {
+     "n": 125,
+     "mean_score": 0.9220442704709626,
+     "share_on": 0.12
+    },
+    "-11": {
+     "n": 125,
+     "mean_score": 0.9311335358899345,
+     "share_on": 0.112
+    },
+    "-10": {
+     "n": 125,
+     "mean_score": 0.9992104365288342,
+     "share_on": 0.104
+    },
+    "-9": {
+     "n": 125,
+     "mean_score": 1.0762728109054724,
+     "share_on": 0.104
+    },
+    "-8": {
+     "n": 125,
+     "mean_score": 1.1323961371496853,
+     "share_on": 0.104
+    },
+    "-7": {
+     "n": 125,
+     "mean_score": 1.1888833980916063,
+     "share_on": 0.12
+    },
+    "-6": {
+     "n": 125,
+     "mean_score": 1.2508805475399511,
+     "share_on": 0.104
+    },
+    "-5": {
+     "n": 125,
+     "mean_score": 1.2192200016924346,
+     "share_on": 0.104
+    },
+    "-4": {
+     "n": 125,
+     "mean_score": 1.1534969771664965,
+     "share_on": 0.104
+    },
+    "-3": {
+     "n": 125,
+     "mean_score": 1.1303331448960034,
+     "share_on": 0.112
+    },
+    "-2": {
+     "n": 125,
+     "mean_score": 1.1183753637287535,
+     "share_on": 0.112
+    },
+    "-1": {
+     "n": 125,
+     "mean_score": 1.1435169968448653,
+     "share_on": 0.104
+    },
+    "0": {
+     "n": 125,
+     "mean_score": 1.2027180217537763,
+     "share_on": 0.104
+    }
+   },
+   "calm": {
+    "n": 30267,
+    "mean_score": 0.3177856890488608,
+    "share_on": 0.05778570720586778
+   },
+   "score_is": "max z in trailing 7 days"
+  },
+  "adsb_fighter": {
+   "days": {
+    "-14": {
+     "n": 41,
+     "mean_score": 0.05643941280521018,
+     "share_on": 0.024390243902439025
+    },
+    "-13": {
+     "n": 41,
+     "mean_score": 0.06544675983486534,
+     "share_on": 0.024390243902439025
+    },
+    "-12": {
+     "n": 41,
+     "mean_score": 0.07116381524377262,
+     "share_on": 0.024390243902439025
+    },
+    "-11": {
+     "n": 41,
+     "mean_score": 0.08203364288112004,
+     "share_on": 0.024390243902439025
+    },
+    "-10": {
+     "n": 41,
+     "mean_score": 0.07567552807445634,
+     "share_on": 0.024390243902439025
+    },
+    "-9": {
+     "n": 42,
+     "mean_score": 0.07734345730948407,
+     "share_on": 0.023809523809523808
+    },
+    "-8": {
+     "n": 42,
+     "mean_score": 0.07777015526659813,
+     "share_on": 0.023809523809523808
+    },
+    "-7": {
+     "n": 42,
+     "mean_score": 0.08087377580480515,
+     "share_on": 0.023809523809523808
+    },
+    "-6": {
+     "n": 41,
+     "mean_score": 0.08804638458472824,
+     "share_on": 0.024390243902439025
+    },
+    "-5": {
+     "n": 41,
+     "mean_score": 0.08822805687311337,
+     "share_on": 0.024390243902439025
+    },
+    "-4": {
+     "n": 41,
+     "mean_score": 0.09231441028818929,
+     "share_on": 0.024390243902439025
+    },
+    "-3": {
+     "n": 41,
+     "mean_score": 0.10090964312406686,
+     "share_on": 0.024390243902439025
+    },
+    "-2": {
+     "n": 41,
+     "mean_score": 0.11681919998995483,
+     "share_on": 0.04878048780487805
+    },
+    "-1": {
+     "n": 41,
+     "mean_score": 0.11478130616889332,
+     "share_on": 0.04878048780487805
+    },
+    "0": {
+     "n": 41,
+     "mean_score": 0.10203620560332514,
+     "share_on": 0.04878048780487805
+    }
+   },
+   "calm": {
+    "n": 6810,
+    "mean_score": 0.04784875246186515,
+    "share_on": 0.003964757709251102
+   },
+   "score_is": "max z in trailing 7 days"
+  },
+  "conv2": {
+   "days": {
+    "-14": {
+     "n": 125,
+     "mean_score": 0.416,
+     "share_on": 0.064
+    },
+    "-13": {
+     "n": 125,
+     "mean_score": 0.408,
+     "share_on": 0.056
+    },
+    "-12": {
+     "n": 125,
+     "mean_score": 0.408,
+     "share_on": 0.048
+    },
+    "-11": {
+     "n": 125,
+     "mean_score": 0.384,
+     "share_on": 0.04
+    },
+    "-10": {
+     "n": 125,
+     "mean_score": 0.376,
+     "share_on": 0.04
+    },
+    "-9": {
+     "n": 125,
+     "mean_score": 0.384,
+     "share_on": 0.048
+    },
+    "-8": {
+     "n": 125,
+     "mean_score": 0.36,
+     "share_on": 0.032
+    },
+    "-7": {
+     "n": 125,
+     "mean_score": 0.376,
+     "share_on": 0.032
+    },
+    "-6": {
+     "n": 125,
+     "mean_score": 0.36,
+     "share_on": 0.032
+    },
+    "-5": {
+     "n": 125,
+     "mean_score": 0.344,
+     "share_on": 0.04
+    },
+    "-4": {
+     "n": 125,
+     "mean_score": 0.336,
+     "share_on": 0.048
+    },
+    "-3": {
+     "n": 125,
+     "mean_score": 0.336,
+     "share_on": 0.04
+    },
+    "-2": {
+     "n": 125,
+     "mean_score": 0.344,
+     "share_on": 0.048
+    },
+    "-1": {
+     "n": 125,
+     "mean_score": 0.336,
+     "share_on": 0.048
+    },
+    "0": {
+     "n": 125,
+     "mean_score": 0.368,
+     "share_on": 0.056
+    }
+   },
+   "calm": {
+    "n": 30360,
+    "mean_score": 0.2301054018445323,
+    "share_on": 0.021179183135704875
+   },
+   "score_is": "domains on (0-6)"
+  }
+ }
+}

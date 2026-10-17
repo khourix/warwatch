@@ -297,6 +297,9 @@ def build_data(res, generated, demo, ex, topo):
         v["official"] = official_json(by_id, t)
         for dom, row in strips.get(t, {}).items():
             v["doms"][dom]["h"] = row
+        act = (res.get("activity") or {}).get(t)
+        if act:   # experimental, beside the level (warwatch/activity.py)
+            v["act"] = {"i": act["index"], "on": act["on"], "f": act["families"]}
     data["strip_end"] = _day(generated).isoformat()
     return data
 

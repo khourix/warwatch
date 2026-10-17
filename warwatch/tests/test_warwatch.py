@@ -25,6 +25,7 @@ import tells  # noqa: E402
 import store  # noqa: E402
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from test_satellite import *  # noqa: E402,F401,F403  fire classes and base watch (FIRECLASS_PLAN, BASEWATCH_PLAN)
+from test_activity import *  # noqa: E402,F401,F403  Activity v1 (docs/ACTIVITY.md)
 
 # shaped like the responses read from a GitHub runner on 2026-10-06
 COMEXT = {"id": ["freq", "reporter", "partner", "product", "flow", "indicators", "time"],

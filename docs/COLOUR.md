@@ -31,6 +31,8 @@ The tokens live in `warwatch/page.html` (`:root`). The look is "night ops": cool
 
 The theatre levels use the same three colours, always with the word: Watch #f4ad62, Elevated #ec7838, Critical #e14d44. Normal is grey #6b747e and shows as an outlined pill. A level says how unusual a theatre's signals are now. It is a description, not a forecast, so it is coloured whether or not the 30-day model has passed its release checks. The standing risk, which comes from that model, stays grey until it passes.
 
+The experimental Activity chip ([ACTIVITY.md](ACTIVITY.md)) sits beside the level with a dashed outline, so it never reads as a second level. It is amber text when ACTIVE and grey when QUIET.
+
 Text on a warm fill is #1a1009: 9.8:1 on Watch, 6.5:1 on Elevated, 4.8:1 on Critical.
 
 ## The map
