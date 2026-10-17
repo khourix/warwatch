@@ -23,30 +23,5 @@ jobs:
           mkdir -p lab && mv lab_cases.txt lab/fire_cases.txt
           git add backfill/data/firecls lab
           git commit -qm "lab: energy-site fire replay"
+          git reset -q --hard HEAD     # the rebuilt fire tables differ only in gzip timestamps
           for i in 1 2 3 4 5 6; do git pull --rebase -q origin claude/project-thread-szj3l8 && git push -q origin HEAD:claude/project-thread-szj3l8 && break; sleep $((i * 7)); done
-  bases:
-    runs-on: ubuntu-latest
-    timeout-minutes: 350
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
-    env:
-      WARWATCH_HISTORY: /tmp/bf
-    steps:
-      - uses: actions/checkout@v4
-      - run: python3 -m pip install --quiet --break-system-packages numpy scipy rasterio pillow
-      - name: Backfill radar scenes for this shard
-        run: |
-          SITES=$(python3 -c "import json;d=json.load(open('warwatch/data/bases.json'));print(','.join(s['id'] for s in d[${{ matrix.shard }}::30]))")
-          echo "sites: $SITES"
-          timeout 330m python3 -u warwatch/basewatch.py --backfill-from 2021-09-01 --until 2026-02-28 --budget 1000000 --no-optical --site "$SITES" > log.txt 2>&1 || echo "stopped: $?"
-          tail -5 log.txt; grep -c . /tmp/bf/basewatch_scenes.csv || true
-      - name: Commit this shard
-        run: |
-          git config user.name "warwatch-bot"; git config user.email "warwatch-bot@users.noreply.github.com"
-          mkdir -p backfill/data/basewatch/shards
-          gzip -c /tmp/bf/basewatch_scenes.csv > backfill/data/basewatch/shards/s${{ matrix.shard }}.csv.gz
-          git add backfill/data/basewatch/shards
-          git commit -qm "lab: base backfill shard ${{ matrix.shard }}"
-          for i in 1 2 3 4 5 6 7 8; do git pull --rebase -q origin claude/project-thread-szj3l8 && git push -q origin HEAD:claude/project-thread-szj3l8 && break; sleep $((RANDOM % 20 + i * 5)); done
