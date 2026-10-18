@@ -324,6 +324,15 @@ main{flex:1;min-height:0;display:flex;position:relative}
 #card p{margin:8px 0;color:#bcc3ca}
 #card .flag{background:#3a1416;border:1px solid #8c2a2f;color:#ffc9cb;border-radius:6px;padding:4px 8px;margin:6px 0;font-weight:600}
 #card .btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.bpart{border-top:1px solid var(--line);padding:8px 0 6px}.bph{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}.bph i{width:9px;height:9px;border:2px solid;border-radius:50%;flex:none;align-self:center}.bph span{color:var(--dim);font-size:11.5px}
+.bpn{display:flex;align-items:center;gap:10px;margin:4px 0 2px}.bpn b{font:600 24px/1 var(--mono)}.bpn span{color:var(--mute);font-size:11.5px;line-height:1.35;flex:1;min-width:0}.bpn em{font:600 14px var(--mono);font-style:normal}
+.bps{font-size:12px;margin-bottom:4px}.bpm{font-size:12px;color:var(--mute);margin-bottom:6px}.bpm b{color:var(--ink);font-weight:600}
+.mkl{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11px;color:var(--mute);margin:2px 0 8px}.mkl span{display:flex;align-items:center;gap:5px}.mkl i{width:9px;height:9px;border:2px solid;border-radius:50%}.mkl i.nw{box-shadow:0 0 0 2px #fff}.mkl b{color:var(--ink);font-weight:600}
+.zw{position:relative;cursor:zoom-in}.zw .ring{position:absolute;left:50%;top:50%;width:calc(var(--r) * 2);aspect-ratio:1;transform:translate(-50%,-50%);border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 2px #000a;pointer-events:none}
+.chip-i.wide{margin:4px 0}.chip-i.wide img{aspect-ratio:auto;object-fit:contain;max-height:none}
+#zoom{position:fixed;inset:0;z-index:90;background:#000e;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:10px}#zoom.on{display:flex}
+#zoom .zw{cursor:zoom-out;max-width:100%;max-height:calc(100% - 60px)}#zoom img{display:block;max-width:min(96vw,1100px);max-height:calc(100vh - 110px);object-fit:contain;border-radius:6px}
+#zoom p{color:#dfe3e7;font-size:13px;margin:0;text-align:center;max-width:900px}#zoom button{position:absolute;color:#fff;font-size:28px;padding:8px 14px;background:#0008;border-radius:10px}#zoom .zx{top:12px;right:12px}#zoom .zp{left:12px;top:50%}#zoom .zn{right:12px;top:50%}
 .chips-i{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin:4px 0}.chip-i{margin:0}.chip-i img,.noimg{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;background:#15181b;display:block}.noimg{display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:11px}.chip-i figcaption{font-size:11px;color:var(--mute);margin-top:2px}
 .agebar{display:flex;align-items:center;gap:8px;margin:6px 0}
 .agebar i{width:12px;height:12px;border-radius:50%;flex:none}
@@ -360,8 +369,7 @@ main{flex:1;min-height:0;display:flex;position:relative}
 /* theatre panel */
 #panel{width:clamp(400px,32vw,500px);flex:none;background:var(--panel);border-left:1px solid var(--line);display:none;flex-direction:column;min-height:0;position:relative}
 #panel.on{display:flex}
-.rtabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px;flex:none;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;align-items:flex-end}
-.rtabs::-webkit-scrollbar{display:none}
+.rtabs{display:flex;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:0 8px;flex:none;align-items:flex-end}   /* tabs wrap onto a second line: nothing on the page scrolls sideways */
 .rdiv{width:1px;height:20px;background:var(--line2);margin:0 6px 10px;flex:none}
 .tdot{width:7px;height:7px;border-radius:50%;background:var(--tell);display:inline-block;flex:none}
 /* theatre name tinted by its level, underlined when a timing tell is on: no separate dots */
@@ -387,7 +395,7 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .kp b sub{font-size:10.5px;color:var(--dim);vertical-align:baseline;font-weight:500}
 .kp{border-top:3px solid var(--k,var(--line))}.kp.kpsh{border-style:dashed;border-top-style:solid}.kp .shg{font:500 9.5px var(--mono);color:var(--mute);border:1px dashed var(--line2);border-radius:3px;padding:0 3px;margin-left:4px}
 .kp>span{display:block;font-size:11px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stabs{display:flex;gap:2px;padding:0 12px;border-bottom:1px solid var(--line);flex:none}
+.stabs{display:flex;flex-wrap:wrap;gap:2px;padding:0 12px;border-bottom:1px solid var(--line);flex:none}
 .stabs button{padding:8px 8px;font-size:12.5px;color:var(--mute);border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;gap:6px;align-items:center;white-space:nowrap}
 .stabs button:hover{color:var(--ink)}
 .stabs button.on{color:var(--ink);border-color:var(--accent)}
@@ -664,7 +672,7 @@ table.st td:last-child{text-align:right;font-weight:600}
   .pbody{overflow:visible;padding:10px 12px 16px}
   .thd{padding:10px 12px 8px}
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 12px 10px}
-  .stabs{overflow-x:auto;scrollbar-width:none;padding:0 6px;position:sticky;top:54px;background:var(--panel);z-index:4}
+  .stabs{padding:0 6px;position:sticky;top:54px;background:var(--panel);z-index:4}
   .rtabs{padding:6px 8px;gap:6px;border-bottom:1px solid var(--line)}
   .rtabs button{border:1px solid var(--line);border-radius:999px;padding:5px 11px;margin:0;font-size:12.5px}
   .rtabs button.tt{border-color:var(--tell);padding:5px 11px}.rtabs button.tt::before{display:none}
@@ -699,14 +707,14 @@ table.st td:last-child{text-align:right;font-weight:600}
   #stbl tr[data-row] td:nth-last-child(3){font-size:11.5px}
   #stbl tr[data-row] td.hsel:not(:nth-last-child(2)){display:none}
   .hs,.mk5{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .kstrip{display:flex;overflow-x:auto;scrollbar-width:none}.kstrip .ks{flex:0 0 152px}
+  .kstrip{grid-template-columns:repeat(2,minmax(0,1fr))}
   .rgrid{grid-template-columns:1fr}
   #toast{bottom:84px}
   .hi{grid-template-columns:54px minmax(0,1fr)}.hi .hk{display:none}
   .mk5.ev3{grid-template-columns:1fr 1fr}
   .grid4{grid-template-columns:1fr;overflow:visible}
   .two{grid-template-columns:1fr}
-  .setnav{flex-direction:row;overflow-x:auto;scrollbar-width:none;gap:6px;margin-bottom:10px}
+  .setnav{flex-direction:row;flex-wrap:wrap;gap:6px;margin-bottom:10px}
   .setnav button{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
   .setb{overflow:visible}.setscroll{overflow:visible}
   .setrow{grid-template-columns:1fr;gap:6px}
@@ -736,7 +744,7 @@ table.st td:last-child{text-align:right;font-weight:600}
 }
 /* the active tab's accent line is one element that slides from tab to tab */
 .rtabs{position:relative}@media(min-width:901px){.stabs{position:relative}}   /* on a phone .stabs is sticky, which also holds the indicator */
-.ind{position:absolute;left:0;bottom:0;height:2px;width:0;background:var(--accent);border-radius:2px;pointer-events:none}
+.ind{position:absolute;left:0;top:0;height:2px;width:0;background:var(--accent);border-radius:2px;pointer-events:none}
 .rtabs.hasind button.on,.stabs.hasind button.on{border-bottom-color:transparent}
 /* a number that changed since you last saw it ticks to its new value and glows once */
 @keyframes bump{0%,25%{background:color-mix(in oklab,var(--accent) 30%,transparent);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 30%,transparent)}100%{background:transparent;box-shadow:0 0 0 3px transparent}}
@@ -799,6 +807,7 @@ table.st td:last-child{text-align:right;font-weight:600}
     <div class="rail" id="rail"></div>
     <div class="zoom" id="zoom"><button id="zin" aria-label="Zoom in" data-tip="Zoom in">+</button><button id="zout" aria-label="Zoom out" data-tip="Zoom out">&minus;</button><button id="zhome" aria-label="Reset the view" data-tip="Reset the view"></button></div>
     <div id="card"></div>
+    <div id="zoom" role="dialog" aria-label="Image, full size"><button class="zx" aria-label="Close">&times;</button><button class="zp" aria-label="Previous image">&lsaquo;</button><button class="zn" aria-label="Next image">&rsaquo;</button><div class="zw"><img alt=""><span class="ring"></span></div><p></p></div>
     <div id="dock"></div>
     <div id="hcard"></div>
   </div>
@@ -918,6 +927,26 @@ function ago(d, short){
   return Math.round(h / 24) + (short ? ' d' : ' days ago');
 }
 const ageH = d => { if (!d) return null; const t = Date.parse(d.length <= 10 ? d + 'T12:00:00Z' : d); return isNaN(t) ? null : (Date.now() - t) / 36e5; };
+/* a base part's last radar passes as bars of the objects counted, each over the grey normal range of its own satellite track
+   (tracks see a base from different angles, so each pass is judged against earlier passes of the same track) */
+const BAR_OUT = '#ec7838';
+function baseBars(h, w, ht, axes){
+  w = w || 300; ht = ht || 64;
+  const v = (h || []).filter(p => p[1] != null);
+  if (v.length < 3) return '';
+  const top = Math.max(1, ...v.map(p => Math.max(p[1], p[4] || 0))) * 1.08, L = axes ? 26 : 0, B = axes ? 14 : 0;
+  const bw = (w - L) / v.length, Y = x => (ht - B) * (1 - x / top);
+  let g = '';
+  v.forEach((p, i) => {
+    const x = L + i * bw, last = i === v.length - 1, out = p[3] != null && (p[1] < p[3] || p[1] > p[4]);
+    if (p[3] != null) g += `<rect x="${x.toFixed(1)}" y="${Y(p[4]).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, Y(p[3]) - Y(p[4])).toFixed(1)}" fill="var(--line2)" opacity=".75"/>`;
+    g += `<rect x="${(x + bw * .2).toFixed(1)}" y="${Y(p[1]).toFixed(1)}" width="${(bw * .6).toFixed(1)}" height="${Math.max(1, ht - B - Y(p[1])).toFixed(1)}" rx="1" fill="${out ? BAR_OUT : 'var(--mute)'}"${last ? ' stroke="var(--ink)" stroke-width="1.2"' : ''}><title>${esc(p[0])}: ${Math.round(p[1])} objects${p[3] != null ? ` (normal for this track ${Math.round(p[3])}–${Math.round(p[4])})` : ' (track still learning its normal)'}</title></rect>`;
+  });
+  if (axes) g += `<text x="${L - 4}" y="9" text-anchor="end" font-size="9" fill="var(--dim)">${Math.round(top / 1.08)}</text><text x="${L - 4}" y="${ht - B}" text-anchor="end" font-size="9" fill="var(--dim)">0</text>` +
+    `<text x="${L}" y="${ht - 2}" font-size="9" fill="var(--dim)">${esc(fmtDay(v[0][0]))}</text><text x="${w}" y="${ht - 2}" text-anchor="end" font-size="9" fill="var(--dim)">${esc(fmtDay(v[v.length - 1][0]))}</text>`;
+  return `<svg width="100%" height="${ht}" viewBox="0 0 ${w} ${ht}" preserveAspectRatio="none" style="display:block;max-width:${w}px">${g}</svg>`;
+}
+const fmtDay = d => { const t = Date.parse(d); return isNaN(t) ? String(d || '') : new Date(t).toLocaleDateString([], {day: 'numeric', month: 'short', timeZone: 'UTC'}); };
 function spark(pts, col, w, h, fill){
   w = w || 70; h = h || 22;
   const v = (pts || []).map(p => Array.isArray(p) ? p[1] : p);
@@ -1053,12 +1082,16 @@ const fireExpl = f => ['seas', 'ind', 'volc', 'off'].includes(fireCls(f));
 const fireShown = f => !fireExpl(f) || layerState.firesx;
 const isoDay = (d, k) => new Date(Date.parse(String(d).slice(0, 10) + 'T00:00:00Z') + k * 864e5).toISOString().slice(0, 10);
 const cbUrl = (ll, d, layer, zoom) => `https://browser.dataspace.copernicus.eu/?zoom=${zoom || 14}&lat=${ll[0]}&lng=${ll[1]}&themeId=DEFAULT-THEME&datasetId=S2_L2A_CDAS&layerId=${layer || '1_TRUE_COLOR'}&fromTime=${isoDay(d, -10)}T00%3A00%3A00.000Z&toTime=${isoDay(d, 10)}T23%3A59%3A59.999Z&dateMode=TIME%20RANGE`;
+/* the VIIRS pass behind a fire, as a picture: NASA GIBS (free, no key) draws that day's image with the fire detections on it */
+const gibsUrl = (ll, d) => `https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=VIIRS_SNPP_CorrectedReflectance_TrueColor,VIIRS_SNPP_Thermal_Anomalies_375m_All,VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_NOAA21_Thermal_Anomalies_375m_All&STYLES=&CRS=EPSG:4326&BBOX=${(ll[0] - .12).toFixed(3)},${(ll[1] - .12).toFixed(3)},${(ll[0] + .12).toFixed(3)},${(ll[1] + .12).toFixed(3)}&WIDTH=640&HEIGHT=640&FORMAT=image/jpeg&TIME=${String(d).slice(0, 10)}`;
 const wvUrl = (ll, d) => `https://worldview.earthdata.nasa.gov/?v=${(ll[1] - .15).toFixed(3)},${(ll[0] - .1).toFixed(3)},${(ll[1] + .15).toFixed(3)},${(ll[0] + .1).toFixed(3)}&l=VIIRS_SNPP_Thermal_Anomalies_375m_All,VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_NOAA21_Thermal_Anomalies_375m_All,VIIRS_SNPP_CorrectedReflectance_TrueColor&t=${String(d).slice(0, 10)}-T00%3A00%3A00Z`;
 /* military bases watched by satellite (basewatch.py): a hollow white square = usual, amber = one pass differed, orange = two passes agree */
 const BASEC = {out: '#ec7838', in: '#ec7838', changed: '#f4ad62', normal: CTX, nodata: '#868f99', optical: '#868f99', viewer: '#868f99'};
 const BASEN = {out: 'Far fewer than usual on two passes', in: 'Far more than usual on two passes', changed: 'One pass differed from usual', normal: 'Usual', nodata: 'No recent radar pass', optical: 'Optical images only', viewer: 'Images to look at (no automated check)'};
 const BASEK = {air: 'Air base', naval: 'Naval base', 'air+naval': 'Air and naval base', launch: 'Launch site', port: 'Port', missile: 'Missile base', airdef: 'Air-defence site', depot: 'Army depot'};
 const chipImg = (src, cap) => `<figure class="chip-i"><img src="${esc(src)}" alt="${esc(cap)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',textContent:'No image yet'}))"><figcaption>${esc(cap)}</figcaption></figure>`;
+const MKC = {apron: '#ffb830', harbour: '#48c8ff', ground: '#96e65a'};      // the colours basewatch.py draws each part's outline and marks in
+const zoomImg = (src, cap, cls, ring) => `<figure class="chip-i${cls ? ' ' + cls : ''}"><div class="zw"><img src="${esc(src)}" alt="${esc(cap)}" loading="lazy" data-zoom="${esc(cap)}"${ring ? ` data-ring="${ring}"` : ''} onerror="this.parentNode.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',textContent:'No image yet'}))">${ring ? `<span class="ring" style="--r:${ring}%"></span>` : ''}</div><figcaption>${esc(cap)}</figcaption></figure>`;
 const chipRow = (pairs) => `<div class="chips-i">${pairs.filter(p => p[0]).map(p => chipImg(p[0], p[1])).join('')}</div><p class="hint" style="margin:2px 0 8px">Contains modified Copernicus Sentinel data ${new Date().getUTCFullYear()}.</p>`;
 const KIND = {sqk:['plane','#e14d44','Air'], inc:['anchor','#ec7838','Sea'], ships:['ship',CTX,'Sea'], nga:['warn','#b0b8c1','Warnings'], czib:['diamond','#b0b8c1','Warnings'], fires:['fire','#f4ad62','Ground'], bases:['base','#ec7838','Ground']};
 function buildAlerts(){
@@ -1373,6 +1406,8 @@ document.addEventListener('click', e => {
 document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip]'); if (el) tipSoon(w => { if (el.isConnected) tipShow(el, esc(el.dataset.tip), w); }); });
 document.addEventListener('mouseout', e => { const el = e.target.closest('[data-tip]'); if (el && !el.contains(e.relatedTarget)) tipHide(); else if (!el) clearTimeout(tipDT); });
 addEventListener('keydown', e => {
+  if (ZOOM && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { stepZoom(e.key === 'ArrowLeft' ? -1 : 1); return; }
+  if (e.key === 'Escape' && ZOOM) { closeZoom(); return; }
   if (e.key === 'Escape') { if ($('#results').style.display === 'block') { hideResults(); return; } if ($('#modal').style.display === 'flex') { closeModal(); return; } if (POP) { closePop(); return; } closeCard(); hideHover(); return; }
   if (e.target.matches('input,select,textarea')) return;
   if (e.key === '/') { e.preventDefault(); $('#q').focus(); }
@@ -1801,25 +1836,60 @@ function openCard(type, o){
     h = `<h3>${esc(FIRE_CLS[cl])}</h3><div class="sub">${o.ts ? esc(isNaN(Date.parse(o.ts)) ? o.ts : new Date(o.ts).toLocaleString([], {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short'})) + ' · ' + esc(ago(o.ts)) : esc(o.d || '')}</div>` +
       `<div class="agebar"><i style="background:${ex ? 'transparent;border:1.5px dashed #8a949e' : fireCol(hh)}"></i><span class="hint">${ex ? 'Explained heat.' : esc(fireBand(hh)[3]) + '.'}</span></div>` +
       (o.why ? `<p><b>Why:</b> ${esc(o.why)}</p>` : '') +
-      kv('Heat (radiative power)', Math.round(o.p || 0) + ' MW') + (ex ? '' : kv('Unusual score', (o.a || 0) + ' of 100')) + kv('Theatre', esc(o.th ? thName(o.th) : '')) + (o.dn ? kv('Pass', o.dn === 'N' ? 'night' : 'day') : '') +
-      (im ? `<div class="lgrp" style="padding:8px 0 4px">Sentinel-2 check${im.v === 'scar' ? ': burn scar seen' : im.v === 'none' ? ': no burn scar seen' : ''}</div>` + chipRow([[im.b, 'Before ' + (im.bd || '')], [im.a, 'After ' + (im.ad || '')], [im.s, 'After, infrared ' + (im.ad || '')]]) : '') +
+      kv('Heat (radiative power)', Math.round(o.p || 0) + ' MW') + (ex ? '' : kv('Unusual score', (o.a || 0) + ' of 100')) + kv('Theatre', esc(o.th ? thName(o.th) : '')) + (o.dn ? kv('Satellite pass', 'VIIRS, ' + (o.dn === 'N' ? 'night' : 'day')) : '') +
+      (ll && d ? `<div class="lgrp" style="padding:8px 0 4px">The satellite pass <span class="hint" style="font-weight:400">· click to enlarge</span></div>` +
+        zoomImg(gibsUrl(ll, d), `NASA VIIRS, ${fmtDay(d)}: red and yellow dots are every fire the satellites saw that day; the circle is this one`, 'wide', 6) +
+        `<p class="hint" style="margin:2px 0 8px">About 26 km across. The picture is that day's daytime image${o.dn === 'N' ? '; this fire was seen at night, so smoke may not show yet' : ''}. Imagery from NASA GIBS.</p>` : '') +
+      (im ? `<div class="lgrp" style="padding:8px 0 4px">Close-up, Sentinel-2${im.v === 'scar' ? ': burn scar seen' : im.v === 'none' ? ': no burn scar seen' : ''}</div>` +
+        `<div class="chips-i">${[[im.b, 'Before ' + fmtDay(im.bd)], [im.a, 'After ' + fmtDay(im.ad)], [im.s, 'After, infrared ' + fmtDay(im.ad)]].filter(p => p[0]).map(p => zoomImg(p[0], p[1] + ': the circle is where the fire was seen', '', 12)).join('')}</div>` +
+        `<p class="hint" style="margin:2px 0 8px">2.5 km across. In infrared, fresh burn scars look dark red-brown and live fire bright orange. Contains modified Copernicus Sentinel data ${new Date().getUTCFullYear()}.</p>` : '') +
       `<p>${what}</p><div class="btns">${ll ? `<a class="btn" target="_blank" rel="noopener" href="${esc(cbUrl(ll, d))}">Sentinel-2 images ${ic('ext', 's')}</a><a class="btn" target="_blank" rel="noopener" href="${esc(cbUrl(ll, d, '6-SWIR'))}">Infrared (burn scars) ${ic('ext', 's')}</a><a class="btn" target="_blank" rel="noopener" href="${esc(wvUrl(ll, d))}">NASA Worldview ${ic('ext', 's')}</a>` : ''}${goBtn(o.th)}</div>`; }
-  else if (type === 'bases') { const im = o.img || {}, col = BASEC[o.st] || BASEC.normal;
+  else if (type === 'bases') { const im = o.img || {}, col = BASEC[o.st] || BASEC.normal, pr = o.pr || [];
+    const n0 = v => v == null ? '–' : String(Math.round(v));
+    const pct = x => x.now == null || !x.u ? '' : ((x.now - x.u) / x.u * 100 >= 0 ? '+' : '') + Math.round((x.now - x.u) / x.u * 100) + '%';
+    const say = x => x.st === 'out' ? 'Far fewer than usual on two passes in a row' : x.st === 'in' ? 'Far more than usual on two passes in a row' : x.now == null || x.lo == null ? (x.st === 'nodata' ? 'No recent radar pass' : 'Still learning what is usual here')
+      : x.now > x.hi ? 'Above its normal range on the latest pass' : x.now < x.lo ? 'Below its normal range on the latest pass' : 'Within its normal range';
+    const part = x => { const c = x.st === 'out' || x.st === 'in' ? BASEC[x.st] : x.now != null && x.lo != null && (x.now > x.hi || x.now < x.lo) ? BASEC.changed : 'var(--mute)', mk = x.mk;
+      return `<div class="bpart"><div class="bph"><i style="border-color:${MKC[x.p]}"></i><b>${esc(x.w)}</b><span>${esc(x.wh || '')}</span></div>` +
+        `<div class="bpn"><b>${n0(x.now)}</b><span>counted on the latest pass<br>usual ${n0(x.u)}${x.lo != null ? `, normal range ${n0(x.lo)}–${n0(x.hi)}` : ''}</span>${pct(x) ? `<em style="color:${c}">${pct(x)}</em>` : ''}</div>` +
+        `<div class="bps" style="color:${c}">${esc(say(x))}${x.t ? '' : ' · not yet tested against past events'}</div>` +
+        (mk && mk.new != null ? `<div class="bpm">On the marked image (${esc(fmtDay(mk.d))}): <b>${mk.new} new</b> and <b>${mk.gone} gone</b> since the pass of ${esc(fmtDay(mk.b))}.</div>` : '') +
+        baseBars(x.h, 300, 70, true) +
+        (x.img && x.img.m ? zoomImg(x.img.m, `${x.w}, radar ${fmtDay(x.img.md)}: each circle is one object the count includes`, 'wide') +
+          `<div class="mkl"><span><i style="border-color:${MKC[x.p]}"></i>counted</span>${mk && mk.new != null ? `<span><i class="nw" style="border-color:${MKC[x.p]}"></i>new since ${esc(fmtDay(mk.b))}</span><span><b style="color:${MKC[x.p]}">×</b>gone since then</span>` : ''}</div>` : '') + `</div>`; };
+    const small = [...pr.filter(x => x.img && x.img.rb).map(x => [x.img.rb, `${x.w}, radar ${fmtDay(x.img.rbd)}: the earlier pass, objects circled`]),
+      ...(im.r ? [[im.r, 'Radar ' + fmtDay(im.rd)]] : []), [im.a, 'Optical ' + fmtDay(im.ad)], [im.b, 'Optical ' + fmtDay(im.bd)]].filter(p => p[0]);
     h = `<h3>${esc(o.n)}</h3><div class="sub">${esc(o.side || '')} · ${esc(BASEK[o.k] || o.k || '')}</div>` +
-      `<div class="agebar"><i style="background:${col}"></i><span class="hint">${esc(BASEN[o.st] || '')}.</span></div><p>${esc(o.why || '')}</p>` + (o.note ? `<p>${esc(o.note)}</p>` : '') +
-      ((o.pr || []).length > 1 ? `<div class="lgrp" style="padding:8px 0 4px">What radar sees, part by part</div>` + o.pr.map(x => kv(esc(x.w), `<span style="color:${BASEC[x.st] || BASEC.normal}">${esc(x.s)}</span>${x.z != null ? ` (z ${x.z > 0 ? '+' : ''}${x.z.toFixed(1)})` : ''}${x.t ? '' : ' <span class="hint">untested</span>'}`)).join('') : '') +
-      (o.pts && o.pts.length > 2 ? `<div class="hint">Radar against its usual (z), last ${o.pts.length} passes</div>${spark(o.pts, col, 240, 36)}` : '') +
+      `<div class="agebar"><i style="background:${col}"></i><span class="hint">${esc(BASEN[o.st] || '')}.</span></div>` +
+      (o.st === 'out' || o.st === 'in' || o.st === 'changed' ? `<p>${esc(o.why || '')}</p>` : '') + (o.note ? `<p>${esc(o.note)}</p>` : '') +
+      (pr.length ? `<div class="lgrp" style="padding:8px 0 2px">What the radar tracks here</div>${pr.map(part).join('')}` +
+        `<p class="hint">Bars: objects counted on each of the last radar passes; the outlined bar is the latest. Grey band: the normal range for that pass (each satellite track sees the base from its own angle, so a pass is compared with earlier passes of the same track). Orange bars are outside it. Click an image to enlarge it. A few objects come and go between any two passes from radar noise alone; a cluster of new or gone marks is what to look at.</p>` : '<p class="hint">No radar counts for this site yet.</p>') +
+      (small.length ? `<div class="lgrp" style="padding:8px 0 2px">More satellite images <span class="hint" style="font-weight:400">· click to enlarge</span></div>` +
+        `<div class="chips-i">${small.map(p => zoomImg(p[0], p[1])).join('')}</div><p class="hint" style="margin:2px 0 8px">Coloured outlines: the areas counted. Contains modified Copernicus Sentinel data ${new Date().getUTCFullYear()}.</p>` : '') +
       kv('Last radar pass', esc(o.last || 'none')) + kv('Last clear optical image', esc(o.lo || 'none')) +
-      (im.a || im.r ? chipRow([[im.rb, 'Radar ' + (im.rbd || '')], [im.r, 'Radar ' + (im.rd || '')], [im.b, 'Optical ' + (im.bd || '')], [im.a, 'Optical ' + (im.ad || '')]]) : '<p class="hint">No satellite images yet.</p>') +
       (o.wy ? `<p style="color:var(--dim)">${esc(o.wy)}</p>` : '') +
-      `<p class="hint">Free 10 m images. Aircraft in hangars or shelters do not show, and fighters are only a pixel or two. Single launchers and air-defence units are one or two pixels too: radar counts clusters of vehicles and equipment, not single ones. A change is a reason to look, not proof.</p><div class="btns">${o.ll ? `<a class="btn" target="_blank" rel="noopener" href="${esc(cbUrl(o.ll, new Date().toISOString().slice(0, 10), null, 15))}">Copernicus Browser ${ic('ext', 's')}</a>` : ''}${goBtn(o.th)}</div>`; }
+      `<p class="hint">Each object is a group of bright radar returns on free 10 m radar: a parked aircraft, a ship, or a group of vehicles. The radar cannot tell a launcher from a truck, and aircraft in hangars or shelters do not show. A change is a reason to look, not proof.</p><div class="btns">${o.ll ? `<a class="btn" target="_blank" rel="noopener" href="${esc(cbUrl(o.ll, new Date().toISOString().slice(0, 10), null, 15))}">Copernicus Browser ${ic('ext', 's')}</a>` : ''}${goBtn(o.th)}</div>`; }
   else if (type === 'choke') h = `<h3>${esc(o.n)}</h3><p>Daily ship transits come from IMF PortWatch. A fall means that ships avoid the strait or cannot pass.</p><div class="btns">${goBtn(o.t)}</div>`;
   else if (type === 'hub') h = `<h3>GPS-jamming sample zone</h3><p>WarWatch checks airliners within ${o.nm} nm of this point for bad navigation accuracy. A higher share points to jamming.</p><div class="btns">${goBtn(o.t)}</div>`;
   else if (type === 'city') h = `<h3>${esc(o.n)}</h3><div class="btns">${goBtn(o.t)}</div>`;
   else if (type === 'country') { const lv = (M.levels || {})[o.name]; h = `<h3>${esc(o.name)}</h3>` + kv('US travel advice', lv ? 'Level ' + lv : 'none listed') + `<p>This country is not part of a watched theatre.</p>`; }
   const c = $('#card'); c.innerHTML = `<button class="x" aria-label="Close">&times;</button>` + h; c.style.display = 'block'; hideHover();
 }
-function closeCard(){ $('#card').style.display = 'none'; }
+function closeCard(){ $('#card').style.display = 'none'; closeZoom(); }
+/* a popup image opens full size; arrows step through the popup's other images */
+let ZOOM = null;
+function openZoom(img){
+  const all = [...$('#card').querySelectorAll('img[data-zoom]')]; ZOOM = {all, i: Math.max(0, all.indexOf(img))}; showZoom();
+}
+function showZoom(){
+  const z = $('#zoom'), im = ZOOM.all[ZOOM.i], r = im.dataset.ring, ring = z.querySelector('.ring');
+  z.querySelector('img').src = im.src; z.querySelector('p').textContent = im.dataset.zoom + (ZOOM.all.length > 1 ? `  (${ZOOM.i + 1} of ${ZOOM.all.length})` : '');
+  ring.style.display = r ? '' : 'none'; if (r) ring.style.setProperty('--r', r + '%');
+  z.querySelector('.zp').style.display = z.querySelector('.zn').style.display = ZOOM.all.length > 1 ? '' : 'none';
+  z.classList.add('on');
+}
+function stepZoom(k){ if (!ZOOM) return; ZOOM.i = (ZOOM.i + k + ZOOM.all.length) % ZOOM.all.length; showZoom(); }
+function closeZoom(){ const z = document.getElementById('zoom'); if (z) z.classList.remove('on'); ZOOM = null; }
 /* phone sheets follow a finger dragged down from their top (or from anywhere once the sheet is scrolled to the top);
    let go past 90 px, or flick, and the sheet slides away; otherwise it springs back. */
 function sheetSwipe(el, close){
@@ -1838,7 +1908,8 @@ function sheetSwipe(el, close){
     } else { el.style.transition = 'transform .3s var(--drawer)'; el.style.transform = ''; setTimeout(reset, 320); } };
   el.addEventListener('touchend', end); el.addEventListener('touchcancel', end);
 }
-$('#card').addEventListener('click', e => { if (e.target.closest('.x')) closeCard(); const g = e.target.closest('[data-go]'); if (g) nav(g.dataset.go); });
+$('#zoom').addEventListener('click', e => { e.stopPropagation(); if (e.target.closest('.zp')) stepZoom(-1); else if (e.target.closest('.zn')) stepZoom(1); else closeZoom(); });
+$('#card').addEventListener('click', e => { const zi = e.target.closest('img[data-zoom]'); if (zi) { openZoom(zi); return; } if (e.target.closest('.x')) closeCard(); const g = e.target.closest('[data-go]'); if (g) nav(g.dataset.go); });
 
 /* ------------------------------------------------------------ chance pins on the map */
 /* Overview: one pin per region, coloured by its highest theatre level. Zoomed in, or in a region view: one pin per theatre.
@@ -2052,9 +2123,9 @@ function tabInd(){
     if (!on || (c.classList.contains('rtabs') && isPhone())) { if (i) i.remove(); c.classList.remove('hasind'); return; }
     if (!i) { i = document.createElement('i'); i.className = 'ind'; c.appendChild(i); }
     c.classList.add('hasind'); seen[key] = 1;
-    const to = {x: on.offsetLeft, w: on.offsetWidth}, from = INDP[key]; INDP[key] = to;
-    const put = (v, a) => { i.style.transition = a ? 'transform .3s var(--eo),width .3s var(--eo)' : 'none'; i.style.width = v.w + 'px'; i.style.transform = `translateX(${v.x}px)`; };
-    if (!from || motionOff() || (from.x === to.x && from.w === to.w)) { put(to, false); return; }
+    const to = {x: on.offsetLeft, y: on.offsetTop + on.offsetHeight - 2, w: on.offsetWidth}, from = INDP[key]; INDP[key] = to;     // y: tabs can wrap onto a second line
+    const put = (v, a) => { i.style.transition = a ? 'transform .3s var(--eo),width .3s var(--eo)' : 'none'; i.style.width = v.w + 'px'; i.style.transform = `translate(${v.x}px,${v.y}px)`; };
+    if (!from || motionOff() || (from.x === to.x && from.y === to.y && from.w === to.w)) { put(to, false); return; }
     put(from, false); requestAnimationFrame(() => { void i.offsetWidth; put(to, true); });   // start after the rest of the view has rendered, so no frame of the slide is lost
   });
   for (const k in INDP) if (!seen[k]) delete INDP[k];
@@ -2691,7 +2762,7 @@ function renderActivity(){
   cards.sort((a, b) => b.u - a.u);
   h += cards.map(c => c.h).join('');
   if (BS.length) h += `</div><div class="sh" style="margin-top:14px">Military bases watched by satellite ${inf('Each base against its own recent radar passes (Sentinel-1, same orbit). Click a base on the map for images.')}<small>${BS.length} sites</small></div><div class="grid4" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr))">` +
-    BS.slice().sort((a, b) => Math.abs(b.z || 0) - Math.abs(a.z || 0)).map(b => `<button class="ac" data-nav="${esc(b.th || '')}" style="--c:${BASEC[b.st] || BASEC.normal}"><h4><span>${esc(b.n)}</span><small>${b.z != null ? 'z ' + b.z.toFixed(1) : ''}</small></h4><div class="ln"><span>${esc(BASEN[b.st] || '')}</span><b>${esc(b.last || b.lo || '')}</b></div>${b.pts && b.pts.length > 2 ? spark(b.pts, BASEC[b.st] || BASEC.normal, 200, 22) : ''}</button>`).join('');
+    BS.slice().sort((a, b) => Math.abs(b.z || 0) - Math.abs(a.z || 0)).map(b => `<button class="ac" data-nav="${esc(b.th || '')}" style="--c:${BASEC[b.st] || BASEC.normal}"><h4><span>${esc(b.n)}</span><small>${(m => m && m.now != null && m.u ? esc(m.w) + ' ' + ((m.now - m.u) / m.u * 100 >= 0 ? '+' : '') + Math.round((m.now - m.u) / m.u * 100) + '% vs usual' : '')((b.pr || []).find(x => x.p === b.mp))}</small></h4><div class="ln"><span>${esc(BASEN[b.st] || '')}</span><b>${esc(b.last || b.lo || '')}</b></div>${baseBars(((b.pr || []).find(x => x.p === b.mp) || {}).h, 200, 24)}</button>`).join('');
   h += `</div>${quiet.length ? `<div class="quiet">Quiet now: ${quiet.map(t => `<button class="chip" data-nav="${t}">${esc(thName(t))}</button>`).join('')}</div>` : ''}<div class="row" style="margin-top:8px;flex:none">${roles.map(([k, n]) => `<span class="hint"><span class="dot" style="--c:${(CLS[k] || CLS.other)[1]};margin-right:5px"></span>${n}</span>`).join('')}<span class="sp"></span><span class="hint">Cards are ordered by how unusual their activity is against its own recent normal. Click a card to open the theatre. Fires use the map time window (${win}).</span></div>`;
   P.innerHTML = h;
 }
