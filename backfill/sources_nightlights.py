@@ -159,6 +159,7 @@ def _write(path, rows):
 
 
 def cmd_nightlights(token, start, end):
+    token = token.strip().removeprefix("Bearer ").strip()   # a pasted "Bearer ..." or trailing newline would be refused
     pts = places()
     by_tile = {}
     for p in pts:
