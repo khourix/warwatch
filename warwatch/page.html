@@ -330,9 +330,9 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .mkl{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11px;color:var(--mute);margin:2px 0 8px}.mkl span{display:flex;align-items:center;gap:5px}.mkl i{width:9px;height:9px;border:2px solid;border-radius:50%}.mkl i.nw{box-shadow:0 0 0 2px #fff}.mkl b{color:var(--ink);font-weight:600}
 .zw{position:relative;cursor:zoom-in}.zw .ring{position:absolute;left:50%;top:50%;width:calc(var(--r) * 2);aspect-ratio:1;transform:translate(-50%,-50%);border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 2px #000a;pointer-events:none}
 .chip-i.wide{margin:4px 0}.chip-i.wide img{aspect-ratio:auto;object-fit:contain;max-height:none}
-#zoom{position:fixed;inset:0;z-index:90;background:#000e;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:10px}#zoom.on{display:flex}
-#zoom .zw{cursor:zoom-out;max-width:100%;max-height:calc(100% - 60px)}#zoom img{display:block;max-width:min(96vw,1100px);max-height:calc(100vh - 110px);object-fit:contain;border-radius:6px}
-#zoom p{color:#dfe3e7;font-size:13px;margin:0;text-align:center;max-width:900px}#zoom button{position:absolute;color:#fff;font-size:28px;padding:8px 14px;background:#0008;border-radius:10px}#zoom .zx{top:12px;right:12px}#zoom .zp{left:12px;top:50%}#zoom .zn{right:12px;top:50%}
+#lbox{position:fixed;inset:0;z-index:90;background:#000e;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:10px}#lbox.on{display:flex}
+#lbox .zw{cursor:zoom-out;max-width:100%;max-height:calc(100% - 60px)}#lbox img{display:block;max-width:min(96vw,1100px);max-height:calc(100vh - 110px);object-fit:contain;border-radius:6px}
+#lbox p{color:#dfe3e7;font-size:13px;margin:0;text-align:center;max-width:900px}#lbox button{position:absolute;color:#fff;font-size:28px;padding:8px 14px;background:#0008;border-radius:10px}#lbox .zx{top:12px;right:12px}#lbox .zp{left:12px;top:50%}#lbox .zn{right:12px;top:50%}
 .chips-i{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin:4px 0}.chip-i{margin:0}.chip-i img,.noimg{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;background:#15181b;display:block}.noimg{display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:11px}.chip-i figcaption{font-size:11px;color:var(--mute);margin-top:2px}
 .agebar{display:flex;align-items:center;gap:8px;margin:6px 0}
 .agebar i{width:12px;height:12px;border-radius:50%;flex:none}
@@ -807,7 +807,7 @@ table.st td:last-child{text-align:right;font-weight:600}
     <div class="rail" id="rail"></div>
     <div class="zoom" id="zoom"><button id="zin" aria-label="Zoom in" data-tip="Zoom in">+</button><button id="zout" aria-label="Zoom out" data-tip="Zoom out">&minus;</button><button id="zhome" aria-label="Reset the view" data-tip="Reset the view"></button></div>
     <div id="card"></div>
-    <div id="zoom" role="dialog" aria-label="Image, full size"><button class="zx" aria-label="Close">&times;</button><button class="zp" aria-label="Previous image">&lsaquo;</button><button class="zn" aria-label="Next image">&rsaquo;</button><div class="zw"><img alt=""><span class="ring"></span></div><p></p></div>
+    <div id="lbox" role="dialog" aria-label="Image, full size"><button class="zx" aria-label="Close">&times;</button><button class="zp" aria-label="Previous image">&lsaquo;</button><button class="zn" aria-label="Next image">&rsaquo;</button><div class="zw"><img alt=""><span class="ring"></span></div><p></p></div>
     <div id="dock"></div>
     <div id="hcard"></div>
   </div>
@@ -927,23 +927,24 @@ function ago(d, short){
   return Math.round(h / 24) + (short ? ' d' : ' days ago');
 }
 const ageH = d => { if (!d) return null; const t = Date.parse(d.length <= 10 ? d + 'T12:00:00Z' : d); return isNaN(t) ? null : (Date.now() - t) / 36e5; };
-/* a base part's last radar passes as bars of the objects counted, each over the grey normal range of its own satellite track
-   (tracks see a base from different angles, so each pass is judged against earlier passes of the same track) */
-const BAR_OUT = '#ec7838';
+/* a base part's last radar passes: one dot per pass for the objects counted, over the grey normal range of its own satellite
+   track (tracks see a base from different angles, so each pass is judged against earlier passes of the same track). The
+   scale runs from just below the lowest value to just above the highest, so small changes at a busy base still show. */
+const BAR_OUT = '#f4ad62';
 function baseBars(h, w, ht, axes){
   w = w || 300; ht = ht || 64;
   const v = (h || []).filter(p => p[1] != null);
   if (v.length < 3) return '';
-  const top = Math.max(1, ...v.map(p => Math.max(p[1], p[4] || 0))) * 1.08, L = axes ? 26 : 0, B = axes ? 14 : 0;
-  const bw = (w - L) / v.length, Y = x => (ht - B) * (1 - x / top);
+  const all = v.flatMap(p => [p[1], p[3], p[4]]).filter(x => x != null);
+  let lo = Math.min(...all), hi = Math.max(...all); const pad = Math.max(1, (hi - lo) * 0.12); lo = Math.max(0, lo - pad); hi += pad;
+  const L = axes ? 28 : 3, R = 4, T = 4, B = axes ? 14 : 3, bw = (w - L - R) / v.length, X = i => L + (i + .5) * bw, Y = x => T + (ht - T - B) * (1 - (x - lo) / (hi - lo));
   let g = '';
-  v.forEach((p, i) => {
-    const x = L + i * bw, last = i === v.length - 1, out = p[3] != null && (p[1] < p[3] || p[1] > p[4]);
-    if (p[3] != null) g += `<rect x="${x.toFixed(1)}" y="${Y(p[4]).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, Y(p[3]) - Y(p[4])).toFixed(1)}" fill="var(--line2)" opacity=".75"/>`;
-    g += `<rect x="${(x + bw * .2).toFixed(1)}" y="${Y(p[1]).toFixed(1)}" width="${(bw * .6).toFixed(1)}" height="${Math.max(1, ht - B - Y(p[1])).toFixed(1)}" rx="1" fill="${out ? BAR_OUT : 'var(--mute)'}"${last ? ' stroke="var(--ink)" stroke-width="1.2"' : ''}><title>${esc(p[0])}: ${Math.round(p[1])} objects${p[3] != null ? ` (normal for this track ${Math.round(p[3])}–${Math.round(p[4])})` : ' (track still learning its normal)'}</title></rect>`;
-  });
-  if (axes) g += `<text x="${L - 4}" y="9" text-anchor="end" font-size="9" fill="var(--dim)">${Math.round(top / 1.08)}</text><text x="${L - 4}" y="${ht - B}" text-anchor="end" font-size="9" fill="var(--dim)">0</text>` +
-    `<text x="${L}" y="${ht - 2}" font-size="9" fill="var(--dim)">${esc(fmtDay(v[0][0]))}</text><text x="${w}" y="${ht - 2}" text-anchor="end" font-size="9" fill="var(--dim)">${esc(fmtDay(v[v.length - 1][0]))}</text>`;
+  v.forEach((p, i) => { if (p[3] != null) g += `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${Y(p[4]).toFixed(1)}" width="${(bw + .3).toFixed(1)}" height="${Math.max(1, Y(p[3]) - Y(p[4])).toFixed(1)}" fill="var(--line2)" opacity=".7"/>`; });
+  g += `<polyline points="${v.map((p, i) => X(i).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' ')}" fill="none" stroke="var(--dim)" stroke-width="1" opacity=".6"/>`;
+  v.forEach((p, i) => { const last = i === v.length - 1, out = p[3] != null && (p[1] < p[3] || p[1] > p[4]);
+    g += `<circle cx="${X(i).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="${last ? 4 : 2.6}" fill="${out ? BAR_OUT : 'var(--ink)'}"${last ? ' stroke="var(--panel)" stroke-width="1.5"' : ''}><title>${esc(fmtDay(p[0]))}: ${Math.round(p[1])} objects${p[3] != null ? ` (normal for this track ${Math.round(p[3])} to ${Math.round(p[4])})` : ' (this track is still learning its normal)'}</title></circle>`; });
+  if (axes) g += `<text x="${L - 5}" y="${T + 8}" text-anchor="end" font-size="9" fill="var(--dim)">${Math.round(hi)}</text><text x="${L - 5}" y="${ht - B}" text-anchor="end" font-size="9" fill="var(--dim)">${Math.round(lo)}</text>` +
+    `<text x="${L}" y="${ht - 2}" font-size="9" fill="var(--dim)">${esc(fmtDay(v[0][0]))}</text><text x="${w - R}" y="${ht - 2}" text-anchor="end" font-size="9" fill="var(--dim)">${esc(fmtDay(v[v.length - 1][0]))}</text>`;
   return `<svg width="100%" height="${ht}" viewBox="0 0 ${w} ${ht}" preserveAspectRatio="none" style="display:block;max-width:${w}px">${g}</svg>`;
 }
 const fmtDay = d => { const t = Date.parse(d); return isNaN(t) ? String(d || '') : new Date(t).toLocaleDateString([], {day: 'numeric', month: 'short', timeZone: 'UTC'}); };
@@ -1863,7 +1864,7 @@ function openCard(type, o){
       `<div class="agebar"><i style="background:${col}"></i><span class="hint">${esc(BASEN[o.st] || '')}.</span></div>` +
       (o.st === 'out' || o.st === 'in' || o.st === 'changed' ? `<p>${esc(o.why || '')}</p>` : '') + (o.note ? `<p>${esc(o.note)}</p>` : '') +
       (pr.length ? `<div class="lgrp" style="padding:8px 0 2px">What the radar tracks here</div>${pr.map(part).join('')}` +
-        `<p class="hint">Bars: objects counted on each of the last radar passes; the outlined bar is the latest. Grey band: the normal range for that pass (each satellite track sees the base from its own angle, so a pass is compared with earlier passes of the same track). Orange bars are outside it. Click an image to enlarge it. A few objects come and go between any two passes from radar noise alone; a cluster of new or gone marks is what to look at.</p>` : '<p class="hint">No radar counts for this site yet.</p>') +
+        `<p class="hint">Each dot is one radar pass: how many objects it counted (the big dot is the latest). Grey band: the normal range for that pass; each satellite track sees the base from its own angle, so a pass is compared with earlier passes of the same track. Amber dots fall outside it, which about one pass in five does by chance; two in a row far outside is what turns a base orange. Click an image to enlarge it. A few objects come and go between any two passes from radar noise alone; a cluster of new or gone marks is what to look at.</p>` : '<p class="hint">No radar counts for this site yet.</p>') +
       (small.length ? `<div class="lgrp" style="padding:8px 0 2px">More satellite images <span class="hint" style="font-weight:400">· click to enlarge</span></div>` +
         `<div class="chips-i">${small.map(p => zoomImg(p[0], p[1])).join('')}</div><p class="hint" style="margin:2px 0 8px">Coloured outlines: the areas counted. Contains modified Copernicus Sentinel data ${new Date().getUTCFullYear()}.</p>` : '') +
       kv('Last radar pass', esc(o.last || 'none')) + kv('Last clear optical image', esc(o.lo || 'none')) +
@@ -1882,14 +1883,14 @@ function openZoom(img){
   const all = [...$('#card').querySelectorAll('img[data-zoom]')]; ZOOM = {all, i: Math.max(0, all.indexOf(img))}; showZoom();
 }
 function showZoom(){
-  const z = $('#zoom'), im = ZOOM.all[ZOOM.i], r = im.dataset.ring, ring = z.querySelector('.ring');
+  const z = $('#lbox'), im = ZOOM.all[ZOOM.i], r = im.dataset.ring, ring = z.querySelector('.ring');
   z.querySelector('img').src = im.src; z.querySelector('p').textContent = im.dataset.zoom + (ZOOM.all.length > 1 ? `  (${ZOOM.i + 1} of ${ZOOM.all.length})` : '');
   ring.style.display = r ? '' : 'none'; if (r) ring.style.setProperty('--r', r + '%');
   z.querySelector('.zp').style.display = z.querySelector('.zn').style.display = ZOOM.all.length > 1 ? '' : 'none';
   z.classList.add('on');
 }
 function stepZoom(k){ if (!ZOOM) return; ZOOM.i = (ZOOM.i + k + ZOOM.all.length) % ZOOM.all.length; showZoom(); }
-function closeZoom(){ const z = document.getElementById('zoom'); if (z) z.classList.remove('on'); ZOOM = null; }
+function closeZoom(){ const z = document.getElementById('lbox'); if (z) z.classList.remove('on'); ZOOM = null; }
 /* phone sheets follow a finger dragged down from their top (or from anywhere once the sheet is scrolled to the top);
    let go past 90 px, or flick, and the sheet slides away; otherwise it springs back. */
 function sheetSwipe(el, close){
@@ -1908,7 +1909,7 @@ function sheetSwipe(el, close){
     } else { el.style.transition = 'transform .3s var(--drawer)'; el.style.transform = ''; setTimeout(reset, 320); } };
   el.addEventListener('touchend', end); el.addEventListener('touchcancel', end);
 }
-$('#zoom').addEventListener('click', e => { e.stopPropagation(); if (e.target.closest('.zp')) stepZoom(-1); else if (e.target.closest('.zn')) stepZoom(1); else closeZoom(); });
+$('#lbox').addEventListener('click', e => { e.stopPropagation(); if (e.target.closest('.zp')) stepZoom(-1); else if (e.target.closest('.zn')) stepZoom(1); else closeZoom(); });
 $('#card').addEventListener('click', e => { const zi = e.target.closest('img[data-zoom]'); if (zi) { openZoom(zi); return; } if (e.target.closest('.x')) closeCard(); const g = e.target.closest('[data-go]'); if (g) nav(g.dataset.go); });
 
 /* ------------------------------------------------------------ chance pins on the map */
