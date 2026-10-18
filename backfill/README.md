@@ -17,6 +17,7 @@ Output: `backfill/data/<series>.csv`, one `date,value` row per UTC day. `COVERAG
 | Implied volatility | `vol_ovx`, `vol_gvz`, `vol_vix`, `vol_vix3m`, `vol_vix_term` | FRED (OVXCLS, GVZCLS, VIXCLS, VXVCLS) | 2007 | `FRED_API_KEY` |
 | PLA aircraft around Taiwan | `pla_aircraft`, `pla_median`, `pla_vessels`, `pla_official_ships` | Taiwan MND bulletins (list pages), plus the public ypcat/plavis CSV | 2022-08 (see PLA note) | none |
 | US travel advisories | `state_<theatre>` (level sum, as live), `state_od_<theatre>` (countries with an ordered departure), `state_level_<country>`, `state_od_<country>` | Wayback Machine captures of travel.state.gov | 2018 | none |
+| Night lights per map place | `nightlights/<year>.csv`: day, theatre, place, mean radiance of high-quality pixels in a 0.1-degree box (nW/cm²/sr), share of good pixels, tile | NASA Black Marble VNP46A2 (LAADS); daily job `nightlights-daily.yml`, which installs h5py and numpy | collected from 2026-10; older nights by hand with `start` | `EARTHDATA_TOKEN` |
 
 ## Things to know before testing a series
 
