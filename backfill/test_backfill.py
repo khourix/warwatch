@@ -178,6 +178,41 @@ class T(unittest.TestCase):
         self.assertEqual(K.load("x"), {"2024-01-01": 3.0, "2024-01-02": 2.0})
 
 
+class NightLights(unittest.TestCase):
+    """Black Marble tile maths and the HDF5 read, on a small synthetic tile (needs h5py and numpy, like the workflow)."""
+
+    def test_tile_ids_and_boxes(self):
+        import sources_nightlights as NL
+        self.assertEqual(NL.tile_of(35.69, 51.39), "h23v05")      # Tehran
+        self.assertEqual(NL.tile_of(-1.68, 29.22), "h20v09")      # Goma, south of the equator
+        r0, r1, c0, c1 = NL.box_px(35.69, 51.39)
+        self.assertEqual((r1 - r0, c1 - c0), (25, 25))
+        self.assertTrue(0 <= r0 < r1 <= 2400 and 0 <= c0 < c1 <= 2400)
+
+    def test_read_tile_keeps_only_good_pixels(self):
+        try:
+            import h5py
+            import numpy as np
+        except ImportError:
+            self.skipTest("h5py not installed")
+        import sources_nightlights as NL
+        ntl = np.full((2400, 2400), 100, dtype="uint16")           # 10.0 nW after the 0.1 scale
+        qf = np.zeros((2400, 2400), dtype="uint8")
+        r0, r1, c0, c1 = NL.box_px(35.69, 51.39)
+        ntl[r0:r1, c0:c0 + 5] = 900                                  # a bright strip that is cloud-flagged: must not count
+        qf[r0:r1, c0:c0 + 5] = 2
+        p = os.path.join(tempfile.mkdtemp(), "t.h5")
+        with h5py.File(p, "w") as f:
+            g = f.create_group("HDFEOS/GRIDS/VIIRS_Grid_DNB_2d/Data Fields")
+            d = g.create_dataset("DNB_BRDF-Corrected_NTL", data=ntl)
+            d.attrs["scale_factor"], d.attrs["_FillValue"] = 0.1, 65535
+            g.create_dataset("Mandatory_Quality_Flag", data=qf)
+            g.create_dataset("Gap_Filled_DNB_BRDF-Corrected_NTL", data=ntl * 0 + 5000)
+        got = NL.read_tile(p, [("iran", "Tehran", 35.69, 51.39), ("iran", "Isfahan", 32.65, 51.67)])
+        self.assertEqual(got[("iran", "Tehran")], (10.0, 0.8))
+        self.assertEqual(got[("iran", "Isfahan")], (10.0, 1.0))
+
+
 if __name__ == "__main__":
     unittest.main()
 
