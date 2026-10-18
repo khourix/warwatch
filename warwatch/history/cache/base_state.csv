@@ -20,7 +20,7 @@ tabriz_2tab,normal,2026-10-15,2026-10-15,2026-10-14,1.35,apron,,apron:normal:1.3
 dezful_4tab,normal,2026-10-17,2026-10-17,2026-10-16,-1.00,apron,,apron:normal:-1.00:2026-10-17;ground:normal:-2.02:2026-10-17
 bushehr_6tab,normal,2026-10-16,2026-10-16,2026-10-15,-0.67,apron,,apron:normal:-0.67:2026-10-16;ground:normal:-0.48:2026-10-16
 semnan_space,normal,2026-10-14,2026-10-14,2026-10-15,0.00,ground,,ground:normal:0.00:2026-10-14
-jask,normal,2026-10-13,2026-10-16,,0.00,harbour,,apron:normal:0.00:2026-10-13;harbour:normal:0.00:2026-10-13;ground:normal:-0.42:2026-10-16
+jask,normal,2026-10-16,2026-10-16,,0.00,harbour,,apron:normal:0.00:2026-10-16;harbour:normal:0.00:2026-10-16;ground:normal:-0.42:2026-10-16
 ain_al_asad,normal,2026-10-14,2026-10-14,2026-10-17,0.00,apron,New construction or earthworks seen on 2026-10-04 and 2026-10-17 (15 ha of the base changed).,apron:normal:0.00:2026-10-14;ground:normal:-2.42:2026-10-14
 hmeimim,normal,2026-10-17,2026-10-17,2026-10-13,-1.35,apron,,apron:normal:-1.35:2026-10-17;ground:normal:0.19:2026-10-17
 hodeidah,normal,2026-10-11,2026-10-11,2026-10-16,1.00,harbour,,harbour:normal:1.00:2026-10-11;ground:normal:0.22:2026-10-11
@@ -28,7 +28,7 @@ engels,changed,2026-10-13,2026-10-13,2026-10-13,-4.05,apron,,apron:changed:-4.05
 olenya,normal,2026-10-16,2026-10-16,2026-10-17,0.00,apron,,apron:normal:0.00:2026-10-16;ground:normal:0.96:2026-10-16
 shaykovka,normal,2026-10-14,2026-10-14,2026-09-10,0.00,apron,,apron:normal:0.00:2026-10-14;ground:normal:0.51:2026-10-14
 mozdok,normal,2026-10-14,2026-10-14,2026-10-12,0.00,apron,,apron:normal:0.00:2026-10-14;ground:normal:-1.50:2026-10-14
-novorossiysk,normal,2026-10-12,2026-10-12,,-0.22,harbour,,harbour:normal:-0.22:2026-10-12;ground:normal:0.00:2026-10-12
+novorossiysk,normal,2026-10-17,2026-10-17,,0.29,harbour,,harbour:normal:0.29:2026-10-17;ground:normal:0.00:2026-10-17
 longtian,nodata,,2026-10-07,2026-10-14,0.00,apron,,apron:nodata:0.00:;ground:nodata:-0.90:
 huian,nodata,,2026-10-07,2026-10-14,0.00,apron,,apron:nodata:0.00:;ground:nodata:-0.53:
 zhangzhou,normal,2026-10-12,2026-10-12,2026-10-09,0.67,apron,,apron:normal:0.67:2026-10-12;ground:normal:-1.05:2026-10-12
@@ -41,7 +41,7 @@ hualien,normal,2026-10-16,2026-10-16,2026-10-01,-0.67,apron,,apron:normal:-0.67:
 chihhang,changed,2026-10-16,2026-10-16,2026-10-16,3.00,apron,,apron:changed:3.00:2026-10-16;harbour:normal:-1.12:2026-10-16;ground:normal:0.22:2026-10-16
 zuoying,normal,2026-10-16,2026-10-16,,2.02,harbour,,apron:normal:0.00:2026-10-16;harbour:normal:2.02:2026-10-16;ground:normal:0.07:2026-10-16
 kadena,normal,2026-10-17,2026-10-17,2026-10-15,0.84,apron,,apron:normal:0.84:2026-10-17;harbour:normal:-1.00:2026-10-17;ground:normal:1.31:2026-10-17
-andersen,nodata,,2026-10-05,,1.35,apron,,apron:nodata:1.35:;ground:nodata:0.04:
+andersen,normal,2026-10-17,2026-10-17,,0.00,apron,,apron:normal:0.00:2026-10-17;ground:normal:1.30:2026-10-17
 yulin,normal,2026-10-14,2026-10-14,,-1.75,harbour,,harbour:normal:-1.75:2026-10-14;ground:normal:0.28:2026-10-14
 zhanjiang,normal,2026-10-15,2026-10-15,,-1.35,harbour,,harbour:normal:-1.35:2026-10-15;ground:normal:-1.69:2026-10-15
 woody_island,nodata,,2021-12-21,2026-09-30,,apron,,apron:nodata::;harbour:nodata::;ground:nodata::
