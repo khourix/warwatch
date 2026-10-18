@@ -143,13 +143,16 @@ def fetch(url, token, timeout=300, tries=3):
     raise RuntimeError(f"{str(err)[:200]} @ {url[-60:]}")
 
 
-def _listing(day, token):
-    """(collection, {tile: file name}) for the day, or (None, {}) when the day is not published yet."""
+def _listing(day, errors):
+    """(collection, {tile: file name}) for the day, or (None, {}) when the day is not published yet. The listing is public,
+    so it goes without the token; failures other than "not there" are added to `errors`."""
     for coll in COLLECTIONS:
         url = ARCHIVE.format(coll=coll, prod=PRODUCT, y=day.year, doy=day.timetuple().tm_yday) + ".json"
         try:
-            j = K.get(url, headers={"Authorization": f"Bearer {token}"}, retries=2)
-        except RuntimeError:
+            j = K.get(url, retries=2, timeout=60)
+        except RuntimeError as e:
+            if "404" not in str(e):
+                errors.append(f"{day} {coll}: {str(e)[:120]}")
             continue
         items = j.get("content", []) if isinstance(j, dict) else j
         names = [x.get("name", "") if isinstance(x, dict) else str(x) for x in items]
@@ -178,7 +181,7 @@ def _write(path, rows):
 def cmd_nightlights(token, start, end):
     token = token.strip().removeprefix("Bearer ").strip()   # a pasted "Bearer ..." or trailing newline would be refused
     K.log("token:", token_note(token))
-    pts = places()
+    pts, errors, listed = places(), [], 0
     by_tile = {}
     for p in pts:
         by_tile.setdefault(tile_of(p[2], p[3]), []).append(p)
@@ -190,9 +193,10 @@ def cmd_nightlights(token, start, end):
             iso = d.isoformat()
             if all((iso, t, n) in rows for t, n, _, _ in pts):
                 continue
-            coll, files = _listing(d, token)
+            coll, files = _listing(d, errors)
+            listed += bool(files)
             if not files:
-                K.log(iso, "not published yet or not found")
+                K.log(iso, "not published yet or not found", errors[-1] if errors and errors[-1].startswith(iso) else "")
                 continue
             read = 0
             for tile, ps in sorted(by_tile.items()):
@@ -219,3 +223,5 @@ def cmd_nightlights(token, start, end):
             _write(path, rows)
             K.log(iso, coll, f"{read} of {sum(t in files for t in by_tile)} tiles read ({len(by_tile)} needed, {len(files)} listed)")
         K.log(year, "done:", got, "days read")
+    if not listed and errors:   # LAADS answered for no day at all: fail the run so it shows, rather than a green run with nothing read
+        sys.exit(f"LAADS listing failed for every day ({len(errors)} errors), last: {errors[-1]}")
