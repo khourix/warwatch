@@ -360,8 +360,7 @@ main{flex:1;min-height:0;display:flex;position:relative}
 /* theatre panel */
 #panel{width:clamp(400px,32vw,500px);flex:none;background:var(--panel);border-left:1px solid var(--line);display:none;flex-direction:column;min-height:0;position:relative}
 #panel.on{display:flex}
-.rtabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px;flex:none;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;align-items:flex-end}
-.rtabs::-webkit-scrollbar{display:none}
+.rtabs{display:flex;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:0 8px;flex:none;align-items:flex-end}   /* tabs wrap onto a second line: nothing on the page scrolls sideways */
 .rdiv{width:1px;height:20px;background:var(--line2);margin:0 6px 10px;flex:none}
 .tdot{width:7px;height:7px;border-radius:50%;background:var(--tell);display:inline-block;flex:none}
 /* theatre name tinted by its level, underlined when a timing tell is on: no separate dots */
@@ -387,7 +386,7 @@ main{flex:1;min-height:0;display:flex;position:relative}
 .kp b sub{font-size:10.5px;color:var(--dim);vertical-align:baseline;font-weight:500}
 .kp{border-top:3px solid var(--k,var(--line))}.kp.kpsh{border-style:dashed;border-top-style:solid}.kp .shg{font:500 9.5px var(--mono);color:var(--mute);border:1px dashed var(--line2);border-radius:3px;padding:0 3px;margin-left:4px}
 .kp>span{display:block;font-size:11px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stabs{display:flex;gap:2px;padding:0 12px;border-bottom:1px solid var(--line);flex:none}
+.stabs{display:flex;flex-wrap:wrap;gap:2px;padding:0 12px;border-bottom:1px solid var(--line);flex:none}
 .stabs button{padding:8px 8px;font-size:12.5px;color:var(--mute);border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;gap:6px;align-items:center;white-space:nowrap}
 .stabs button:hover{color:var(--ink)}
 .stabs button.on{color:var(--ink);border-color:var(--accent)}
@@ -664,7 +663,7 @@ table.st td:last-child{text-align:right;font-weight:600}
   .pbody{overflow:visible;padding:10px 12px 16px}
   .thd{padding:10px 12px 8px}
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 12px 10px}
-  .stabs{overflow-x:auto;scrollbar-width:none;padding:0 6px;position:sticky;top:54px;background:var(--panel);z-index:4}
+  .stabs{padding:0 6px;position:sticky;top:54px;background:var(--panel);z-index:4}
   .rtabs{padding:6px 8px;gap:6px;border-bottom:1px solid var(--line)}
   .rtabs button{border:1px solid var(--line);border-radius:999px;padding:5px 11px;margin:0;font-size:12.5px}
   .rtabs button.tt{border-color:var(--tell);padding:5px 11px}.rtabs button.tt::before{display:none}
@@ -699,14 +698,14 @@ table.st td:last-child{text-align:right;font-weight:600}
   #stbl tr[data-row] td:nth-last-child(3){font-size:11.5px}
   #stbl tr[data-row] td.hsel:not(:nth-last-child(2)){display:none}
   .hs,.mk5{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .kstrip{display:flex;overflow-x:auto;scrollbar-width:none}.kstrip .ks{flex:0 0 152px}
+  .kstrip{grid-template-columns:repeat(2,minmax(0,1fr))}
   .rgrid{grid-template-columns:1fr}
   #toast{bottom:84px}
   .hi{grid-template-columns:54px minmax(0,1fr)}.hi .hk{display:none}
   .mk5.ev3{grid-template-columns:1fr 1fr}
   .grid4{grid-template-columns:1fr;overflow:visible}
   .two{grid-template-columns:1fr}
-  .setnav{flex-direction:row;overflow-x:auto;scrollbar-width:none;gap:6px;margin-bottom:10px}
+  .setnav{flex-direction:row;flex-wrap:wrap;gap:6px;margin-bottom:10px}
   .setnav button{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
   .setb{overflow:visible}.setscroll{overflow:visible}
   .setrow{grid-template-columns:1fr;gap:6px}
@@ -736,7 +735,7 @@ table.st td:last-child{text-align:right;font-weight:600}
 }
 /* the active tab's accent line is one element that slides from tab to tab */
 .rtabs{position:relative}@media(min-width:901px){.stabs{position:relative}}   /* on a phone .stabs is sticky, which also holds the indicator */
-.ind{position:absolute;left:0;bottom:0;height:2px;width:0;background:var(--accent);border-radius:2px;pointer-events:none}
+.ind{position:absolute;left:0;top:0;height:2px;width:0;background:var(--accent);border-radius:2px;pointer-events:none}
 .rtabs.hasind button.on,.stabs.hasind button.on{border-bottom-color:transparent}
 /* a number that changed since you last saw it ticks to its new value and glows once */
 @keyframes bump{0%,25%{background:color-mix(in oklab,var(--accent) 30%,transparent);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 30%,transparent)}100%{background:transparent;box-shadow:0 0 0 3px transparent}}
@@ -2072,9 +2071,9 @@ function tabInd(){
     if (!on || (c.classList.contains('rtabs') && isPhone())) { if (i) i.remove(); c.classList.remove('hasind'); return; }
     if (!i) { i = document.createElement('i'); i.className = 'ind'; c.appendChild(i); }
     c.classList.add('hasind'); seen[key] = 1;
-    const to = {x: on.offsetLeft, w: on.offsetWidth}, from = INDP[key]; INDP[key] = to;
-    const put = (v, a) => { i.style.transition = a ? 'transform .3s var(--eo),width .3s var(--eo)' : 'none'; i.style.width = v.w + 'px'; i.style.transform = `translateX(${v.x}px)`; };
-    if (!from || motionOff() || (from.x === to.x && from.w === to.w)) { put(to, false); return; }
+    const to = {x: on.offsetLeft, y: on.offsetTop + on.offsetHeight - 2, w: on.offsetWidth}, from = INDP[key]; INDP[key] = to;     // y: tabs can wrap onto a second line
+    const put = (v, a) => { i.style.transition = a ? 'transform .3s var(--eo),width .3s var(--eo)' : 'none'; i.style.width = v.w + 'px'; i.style.transform = `translate(${v.x}px,${v.y}px)`; };
+    if (!from || motionOff() || (from.x === to.x && from.y === to.y && from.w === to.w)) { put(to, false); return; }
     put(from, false); requestAnimationFrame(() => { void i.offsetWidth; put(to, true); });   // start after the rest of the view has rendered, so no frame of the slide is lost
   });
   for (const k in INDP) if (!seen[k]) delete INDP[k];

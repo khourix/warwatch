@@ -205,6 +205,61 @@ def save_jpeg(rgb_or_grey, path, size=256):
     return path
 
 
+def save_marked(rgb_or_grey, path, outlines=(), marks=(), max_px=900, min_px=512):
+    """A larger JPEG for the full-size view, with outlines and marks drawn at the output scale so they stay sharp.
+    outlines: [(bool mask on the input grid, (r, g, b))]; marks: [(row, col, (r, g, b), style)] on the input grid, style
+    "ring" (an object), "new" (a ring with a white halo: not on the earlier pass) or "gone" (a cross: on the earlier pass
+    only). The image is scaled to between min_px and max_px on its long side."""
+    import numpy as np
+    from PIL import Image, ImageDraw
+    a = np.asarray(rgb_or_grey)
+    img = Image.fromarray(np.moveaxis(a, 0, -1), "RGB") if a.ndim == 3 else Image.fromarray(a, "L").convert("RGB")
+    h, w = a.shape[-2:]
+    k = min(max_px / max(w, h), max(1.0, min_px / max(w, h)))
+    W, H = max(1, round(w * k)), max(1, round(h * k))
+    img = img.resize((W, H), Image.LANCZOS)
+    px = np.asarray(img).copy()
+    for m, col in outlines:
+        mm = np.asarray(Image.fromarray(np.asarray(m, "uint8") * 255).resize((W, H), Image.NEAREST)) > 0
+        edge = mm & ~(np.roll(mm, 1, 0) & np.roll(mm, -1, 0) & np.roll(mm, 1, 1) & np.roll(mm, -1, 1))
+        edge |= np.roll(edge, 1, 1)          # two pixels wide
+        px[edge] = col
+    img = Image.fromarray(px)
+    d = ImageDraw.Draw(img)
+    r = max(5, round(2.2 * k))
+    for row, col, c, style in marks:
+        x, y = (col + 0.5) * k, (row + 0.5) * k
+        if style == "gone":
+            d.line((x - r, y - r, x + r, y + r), fill=c, width=2)
+            d.line((x - r, y + r, x + r, y - r), fill=c, width=2)
+            continue
+        if style == "new":
+            d.ellipse((x - r - 3, y - r - 3, x + r + 3, y + r + 3), outline=(255, 255, 255), width=2)
+        d.ellipse((x - r, y - r, x + r, y + r), outline=c, width=2)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path, "JPEG", quality=82, optimize=True)
+    return path
+
+
+def s2_rgb(item, bbox, kind="true"):
+    """uint8 (3, h, w) true colour (B04, B03, B02) or SWIR (B12, B8A, B04) stack on a 10 m grid, one stretch for all three
+    bands so colours stay true; None when the scene has no data here."""
+    import numpy as np
+    bands = ("B04", "B03", "B02") if kind == "true" else ("B12", "B8A", "B04")
+    arr = s2_bands(item, bbox, bands, 10)
+    stack = np.stack([arr[b] for b in bands])
+    v = stack[np.isfinite(stack)]
+    if v.size == 0:
+        return None
+    p0, p1 = np.percentile(v, [2, 98])
+    return (np.clip((np.nan_to_num(stack, nan=p0) - p0) / max(1e-6, p1 - p0), 0, 1) * 255).astype("uint8")
+
+
+def radar_grey(db, lo=-25.0, hi=5.0):
+    import numpy as np
+    return (np.clip((np.nan_to_num(db, nan=lo) - lo) / (hi - lo), 0, 1) * 255).astype("uint8")
+
+
 def chip_s2(item, bbox, path, kind="true"):
     """True colour (B04, B03, B02) or SWIR (B12, B8A, B04: burn scars red-brown, active fire bright) chip."""
     import numpy as np

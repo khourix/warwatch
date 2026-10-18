@@ -11,7 +11,10 @@ Runs in imagery.yml (numpy, scipy, rasterio, Pillow); the dashboard build only r
     history/cache/bases_out_<t>.csv   per theatre and day: sites in state "out" (far fewer bright objects than usual, two passes)
     history/cache/bases_in_<t>.csv    ... in state "in"
     history/cache/base_chips.csv      per site and chip: kind, date, scene
-    chips/bases/<id>_{a,b,r,rb}.jpg   latest and earlier optical and radar chips (pushed to the imagery branch)
+    history/cache/base_marks.csv      per site and part: objects on the marked radar image, new and gone against the earlier pass
+    chips/bases/<id>_{a,b}.jpg        latest and earlier optical images, watched parts outlined (pushed to the imagery branch)
+    chips/bases/<id>_{m,rb}.jpg       latest radar pass with every counted object marked, and the earlier pass of the same track
+                                      (m2, rb2 ...: further windows when a site's parts lie far apart; <id>_r.jpg: sites without parts)
 
     python3 warwatch/basewatch.py                       # new scenes since the last run (budget per run)
     python3 warwatch/basewatch.py --backfill-from 2022-01-01 --site al_udeid
@@ -60,6 +63,7 @@ REF_DAYS = 30           # optical change and burns compare with clear scenes of 
 VIS = [0, 1]            # blue and red in the optical stack (B02, B04, B08, B11): the bands the change measure reads
 SCENE_COLS = ["scene_id", "site", "date", "orbit", "part", "area_m2"] + [f"bright_m2@{t:g}" for t in THRESHOLDS] + [f"blobs@{t:g}" for t in THRESHOLDS]
 OPT_COLS = ["scene_id", "site", "date", "clear", "objects", "chg_ha", "burn_ha"]
+MARK_COLS = ["site", "part", "date", "before", "objects", "new", "gone"]     # history/cache/base_marks.csv: the marked radar image's counts
 
 
 # ---------------------------------------------------------------- pure functions (tested)
@@ -79,6 +83,28 @@ def radar_metrics(db, region, thresholds=THRESHOLDS):
         else:
             out[f"blobs@{t:g}"] = 0.0
     return out
+
+
+def blob_points(db, region, t=T_DB):
+    """[(row, col)] centres of the blobs radar_metrics counts in region at threshold t (same pixels, same size limits)."""
+    import numpy as np
+    from scipy import ndimage as ndi
+    b = region & np.isfinite(db) & (db >= t)
+    lab, k = ndi.label(b, structure=np.ones((3, 3)))
+    if not k:
+        return []
+    sizes = np.bincount(lab.ravel())
+    idx = [i for i in range(1, k + 1) if BLOB_MIN <= sizes[i] <= BLOB_MAX]
+    return [(float(r), float(c)) for r, c in ndi.center_of_mass(b, lab, idx)] if idx else []
+
+
+MATCH_PX = 3            # an object within 30 m of one on the earlier pass counts as the same object
+
+
+def match_points(now, before, px=MATCH_PX):
+    """(new, gone): indexes into now with no point of before within px pixels, and indexes into before with none of now."""
+    near = lambda p, qs: any((p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 <= px * px for q in qs)    # noqa: E731
+    return [i for i, p in enumerate(now) if not near(p, before)], [i for i, p in enumerate(before) if not near(p, now)]
 
 
 def zscore(prev, x, counts=False):
@@ -410,12 +436,84 @@ def save_rows(name, header, rows):
 
 
 # ---------------------------------------------------------------- chips
+MARK_RGB = {"apron": (255, 184, 48), "harbour": (72, 200, 255), "ground": (150, 230, 90)}     # aircraft amber, ships blue, vehicles green
+GAP_DAYS = 6            # the earlier radar pass for marks: the newest on the same track at least 6 days before the latest
+
+
+def _valid_read(I, it, bbox, w, h):
+    """VV in dB over the window, or None when the scene covers less than half of it."""
+    import numpy as np
+    d = I.db(I.read(I.href(it, "vv"), bbox, w, h, "nearest"))
+    return d if np.isfinite(d).mean() >= 0.5 else None
+
+
+def radar_marks(rec, items, path, log=print):
+    """Marked radar images, one per window (kinds m, m2, ..., earlier pass rb, rb2, ...), and per part the objects counted
+    on the latest pass, how many were not on the earlier pass of the same track (new) and how many of the earlier pass are
+    no longer there (gone). Returns (chip rows, mark rows)."""
+    import imagery as I
+    chips_, marks = [], []
+    items = sorted(items, key=I.day)
+    for n, (bbox, ps) in enumerate(windows(rec)):
+        w, h = I.grid(bbox, 10)
+        masks = {k: v for k, v in part_masks(rec, bbox, w, h).items() if k in ps}
+        if not masks:
+            continue
+        now = now_it = None
+        for it in reversed(items[-4:]):
+            try:
+                now = _valid_read(I, it, bbox, w, h)
+            except Exception as e:
+                log(rec["id"], "radar read failed:", repr(e)[:100])
+            if now is not None:
+                now_it = it
+                break
+        if now is None:
+            continue
+        d1 = dt.date.fromisoformat(I.day(now_it))
+        bef = bef_it = None
+        for it in reversed([x for x in items if I.orbit(x) == I.orbit(now_it) and (d1 - dt.date.fromisoformat(I.day(x))).days >= GAP_DAYS][-3:]):
+            try:
+                bef = _valid_read(I, it, bbox, w, h)
+            except Exception as e:
+                log(rec["id"], "radar read failed:", repr(e)[:100])
+            if bef is not None:
+                bef_it = it
+                break
+        sfx = "" if n == 0 else str(n + 1)
+        pts_now, pts_bef = [], []
+        for part, m in masks.items():
+            a = blob_points(now, m)
+            b = blob_points(bef, m) if bef is not None else []
+            new, gone = match_points(a, b) if bef is not None else ([], [])
+            col = MARK_RGB[part]
+            pts_now += [(r, c, col, "new" if i in new else "ring") for i, (r, c) in enumerate(a)]
+            pts_now += [(b[i][0], b[i][1], col, "gone") for i in gone]
+            pts_bef += [(r, c, col, "ring") for r, c in b]
+            marks.append([rec["id"], part, I.day(now_it), I.day(bef_it) if bef_it else "", len(a),
+                          len(new) if bef is not None else "", len(gone) if bef is not None else ""])
+        outl = [(m, MARK_RGB[k]) for k, m in masks.items()]
+        I.save_marked(I.radar_grey(now), path("m" + sfx), outl, pts_now)
+        chips_.append([rec["id"], "m" + sfx, I.day(now_it), now_it["id"]])
+        if bef is not None:
+            I.save_marked(I.radar_grey(bef), path("rb" + sfx), outl, pts_bef)
+            chips_.append([rec["id"], "rb" + sfx, I.day(bef_it), bef_it["id"]])
+    return chips_, marks
+
+
 def chips(rec, optical, radar_items, log=print):
-    """Latest clear optical chip and one 25 to 60 days earlier; latest radar chip and one from the same orbit 25 to 60 days earlier."""
+    """Latest clear optical image and one 25 to 60 days earlier, with the watched parts outlined; the latest radar pass with
+    every counted object marked (new and gone against the earlier pass of the same track) and that earlier pass. Sites
+    without parts get plain radar chips. Returns (chip rows, mark rows)."""
     import imagery as I
     bbox = site_bbox(rec)
-    out = []
+    out, marks = [], []
     path = lambda k: os.path.join(I.CHIPS, "bases", f"{rec['id']}_{k}.jpg")    # noqa: E731
+    w, h = I.grid(bbox, 10)
+    try:
+        outl = [(m, MARK_RGB[k]) for k, m in part_masks(rec, bbox, w, h).items()]
+    except Exception:
+        outl = []
     optical = [o for o in optical if o.get("_item")]       # clear scenes only (cloudy ones are kept as checked, without an image)
     if optical:
         a = optical[-1]
@@ -424,23 +522,26 @@ def chips(rec, optical, radar_items, log=print):
         for k, o in (("a", a), ("b", older[-1] if older else None)):
             if o and o.get("_item"):
                 try:
-                    I.chip_s2(o["_item"], bbox, path(k))
-                    out.append([rec["id"], k, o["date"], o["scene_id"]])
+                    rgb = I.s2_rgb(o["_item"], bbox)
+                    if rgb is not None and rgb.shape[-2:] == (h, w):
+                        I.save_marked(rgb, path(k), outl)
+                        out.append([rec["id"], k, o["date"], o["scene_id"]])
                 except Exception as e:
                     log(rec["id"], "chip failed:", repr(e)[:100])
     if radar_items:
-        r = radar_items[-1]
-        dr = dt.date.fromisoformat(I.day(r))
-        older = [x for x in radar_items if I.orbit(x) == I.orbit(r) and 25 <= (dr - dt.date.fromisoformat(I.day(x))).days <= 60]
-        w, h = I.grid(bbox, 10)
-        for k, it in (("r", r), ("rb", older[-1] if older else None)):
-            if it:
-                try:
-                    I.chip_radar(I.db(I.read(I.href(it, "vv"), bbox, w, h, "nearest")), path(k))
-                    out.append([rec["id"], k, I.day(it), it["id"]])
-                except Exception as e:
-                    log(rec["id"], "radar chip failed:", repr(e)[:100])
-    return out
+        try:
+            c, marks = radar_marks(rec, radar_items, path, log)
+            out += c
+        except Exception as e:
+            log(rec["id"], "radar marks failed:", repr(e)[:100])
+        if not any(r[1] == "m" for r in out):
+            r = radar_items[-1]
+            try:
+                I.chip_radar(I.db(I.read(I.href(r, "vv"), bbox, w, h, "nearest")), path("r"))
+                out.append([rec["id"], "r", I.day(r), r["id"]])
+            except Exception as e:
+                log(rec["id"], "radar chip failed:", repr(e)[:100])
+    return out, marks
 
 
 # ---------------------------------------------------------------- run
@@ -563,6 +664,7 @@ def main(argv=None):
     done_o = {(r["scene_id"], r["site"]) for r in read_csv(OPTICAL)}
     per = max(1, a.budget // max(1, len(sites)))
     chip_rows = {(r[0], r[1]): r for r in _chip_rows()}
+    mark_rows = {(r["site"], r["part"]): [r[k] for k in MARK_COLS] for r in read_csv(os.path.join(CACHE, "base_marks.csv"))}
     for s in sites:
         try:
             rr = radar_rows(s, start, a.until or today.isoformat(), per, done_r, parts=a.parts.split(",") if a.parts else None)
@@ -583,15 +685,22 @@ def main(argv=None):
         append_csv(SCENES, SCENE_COLS, rr)
         append_csv(OPTICAL, OPT_COLS, [o for o in oo if (o["scene_id"], s["id"]) not in done_o])
         have = {r[1] for r in chip_rows.values() if r[0] == s["id"]}
-        if not a.backfill_from and (rr or oo or not have):      # chips only where something is new (or none exist yet)
+        # chips only where something is new, or where the marked radar image does not exist yet
+        if not a.backfill_from and (rr or oo or "m" not in have) and (windows(s) or rr or oo or not have):
             try:
-                ri = [it for it in I.stac_search("sentinel-1-rtc", site_bbox(s), (today - dt.timedelta(days=70)).isoformat(), today.isoformat()) if I.has(it, "vv")]
-                for r in chips(s, oo, ri):
+                wins = windows(s) or [(site_bbox(s), [])]
+                box = (min(b[0] for b, _ in wins), min(b[1] for b, _ in wins), max(b[2] for b, _ in wins), max(b[3] for b, _ in wins))
+                ri = [it for it in I.stac_search("sentinel-1-rtc", box, (today - dt.timedelta(days=70)).isoformat(), today.isoformat()) if I.has(it, "vv")]
+                c, mk = chips(s, oo, ri)
+                for r in c:
                     chip_rows[(r[0], r[1])] = r
+                for r in mk:
+                    mark_rows[(r[0], r[1])] = r
             except Exception as e:
                 print(s["id"], "chips failed:", repr(e)[:160], flush=True)
     if not a.dry_run:
         save_rows("base_chips", ["site", "kind", "date", "scene_id"], sorted(chip_rows.values()))
+        save_rows("base_marks", MARK_COLS, sorted(mark_rows.values()))
         st = rebuild(load_bases(), today)
         print("states:", st, flush=True)
 
@@ -629,6 +738,9 @@ def layer(path=BASES):
     if not sites:
         return []
     st = {r["site"]: r for r in read_csv(os.path.join(CACHE, "base_state.csv"))}
+    marks_ = {(r["site"], r["part"]): {"d": r["date"], "b": r["before"], "n": int(float(r["objects"])),
+                                       "new": int(float(r["new"])) if r["new"] else None, "gone": int(float(r["gone"])) if r["gone"] else None}
+              for r in read_csv(os.path.join(CACHE, "base_marks.csv")) if r.get("objects")}
     chips_ = {}
     for r in _chip_rows():
         if len(r) >= 3:
@@ -648,10 +760,13 @@ def layer(path=BASES):
             pass
         c = chips_.get(s["id"], {})
         img = {}
-        for k in ("a", "b", "r", "rb"):
-            if k in c:
+        for k in sorted(c):
+            if k in ("a", "b", "r") or k[:1] == "m" or k[:2] == "rb":
                 img[k] = f"img/bases/{s['id']}_{k}.jpg"
                 img[k + "d"] = c[k]
+        if "m" in img:
+            img.pop("r", None)
+            img.pop("rd", None)
         why_ = STATE_WHY.get(state_, "").format(where=where, what=what, dates=dates)
         if (not ALERTS or (part == "ground" and not GROUND_TESTED)) and state_ in ("out", "in", "changed"):
             why_ += " Not yet checked against past events, so it carries no weight in the risk numbers."
@@ -663,14 +778,16 @@ def layer(path=BASES):
                 hist = []
                 try:
                     with open(os.path.join(CACHE, f"base_{s['id']}_{f[0]}.csv"), newline="") as fh:
-                        hist = [[x["date"], float(x["count"]), float(x["usual"]) if x["usual"] else None]
+                        fl = lambda v: float(v) if v not in (None, "") else None    # noqa: E731
+                        hist = [[x["date"], float(x["count"]), fl(x["usual"]), fl(x.get("low")), fl(x.get("high"))]
                                 for x in csv.DictReader(fh)][-30:]
                 except OSError:
                     pass
                 prt.append({"p": f[0], "w": PART_WHAT[f[0]][0], "st": f[1], "z": float(f[2]) if f[2] else None,
                             "d": f[3].replace("/", " and "), "s": PART_NOTE.get(f[1], f[1]),
                             "t": f[0] != "ground" or GROUND_TESTED,
-                            "now": num(4), "u": num(5), "lo": num(6), "hi": num(7), "h": hist})
+                            "now": num(4), "u": num(5), "lo": num(6), "hi": num(7), "h": hist,
+                            "mk": marks_.get((s["id"], f[0]))})
         gr = next((x for x in prt if x["p"] == "ground" and x["st"] in ("out", "in")), None)
         if gr and part != "ground":
             why_ += (f" Vehicles and equipment on the rest of the base: {gr['s']} on two passes ({gr['d']})."

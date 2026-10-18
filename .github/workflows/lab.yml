@@ -1,0 +1,18 @@
+name: lab
+on:
+  push:
+    branches: [claude/project-thread-szj3l8]
+    paths: [lab/run.txt]
+permissions:
+  contents: write
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m pip install --quiet --break-system-packages numpy scipy rasterio pillow
+      - run: mkdir -p lab/out && python3 lab/lab.py "$(head -1 lab/run.txt)" 2>&1 | tee lab/out/log.txt
+      - run: |
+          git config user.name lab; git config user.email lab@users.noreply.github.com
+          git add lab/out && git commit -qm "lab results" && git push -q

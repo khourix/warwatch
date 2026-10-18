@@ -490,7 +490,9 @@ class TestBaseWatch(unittest.TestCase):
                           "apron:changed:-2.80:2026-10-14;ground:in:3.40:2026-10-08/2026-10-14"],
                          ["y", "out", "2026-10-08;2026-10-14", "2026-10-14", "", "-3.10", "harbour", ""]])
             B.save_series("base_x", [("2026-10-08", 0.2), ("2026-10-14", -2.8)])
-            B.save_rows("base_chips", ["site", "kind", "date", "scene_id"], [["x", "a", "2026-10-12", "S2"]])
+            B.save_rows("base_chips", ["site", "kind", "date", "scene_id"], [["x", "a", "2026-10-12", "S2"], ["y", "r", "2026-10-01", "S1o"],
+                                                                         ["y", "m", "2026-10-14", "S1"], ["y", "rb", "2026-10-02", "S1b"]])
+            B.save_rows("base_marks", B.MARK_COLS, [["x", "apron", "2026-10-14", "2026-10-02", "12", "3", "5"]])
             untested = {i["id"]: i for i in B.layer(bases)}         # before the backfill test: movement shown, with no weight
             B.ALERTS = True
             items = {i["id"]: i for i in B.layer(bases)}
@@ -508,8 +510,11 @@ class TestBaseWatch(unittest.TestCase):
         gr = {x["p"]: x for x in items["x"]["pr"]}
         self.assertEqual((gr["ground"]["w"], gr["ground"]["st"], gr["ground"]["t"]), ("Vehicles and equipment", "in", False))
         self.assertIn("Vehicles and equipment on the rest of the base: more than usual", items["x"]["why"])
+        self.assertEqual(gr["apron"]["mk"], {"d": "2026-10-14", "b": "2026-10-02", "n": 12, "new": 3, "gone": 5})
+        self.assertIsNone(gr["ground"]["mk"])
         self.assertIn("not yet checked", items["x"]["why"])
         self.assertEqual(items["y"]["pr"], [])
+        self.assertEqual(items["y"]["img"], {"m": "img/bases/y_m.jpg", "md": "2026-10-14", "rb": "img/bases/y_rb.jpg", "rbd": "2026-10-02"})
 
     def test_construction_note_needs_two_images_in_a_row(self):
         import basewatch as B
@@ -572,6 +577,40 @@ class TestBaseWatch(unittest.TestCase):
         rgb = np.stack([I.stretch(np.random.default_rng(k).random((50, 50))) for k in range(3)])
         with Image.open(I.save_jpeg(rgb, os.path.join(d, "c.jpg"))) as im:
             self.assertEqual(im.mode, "RGB")
+
+    @unittest.skipUnless(_have("numpy", "scipy"), "needs numpy and scipy (imagery workflow only)")
+    def test_marked_objects_are_the_counted_blobs_and_new_ones_are_found(self):
+        import numpy as np
+        import basewatch as B
+        db = np.full((60, 60), -18.0)
+        region = np.zeros((60, 60), bool)
+        region[10:50, 10:50] = True
+        for y, x in ((15, 15), (30, 30), (40, 20)):
+            db[y:y + 3, x:x + 3] = 4.0
+        db[0:5, 0:60] = 6.0
+        db[45, 45] = 2.0
+        pts = B.blob_points(db, region)
+        self.assertEqual(len(pts), int(B.radar_metrics(db, region, (B.T_DB,))[f"blobs@{B.T_DB:g}"]))
+        self.assertIn((16.0, 16.0), pts)
+        before = [(16.5, 15.0), (30.0, 31.0), (20.0, 45.0)]     # two still there (within 30 m), one gone
+        new, gone = B.match_points(pts, before)
+        self.assertEqual([pts[i] for i in new], [(41.0, 21.0)])
+        self.assertEqual(gone, [2])
+
+    @unittest.skipUnless(_have("numpy", "PIL"), "needs numpy and Pillow (imagery workflow only)")
+    def test_marked_image_keeps_its_shape_and_draws_marks(self):
+        import numpy as np
+        from PIL import Image
+        import imagery as I
+        d = tempfile.mkdtemp()
+        grey = np.full((100, 200), 40, "uint8")
+        m = np.zeros((100, 200), bool)
+        m[20:80, 20:180] = True
+        p = I.save_marked(grey, os.path.join(d, "m.jpg"), [(m, (255, 184, 48))], [(50, 100, (72, 200, 255), "new"), (30, 60, (150, 230, 90), "gone")])
+        with Image.open(p) as im:
+            self.assertEqual(im.size, (512, 256))          # small windows are scaled up to 512 px on the long side, aspect kept
+            px = np.asarray(im.convert("RGB")).astype(int)
+        self.assertGreater(px[:, :, 0].max(), 200)        # the outline and marks are drawn
 
     @unittest.skipUnless(_have("numpy"), "needs numpy (imagery workflow only)")
     def test_fire_review_burn_area_and_verdicts(self):
