@@ -490,8 +490,8 @@ class TestBaseWatch(unittest.TestCase):
                           "apron:changed:-2.80:2026-10-14;ground:in:3.40:2026-10-08/2026-10-14"],
                          ["y", "out", "2026-10-08;2026-10-14", "2026-10-14", "", "-3.10", "harbour", ""]])
             B.save_series("base_x", [("2026-10-08", 0.2), ("2026-10-14", -2.8)])
-            B.save_rows("base_chips", ["site", "kind", "date", "scene_id"], [["x", "a", "2026-10-12", "S2"], ["y", "r", "2026-10-01", "S1o"],
-                                                                         ["y", "m", "2026-10-14", "S1"], ["y", "rb", "2026-10-02", "S1b"]])
+            B.save_rows("base_chips", ["site", "kind", "date", "scene_id"], [["x", "a", "2026-10-12", "S2"], ["x", "m_apron", "2026-10-14", "S1"],
+                                                                         ["x", "rb_apron", "2026-10-02", "S1b"], ["y", "r", "2026-10-01", "S1o"]])
             B.save_rows("base_marks", B.MARK_COLS, [["x", "apron", "2026-10-14", "2026-10-02", "12", "3", "5"]])
             untested = {i["id"]: i for i in B.layer(bases)}         # before the backfill test: movement shown, with no weight
             B.ALERTS = True
@@ -514,7 +514,9 @@ class TestBaseWatch(unittest.TestCase):
         self.assertIsNone(gr["ground"]["mk"])
         self.assertIn("not yet checked", items["x"]["why"])
         self.assertEqual(items["y"]["pr"], [])
-        self.assertEqual(items["y"]["img"], {"m": "img/bases/y_m.jpg", "md": "2026-10-14", "rb": "img/bases/y_rb.jpg", "rbd": "2026-10-02"})
+        self.assertEqual(items["y"]["img"], {"r": "img/bases/y_r.jpg", "rd": "2026-10-01"})
+        self.assertEqual(gr["apron"]["img"], {"m": "img/bases/x_m_apron.jpg", "md": "2026-10-14", "rb": "img/bases/x_rb_apron.jpg", "rbd": "2026-10-02"})
+        self.assertEqual(gr["ground"]["img"], {})
 
     def test_construction_note_needs_two_images_in_a_row(self):
         import basewatch as B
@@ -596,6 +598,14 @@ class TestBaseWatch(unittest.TestCase):
         new, gone = B.match_points(pts, before)
         self.assertEqual([pts[i] for i in new], [(41.0, 21.0)])
         self.assertEqual(gone, [2])
+
+    @unittest.skipUnless(_have("numpy", "PIL"), "needs numpy and Pillow (imagery workflow only)")
+    def test_crop_box_pads_the_part_and_stays_inside(self):
+        import numpy as np
+        import basewatch as B
+        m = np.zeros((300, 400), bool)
+        m[100:110, 5:200] = True
+        self.assertEqual(B.crop_box(m), (73, 137, 0, 225))      # rows widened to 64, columns padded by 25 and cut at the edge
 
     @unittest.skipUnless(_have("numpy", "PIL"), "needs numpy and Pillow (imagery workflow only)")
     def test_marked_image_keeps_its_shape_and_draws_marks(self):
