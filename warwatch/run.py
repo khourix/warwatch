@@ -17,6 +17,7 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import activity  # noqa: E402
 import catalog  # noqa: E402
 import config as C  # noqa: E402
 import dashboard  # noqa: E402
@@ -148,6 +149,12 @@ def main():
             print("timing tells record: appended", tells.forward_append(res["tells"]), "rows")
     except Exception as e:
         print("timing tells skipped:", str(e)[:200])
+    try:   # Activity v1 (docs/ACTIVITY.md): experimental, shown beside the level, never sets it
+        res["activity"] = activity.compute(res["series"], res.get("tells"))
+        if not a.demo:
+            print("activity record: appended", activity.forward_append(res["activity"]), "rows")
+    except Exception as e:
+        print("activity skipped:", str(e)[:200])
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     static = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")   # tab icons and the link-preview image, served next to the page

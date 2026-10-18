@@ -1,0 +1,33 @@
+name: activity-daily
+# Adds the latest days of the two Activity families that only the hand-run backfill collected: Wikipedia page views per
+# theatre and the wider GDELT location counts (docs/ACTIVITY.md). Same code and files as backfill.yml, so the live
+# Activity reads exactly what the study read. Safe to re-run: GDELT days already held are skipped, page views are merged.
+on:
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "how many days back to fetch"
+        required: false
+        default: "5"
+permissions:
+  contents: write
+concurrency:
+  group: activity-daily
+  cancel-in-progress: false
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wikipedia page views and GDELT location counts
+        env:
+          DAYS: ${{ github.event.inputs.days || '5' }}
+        run: |
+          start="$(date -u -d "$DAYS days ago" +%F)"; end="$(date -u -d yesterday +%F)"
+          python3 backfill/backfill.py wiki --start "$start" --end "$end"
+          python3 backfill/backfill.py gdeltwide --start "$start" --end "$end"
+      - uses: ./.github/actions/commit-backfill
+        if: always()

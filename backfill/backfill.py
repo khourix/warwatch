@@ -11,6 +11,7 @@
     python3 backfill/backfill.py news THEATRE[,THEATRE...] [--start D --end D]   # Google News headline counts per day
     python3 backfill/backfill.py forecasts                     # ConflictForecast and VIEWS monthly vintages
     python3 backfill/backfill.py gdeltwide [--start D --end D] # wider GDELT event types and dyads per theatre
+    python3 backfill/backfill.py nightlights [--start D --end D] # Black Marble night lights per map place (EARTHDATA_TOKEN, h5py)
     python3 backfill/backfill.py metaculus                     # Metaculus community forecasts on military questions (token)
     python3 backfill/backfill.py senkaku                       # Japan Coast Guard Senkaku vessel counts (monthly PDFs, text kept)
     python3 backfill/backfill.py alerts                        # Israel's attack waves since 2014, from the Home Front Command history mirror
@@ -169,6 +170,9 @@ def main():
     elif a.cmd == "gdeltwide":
         import sources_gdelt as G
         G.cmd_gdeltwide(a.start, min(a.end, K.YDAY))
+    elif a.cmd == "nightlights":
+        import sources_nightlights as NL
+        NL.cmd_nightlights(need("EARTHDATA_TOKEN"), a.start, min(a.end, K.YDAY))
     elif a.cmd == "state":
         import sources_slow as L
         L.cmd_state(a.arg.split(","), a.start, a.end)

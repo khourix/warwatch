@@ -1,0 +1,48 @@
+name: nightlights-daily
+# Adds the latest nights of NASA Black Marble night lights (VNP46A2) for every reference place on the map to
+# backfill/data/nightlights/ (backfill/sources_nightlights.py). Black Marble is published a few days late, so each run
+# looks back DAYS days; days already held are skipped. A push that changes the collector or this file runs it once,
+# so a change is tested on its own branch. For a history, run it by hand with start and end.
+on:
+  schedule:
+    - cron: "15 7 * * *"
+  push:
+    paths: [backfill/sources_nightlights.py, .github/workflows/nightlights-daily.yml]
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "how many days back to check (ignored when start is set)"
+        required: false
+        default: "14"
+      start:
+        description: "first day, YYYY-MM-DD (optional)"
+        required: false
+        default: ""
+      end:
+        description: "last day, YYYY-MM-DD (optional, default yesterday)"
+        required: false
+        default: ""
+permissions:
+  contents: write
+concurrency:
+  group: nightlights-daily-${{ github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  nightlights:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the HDF5 reader
+        run: python3 -m pip install -q h5py numpy
+      - name: Read the latest nights
+        env:
+          EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN }}
+          DAYS: ${{ github.event.inputs.days || '14' }}
+          START: ${{ github.event.inputs.start }}
+          END: ${{ github.event.inputs.end }}
+        run: |
+          start="${START:-$(date -u -d "$DAYS days ago" +%F)}"; end="${END:-$(date -u -d yesterday +%F)}"
+          python3 backfill/backfill.py nightlights --start "$start" --end "$end"
+      - uses: ./.github/actions/commit-backfill
+        if: always()
