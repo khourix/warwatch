@@ -98,11 +98,27 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
+def token_note(token):
+    """What can be said about the token without printing it: its shape and, for an Earthdata JWT, when it expires."""
+    import base64
+    import json
+    parts = token.split(".")
+    if len(parts) != 3:
+        return f"not a JWT ({len(token)} characters); Earthdata tokens are JWTs"
+    try:
+        body = json.loads(base64.urlsafe_b64decode(parts[1] + "=" * (-len(parts[1]) % 4)))
+    except ValueError:
+        return f"JWT-shaped but unreadable ({len(token)} characters)"
+    exp = body.get("exp")
+    when = dt.datetime.fromtimestamp(exp, dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC") if exp else "no expiry"
+    return f"JWT, type {body.get('type', '?')}, issuer {body.get('iss', '?')}, expires {when}"
+
+
 def fetch(url, token, timeout=300, tries=3):
     """The file's bytes. Follows redirects by hand so the token goes only to NASA hosts, and names the host that refused it."""
     op = urllib.request.build_opener(_NoRedirect)
     for i in range(tries):
-        u, err = url, None
+        u, err, hops = url, None, []
         for _ in range(6):
             host = urllib.parse.urlparse(u).hostname or ""
             hdr = dict(K.UA)
@@ -114,9 +130,10 @@ def fetch(url, token, timeout=300, tries=3):
             except urllib.error.HTTPError as e:
                 if e.code in (301, 302, 303, 307, 308) and e.headers.get("Location"):
                     u = urllib.parse.urljoin(u, e.headers["Location"])
+                    hops.append(f"{e.code} to {urllib.parse.urlparse(u).hostname}{urllib.parse.urlparse(u).path}")   # no query: it can carry state
                     continue
                 if e.code in (401, 403):
-                    raise Refused(f"{e.code} from {host}: {e.read()[:80]!r} (WWW-Authenticate: {e.headers.get('WWW-Authenticate')})")
+                    raise Refused(f"{e.code} from {host}: {e.read()[:80]!r}; redirects: {'; '.join(hops) or 'none'}")
                 err = e
                 break
             except Exception as e:
@@ -160,6 +177,7 @@ def _write(path, rows):
 
 def cmd_nightlights(token, start, end):
     token = token.strip().removeprefix("Bearer ").strip()   # a pasted "Bearer ..." or trailing newline would be refused
+    K.log("token:", token_note(token))
     pts = places()
     by_tile = {}
     for p in pts:
