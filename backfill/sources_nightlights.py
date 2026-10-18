@@ -18,6 +18,10 @@ import datetime as dt
 import os
 import sys
 import tempfile
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 
 import common as K
 
@@ -85,6 +89,43 @@ def read_tile(path, pts):
     return out
 
 
+class Refused(Exception):
+    pass
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k):
+        return None
+
+
+def fetch(url, token, timeout=300, tries=3):
+    """The file's bytes. Follows redirects by hand so the token goes only to NASA hosts, and names the host that refused it."""
+    op = urllib.request.build_opener(_NoRedirect)
+    for i in range(tries):
+        u, err = url, None
+        for _ in range(6):
+            host = urllib.parse.urlparse(u).hostname or ""
+            hdr = dict(K.UA)
+            if host.endswith(".nasa.gov"):
+                hdr["Authorization"] = f"Bearer {token}"
+            try:
+                with op.open(urllib.request.Request(u, headers=hdr), timeout=timeout) as r:
+                    return r.read()
+            except urllib.error.HTTPError as e:
+                if e.code in (301, 302, 303, 307, 308) and e.headers.get("Location"):
+                    u = urllib.parse.urljoin(u, e.headers["Location"])
+                    continue
+                if e.code in (401, 403):
+                    raise Refused(f"{e.code} from {host}: {e.read()[:80]!r} (WWW-Authenticate: {e.headers.get('WWW-Authenticate')})")
+                err = e
+                break
+            except Exception as e:
+                err = e
+                break
+        time.sleep(5 * (i + 1))
+    raise RuntimeError(f"{str(err)[:200]} @ {url[-60:]}")
+
+
 def _listing(day, token):
     """(collection, {tile: file name}) for the day, or (None, {}) when the day is not published yet."""
     for coll in COLLECTIONS:
@@ -134,23 +175,28 @@ def cmd_nightlights(token, start, end):
             if not files:
                 K.log(iso, "not published yet or not found")
                 continue
+            read = 0
             for tile, ps in sorted(by_tile.items()):
                 if all((iso, t, n) in rows for t, n, _, _ in ps) or tile not in files:
                     continue
                 url = ARCHIVE.format(coll=coll, prod=PRODUCT, y=d.year, doy=d.timetuple().tm_yday) + "/" + files[tile]
                 with tempfile.NamedTemporaryFile(suffix=".h5") as tmp:
                     try:
-                        tmp.write(K.get(url, headers={"Authorization": f"Bearer {token}"}, raw=True, timeout=300, retries=3))
+                        tmp.write(fetch(url, token))
                         tmp.flush()
                         vals = read_tile(tmp.name, ps)
+                    except Refused as e:   # every file needs the token: stop the run so it shows red, nothing half-written
+                        sys.exit(f"Earthdata refused the token for {files[tile]}: {e}. Generate a new token at "
+                                 "https://urs.earthdata.nasa.gov (Generate Token) and save it as the EARTHDATA_TOKEN secret.")
                     except Exception as e:
                         K.log("skip", iso, tile, str(e)[:160])
                         continue
+                read += 1
                 for t, name, lat, lon in ps:
                     rad, good = vals[(t, name)]
                     rows[(iso, t, name)] = {"day": iso, "theatre": t, "place": name, "lat": lat, "lon": lon,
                                             "rad": "" if rad is None else rad, "good": good, "tile": tile}
-            got += 1
+            got += bool(read)
             _write(path, rows)
-            K.log(iso, coll, len(files), "tiles listed")
+            K.log(iso, coll, f"{read} of {sum(t in files for t in by_tile)} tiles read ({len(by_tile)} needed, {len(files)} listed)")
         K.log(year, "done:", got, "days read")
