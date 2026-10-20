@@ -55,9 +55,9 @@ cam_ranh,ground,2026-10-17,2026-10-11,80,26,17
 cam_ranh,harbour,2026-10-17,2026-10-11,18,4,3
 chiayi,apron,2026-10-16,2026-10-10,24,12,1
 chiayi,ground,2026-10-16,2026-10-10,124,59,46
-chihhang,apron,2026-10-16,2026-10-10,4,2,0
-chihhang,ground,2026-10-16,2026-10-10,101,40,42
-chihhang,harbour,2026-10-16,2026-10-10,3,0,4
+chihhang,apron,2026-10-20,2026-10-08,2,0,0
+chihhang,ground,2026-10-20,2026-10-08,72,24,21
+chihhang,harbour,2026-10-20,2026-10-08,2,0,2
 ching_chuan_kang,apron,2026-10-16,2026-10-10,6,2,0
 ching_chuan_kang,ground,2026-10-16,2026-10-10,252,112,54
 chkalovsk,apron,2026-10-19,2026-10-07,16,4,2
@@ -135,8 +135,8 @@ kp_sino_ri,ground,2026-10-11,2026-09-29,23,16,37
 kp_sinpung_dong,ground,2026-10-11,2026-09-29,248,161,141
 kp_yongjo_ri,ground,2026-09-19,,134,,
 kr_seongju_thaad,ground,2026-10-19,2026-10-07,45,31,9
-kulbakino,apron,2026-10-15,2026-10-09,12,4,2
-kulbakino,ground,2026-10-15,2026-10-09,55,13,7
+kulbakino,apron,2026-10-20,2026-10-14,10,0,1
+kulbakino,ground,2026-10-20,2026-10-14,65,20,3
 kunsan,apron,2026-10-18,2026-10-06,12,9,0
 kunsan,ground,2026-10-18,2026-10-06,226,103,65
 la_carlota,apron,2026-10-17,2026-10-11,14,7,9
@@ -184,8 +184,8 @@ nur_khan,apron,2026-10-17,2026-10-05,17,3,5
 nur_khan,ground,2026-10-17,2026-10-05,58,20,17
 nyala,apron,2026-10-13,2026-10-01,0,0,0
 nyala,ground,2026-10-13,2026-10-01,6,1,6
-olenya,apron,2026-10-17,2026-10-11,6,2,0
-olenya,ground,2026-10-17,2026-10-11,46,17,8
+olenya,apron,2026-10-19,2026-10-13,0,0,0
+olenya,ground,2026-10-19,2026-10-13,34,15,4
 omidiyeh_5tab,apron,2026-10-16,2026-10-10,2,0,0
 omidiyeh_5tab,ground,2026-10-16,2026-10-10,249,44,57
 osan,apron,2026-10-18,2026-09-24,12,3,0
@@ -230,8 +230,8 @@ sevastopol,ground,2026-10-16,2026-10-10,2,1,2
 sevastopol,harbour,2026-10-16,2026-10-10,58,17,8
 severomorsk,ground,2026-10-19,2026-10-13,6,4,4
 severomorsk,harbour,2026-10-19,2026-10-13,22,10,2
-shaykovka,apron,2026-10-17,2026-10-11,2,0,1
-shaykovka,ground,2026-10-17,2026-10-11,23,12,3
+shaykovka,apron,2026-10-20,2026-10-14,2,1,3
+shaykovka,ground,2026-10-20,2026-10-14,18,4,11
 shiraz_7tab,apron,2026-10-19,2026-10-07,12,2,2
 shiraz_7tab,ground,2026-10-19,2026-10-07,123,36,29
 shuimen,apron,2026-10-14,2026-10-02,0,0,0
@@ -274,6 +274,6 @@ zhangzhou,apron,2026-10-12,2026-09-30,5,1,1
 zhangzhou,ground,2026-10-12,2026-09-30,40,10,23
 zhanjiang,ground,2026-10-15,2026-10-03,29,6,16
 zhanjiang,harbour,2026-10-15,2026-10-03,7,4,4
-zuoying,apron,2026-10-16,2026-10-10,3,0,2
-zuoying,ground,2026-10-16,2026-10-10,526,145,120
-zuoying,harbour,2026-10-16,2026-10-10,49,18,10
+zuoying,apron,2026-10-20,2026-10-08,4,1,0
+zuoying,ground,2026-10-20,2026-10-08,428,131,140
+zuoying,harbour,2026-10-20,2026-10-08,43,15,17
