@@ -86,7 +86,7 @@ vasylkiv,normal,2026-10-20,2026-10-20,2026-10-11,0.00,apron,,apron:normal:0.00:2
 kulbakino,normal,2026-10-15,2026-10-15,2026-10-12,1.35,apron,,apron:normal:1.35:2026-10-15:13:11:8:13;ground:normal:0.25:2026-10-15:55:54:49:68
 libertador,normal,2026-10-17,2026-10-17,2026-09-28,-1.57,apron,,apron:normal:-1.57:2026-10-17:3:7:5:12;ground:normal:0.30:2026-10-17:134:129:113:237
 la_carlota,normal,2026-10-17,2026-10-17,2026-09-27,-0.34,apron,,apron:normal:-0.34:2026-10-17:14:15:12:16;harbour:normal:1.00:2026-10-17:2:1:0:2;ground:normal:-0.42:2026-10-17:34:37:32:44
-puerto_cabello,normal,2026-10-17,2026-10-17,2026-10-18,0.34,harbour,,harbour:normal:0.34:2026-10-17:31:30:26:34;ground:normal:-1.09:2026-10-17:53:64:45:83
+puerto_cabello,normal,2026-10-17,2026-10-17,2026-10-20,0.34,harbour,,harbour:normal:0.34:2026-10-17:31:30:26:34;ground:normal:-1.09:2026-10-17:53:64:45:83
 roosevelt_roads,normal,2026-10-11,2026-10-11,2026-10-10,1.01,apron,,apron:normal:1.01:2026-10-11:15:12:10:16;harbour:normal:0.00:2026-10-11:0:0:0:0;ground:normal:1.09:2026-10-11:67:42:20:79
 nur_khan,normal,2026-10-17,2026-10-17,2026-10-16,-0.22,apron,,apron:normal:-0.22:2026-10-17:17:18:11:21;ground:normal:0.58:2026-10-17:58:53:38:68
 sargodha,nodata,,2026-10-09,2026-10-11,-0.50,apron,,apron:nodata:-0.50::4:5:3:7;ground:nodata:-2.17::69:84:77:111
@@ -122,7 +122,7 @@ assab,normal,2026-10-17,2026-10-17,2026-10-18,0.00,apron,New construction or ear
 iran_tabriz_north_missile,normal,2026-10-15,2026-10-15,2026-10-14,-0.96,ground,,ground:normal:-0.96:2026-10-15:312:359:267:407
 iran_tabriz_south_missile,normal,2026-10-15,2026-10-15,2026-10-14,0.00,ground,,ground:normal:0.00:2026-10-15:25:25:21:63
 iran_kermanshah_missile,normal,2026-10-16,2026-10-16,2026-10-18,-1.33,ground,,ground:normal:-1.33:2026-10-16:753:863:745:951
-iran_khorramabad_imam_ali,normal,2026-10-16,2026-10-16,2026-10-18,-1.54,ground,,ground:normal:-1.54:2026-10-16:908:1034:897:1129
+iran_khorramabad_imam_ali,normal,2026-10-17,2026-10-17,2026-10-18,-0.55,ground,,ground:normal:-0.55:2026-10-17:648:695:613:771
 iran_isfahan_west_missile,normal,2026-10-19,2026-10-19,2026-10-20,1.52,ground,,ground:normal:1.52:2026-10-19:340:313:279:330
 iran_shiraz_north_missile,normal,2026-10-19,2026-10-19,2026-10-20,0.40,ground,,ground:normal:0.40:2026-10-19:432:408:240:475
 iran_shiraz_south_missile,normal,2026-10-19,2026-10-19,2026-10-20,-0.88,ground,,ground:normal:-0.88:2026-10-19:614:646:607:684
@@ -130,12 +130,12 @@ iran_yazd_missile,normal,2026-10-18,2026-10-18,2026-10-19,-1.00,ground,,ground:n
 iran_khorgu_missile,normal,2026-10-13,2026-10-13,2026-10-19,0.42,ground,,ground:normal:0.42:2026-10-13:465:442:332:516
 iran_hajiabad_missile,normal,2026-10-13,2026-10-13,2026-10-19,-0.05,ground,,ground:normal:-0.05:2026-10-13:647:651:456:688
 iran_modarres_bid_kaneh,normal,2026-10-12,2026-10-12,2026-10-18,0.00,ground,,ground:normal:0.00:2026-10-12:11:11:9:25
-israel_sdot_micha,normal,2026-10-15,2026-10-15,2026-10-13,0.30,ground,,ground:normal:0.30:2026-10-15:68:68:64:74
+israel_sdot_micha,normal,2026-10-16,2026-10-16,2026-10-13,-1.64,ground,,ground:normal:-1.64:2026-10-16:64:73:67:81
 ru_luga_26_missile_brigade,normal,2026-10-16,2026-10-16,2026-10-19,-0.24,ground,,ground:normal:-0.24:2026-10-16:120:133:107:248
 by_asipovichy_465_missile_brigade,normal,2026-10-16,2026-10-16,2026-10-16,-0.14,ground,,ground:normal:-0.14:2026-10-16:137:139:129:147
 ru_yelnya_camp,in,2026-10-13;2026-10-16,2026-10-16,2026-09-08,54.11,ground,,ground:in:54.11:2026-10-13/2026-10-16:2512:227:184:307
 crimea_kurhanne_s400,normal,2026-10-16,2026-10-16,2026-10-12,1.29,ground,,ground:normal:1.29:2026-10-16:140:118:102:152
-crimea_cape_zyuk_airdef,changed,2026-10-15,2026-10-15,2026-10-19,4.72,ground,,ground:changed:4.72:2026-10-15:22:15:14:19
+crimea_cape_zyuk_airdef,normal,2026-10-17,2026-10-17,2026-10-19,2.02,ground,,ground:normal:2.02:2026-10-17:23:20:19:23
 ru_gelendzhik_s400,normal,2026-10-12,2026-10-12,2026-10-19,-0.83,ground,,ground:normal:-0.83:2026-10-12:104:109:100:114
 kp_sino_ri,normal,2026-10-11,2026-10-11,2026-10-11,-0.40,ground,,ground:normal:-0.40:2026-10-11:23:35:10:214
 kp_sakkanmol,normal,2026-10-18,2026-10-18,2026-10-11,-0.28,ground,,ground:normal:-0.28:2026-10-18:245:266:138:315
