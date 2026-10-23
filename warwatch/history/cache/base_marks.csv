@@ -13,8 +13,8 @@ al_khadim,apron,2026-10-22,2026-10-16,6,1,0
 al_khadim,ground,2026-10-22,2026-10-16,51,11,14
 al_udeid,apron,2026-10-22,2026-10-16,34,13,16
 al_udeid,ground,2026-10-22,2026-10-16,606,104,115
-al_watiya,apron,2026-10-22,2026-10-16,1,0,0
-al_watiya,ground,2026-10-22,2026-10-16,31,2,6
+al_watiya,apron,2026-10-23,2026-10-17,1,0,0
+al_watiya,ground,2026-10-23,2026-10-17,48,2,9
 ali_al_salem,apron,2026-10-21,2026-10-09,17,2,2
 ali_al_salem,ground,2026-10-21,2026-10-09,308,56,51
 amari,apron,2026-10-20,2026-10-14,4,0,2
@@ -38,8 +38,8 @@ basa,ground,2026-10-13,2026-10-01,24,14,20
 bautista,apron,2026-10-16,2026-10-04,6,2,0
 bautista,ground,2026-10-16,2026-10-04,22,8,6
 bautista,harbour,2026-10-16,2026-10-04,8,2,3
-belaya,apron,2026-10-17,2026-10-05,0,0,0
-belaya,ground,2026-10-17,2026-10-05,50,7,9
+belaya,apron,2026-10-22,2026-10-10,0,0,1
+belaya,ground,2026-10-22,2026-10-10,53,7,14
 belbek,apron,2026-10-22,2026-10-16,12,3,1
 belbek,ground,2026-10-22,2026-10-16,53,14,12
 berbera,apron,2026-10-17,2026-10-05,6,2,2
@@ -49,7 +49,7 @@ bhuj,apron,2026-10-22,2026-10-10,0,0,1
 bhuj,ground,2026-10-22,2026-10-10,49,13,22
 bushehr_6tab,apron,2026-10-22,2026-10-16,3,0,0
 bushehr_6tab,ground,2026-10-22,2026-10-16,247,100,102
-by_asipovichy_465_missile_brigade,ground,2026-10-22,2026-10-16,136,45,44
+by_asipovichy_465_missile_brigade,ground,2026-10-23,2026-10-11,158,39,40
 cam_ranh,apron,2026-10-17,2026-10-11,10,1,2
 cam_ranh,ground,2026-10-17,2026-10-11,80,26,17
 cam_ranh,harbour,2026-10-17,2026-10-11,18,4,3
@@ -151,8 +151,8 @@ lipetsk,apron,2026-10-22,2026-10-16,4,0,1
 lipetsk,ground,2026-10-22,2026-10-16,18,1,2
 longtian,apron,2026-10-07,2026-09-25,1,0,0
 longtian,ground,2026-10-07,2026-09-25,18,5,8
-machulishchy,apron,2026-10-22,2026-10-16,3,3,0
-machulishchy,ground,2026-10-22,2026-10-16,64,26,18
+machulishchy,apron,2026-10-23,2026-10-11,2,2,0
+machulishchy,ground,2026-10-23,2026-10-11,66,26,10
 mashhad_14tab,apron,2026-10-16,2026-10-04,19,5,5
 mashhad_14tab,ground,2026-10-16,2026-10-04,45,9,12
 masroor,apron,2026-10-15,2026-10-03,6,1,2
@@ -213,7 +213,7 @@ roosevelt_roads,apron,2026-10-11,2026-09-29,13,7,6
 roosevelt_roads,ground,2026-10-11,2026-09-29,67,47,22
 roosevelt_roads,harbour,2026-10-11,2026-09-29,0,0,0
 ru_gelendzhik_s400,ground,2026-10-22,2026-10-10,106,28,26
-ru_luga_26_missile_brigade,ground,2026-10-22,2026-10-16,108,34,48
+ru_luga_26_missile_brigade,ground,2026-10-23,2026-10-11,131,59,97
 ru_yelnya_camp,ground,2026-10-22,2026-10-16,181,82,2414
 rzeszow,apron,2026-10-20,2026-10-14,5,1,1
 rzeszow,ground,2026-10-20,2026-10-14,25,11,7
@@ -244,11 +244,11 @@ sinpo,harbour,2026-10-13,2026-09-19,18,11,6
 sohae,ground,2026-10-11,2026-09-29,108,85,89
 soltsy,apron,2026-10-22,2026-10-16,0,0,0
 soltsy,ground,2026-10-22,2026-10-16,17,2,4
-souda,apron,2026-10-22,2026-10-16,15,6,3
-souda,ground,2026-10-22,2026-10-16,52,12,15
-souda,harbour,2026-10-22,2026-10-16,0,0,0
-starokostiantyniv,apron,2026-10-22,2026-10-16,0,0,1
-starokostiantyniv,ground,2026-10-22,2026-10-16,73,25,13
+souda,apron,2026-10-23,2026-10-17,31,14,16
+souda,ground,2026-10-23,2026-10-17,56,53,84
+souda,harbour,2026-10-23,2026-10-17,0,0,3
+starokostiantyniv,apron,2026-10-23,2026-10-11,0,0,0
+starokostiantyniv,ground,2026-10-23,2026-10-11,54,32,7
 tabriz_2tab,apron,2026-10-21,2026-10-09,10,5,2
 tabriz_2tab,ground,2026-10-21,2026-10-09,150,82,24
 tartus,ground,2026-10-22,2026-10-16,28,11,18
