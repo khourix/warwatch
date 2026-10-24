@@ -87,6 +87,34 @@ jobs:
           google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --allow-file-access-from-files --force-device-scale-factor=1 \
             --window-size=1200,630 --screenshot="$PWD/site/og-new.jpg" "file://$PWD/site/og-card.html" \
             && [ -s site/og-new.jpg ] && mv site/og-new.jpg site/og.jpg || echo "share card render failed; keeping the static og.jpg"
+      # Basemap for the new app: OpenStreetMap water, roads and towns cut from the Protomaps world build (zoom 0 to 6),
+      # refreshed once a month through the cache. Optional: without it the app draws Natural Earth countries only.
+      - id: month
+        run: echo "m=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        continue-on-error: true
+        with:
+          path: basemap/basemap.pmtiles
+          key: basemap-z6-${{ steps.month.outputs.m }}
+      - name: Basemap tiles (optional)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ ! -s basemap/basemap.pmtiles ]; then
+            mkdir -p basemap && cd basemap
+            gh release download -R protomaps/go-pmtiles --pattern '*_Linux_x86_64.tar.gz' -O pm.tgz && tar xzf pm.tgz pmtiles
+            build=$(curl -fsS https://build-metadata.protomaps.dev/builds.json | grep -o '[0-9]\{8\}\.pmtiles' | sort -u | tail -1)
+            echo "Protomaps build: $build"
+            for z in 6 5; do
+              ./pmtiles extract "https://build.protomaps.com/$build" basemap.pmtiles --maxzoom=$z
+              # GitHub Pages serves files up to 100 MB; a smaller zoom range is the fallback
+              [ "$(stat -c %s basemap.pmtiles)" -lt 95000000 ] && break
+              rm -f basemap.pmtiles
+            done
+            cd ..
+          fi
+          ls -la basemap/basemap.pmtiles && cp basemap/basemap.pmtiles site/basemap.pmtiles
       # The new app (web/, React) is a preview at /warwatch/next/ until the switch-over. It reads site/data/v1 written above.
       # A failed build leaves it out of this deploy; the main page is never held back by it.
       - uses: actions/setup-node@v4

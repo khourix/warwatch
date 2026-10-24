@@ -1562,6 +1562,24 @@ class DataContract(unittest.TestCase):
             self.assertLessEqual(th["signals"]["scored"], th["signals"]["total"])
         self.assertEqual(b["counts"]["strong"], sum(t["strong"] for t in b["theatres"]))
 
+    def test_base_carries_parts_and_images(self):
+        import contract
+        b = {"id": "x", "n": "X Air Base", "k": "air", "side": "US", "ths": ["iran"], "st": "out", "z": -3.1, "last": "2026-10-22", "lo": "2026-10-20",
+             "ll": [25.1, 51.3], "pts": [0.1, -3.1], "why": "Fewer.", "wy": "Hub.", "note": "", "mp": "apron",
+             "img": {"r": "img/bases/x_r.jpg", "rd": "2026-10-22", "a": "img/bases/x_a.jpg", "ad": "2026-10-20"},
+             "pr": [{"p": "apron", "w": "Aircraft", "wh": "on the aprons", "st": "out", "z": -3.1, "d": "2026-10-16 and 2026-10-22", "s": "fewer than usual",
+                     "t": True, "now": 4.0, "u": 20.0, "lo": 15.0, "hi": 26.0, "h": [["2026-10-22", 4.0, 20.0, 15.0, 26.0]],
+                     "mk": {"d": "2026-10-22", "b": "2026-10-16", "n": 4, "new": 0, "gone": 12},
+                     "img": {"m": "img/bases/x_m_apron.jpg", "md": "2026-10-22"}}]}
+        f = contract.base({"generated": "2026-10-24 01:17 UTC"}, b)
+        self.assertEqual(contract.validate(f), [])
+        self.assertEqual(f["ll"], [51.3, 25.1])
+        self.assertEqual(f["images"]["radar"], {"src": "img/bases/x_r.jpg", "date": "2026-10-22"})
+        self.assertIsNone(f["images"]["radarBefore"])
+        p = f["parts"][0]
+        self.assertEqual((p["part"], p["low"], p["high"], p["marks"]["gone"]), ("apron", 15.0, 26.0, 12))
+        self.assertEqual(p["images"], {"marked": {"src": "img/bases/x_m_apron.jpg", "date": "2026-10-22"}, "before": None})
+
     def test_write_lays_out_the_tree(self):
         import contract
         out = tempfile.mkdtemp()

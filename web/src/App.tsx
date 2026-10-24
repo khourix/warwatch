@@ -5,6 +5,8 @@ import { Newspaper, Globe2, Rows3, BadgeCheck, Sun, Moon, Search, MapPin, Activi
 // The map library is most of the download, so it loads after the Brief has painted from its small JSON file.
 const MapView = lazy(() => import('./MapView').then(m => ({ default: m.MapView })))
 import { BriefView, TheatreView, SignalsView, RecordView } from './views'
+import { BaseView } from './ground'
+import { TimeStrip } from './strip'
 import { Wordmark, Mark, LevelChip, Skeleton, Failed } from './ui'
 import { useBrief, useLiveMap, useSignals, parseHash, routeHash, parseGen, levelVar, fmtZ, type Brief, type LiveMap, type Route } from './data'
 
@@ -27,6 +29,7 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   const [route, setRoute] = useState<Route>(() => parseHash(location.hash))
   const [theme, setTheme] = useState<'dark' | 'light'>(() => (document.documentElement.dataset.theme as 'dark' | 'light') || 'dark')
   const [cmd, setCmd] = useState(false)
+  const [day, setDay] = useState<string | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const now = parseGen(brief.generated)
 
@@ -40,7 +43,7 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
     }
     addEventListener('keydown', k); return () => removeEventListener('keydown', k)
   }, [cmd, route, go])
-  useEffect(() => { document.title = route.v === 'theatre' ? `${brief.theatres.find(t => t.id === route.id)?.name || route.id} · WarWatch` : 'WarWatch' }, [route, brief])
+  useEffect(() => { document.title = route.v === 'theatre' ? `${brief.theatres.find(t => t.id === route.id)?.name || route.id} · WarWatch` : route.v === 'base' ? `${live?.bases.find(b => b.id === route.id)?.name.split(',')[0] || 'Base'} · WarWatch` : 'WarWatch' }, [route, brief, live])
 
   const toggleTheme = () => { const n = theme === 'dark' ? 'light' : 'dark'; const d = document as any; if (d.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) d.startViewTransition(() => setTheme(n)); else setTheme(n) }
   const panelOpen = route.v !== 'map'
@@ -49,22 +52,24 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
     <AnimatePresence mode="popLayout" initial={false}>
       <motion.div key={JSON.stringify(route)} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: .26, ease: [.22, 1, .36, 1] }}>
         {route.v === 'brief' && <BriefView brief={brief} go={go} />}
-        {route.v === 'theatre' && <TheatreView key={route.id} id={route.id} tab={route.tab} brief={brief} go={go} />}
+        {route.v === 'theatre' && <TheatreView key={route.id} id={route.id} tab={route.tab} brief={brief} live={live} go={go} />}
+        {route.v === 'base' && <BaseView key={route.id} id={route.id} brief={brief} go={go} />}
         {route.v === 'signals' && <SignalsView th={route.th} brief={brief} go={go} />}
         {route.v === 'record' && <RecordView brief={brief} go={go} />}
       </motion.div>
     </AnimatePresence>
   )
   const nav: [Route['v'], string, typeof Newspaper][] = [['brief', 'Brief', Newspaper], ['map', 'Map', Globe2], ['signals', 'Signals', Rows3], ['record', 'Record', BadgeCheck]]
-  const navActive = (k: string) => route.v === k || (k === 'brief' && route.v === 'theatre')
+  const navActive = (k: string) => route.v === k || (k === 'brief' && (route.v === 'theatre' || route.v === 'base'))
 
   return (
-    <div className="relative h-full overflow-hidden bg-bg text-fg">
+    <div className={`relative h-full overflow-hidden bg-bg text-fg ${wide ? 'ww-wide' : ''}`}>
       <div className="absolute inset-0" style={{ left: wide ? 64 : 0 }}>
-        <Suspense fallback={null}><MapView brief={brief} live={live} route={route} onPick={go} theme={theme} padRight={wide && panelOpen ? PANEL + 16 : 0} padBottom={wide ? 0 : Math.round(innerHeight * .55)} /></Suspense>
+        <Suspense fallback={null}><MapView brief={brief} live={live} route={route} onPick={go} theme={theme} day={day} padRight={wide && panelOpen ? PANEL + 16 : 0} padBottom={wide ? 0 : Math.round(innerHeight * .55)} /></Suspense>
       </div>
 
       {wide ? <>
+        <TimeStrip brief={brief} day={day} setDay={setDay} go={go} style={{ left: 80, right: (panelOpen ? PANEL + 16 : 0) + 16, bottom: 12 }} />
         <nav aria-label="Pages" className="absolute inset-y-0 left-0 z-20 flex w-16 flex-col items-center gap-1 border-r border-line bg-panel py-3">
           <button onClick={() => go({ v: 'brief' })} aria-label="WarWatch home" className="mb-3 grid h-10 w-10 place-items-center text-fg"><Mark size={26} /></button>
           {nav.map(([k, label, I]) => (
@@ -163,7 +168,7 @@ function CommandMenu({ open, setOpen, go, toggleTheme, brief, live }: { open: bo
                   {brief.theatres.map(t => <Command.Item key={t.id} value={`${t.name} ${region(t.region)} ${(live?.theatres[t.id]?.countries || []).join(' ')} ${t.id}`} onSelect={() => run({ v: 'theatre', id: t.id })} className={item}><MapPin size={15} style={{ color: levelVar(t.level) }} /><span className="flex-1">{t.name}</span><span className="text-[12px] text-fg3">{region(t.region)}</span></Command.Item>)}
                 </Command.Group>
                 {live && live.bases.length > 0 && <Command.Group heading="Bases" className={grp}>
-                  {live.bases.map(b => <Command.Item key={b.id} value={`${b.name} base ${b.side} ${b.id}`} onSelect={() => run({ v: 'theatre', id: b.theatres[0] || 'iran' })} className={item}><Satellite size={15} /><span className="flex-1">{b.name}</span></Command.Item>)}
+                  {live.bases.map(b => <Command.Item key={b.id} value={`${b.name} base ${b.side} ${b.id}`} onSelect={() => run({ v: 'base', id: b.id })} className={item}><Satellite size={15} /><span className="flex-1">{b.name}</span></Command.Item>)}
                 </Command.Group>}
                 {sigs.data && <Command.Group heading="Signals" className={grp}>
                   {sigs.data.signals.filter(s => s.z != null).slice(0, 400).map(s => <Command.Item key={s.id} value={`${s.label} ${s.sub} ${s.id}`} onSelect={() => run(brief.theatres.some(t => t.id === s.theatre) ? { v: 'theatre', id: s.theatre, tab: 'signals' } : { v: 'signals' })} className={item}><Activity size={15} /><span className="min-w-0 flex-1 truncate">{s.label}</span><span className="num text-[12px] text-fg3">{fmtZ(s.z)}</span></Command.Item>)}

@@ -35,7 +35,7 @@ SHAPES = {
     "series": {"id": str, "points": list, "zHistory": list},
     "map": {"theatres": dict, "aircraft[]": list, "ships[]": list, "fires[]": list, "bases[]": list, "warnings[]": list, "cities[]": list,
             "chokepoints[]": list},
-    "base": {"id": str, "name": str, "state": str, "ll": list, "radar": list, "why": str},
+    "base": {"id": str, "name": str, "state": str, "ll": list, "radar": list, "why": str, "images": dict, "parts[]": list},
     "record": {"forward": (list, type(None)), "model": (dict, type(None)), "tempo": dict, "health": dict},
     "events": {"through": str, "events[]": list},
 }
@@ -55,6 +55,7 @@ ITEMS = {
     "map.fires": {"ll": list, "mw": NUM, "date": str, "class": str},
     "map.bases": {"id": str, "name": str, "state": str, "ll": list},
     "map.warnings": {"ll": list, "text": str},
+    "base.parts": {"part": str, "state": str, "history": list, "images": dict},
     "map.cities": {"ll": list, "name": str, "theatre": str},
     "map.chokepoints": {"ll": list, "name": str},
     "events.events": {"date": str, "theatre": str, "kind": str, "text": str},
@@ -156,6 +157,9 @@ def _ctx(t):
     return (C.CONTEXT.get(t) or (None, None)) if hasattr(C, "CONTEXT") else (None, None)
 
 
+PART_THINGS = {"apron": "aircraft", "harbour": "ships", "ground": "vehicles"}
+
+
 def feed(data):
     """What changed this week, newest first: timing tells, bases that changed on radar, unexplained fires, CrisisWatch alerts."""
     out = []
@@ -167,13 +171,14 @@ def feed(data):
                           else "Timing tell. New, no history to test yet")
                 out.append({"date": x["date"], "kind": "tell", "theatre": t, "title": x["n"], "detail": detail, "to": {"view": "theatre", "id": t}})
     m = data.get("map") or {}
-    words = {"out": "fewer aircraft than usual", "in": "more aircraft than usual", "changed": "one pass differed"}
+    words = {"out": "fewer {} than usual", "in": "more {} than usual", "changed": "one pass differed"}
     for b in m.get("bases") or []:
         if b.get("st") in words:
-            out.append({"date": b.get("last") or "", "kind": "base", "theatre": b.get("th", ""), "title": f"{b['n'].split(',')[0]}: {words[b['st']]}",
+            what = PART_THINGS.get(b.get("mp") or "", "objects")
+            out.append({"date": b.get("last") or "", "kind": "base", "theatre": b.get("th", ""), "title": f"{b['n'].split(',')[0]}: {words[b['st']].format(what)}",
                         "detail": "Satellite radar, two passes", "to": {"view": "base", "id": b["id"]}})
     for f in m.get("fires") or []:
-        if f.get("c") == "anom":
+        if f.get("c") in ("anom", "hot"):
             out.append({"date": f["d"], "kind": "fire", "theatre": f.get("th", ""), "title": "Heat " + (f"near {f['site']}" if f.get("site") else "with no usual source"),
                         "detail": f"{round(f['p'])} MW at night, NASA VIIRS", "to": {"view": "theatre", "id": f.get("th", ""), "tab": "ground"}})
     for t, v in data["theatres"].items():
@@ -261,7 +266,8 @@ def live_map(data):
         fires=[dict(ll=[f["ll"][1], f["ll"][0]], mw=f["p"], date=f["d"], time=f.get("ts", ""), **{"class": f.get("c", "")}, score=f.get("a", 0),
                     why=f.get("why", ""), site=f.get("site", ""), theatre=f.get("th", ""), night=f.get("dn") == "N", images=f.get("img")) for f in m.get("fires") or []],
         bases=[{"id": b["id"], "name": b["n"], "kind": b.get("k", ""), "side": b.get("side", ""), "theatres": b.get("ths", []), "state": b.get("st", ""),
-                "z": b.get("z"), "last": b.get("last", ""), "ll": [b["ll"][1], b["ll"][0]]} for b in m.get("bases") or []],
+                "z": b.get("z"), "last": b.get("last", ""), "ll": [b["ll"][1], b["ll"][0]], "why": b.get("why", ""), "radar": (b.get("pts") or [])[-30:],
+                "thumb": (b.get("img") or {}).get("r") or (b.get("img") or {}).get("a") or "", "part": b.get("mp", "")} for b in m.get("bases") or []],
         warnings=[{"ll": ll(w["xy"]), "id": w.get("id", ""), "text": w.get("tx", ""), "issued": w.get("iss", ""), "theatre": w.get("th", "")} for w in m.get("nga") or []],
         conflictZones=[{"ll": ll(z["xy"]), "name": z.get("n", ""), "updated": z.get("u", ""), "theatre": z.get("th", "")} for z in m.get("czib") or []],
         cities=[{"ll": ll(c["xy"]), "name": c["n"], "theatre": c["t"]} for c in m.get("cities") or []],
@@ -270,10 +276,24 @@ def live_map(data):
         seas=[{"ll": ll(s["xy"]), "name": s["n"]} for s in m.get("seas") or []])
 
 
+def _pic(img, k):
+    return {"src": img[k], "date": img.get(k + "d", "")} if img.get(k) else None
+
+
 def base(data, b):
+    """One base. images: the whole-site chips (radar and optical, latest and earlier pass). parts: apron, harbour or ground, each
+    with its own state, counts against the usual band, the last 30 passes [date, count, usual, low, high] and its marked radar chip."""
+    img = b.get("img") or {}
+    parts = [{"part": x["p"], "what": x.get("w", ""), "where": x.get("wh", ""), "state": x.get("st", ""), "z": x.get("z"), "dates": x.get("d", ""),
+              "note": x.get("s", ""), "tested": bool(x.get("t")), "now": x.get("now"), "usual": x.get("u"), "low": x.get("lo"), "high": x.get("hi"),
+              "history": x.get("h") or [],
+              "marks": {"date": mk["d"], "before": mk["b"], "objects": mk["n"], "new": mk["new"], "gone": mk["gone"]} if (mk := x.get("mk")) else None,
+              "images": {"marked": _pic(x.get("img") or {}, "m"), "before": _pic(x.get("img") or {}, "rb")}} for x in b.get("pr") or []]
     return _head("base", data["generated"], id=b["id"], name=b["n"], type=b.get("k", ""), side=b.get("side", ""), theatres=b.get("ths", []),
                  state=b.get("st", ""), z=b.get("z"), last=b.get("last", ""), previous=b.get("lo", ""), ll=[b["ll"][1], b["ll"][0]],
-                 radar=b.get("pts") or [], why=b.get("why", ""), note=b.get("note", ""), images=b.get("img") or {})
+                 radar=b.get("pts") or [], why=b.get("why", ""), about=b.get("wy", ""), note=b.get("note", ""), mainPart=b.get("mp", ""),
+                 images={"radar": _pic(img, "r"), "radarBefore": _pic(img, "rb"), "optical": _pic(img, "a"), "opticalBefore": _pic(img, "b")},
+                 parts=parts)
 
 
 def record(data):
