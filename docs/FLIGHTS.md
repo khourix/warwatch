@@ -2,7 +2,7 @@
 
 Reports before strikes often mention flights diverted away from an airport, airlines cancelling, and private jets leaving. WarWatch counts these from public flight-tracking data, one day behind.
 
-Code: `warwatch/flights.py`, fed by `backfill/sources_adsb.py`. Jobs: `adsb-daily.yml` (the last few days, daily) and `backfill.yml` with `source=adsb` (history from 2023, one job per quarter).
+Code: `warwatch/flights.py`, fed by `backfill/sources_adsb.py`. Jobs: `adsb-daily.yml` (the last few days, daily) and `backfill.yml` with `source=adsb` (history from 20 March 2024, when the archive starts, one job per quarter).
 
 ## Source
 
@@ -58,7 +58,7 @@ Business jets are counted, never listed. Aircraft whose owners asked not to be s
 
 ## Not tested
 
-None of these series is in the score. Each enters only after a test on the event list (`docs/EVENTS.md`), written down before it is run, shows it moves before events. That needs the history back to 2023: dispatch `backfill.yml` with `source=adsb`, which reads only the days whose flights are missing.
+None of these series is in the score. Each enters only after a test on the event list (`docs/EVENTS.md`), written down before it is run, shows it moves before events. That needs the history, which starts on 20 March 2024 and skips the days the archive lacks: dispatch `backfill.yml` with `source=adsb`, which reads only the days whose flights are missing.
 
 ## One day, checked
 
