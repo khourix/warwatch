@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import NumberFlow from '@number-flow/react'
 import { ArrowLeft, ChevronRight, Satellite, Flame, ShieldAlert, FileText, Search, Check, X, Info } from 'lucide-react'
-import { GROUPS, GROUP_HINT, useTheatre, useSignals, useRecord, summary, levelVar, fmtZ, shortDate, ago, parseGen, type Brief, type Route, type Signal, type FeedItem } from './data'
+import { GROUPS, GROUP_HINT, useTheatre, useSignals, useRecord, summary, levelVar, fmtZ, shortDate, ago, parseGen, type Brief, type LiveMap, type Route, type Signal, type FeedItem } from './data'
+import { GroundTab } from './ground'
 import { LevelChip, TellDots, Spark, Strip, Section, Tabs, Skeleton, Failed, listAnim } from './ui'
 
 type Go = (r: Route) => void
 const KIND: Record<FeedItem['kind'], [typeof ShieldAlert, string]> = { tell: [ShieldAlert, 'var(--watch)'], base: [Satellite, 'var(--elev)'], fire: [Flame, 'var(--elev)'], official: [FileText, 'var(--fg-3)'] }
-const toRoute = (to: FeedItem['to']): Route => to.view === 'theatre' && to.id ? { v: 'theatre', id: to.id, tab: to.tab } : { v: 'brief' }
+export const toRoute = (to: FeedItem['to']): Route => to.view === 'theatre' && to.id ? { v: 'theatre', id: to.id, tab: to.tab } : to.view === 'base' && to.id ? { v: 'base', id: to.id } : { v: 'brief' }
 
 function Header({ back, crumbs, go }: { back?: Route; crumbs: [string, Route?][]; go: Go }) {
   return (
@@ -75,9 +76,10 @@ export function BriefView({ brief, go }: { brief: Brief; go: Go }) {
 const zBg = (z: number | null) => z == null ? 'var(--line)' : Math.abs(z) >= 3 ? 'var(--elev)' : Math.abs(z) >= 2 ? 'var(--watch)' : Math.abs(z) >= 1 ? 'color-mix(in oklab, var(--watch) 38%, transparent)' : 'color-mix(in oklab, var(--fg-3) 22%, transparent)'
 
 /* ---------------------------------------------------------------- Theatre */
-export function TheatreView({ id, tab, brief, go }: { id: string; tab?: string; brief: Brief; go: Go }) {
+export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: string; brief: Brief; live?: LiveMap; go: Go }) {
   const q = useTheatre(id)
   const [sub, setSub] = useState(tab || 'now')
+  useEffect(() => { if (tab) setSub(tab) }, [tab])
   const [open, setOpen] = useState<string | null>(null)
   const sigQ = useSignals(sub === 'signals')
   const sigs = useMemo(() => (sigQ.data?.signals || []).filter(s => s.theatre === id && s.z != null).sort((a, b) => Math.abs(b.z!) - Math.abs(a.z!)), [sigQ.data, id])
@@ -111,7 +113,7 @@ export function TheatreView({ id, tab, brief, go }: { id: string; tab?: string; 
           ))}
         </dl>
       </div>
-      <Tabs id="th" value={sub} onChange={setSub} tabs={[['now', 'Now'], ['signals', 'Signals', t.signals.scored], ['history', 'History', t.events.length]]} />
+      <Tabs id="th" value={sub} onChange={setSub} tabs={[['now', 'Now'], ['ground', 'On the ground', live ? live.bases.filter(b => b.theatres.includes(id)).length + live.fires.filter(f => f.theatre === id).length : undefined], ['signals', 'Signals', t.signals.scored], ['history', 'History', t.events.length]]} />
       <AnimatePresence mode="wait">
         <motion.div key={sub} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: .2, ease: [.22, 1, .36, 1] }}>
           {sub === 'now' && <>
@@ -148,6 +150,7 @@ export function TheatreView({ id, tab, brief, go }: { id: string; tab?: string; 
               {t.official.map((o, i) => <div key={i} className="flex justify-between gap-4 py-1.5 text-[12.5px]"><span className="text-fg2">{o.name}</span><span className="text-right text-fg">{o.value}</span></div>)}
             </Section>}
           </>}
+          {sub === 'ground' && <GroundTab id={id} live={live} brief={brief} go={go} />}
           {sub === 'signals' && <Section title="Signals, most unusual first" aside={<button onClick={() => go({ v: 'signals', th: t.id })} className="text-accent hover:underline">Open in Signals</button>}>
             {sigQ.isPending ? <Skeleton lines={8} /> : sigs.slice(0, 30).map((s, i) => <SignalRow key={s.id} s={s} i={i} />)}
           </Section>}

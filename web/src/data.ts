@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 /* The data contract (warwatch/contract.py, schema warwatch/v1). Positions are [lon, lat]. */
 export type Level = 'Normal' | 'Watch' | 'Elevated' | 'Critical'
 export type LonLat = [number, number]
-export type Route = { v: 'brief' } | { v: 'theatre'; id: string; tab?: string } | { v: 'signals'; th?: string } | { v: 'record' } | { v: 'map' }
+export type Route = { v: 'brief' } | { v: 'theatre'; id: string; tab?: string } | { v: 'base'; id: string } | { v: 'signals'; th?: string } | { v: 'record' } | { v: 'map' }
 export type FeedItem = { date: string; kind: 'tell' | 'base' | 'fire' | 'official'; theatre: string; title: string; detail: string; to: { view: string; id: string; tab?: string } }
 export type BriefTheatre = {
   id: string; name: string; region: string; level: Level; score: number | null; standingRisk: number | null; tellsOn: number; tellsTotal: number; strong: number
@@ -32,11 +32,20 @@ export type Theatre = {
 }
 export type Signal = { id: string; label: string; group: Group; sub: string; theatre: string; z: number | null; status: string; stale: string; last: string; lagging: boolean; kind: string; why: string; url: string; event: string | null; spark: (number | null)[] }
 export type Signals = { generated: string; groups: Record<Group, string>; signals: Signal[] }
-export type MapBase = { id: string; name: string; kind: string; side: string; theatres: string[]; state: string; z: number | null; last: string; ll: LonLat }
-export type MapFire = { ll: LonLat; mw: number; date: string; class: string; why: string; site: string; theatre: string }
+export type MapBase = { id: string; name: string; kind: string; side: string; theatres: string[]; state: string; z: number | null; last: string; ll: LonLat; why: string; radar: number[]; thumb: string; part: string }
+export type MapFire = { ll: LonLat; mw: number; date: string; time: string; class: string; score: number; why: string; site: string; theatre: string; night: boolean }
+export type MapAircraft = { ll: LonLat; call: string; class: string; t?: string; trk?: number; hex?: string; th?: string; o?: string; ct?: string; alt?: number; gs?: number; sq?: string; emergency: boolean }
+export type MapShip = { ll: LonLat; name: string; k?: string; loc?: string; g?: string; d?: string; tx?: string; u?: string; flag?: string; dest?: string; spd?: number; note?: string; th?: string }
+export type MapWarning = { ll: LonLat; id: string; text: string; issued: string; theatre: string }
+export type MapIncident = { ll: LonLat; t?: string; d?: string; src?: string; u?: string; loc?: string; th?: string; tx?: string }
+export type Pic = { src: string; date: string } | null
+export type BasePart = { part: string; what: string; where: string; state: string; z: number | null; dates: string; note: string; tested: boolean; now: number | null; usual: number | null; low: number | null; high: number | null
+  history: [string, number, number | null, number | null, number | null][]; marks: { date: string; before: string; objects: number; new: number | null; gone: number | null } | null; images: { marked: Pic; before: Pic } }
+export type BaseFile = { generated: string; id: string; name: string; type: string; side: string; theatres: string[]; state: string; z: number | null; last: string; previous: string; ll: LonLat
+  radar: number[]; why: string; about: string; note: string; mainPart: string; images: { radar: Pic; radarBefore: Pic; optical: Pic; opticalBefore: Pic }; parts: BasePart[] }
 export type LiveMap = {
   generated: string; theatres: Record<string, { center: LonLat | null; view: [LonLat, LonLat] | null; countries: string[] }>
-  bases: MapBase[]; fires: MapFire[]; cities: { ll: LonLat; name: string; theatre: string }[]; chokepoints: { ll: LonLat; name: string; theatre: string }[]
+  bases: MapBase[]; fires: MapFire[]; aircraft: MapAircraft[]; squawks: MapAircraft[]; ships: MapShip[]; warnings: MapWarning[]; incidents: MapIncident[]; cities: { ll: LonLat; name: string; theatre: string }[]; chokepoints: { ll: LonLat; name: string; theatre: string }[]
 }
 export type Forward = { k: string; name: string; first: string; logged: number; days: number; need: number; through: string; ready: boolean; pass: boolean }
 export type RecordFile = { generated: string; forward: Forward[] | null; model: { v: string; fitted: string; active: boolean; gates: Gates } | null; health: { statuses: Record<string, number> } }
@@ -62,7 +71,18 @@ export const useBrief = () => useQuery({ queryKey: ['brief'], queryFn: () => get
 export const useTheatre = (id: string) => useQuery({ queryKey: ['theatre', id], queryFn: () => get<Theatre>(`theatres/${id}.json`) })
 export const useSignals = (on = true) => useQuery({ queryKey: ['signals'], queryFn: () => get<Signals>('signals/index.json'), enabled: on })
 export const useLiveMap = () => useQuery({ queryKey: ['map'], queryFn: () => get<LiveMap>('map/live.json') })
+export const useBase = (id: string) => useQuery({ queryKey: ['base', id], queryFn: () => get<BaseFile>(`bases/${id}.json`) })
 export const useRecord = () => useQuery({ queryKey: ['record'], queryFn: () => get<RecordFile>('record.json') })
+
+/* Images and tiles sit at the site root, beside the old page: img/bases/…, basemap.pmtiles */
+export const asset = (src: string) => new URL('../' + src, document.baseURI).href
+
+/* Base states as basewatch.py writes them */
+export const BASE_STATE: Record<string, [string, string]> = {
+  out: ['Fewer than usual', 'var(--elev)'], in: ['More than usual', 'var(--elev)'], changed: ['One pass differed', 'var(--watch)'],
+  normal: ['Usual on the latest pass', 'var(--fg-3)'], optical: ['Optical images only', 'var(--fg-3)'], nodata: ['No recent pass', 'var(--fg-3)'],
+}
+export const baseState = (s: string) => BASE_STATE[s] || [s, 'var(--fg-3)']
 
 /* Words and colours */
 export const LEVELS: Level[] = ['Normal', 'Watch', 'Elevated', 'Critical']
@@ -90,9 +110,10 @@ export function summary(t: Theatre): string {
 export function parseHash(h: string): Route {
   const p = h.replace(/^#\/?/, '').split('/').filter(Boolean)
   if (p[0] === 'theatre' && p[1]) return { v: 'theatre', id: p[1], tab: p[2] }
+  if (p[0] === 'base' && p[1]) return { v: 'base', id: p[1] }
   if (p[0] === 'signals') return { v: 'signals', th: p[1] }
   if (p[0] === 'record') return { v: 'record' }
   if (p[0] === 'map') return { v: 'map' }
   return { v: 'brief' }
 }
-export const routeHash = (r: Route) => r.v === 'brief' ? '#/' : r.v === 'theatre' ? `#/theatre/${r.id}${r.tab ? '/' + r.tab : ''}` : r.v === 'signals' ? `#/signals${r.th ? '/' + r.th : ''}` : `#/${r.v}`
+export const routeHash = (r: Route) => r.v === 'brief' ? '#/' : r.v === 'theatre' ? `#/theatre/${r.id}${r.tab ? '/' + r.tab : ''}` : r.v === 'base' ? `#/base/${r.id}` : r.v === 'signals' ? `#/signals${r.th ? '/' + r.th : ''}` : `#/${r.v}`
