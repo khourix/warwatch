@@ -24,7 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Fetch the state
-        run: git fetch -q --depth=1 origin ais && git show FETCH_HEAD:state.json > "$RUNNER_TEMP/state.json" || echo "no state yet: starting fresh"
+        run: |
+          git fetch -q --depth=1 origin ais && git show FETCH_HEAD:state.json > "$RUNNER_TEMP/state.json" || echo "no state yet, starting fresh"
       - name: Listen
         env:
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
