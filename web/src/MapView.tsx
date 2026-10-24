@@ -8,6 +8,7 @@ import type { FeatureCollection } from 'geojson'
 import coarse from 'world-atlas/countries-110m.json'
 import { levelVar, asset, baseState, shortDate, type Brief, type LiveMap, type LonLat, type Route, type MapBase, type MapFire, type MapAircraft, type MapShip, type MapWarning } from './data'
 import { baseWord, fireWord, fireColour } from './ground'
+import { reducedMotion as reduced } from './settings'
 
 /* The globe: MapLibre with the Natural Earth countries as a GeoJSON source, so it needs no tile server. Theatres are
    coloured by level through feature state; labels are HTML laid over the map with a collision pass (highest level wins). */
@@ -15,8 +16,18 @@ import { baseWord, fireWord, fireColour } from './ground'
 maplibregl.setWorkerUrl(workerUrl)   // MapLibre 6 ships its worker as a separate module; Vite copies it next to the app
 const pmtiles = new Protocol(); maplibregl.addProtocol('pmtiles', pmtiles.tile)
 const css = (n: string) => getComputedStyle(document.documentElement).getPropertyValue(n).trim()
-const toFC = (topo: any): FeatureCollection => { const fc = feature(topo, topo.objects.countries) as unknown as FeatureCollection; fc.features = fc.features.filter(f => f.properties?.name !== 'Antarctica'); return fc }
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+/* world-atlas rings jump from 180° to -180° (Russia, Fiji), which the flat map draws as a line across the world: carry them on past 180° instead */
+const unwrap = (ring: number[][]) => { let k = 0; return ring.map((c, i) => { if (i) { const d = c[0] - ring[i - 1][0]; if (d > 180) k -= 360; else if (d < -180) k += 360 } return [c[0] + k, c[1]] }) }
+const toFC = (topo: any): FeatureCollection => {
+  const fc = feature(topo, topo.objects.countries) as unknown as FeatureCollection
+  fc.features = fc.features.filter(f => f.properties?.name !== 'Antarctica')
+  for (const f of fc.features as any[]) {
+    const g = f.geometry; if (!g) continue
+    if (g.type === 'Polygon') g.coordinates = g.coordinates.map(unwrap)
+    else if (g.type === 'MultiPolygon') g.coordinates = g.coordinates.map((p: number[][][]) => p.map(unwrap))
+  }
+  return fc
+}
 export const HOME: LonLat = [42, 24]   // decision 3: the world view is a globe centred on the Middle East
 const RANK: Record<string, number> = { Normal: 0, Watch: 1, Elevated: 2, Critical: 3 }
 
@@ -47,10 +58,10 @@ const dist = (a: LonLat, b: LonLat) => {   // great-circle angle in degrees
   return Math.acos(Math.min(1, Math.sin(p1) * Math.sin(p2) + Math.cos(p1) * Math.cos(p2) * Math.cos(l1 - l2))) / r
 }
 
-type Props = { brief: Brief; live?: LiveMap; route: Route; theme: string; padRight: number; padBottom: number; onPick: (r: Route) => void; flat?: boolean; day?: string | null }
+type Props = { brief: Brief; live?: LiveMap; route: Route; theme: string; padRight: number; padBottom: number; onPick: (r: Route) => void; flat?: boolean; day?: string | null; labels?: number }
 type Peek = { kind: 'base'; x: MapBase } | { kind: 'fire'; x: MapFire } | { kind: 'air'; x: MapAircraft } | { kind: 'ship'; x: MapShip } | { kind: 'warn'; x: MapWarning }
 
-export function MapView({ brief, live, route, theme, padRight, padBottom, onPick, flat = false, day = null }: Props) {
+export function MapView({ brief, live, route, theme, padRight, padBottom, onPick, flat = false, day = null, labels = 1 }: Props) {
   const box = useRef<HTMLDivElement>(null), ov = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
   const [ready, setReady] = useState(false)
@@ -203,19 +214,19 @@ export function MapView({ brief, live, route, theme, padRight, padBottom, onPick
     place()
     m.on('move', place); m.on('resize', place)
     return () => { m.off('move', place); m.off('resize', place) }
-  }, [ready, sel, brief, live, flat, padRight, padBottom])
+  }, [ready, sel, brief, live, flat, padRight, padBottom, labels])
 
   const zoom = (d: number) => map.current?.easeTo({ zoom: map.current.getZoom() + d, duration: reduced() ? 0 : 320 })
 
   return (
     <div className="absolute inset-0 overflow-hidden select-none" style={{ background: 'radial-gradient(1200px 800px at 40% 40%, color-mix(in oklab, var(--accent) 6%, var(--bg)), var(--bg))' }}>
       <div ref={box} style={{ position: 'absolute', inset: 0 }} role="region" aria-label="Map of the watched theatres. Every theatre on it is also listed in the panel." />
-      <div ref={ov} className="pointer-events-none absolute inset-0">
+      <div ref={ov} className="pointer-events-none absolute inset-0" style={{ ['--lbl' as string]: labels }}>
         {brief.theatres.filter(t => t.center).map(t => (
           <button key={t.id} data-kind="theatre" data-id={t.id} data-prio={100 + (RANK[t.level] || 0) * 20 + t.tellsOn * 4 + (t.spillover ? 0 : 2)} data-lon={t.center![0]} data-lat={t.center![1]}
             onClick={() => onPick({ v: 'theatre', id: t.id })} aria-label={`${t.name}, ${t.level === 'Normal' ? 'quiet' : t.level}`}
             className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 transition-opacity duration-300" style={{ opacity: 0 }}>
-            <span className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-[3px] font-[family-name:var(--font-cond)] text-[12px] font-medium backdrop-blur-md transition-colors ${sel === t.id ? 'border-accent bg-accent text-accentink' : 'border-line2 bg-[color-mix(in_oklab,var(--panel)_78%,transparent)] text-fg hover:border-accent'}`}>
+            <span className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-[3px] font-[family-name:var(--font-cond)] text-[calc(12px*var(--lbl))] font-medium backdrop-blur-md transition-colors ${sel === t.id ? 'border-accent bg-accent text-accentink' : 'border-line2 bg-[color-mix(in_oklab,var(--panel)_78%,transparent)] text-fg hover:border-accent'}`}>
               <span className="relative h-1.5 w-1.5 rounded-full" style={{ background: sel === t.id ? 'currentColor' : levelVar(t.level) }} />
               {t.name}
               {t.tellsOn > 0 && <span className="num rounded-full px-1 text-[10.5px] font-semibold" style={{ background: 'color-mix(in oklab, var(--watch) 22%, transparent)', color: sel === t.id ? 'inherit' : 'var(--watch)' }}>{t.tellsOn}</span>}
@@ -223,10 +234,10 @@ export function MapView({ brief, live, route, theme, padRight, padBottom, onPick
           </button>
         ))}
         {(live?.chokepoints || []).map((c, i) => (
-          <span key={'c' + i} data-kind="choke" data-prio={30} data-lon={c.ll[0]} data-lat={c.ll[1]} className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-[family-name:var(--font-cond)] text-[11px] italic text-fg3 transition-opacity" style={{ opacity: 0 }}>{c.name}</span>
+          <span key={'c' + i} data-kind="choke" data-prio={30} data-lon={c.ll[0]} data-lat={c.ll[1]} className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-[family-name:var(--font-cond)] text-[calc(11px*var(--lbl))] italic text-fg3 transition-opacity" style={{ opacity: 0 }}>{c.name}</span>
         ))}
         {(live?.cities || []).map((c, i) => (
-          <span key={'ct' + i} data-kind="city" data-prio={10} data-lon={c.ll[0]} data-lat={c.ll[1]} className="absolute left-0 top-0 flex -translate-y-1/2 items-center gap-1 whitespace-nowrap font-[family-name:var(--font-cond)] text-[11.5px] text-fg2 transition-opacity" style={{ opacity: 0 }}>
+          <span key={'ct' + i} data-kind="city" data-prio={10} data-lon={c.ll[0]} data-lat={c.ll[1]} className="absolute left-0 top-0 flex -translate-y-1/2 items-center gap-1 whitespace-nowrap font-[family-name:var(--font-cond)] text-[calc(11.5px*var(--lbl))] text-fg2 transition-opacity" style={{ opacity: 0 }}>
             <i className="h-[3px] w-[3px] rounded-full bg-fg2" />{c.name}
           </span>
         ))}

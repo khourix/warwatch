@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState, useCallback, lazy, Suspense } from 'react'
-import { motion, AnimatePresence, useDragControls, animate, useMotionValue } from 'motion/react'
+import { motion, AnimatePresence, useDragControls, animate, useMotionValue, MotionConfig } from 'motion/react'
 import { Command } from 'cmdk'
-import { Newspaper, Globe2, Rows3, BadgeCheck, Sun, Moon, Search, MapPin, Activity, Satellite } from 'lucide-react'
+import { Newspaper, Globe2, Rows3, BadgeCheck, Sun, Moon, Search, MapPin, Activity, Satellite, Settings2 } from 'lucide-react'
+import { usePrefs, resolvedTheme, fmtTime, SettingsSheet } from './settings'
 // The map library is most of the download, so it loads after the Brief has painted from its small JSON file.
 const MapView = lazy(() => import('./MapView').then(m => ({ default: m.MapView })))
-import { BriefView, TheatreView, SignalsView, RecordView } from './views'
+import { BriefView, TheatreView } from './views'
+import { SignalsView, SignalView } from './signals'
+import { RecordView } from './record'
 import { BaseView } from './ground'
 import { TimeStrip } from './strip'
 import { Wordmark, Mark, LevelChip, Skeleton, Failed } from './ui'
@@ -15,7 +18,6 @@ function useWide() {
   useEffect(() => { const f = () => setW(innerWidth >= 900); addEventListener('resize', f); return () => removeEventListener('resize', f) }, [])
   return w
 }
-const store = { get: (k: string) => { try { return localStorage.getItem(k) } catch { return null } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v) } catch { /* private mode */ } } }
 
 export default function App() {
   const brief = useBrief(), live = useLiveMap()
@@ -27,7 +29,9 @@ export default function App() {
 function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   const wide = useWide()
   const [route, setRoute] = useState<Route>(() => parseHash(location.hash))
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => (document.documentElement.dataset.theme as 'dark' | 'light') || 'dark')
+  const { prefs, set } = usePrefs()
+  const theme = resolvedTheme(prefs)
+  const [settings, setSettings] = useState(false)
   const [cmd, setCmd] = useState(false)
   const [day, setDay] = useState<string | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -35,7 +39,6 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
 
   const go = useCallback((r: Route) => { if (location.hash !== routeHash(r)) location.hash = routeHash(r); else setRoute(r); panelRef.current?.scrollTo({ top: 0 }) }, [])
   useEffect(() => { const f = () => setRoute(parseHash(location.hash)); addEventListener('hashchange', f); return () => removeEventListener('hashchange', f) }, [])
-  useEffect(() => { document.documentElement.dataset.theme = theme; store.set('ww-theme', theme) }, [theme])
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !(e.target as HTMLElement).closest('input,textarea,select'))) { e.preventDefault(); setCmd(c => !c) }
@@ -45,27 +48,29 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   }, [cmd, route, go])
   useEffect(() => { document.title = route.v === 'theatre' ? `${brief.theatres.find(t => t.id === route.id)?.name || route.id} · WarWatch` : route.v === 'base' ? `${live?.bases.find(b => b.id === route.id)?.name.split(',')[0] || 'Base'} · WarWatch` : 'WarWatch' }, [route, brief, live])
 
-  const toggleTheme = () => { const n = theme === 'dark' ? 'light' : 'dark'; const d = document as any; if (d.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) d.startViewTransition(() => setTheme(n)); else setTheme(n) }
+  const toggleTheme = () => set({ theme: theme === 'dark' ? 'light' : 'dark' })
   const panelOpen = route.v !== 'map'
-  const PANEL = wide ? (route.v === 'signals' ? 600 : 460) : 0
+  const PANEL = wide ? (route.v === 'signals' || route.v === 'signal' ? 600 : 460) : 0
   const view = (
     <AnimatePresence mode="popLayout" initial={false}>
       <motion.div key={JSON.stringify(route)} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: .26, ease: [.22, 1, .36, 1] }}>
         {route.v === 'brief' && <BriefView brief={brief} go={go} />}
         {route.v === 'theatre' && <TheatreView key={route.id} id={route.id} tab={route.tab} brief={brief} live={live} go={go} />}
         {route.v === 'base' && <BaseView key={route.id} id={route.id} brief={brief} go={go} />}
+        {route.v === 'signal' && <SignalView key={route.id} id={route.id} brief={brief} go={go} />}
         {route.v === 'signals' && <SignalsView th={route.th} brief={brief} go={go} />}
         {route.v === 'record' && <RecordView brief={brief} go={go} />}
       </motion.div>
     </AnimatePresence>
   )
   const nav: [Route['v'], string, typeof Newspaper][] = [['brief', 'Brief', Newspaper], ['map', 'Map', Globe2], ['signals', 'Signals', Rows3], ['record', 'Record', BadgeCheck]]
-  const navActive = (k: string) => route.v === k || (k === 'brief' && (route.v === 'theatre' || route.v === 'base'))
+  const navActive = (k: string) => route.v === k || (k === 'brief' && (route.v === 'theatre' || route.v === 'base')) || (k === 'signals' && route.v === 'signal')
 
   return (
+    <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}>
     <div className={`relative h-full overflow-hidden bg-bg text-fg ${wide ? 'ww-wide' : ''}`}>
       <div className="absolute inset-0" style={{ left: wide ? 64 : 0 }}>
-        <Suspense fallback={null}><MapView brief={brief} live={live} route={route} onPick={go} theme={theme} day={day} padRight={wide && panelOpen ? PANEL + 16 : 0} padBottom={wide ? 0 : Math.round(innerHeight * .55)} /></Suspense>
+        <Suspense fallback={null}><MapView brief={brief} live={live} route={route} onPick={go} theme={theme} day={day} flat={prefs.map === 'flat'} labels={prefs.labels} padRight={wide && panelOpen ? PANEL + 16 : 0} padBottom={wide ? 0 : route.v === 'map' ? 200 : Math.round(innerHeight * .55)} /></Suspense>
       </div>
 
       {wide ? <>
@@ -80,6 +85,7 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
           ))}
           <div className="flex-1" />
           <button onClick={toggleTheme} aria-label={theme === 'dark' ? 'Switch to light' : 'Switch to dark'} className="grid h-10 w-10 place-items-center rounded-lg text-fg3 hover:bg-hover hover:text-fg">{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}</button>
+          <button onClick={() => setSettings(true)} aria-label="Settings" className="grid h-10 w-10 place-items-center rounded-lg text-fg3 hover:bg-hover hover:text-fg"><Settings2 size={17} /></button>
         </nav>
         <header className="pointer-events-none absolute left-16 top-0 z-10 flex items-center gap-3 p-4" style={{ right: panelOpen ? PANEL + 16 : 0 }}>
           <div className="pointer-events-auto"><Wordmark /></div>
@@ -88,28 +94,30 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
           </button>
           <div className="flex-1" />
           <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-line bg-panel/80 px-3 py-1.5 text-[12px] text-fg2 backdrop-blur-md" title={`Built ${brief.generated}. The next run is due within 30 minutes.`}>
-            <span className="relative h-1.5 w-1.5 rounded-full bg-accent text-accent live-dot" /><span className="num">Updated {now.toISOString().slice(11, 16)} UTC</span>
+            <span className="relative h-1.5 w-1.5 rounded-full bg-accent text-accent live-dot" /><span className="num">Updated {fmtTime(now, prefs.tz)}</span>
           </div>
         </header>
         <AnimatePresence>
           {panelOpen && (
             <motion.aside key="panel" aria-label="Details" initial={{ x: 40, opacity: 0 }} animate={{ x: 0, opacity: 1, width: PANEL }} exit={{ x: 40, opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 40 }}
               className="absolute bottom-3 right-3 top-3 z-20 overflow-hidden rounded-2xl border border-line bg-panel shadow-[var(--shadow)]">
-              <div ref={panelRef} className="scroll-thin h-full overflow-y-auto overflow-x-hidden">{view}</div>
+              <div ref={panelRef} data-scroll className="scroll-thin h-full overflow-y-auto overflow-x-hidden">{view}</div>
             </motion.aside>
           )}
         </AnimatePresence>
-      </> : <PhoneShell route={route} go={go} nav={nav} navActive={navActive} openCmd={() => setCmd(true)} toggleTheme={toggleTheme} theme={theme} panelRef={panelRef} brief={brief}>{view}</PhoneShell>}
+      </> : <PhoneShell route={route} go={go} nav={nav} navActive={navActive} openCmd={() => setCmd(true)} openSettings={() => setSettings(true)} panelRef={panelRef} brief={brief}>{view}</PhoneShell>}
 
-      <CommandMenu open={cmd} setOpen={setCmd} go={go} toggleTheme={toggleTheme} brief={brief} live={live} />
+      <CommandMenu open={cmd} setOpen={setCmd} go={go} toggleTheme={toggleTheme} openSettings={() => setSettings(true)} brief={brief} live={live} />
+      <SettingsSheet open={settings} onClose={() => setSettings(false)} />
     </div>
+    </MotionConfig>
   )
 }
 
 /* ---------------------------------------------------------------- Phone: map behind, sheet on top */
-function PhoneShell({ route, go, nav, navActive, openCmd, toggleTheme, theme, children, panelRef, brief }: {
-  route: Route; go: (r: Route) => void; nav: [Route['v'], string, typeof Newspaper][]; navActive: (k: string) => boolean; openCmd: () => void; toggleTheme: () => void
-  theme: string; children: React.ReactNode; panelRef: React.RefObject<HTMLDivElement | null>; brief: Brief
+function PhoneShell({ route, go, nav, navActive, openCmd, openSettings, children, panelRef, brief }: {
+  route: Route; go: (r: Route) => void; nav: [Route['v'], string, typeof Newspaper][]; navActive: (k: string) => boolean; openCmd: () => void; openSettings: () => void
+  children: React.ReactNode; panelRef: React.RefObject<HTMLDivElement | null>; brief: Brief
 }) {
   const [H, setH] = useState(innerHeight)
   useEffect(() => { const f = () => setH(innerHeight); addEventListener('resize', f); return () => removeEventListener('resize', f) }, [])
@@ -124,13 +132,13 @@ function PhoneShell({ route, go, nav, navActive, openCmd, toggleTheme, theme, ch
       <header className="absolute inset-x-0 top-0 z-20 flex h-[60px] items-center gap-2 px-4" style={{ background: 'linear-gradient(var(--bg), color-mix(in oklab, var(--bg) 0%, transparent))' }}>
         <Wordmark size={16} /><div className="flex-1" />
         <button onClick={openCmd} aria-label="Search" className="grid h-9 w-9 place-items-center rounded-full border border-line bg-panel/80 backdrop-blur"><Search size={16} /></button>
-        <button onClick={toggleTheme} aria-label={theme === 'dark' ? 'Switch to light' : 'Switch to dark'} className="grid h-9 w-9 place-items-center rounded-full border border-line bg-panel/80 backdrop-blur">{theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}</button>
+        <button onClick={openSettings} aria-label="Settings" className="grid h-9 w-9 place-items-center rounded-full border border-line bg-panel/80 backdrop-blur"><Settings2 size={16} /></button>
       </header>
       <motion.section style={{ y, height: sheetH, top }} drag="y" dragListener={false} dragControls={controls} dragConstraints={{ top: 0, bottom: snaps[2] }} dragElastic={.08}
         onDragEnd={(_, i) => { const p = y.get() + i.velocity.y * .18; let best = 0; snaps.forEach((s, k) => { if (Math.abs(s - p) < Math.abs(snaps[best] - p)) best = k }); snapTo(best) }}
         className="absolute inset-x-0 z-20 flex flex-col overflow-hidden rounded-t-[22px] border border-b-0 border-line bg-panel shadow-[0_-12px_40px_-12px_rgba(0,0,0,.5)]">
         <div onPointerDown={e => controls.start(e)} className="flex shrink-0 cursor-grab touch-none justify-center pb-1 pt-2.5"><i className="h-1 w-10 rounded-full bg-[var(--line-2)]" /></div>
-        <div ref={panelRef} className="scroll-thin min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-6">{route.v === 'map' ? <MapPeek go={go} brief={brief} /> : children}</div>
+        <div ref={panelRef} data-scroll className="scroll-thin min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-6">{route.v === 'map' ? <MapPeek go={go} brief={brief} /> : children}</div>
       </motion.section>
       <nav aria-label="Pages" className="absolute inset-x-0 bottom-0 z-30 flex h-16 border-t border-line bg-panel px-2" style={{ paddingBottom: 'env(safe-area-inset-bottom,0px)' }}>
         {nav.map(([k, label, I]) => (
@@ -149,7 +157,7 @@ function MapPeek({ go, brief }: { go: (r: Route) => void; brief: Brief }) {
 }
 
 /* ---------------------------------------------------------------- ⌘K */
-function CommandMenu({ open, setOpen, go, toggleTheme, brief, live }: { open: boolean; setOpen: (b: boolean) => void; go: (r: Route) => void; toggleTheme: () => void; brief: Brief; live?: LiveMap }) {
+function CommandMenu({ open, setOpen, go, toggleTheme, openSettings, brief, live }: { open: boolean; setOpen: (b: boolean) => void; go: (r: Route) => void; toggleTheme: () => void; openSettings: () => void; brief: Brief; live?: LiveMap }) {
   const sigs = useSignals(open)
   const run = (r: Route) => { setOpen(false); go(r) }
   const region = (id: string) => brief.regions.find(r => r.id === id)?.name || ''
@@ -171,7 +179,7 @@ function CommandMenu({ open, setOpen, go, toggleTheme, brief, live }: { open: bo
                   {live.bases.map(b => <Command.Item key={b.id} value={`${b.name} base ${b.side} ${b.id}`} onSelect={() => run({ v: 'base', id: b.id })} className={item}><Satellite size={15} /><span className="flex-1">{b.name}</span></Command.Item>)}
                 </Command.Group>}
                 {sigs.data && <Command.Group heading="Signals" className={grp}>
-                  {sigs.data.signals.filter(s => s.z != null).slice(0, 400).map(s => <Command.Item key={s.id} value={`${s.label} ${s.sub} ${s.id}`} onSelect={() => run(brief.theatres.some(t => t.id === s.theatre) ? { v: 'theatre', id: s.theatre, tab: 'signals' } : { v: 'signals' })} className={item}><Activity size={15} /><span className="min-w-0 flex-1 truncate">{s.label}</span><span className="num text-[12px] text-fg3">{fmtZ(s.z)}</span></Command.Item>)}
+                  {sigs.data.signals.filter(s => s.z != null).slice(0, 400).map(s => <Command.Item key={s.id} value={`${s.label} ${s.sub} ${s.id}`} onSelect={() => run({ v: 'signal', id: s.id })} className={item}><Activity size={15} /><span className="min-w-0 flex-1 truncate">{s.label}</span><span className="num text-[12px] text-fg3">{fmtZ(s.z)}</span></Command.Item>)}
                 </Command.Group>}
                 {sigs.isPending && <Skeleton lines={2} />}
                 <Command.Group heading="Go to" className={grp}>
@@ -179,6 +187,7 @@ function CommandMenu({ open, setOpen, go, toggleTheme, brief, live }: { open: bo
                   <Command.Item onSelect={() => run({ v: 'signals' })} className={item}><Rows3 size={15} />All signals</Command.Item>
                   <Command.Item onSelect={() => run({ v: 'record' })} className={item}><BadgeCheck size={15} />Track record</Command.Item>
                   <Command.Item onSelect={() => { setOpen(false); toggleTheme() }} className={item}><Sun size={15} />Switch light or dark</Command.Item>
+                  <Command.Item onSelect={() => { setOpen(false); openSettings() }} className={item}><Settings2 size={15} />Settings</Command.Item>
                 </Command.Group>
               </Command.List>
             </Command>

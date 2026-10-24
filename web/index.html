@@ -10,7 +10,7 @@
 <meta name="description" content="Early warning for 17 war theatres, from public signals. Preview of the new WarWatch.">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
-<script>try { var t = localStorage.getItem('ww-theme'); if (t) document.documentElement.dataset.theme = t } catch (e) {}</script>
+<script>try { var t = localStorage.getItem('ww-theme'); if (t === 'system') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; if (t) document.documentElement.dataset.theme = t } catch (e) {}</script>
 </head>
 <body>
 <div id="root"></div>
