@@ -1,5 +1,5 @@
 name: probe
-# Temporary (data-coverage Phase 1): checks live endpoints from a GitHub runner. Removed before the PR.
+# Temporary (data-coverage Phase 1): checks live endpoints and new collectors from a GitHub runner. Removed before the PR.
 on:
   push:
     branches: [claude/project-thread-tuwdsd]
@@ -9,19 +9,17 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - name: Probe APIs
+      - name: Probe
         env:
           GFW_TOKEN: ${{ secrets.GFW_TOKEN }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
-          OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
-          OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 probe/phase1.py
+        run: bash probe/run.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: probe
-          path: probe/*.json
+          path: probe/out

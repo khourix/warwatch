@@ -5,7 +5,8 @@
     python3 backfill/backfill.py firms THEATRE [--start D --end D]
     python3 backfill/backfill.py gfw   THEATRE [--start D --end D]
     python3 backfill/backfill.py nga   [--start D --end D]
-    python3 backfill/backfill.py adsb [theatre,theatre] [--start D --end D --step N]
+    python3 backfill/backfill.py adsb [theatre,theatre] [--start D --end D --step N]   # military counts and civil flights (warwatch/flights.py)
+    python3 backfill/backfill.py flights [--start D --end D]   # civil flights only, for days whose military counts are held
     python3 backfill/backfill.py pla   [--start D --end D]
     python3 backfill/backfill.py wiki  [--start D --end D]     # Wikipedia page views per theatre
     python3 backfill/backfill.py news THEATRE[,THEATRE...] [--start D --end D]   # Google News headline counts per day
@@ -110,6 +111,11 @@ def cmd_merge():
     os.makedirs(out, exist_ok=True)
     for sh in sorted(os.listdir(base)) if os.path.isdir(base) else []:
         d = os.path.join(base, sh)
+        fl = os.path.join(d, "flights")     # monthly tables (diversions, airports): each month is written by one shard only
+        if os.path.isdir(fl):
+            os.makedirs(os.path.join(out, "flights"), exist_ok=True)
+            for f in sorted(os.listdir(fl)):
+                shutil.copyfile(os.path.join(fl, f), os.path.join(out, "flights", f))
         for f in sorted(os.listdir(d)):
             if not f.endswith(".csv"):
                 continue
@@ -143,6 +149,9 @@ def main():
     elif a.cmd == "adsb":
         import sources_adsb as A
         A.cmd_adsb(max(a.start, dt.date(2022, 1, 1)), a.end, a.step, os.environ.get("GITHUB_TOKEN"), [t for t in a.arg.split(",") if t])
+    elif a.cmd == "flights":
+        import sources_adsb as A
+        A.cmd_adsb(max(a.start, dt.date(2022, 1, 1)), a.end, a.step, os.environ.get("GITHUB_TOKEN"), mil=False)
     elif a.cmd == "news":
         import sources_news as N
         N.cmd_news([t for t in a.arg.split(",") if t], a.start, min(a.end, K.YDAY))
