@@ -11,7 +11,7 @@ import { RecordView } from './record'
 import { BaseView } from './ground'
 import { TimeStrip } from './strip'
 import { Wordmark, Mark, LevelChip, Skeleton, Failed } from './ui'
-import { useBrief, useLiveMap, useSignals, parseHash, routeHash, parseGen, levelVar, fmtZ, type Brief, type LiveMap, type Route } from './data'
+import { useBrief, useLiveMap, useSignals, currentRoute, legacyHash, routeHref, parseGen, levelVar, fmtZ, type Brief, type LiveMap, type Route } from './data'
 
 function useWide() {
   const [w, setW] = useState(() => innerWidth >= 900)
@@ -28,7 +28,15 @@ export default function App() {
 
 function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   const wide = useWide()
-  const [route, setRoute] = useState<Route>(() => parseHash(location.hash))
+  /* where the address points; a link from before the switch-over (#iran, #/theatre/iran) moves to its path, an unknown theatre to the Brief */
+  const fromLocation = useCallback((): Route => {
+    const old = legacyHash(location.hash)
+    let r = old || currentRoute()
+    if (r.v === 'theatre' && !brief.theatres.some(t => t.id === (r as { id: string }).id)) r = { v: 'brief' }
+    if (old || new URL(routeHref(r)).pathname !== location.pathname) history.replaceState(null, '', routeHref(r) + location.search)
+    return r
+  }, [brief])
+  const [route, setRoute] = useState<Route>(fromLocation)
   const { prefs, set } = usePrefs()
   const theme = resolvedTheme(prefs)
   const [settings, setSettings] = useState(false)
@@ -37,8 +45,17 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   const panelRef = useRef<HTMLDivElement>(null)
   const now = parseGen(brief.generated)
 
-  const go = useCallback((r: Route) => { if (location.hash !== routeHash(r)) location.hash = routeHash(r); else setRoute(r); panelRef.current?.scrollTo({ top: 0 }) }, [])
-  useEffect(() => { const f = () => setRoute(parseHash(location.hash)); addEventListener('hashchange', f); return () => removeEventListener('hashchange', f) }, [])
+  /* replace: change the address without a new history entry (a theatre's tabs, an unknown theatre) */
+  const go = useCallback((r: Route, replace = false) => {
+    const href = routeHref(r) + location.search
+    if (location.href !== href) history[replace ? 'replaceState' : 'pushState'](null, '', href)
+    setRoute(r); if (!replace) panelRef.current?.scrollTo({ top: 0 })
+  }, [])
+  useEffect(() => {
+    const f = () => setRoute(fromLocation())
+    addEventListener('popstate', f); addEventListener('hashchange', f)
+    return () => { removeEventListener('popstate', f); removeEventListener('hashchange', f) }
+  }, [fromLocation])
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !(e.target as HTMLElement).closest('input,textarea,select'))) { e.preventDefault(); setCmd(c => !c) }
@@ -46,14 +63,15 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
     }
     addEventListener('keydown', k); return () => removeEventListener('keydown', k)
   }, [cmd, route, go])
-  useEffect(() => { document.title = route.v === 'theatre' ? `${brief.theatres.find(t => t.id === route.id)?.name || route.id} · WarWatch` : route.v === 'base' ? `${live?.bases.find(b => b.id === route.id)?.name.split(',')[0] || 'Base'} · WarWatch` : 'WarWatch' }, [route, brief, live])
+  useEffect(() => { document.title = route.v === 'theatre' ? `${brief.theatres.find(t => t.id === route.id)?.name || route.id} · WarWatch` : route.v === 'base' ? `${live?.bases.find(b => b.id === route.id)?.name.split(',')[0] || 'Base'} · WarWatch`
+    : route.v === 'brief' ? 'WarWatch' : `${{ signal: 'Signal', signals: 'Signals', record: 'Track record', map: 'Map' }[route.v]} · WarWatch` }, [route, brief, live])
 
   const toggleTheme = () => set({ theme: theme === 'dark' ? 'light' : 'dark' })
   const panelOpen = route.v !== 'map'
   const PANEL = wide ? (route.v === 'signals' || route.v === 'signal' ? 600 : 460) : 0
   const view = (
     <AnimatePresence mode="popLayout" initial={false}>
-      <motion.div key={JSON.stringify(route)} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: .26, ease: [.22, 1, .36, 1] }}>
+      <motion.div key={route.v === 'theatre' ? 'theatre/' + route.id : JSON.stringify(route)} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: .26, ease: [.22, 1, .36, 1] }}>
         {route.v === 'brief' && <BriefView brief={brief} go={go} />}
         {route.v === 'theatre' && <TheatreView key={route.id} id={route.id} tab={route.tab} brief={brief} live={live} go={go} />}
         {route.v === 'base' && <BaseView key={route.id} id={route.id} brief={brief} go={go} />}

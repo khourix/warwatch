@@ -87,6 +87,18 @@ jobs:
           google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --allow-file-access-from-files --force-device-scale-factor=1 \
             --window-size=1200,630 --screenshot="$PWD/site/og-new.jpg" "file://$PWD/site/og-card.html" \
             && [ -s site/og-new.jpg ] && mv site/og-new.jpg site/og.jpg || echo "share card render failed; keeping the static og.jpg"
+      - name: Theatre share cards (og/<theatre>.jpg; a theatre without one shares og.jpg)
+        continue-on-error: true
+        run: |
+          mkdir -p site/og
+          for f in site/og-card-*.html; do
+            [ -e "$f" ] || continue
+            t=$(basename "$f" .html); t=${t#og-card-}
+            timeout 60 google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --allow-file-access-from-files --force-device-scale-factor=1 \
+              --window-size=1200,630 --screenshot="$PWD/site/og/$t.jpg" "file://$PWD/$f" >/dev/null 2>&1 \
+              || { rm -f "site/og/$t.jpg"; echo "card for $t failed"; }
+          done
+          ls site/og | wc -l
       # Basemap for the new app: OpenStreetMap water, roads and towns cut from the Protomaps world build (zoom 0 to 6),
       # refreshed once a month through the cache. Optional: without it the app draws Natural Earth countries only.
       - id: month
@@ -115,19 +127,20 @@ jobs:
             cd ..
           fi
           ls -la basemap/basemap.pmtiles && cp basemap/basemap.pmtiles site/basemap.pmtiles
-      # The new app (web/, React) is a preview at /warwatch/next/ until the switch-over. It reads site/data/v1 written above.
-      # A failed build leaves it out of this deploy; the main page is never held back by it.
+      # The new app (web/, React) is the page at /warwatch/, with an address per theatre (/warwatch/iran/) and its own share card.
+      # pages.py moves the old page to /warwatch/classic/ until its CLASSIC_UNTIL date. If the build or pages.py fails, site/ stays as
+      # run.py wrote it, so the old page is served at /warwatch/ for that run and nothing is held back.
       - uses: actions/setup-node@v4
         continue-on-error: true
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - name: New app (web/ built into site/next)
+      - name: New app (web/ built, then written to site/ with a page per address)
         continue-on-error: true
         run: |
-          cd web && npm ci --no-audit --no-fund && npm run build
-          rm -rf ../site/next && cp -r dist ../site/next
+          cd web && npm ci --no-audit --no-fund && npm run build && cd ..
+          python3 $WW/pages.py site web/dist
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/

@@ -4,7 +4,7 @@ import tailwind from '@tailwindcss/vite'
 import fs from 'node:fs'
 import path from 'node:path'
 
-// The app reads ../data/v1/ next to it (site/data/v1 in production, written by run.py every 30 minutes).
+// The app reads data/v1/ at the site root (site/data/v1 in production, written by run.py every 30 minutes).
 // In dev, WW_SITE points at a built site folder (python3 warwatch/run.py --demo buildup --out <dir>/index.html) and is served at /.
 function siteData(): Plugin {
   const root = process.env.WW_SITE ? path.resolve(process.env.WW_SITE) : ''

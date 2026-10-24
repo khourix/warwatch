@@ -1587,3 +1587,109 @@ class DataContract(unittest.TestCase):
         self.assertEqual(n, len(self.files))
         with open(os.path.join(out, "data", "v1", "brief.json")) as f:
             self.assertEqual(json.load(f)["kind"], "brief")
+
+
+class TheatreCards(unittest.TestCase):
+    """One share card per theatre (share.py), for the page at /warwatch/<theatre>/."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.data = dashboard.build_data(run.evaluate(demo.scenario("buildup")), "2026-10-24 01:17 UTC", True, None, None)
+
+    def test_headline_words_level_and_tells(self):
+        import share
+        self.assertEqual(share.theatre_headline("Iran", "Normal", 0), "Iran reads quiet. No timing tells fired this week.")
+        self.assertEqual(share.theatre_headline("Yemen", "Elevated", 1), "Yemen reads elevated. One timing tell fired this week.")
+        self.assertEqual(share.theatre_headline("Korea", "Odd", 12), "Korea reads quiet. 12 timing tells fired this week.")
+
+    def test_cards_render_for_every_theatre(self):
+        import share
+        out = tempfile.mkdtemp()
+        n = share.write_cards(out, self.data, None)
+        self.assertEqual(n, len(C.THEATRES))     # the site card plus one per theatre; the global row has none
+        with open(os.path.join(out, "og-card-ukraine.html"), encoding="utf-8") as f:
+            card = f.read()
+        self.assertIn("khourix.github.io/warwatch/ukraine", card)
+        self.assertIn(C.CONTEXT["ukraine"][0], card)
+        self.assertIn("24 Oct 2026 · 01:17 UTC", card)
+
+
+class Pages(unittest.TestCase):
+    """The switch-over (pages.py): the app at the root, a page per address with its own tags, the old page at classic/."""
+
+    @classmethod
+    def setUpClass(cls):
+        import contract
+        cls.data = dashboard.build_data(run.evaluate(demo.scenario("buildup")), "2026-10-24 01:17 UTC", True, demo.extras("buildup"), None)
+        cls.old = dashboard.page_html(cls.data, "2026-10-24 01:17 UTC")
+        cls.files = contract.files(cls.data)
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "web", "index.html"), encoding="utf-8") as f:
+            cls.shell = f.read()
+
+    def _site(self):
+        import contract
+        site, dist = tempfile.mkdtemp(), tempfile.mkdtemp()
+        contract.write(site, self.data)
+        with open(os.path.join(site, "index.html"), "w", encoding="utf-8") as f:
+            f.write(self.old)
+        os.makedirs(os.path.join(dist, "assets"))
+        with open(os.path.join(dist, "index.html"), "w", encoding="utf-8") as f:
+            f.write(self.shell.replace("</body>", '<div id="root"></div></body>') if 'id="root"' not in self.shell else self.shell)
+        with open(os.path.join(dist, "assets", "app.js"), "w") as f:
+            f.write("//")
+        return site, dist
+
+    def _read(self, *p):
+        with open(os.path.join(*p), encoding="utf-8") as f:
+            return f.read()
+
+    def test_switch_over_writes_every_address(self):
+        import pages
+        site, dist = self._site()
+        os.makedirs(os.path.join(site, "og"))
+        open(os.path.join(site, "og", "yemen.jpg"), "wb").close()     # the workflow drew Yemen's card, not Iran's
+        n = pages.build(site, dist, today=dt.date(2026, 11, 1))
+        root = self._read(site, "index.html")
+        self.assertIn('id="root"', root)
+        self.assertIn('<base href="/warwatch/">', root)
+        self.assertIn('<meta property="og:url" content="https://khourix.github.io/warwatch/">', root)
+        self.assertIn('og.jpg?v=202610240117"', root)
+        self.assertNotIn('noindex', root)
+        yemen = self._read(site, "yemen", "index.html")
+        self.assertIn("<title>Yemen · WarWatch</title>", yemen)
+        self.assertIn('content="https://khourix.github.io/warwatch/og/yemen.jpg?v=202610240117"', yemen)
+        self.assertIn('<link rel="canonical" href="https://khourix.github.io/warwatch/yemen/">', yemen)
+        self.assertIn('content="https://khourix.github.io/warwatch/og.jpg?v=202610240117"', self._read(site, "iran", "index.html"))
+        self.assertIn(C.CONTEXT["ukraine"][0] + ". Ukraine reads", self._read(site, "ukraine", "index.html"))
+        for path in ("signals", "record", "map"):
+            self.assertIn('<base href="/warwatch/">', self._read(site, path, "index.html"))
+        bases = [b for b in self.files["map/live.json"]["bases"]]
+        if bases:
+            self.assertIn("· WarWatch</title>", self._read(site, "base", bases[0]["id"], "index.html"))
+        self.assertIn('<meta name="robots" content="noindex">', self._read(site, "404.html"))
+        self.assertIn("location.replace('../' + location.hash)", self._read(site, "next", "index.html"))
+        self.assertTrue(os.path.exists(os.path.join(site, "assets", "app.js")))
+        old = self._read(site, "classic", "index.html")
+        self.assertIn('<base href="../">', old)
+        self.assertIn("It stays here until 7 Dec 2026", old)
+        self.assertEqual(old.count("__DATA__"), 0)
+        self.assertEqual(n, len(C.THEATRES) - 1 + len(bases) + 4 + 3)
+        with self.assertRaises(ValueError):     # a second run on the same site/ would move the app to classic/
+            pages.build(site, dist)
+
+    def test_old_page_is_dropped_after_its_date(self):
+        import pages
+        site, dist = self._site()
+        pages.build(site, dist, today=dt.date(2026, 12, 8))
+        self.assertFalse(os.path.exists(os.path.join(site, "classic")))
+        self.assertIn('id="root"', self._read(site, "index.html"))
+
+    def test_a_broken_shell_leaves_the_site_alone(self):
+        import pages
+        site, dist = self._site()
+        with open(os.path.join(dist, "index.html"), "w") as f:
+            f.write("<html><head></head><body></body></html>")
+        with self.assertRaises(ValueError):
+            pages.build(site, dist)
+        self.assertEqual(self._read(site, "index.html"), self.old)
+        self.assertFalse(os.path.exists(os.path.join(site, "iran")))

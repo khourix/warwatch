@@ -60,8 +60,10 @@ export const GROUP_HINT: Record<Group, string> = {
   Physical: 'Aircraft, ships, fires, bases, jamming. Hours.',
 }
 
-/* The files sit next to the app: /warwatch/data/v1/ for /warwatch/next/. The run stamp busts caches between runs. */
-const DATA = new URL('../data/v1/', document.baseURI).href
+/* The app is served from the site root (/warwatch/). Every page the build writes (/warwatch/iran/, the 404 page) carries
+   <base href> pointing there, so data, images and routes resolve from the root at any path. Without one (dev), the root is /. */
+export const ROOT = document.querySelector('base') ? document.baseURI : new URL('/', location.href).href
+const DATA = new URL('data/v1/', ROOT).href
 async function get<T>(rel: string): Promise<T> {
   const r = await fetch(DATA + rel, { cache: 'no-cache' })
   if (!r.ok) throw new Error(`${rel}: HTTP ${r.status}`)
@@ -76,8 +78,8 @@ export type SeriesFile = { generated: string; id: string; points: [string, numbe
 export const useSeries = (id: string) => useQuery({ queryKey: ['series', id], queryFn: () => get<SeriesFile>(`signals/series/${id}.json`) })
 export const useRecord = () => useQuery({ queryKey: ['record'], queryFn: () => get<RecordFile>('record.json') })
 
-/* Images and tiles sit at the site root, beside the old page: img/bases/…, basemap.pmtiles */
-export const asset = (src: string) => new URL('../' + src, document.baseURI).href
+/* Images and tiles sit at the site root: img/bases/…, basemap.pmtiles */
+export const asset = (src: string) => new URL(src, ROOT).href
 
 /* Base states as basewatch.py writes them */
 export const BASE_STATE: Record<string, [string, string]> = {
@@ -108,15 +110,40 @@ export function summary(t: Theatre): string {
   return parts.join(' ')
 }
 
-/* Hash routes for now (#/theatre/iran); PR 6 moves to real paths so each theatre can carry its own share card. */
-export function parseHash(h: string): Route {
-  const p = h.replace(/^#\/?/, '').split('/').filter(Boolean)
-  if (p[0] === 'theatre' && p[1]) return { v: 'theatre', id: p[1], tab: p[2] }
+/* Routes are real paths under the root, so each theatre can carry its own share card: /warwatch/iran/, /warwatch/iran/ground/,
+   /warwatch/base/<id>/, /warwatch/signal/<id>/, /warwatch/signals/, /warwatch/record/, /warwatch/map/. */
+const VIEWS = ['base', 'signal', 'signals', 'record', 'map']
+export function parsePath(rel: string): Route {
+  const p = rel.split(/[?#]/)[0].split('/').filter(x => x && x !== 'index.html').map(decodeURIComponent)
   if (p[0] === 'base' && p[1]) return { v: 'base', id: p[1] }
-  if (p[0] === 'signal' && p[1]) return { v: 'signal', id: decodeURIComponent(p[1]) }
+  if (p[0] === 'signal' && p[1]) return { v: 'signal', id: p[1] }
   if (p[0] === 'signals') return { v: 'signals', th: p[1] }
   if (p[0] === 'record') return { v: 'record' }
   if (p[0] === 'map') return { v: 'map' }
+  if (p[0] && !VIEWS.includes(p[0])) return { v: 'theatre', id: p[0], tab: p[1] }
   return { v: 'brief' }
 }
-export const routeHash = (r: Route) => r.v === 'brief' ? '#/' : r.v === 'theatre' ? `#/theatre/${r.id}${r.tab ? '/' + r.tab : ''}` : r.v === 'base' ? `#/base/${r.id}` : r.v === 'signal' ? `#/signal/${encodeURIComponent(r.id)}` : r.v === 'signals' ? `#/signals${r.th ? '/' + r.th : ''}` : `#/${r.v}`
+export const routePath = (r: Route) => r.v === 'brief' ? '' : r.v === 'theatre' ? `${r.id}/${r.tab && r.tab !== 'now' ? r.tab + '/' : ''}`
+  : r.v === 'base' || r.v === 'signal' ? `${r.v}/${encodeURIComponent(r.id)}/` : r.v === 'signals' ? `signals/${r.th ? r.th + '/' : ''}` : `${r.v}/`
+export const routeHref = (r: Route) => new URL(routePath(r), ROOT).href
+export function currentRoute(): Route {
+  const root = new URL(ROOT).pathname, path = location.pathname
+  return parsePath(path.startsWith(root) ? path.slice(root.length) : '')
+}
+
+/* Links from before the switch-over still work: the preview's #/theatre/iran/now and the old page's #iran/signals, #signals?q=…, #record */
+export function legacyHash(h: string): Route | null {
+  const raw = decodeURIComponent(h.replace(/^#/, ''))
+  if (!raw) return null
+  if (raw.startsWith('/')) {
+    const p = raw.split('/').filter(Boolean)
+    return p[0] === 'theatre' && p[1] ? { v: 'theatre', id: p[1], tab: p[2] } : parsePath(p.join('/'))
+  }
+  const [a, b] = raw.split('?')[0].split('/')
+  if (a === 'overview' || a === 'region') return { v: 'brief' }
+  if (a === 'signals') return { v: 'signals' }
+  if (a === 'activity' || a === 'assets') return { v: 'map' }
+  if (a === 'record' || a === 'settings' || a === 'system') return { v: 'record' }
+  if (/^[a-z_]+$/.test(a)) return { v: 'theatre', id: a, tab: b === 'signals' || b === 'markets' ? 'signals' : b === 'history' || b === 'alerts' ? 'history' : undefined }
+  return null
+}
