@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 /* The data contract (warwatch/contract.py, schema warwatch/v1). Positions are [lon, lat]. */
 export type Level = 'Normal' | 'Watch' | 'Elevated' | 'Critical'
 export type LonLat = [number, number]
-export type Route = { v: 'brief' } | { v: 'theatre'; id: string; tab?: string } | { v: 'base'; id: string } | { v: 'signals'; th?: string } | { v: 'record' } | { v: 'map' }
+export type Route = { v: 'brief' } | { v: 'theatre'; id: string; tab?: string } | { v: 'base'; id: string } | { v: 'signal'; id: string } | { v: 'signals'; th?: string } | { v: 'record' } | { v: 'map' }
 export type FeedItem = { date: string; kind: 'tell' | 'base' | 'fire' | 'official'; theatre: string; title: string; detail: string; to: { view: string; id: string; tab?: string } }
 export type BriefTheatre = {
   id: string; name: string; region: string; level: Level; score: number | null; standingRisk: number | null; tellsOn: number; tellsTotal: number; strong: number
@@ -48,7 +48,7 @@ export type LiveMap = {
   bases: MapBase[]; fires: MapFire[]; aircraft: MapAircraft[]; squawks: MapAircraft[]; ships: MapShip[]; warnings: MapWarning[]; incidents: MapIncident[]; cities: { ll: LonLat; name: string; theatre: string }[]; chokepoints: { ll: LonLat; name: string; theatre: string }[]
 }
 export type Forward = { k: string; name: string; first: string; logged: number; days: number; need: number; through: string; ready: boolean; pass: boolean }
-export type RecordFile = { generated: string; forward: Forward[] | null; model: { v: string; fitted: string; active: boolean; gates: Gates } | null; health: { statuses: Record<string, number> } }
+export type RecordFile = { generated: string; forward: Forward[] | null; model: { v: string; fitted: string; active: boolean; gates: Gates } | null; health: { statuses: Record<string, number>; errors: unknown[]; unavailable: { n: string; w: string }[]; updates: { s: string; e: string; l: string }[] } }
 
 export const GROUPS = ['Logistics', 'Markets', 'People', 'News', 'Physical'] as const
 export type Group = (typeof GROUPS)[number]
@@ -72,6 +72,8 @@ export const useTheatre = (id: string) => useQuery({ queryKey: ['theatre', id], 
 export const useSignals = (on = true) => useQuery({ queryKey: ['signals'], queryFn: () => get<Signals>('signals/index.json'), enabled: on })
 export const useLiveMap = () => useQuery({ queryKey: ['map'], queryFn: () => get<LiveMap>('map/live.json') })
 export const useBase = (id: string) => useQuery({ queryKey: ['base', id], queryFn: () => get<BaseFile>(`bases/${id}.json`) })
+export type SeriesFile = { generated: string; id: string; points: [string, number | null][]; zHistory: [string, number | null][] }
+export const useSeries = (id: string) => useQuery({ queryKey: ['series', id], queryFn: () => get<SeriesFile>(`signals/series/${id}.json`) })
 export const useRecord = () => useQuery({ queryKey: ['record'], queryFn: () => get<RecordFile>('record.json') })
 
 /* Images and tiles sit at the site root, beside the old page: img/bases/…, basemap.pmtiles */
@@ -111,9 +113,10 @@ export function parseHash(h: string): Route {
   const p = h.replace(/^#\/?/, '').split('/').filter(Boolean)
   if (p[0] === 'theatre' && p[1]) return { v: 'theatre', id: p[1], tab: p[2] }
   if (p[0] === 'base' && p[1]) return { v: 'base', id: p[1] }
+  if (p[0] === 'signal' && p[1]) return { v: 'signal', id: decodeURIComponent(p[1]) }
   if (p[0] === 'signals') return { v: 'signals', th: p[1] }
   if (p[0] === 'record') return { v: 'record' }
   if (p[0] === 'map') return { v: 'map' }
   return { v: 'brief' }
 }
-export const routeHash = (r: Route) => r.v === 'brief' ? '#/' : r.v === 'theatre' ? `#/theatre/${r.id}${r.tab ? '/' + r.tab : ''}` : r.v === 'base' ? `#/base/${r.id}` : r.v === 'signals' ? `#/signals${r.th ? '/' + r.th : ''}` : `#/${r.v}`
+export const routeHash = (r: Route) => r.v === 'brief' ? '#/' : r.v === 'theatre' ? `#/theatre/${r.id}${r.tab ? '/' + r.tab : ''}` : r.v === 'base' ? `#/base/${r.id}` : r.v === 'signal' ? `#/signal/${encodeURIComponent(r.id)}` : r.v === 'signals' ? `#/signals${r.th ? '/' + r.th : ''}` : `#/${r.v}`

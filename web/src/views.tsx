@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import NumberFlow from '@number-flow/react'
-import { ArrowLeft, ChevronRight, Satellite, Flame, ShieldAlert, FileText, Search, Check, X, Info } from 'lucide-react'
-import { GROUPS, GROUP_HINT, useTheatre, useSignals, useRecord, summary, levelVar, fmtZ, shortDate, ago, parseGen, type Brief, type LiveMap, type Route, type Signal, type FeedItem } from './data'
+import { ArrowLeft, ChevronRight, Satellite, Flame, ShieldAlert, FileText, Check, Info } from 'lucide-react'
+import { GROUPS, GROUP_HINT, useTheatre, useSignals, summary, levelVar, fmtZ, shortDate, ago, parseGen, type Brief, type LiveMap, type Route, type Signal, type FeedItem } from './data'
 import { GroundTab } from './ground'
+import { usePrefs, fmtTime } from './settings'
 import { LevelChip, TellDots, Spark, Strip, Section, Tabs, Skeleton, Failed, listAnim } from './ui'
 
 type Go = (r: Route) => void
@@ -22,13 +23,14 @@ function Header({ back, crumbs, go }: { back?: Route; crumbs: [string, Route?][]
 /* ---------------------------------------------------------------- Brief */
 export function BriefView({ brief, go }: { brief: Brief; go: Go }) {
   const now = parseGen(brief.generated)
+  const { prefs } = usePrefs()
   const name = (id: string) => brief.theatres.find(t => t.id === id)?.name || id
   const week = brief.feed.filter(f => (now.getTime() - new Date(f.date.slice(0, 10) + 'T12:00Z').getTime()) / 864e5 <= 7.5)
   const byId = Object.fromEntries(brief.theatres.map(t => [t.id, t]))
   return (
     <div>
       <div className="px-5 pb-4 pt-5">
-        <div className="eyebrow mb-2 flex items-center gap-2"><span className="relative h-1.5 w-1.5 rounded-full bg-accent text-accent live-dot" />Brief · {now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })}, {now.toISOString().slice(11, 16)} UTC{brief.demo && <span className="rounded bg-crit/20 px-1 text-crit">demo data</span>}</div>
+        <div className="eyebrow mb-2 flex items-center gap-2"><span className="relative h-1.5 w-1.5 rounded-full bg-accent text-accent live-dot" />Brief · {now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: prefs.tz === 'utc' ? 'UTC' : undefined })}, {fmtTime(now, prefs.tz)}{brief.demo && <span className="rounded bg-crit/20 px-1 text-crit">demo data</span>}</div>
         <p className="font-[family-name:var(--font-serif)] text-[21px] leading-[1.32] tracking-[-0.005em] text-fg [text-wrap:pretty]">{brief.headline}</p>
         <div className="mt-4 grid grid-cols-3 overflow-hidden rounded-xl border border-line">
           {([[brief.counts.tells, 'timing tells', 'fired this week', 'var(--watch)'], [brief.counts.bases, 'bases changed', 'on satellite radar', 'var(--elev)'], [brief.counts.strong, 'strong readings', '3 SD or more', 'var(--fg)']] as const).map(([n, a, b, c], i) => (
@@ -152,7 +154,7 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
           </>}
           {sub === 'ground' && <GroundTab id={id} live={live} brief={brief} go={go} />}
           {sub === 'signals' && <Section title="Signals, most unusual first" aside={<button onClick={() => go({ v: 'signals', th: t.id })} className="text-accent hover:underline">Open in Signals</button>}>
-            {sigQ.isPending ? <Skeleton lines={8} /> : sigs.slice(0, 30).map((s, i) => <SignalRow key={s.id} s={s} i={i} />)}
+            {sigQ.isPending ? <Skeleton lines={8} /> : sigs.slice(0, 30).map((s, i) => <SignalRow key={s.id} s={s} i={i} go={go} />)}
           </Section>}
           {sub === 'history' && <Section title="Past events in this theatre" aside={`Complete to ${shortDate(brief.eventsThrough)}`}>
             {t.events.length === 0 && <p className="text-[13px] text-fg3">No labelled event in this theatre since 2018.</p>}
@@ -177,76 +179,13 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
 }
 
 /* ---------------------------------------------------------------- Signals */
-function SignalRow({ s, i }: { s: Signal; i: number }) {
+function SignalRow({ s, i, go }: { s: Signal; i: number; go: Go }) {
   const z = s.z ?? 0
   return (
-    <motion.div {...listAnim(i)} className="grid grid-cols-[1fr_auto_52px] items-center gap-3 border-b border-line py-2 last:border-0">
+    <motion.button {...listAnim(i)} onClick={() => go({ v: 'signal', id: s.id })} className="-mx-2 grid w-[calc(100%+16px)] grid-cols-[1fr_auto_52px] items-center gap-3 rounded-md border-b border-line px-2 py-2 text-left last:border-0 hover:bg-hover">
       <div className="min-w-0"><div className="truncate text-[13px] text-fg" title={s.label}>{s.label}</div><div className="truncate text-[11.5px] text-fg3">{s.group} · {s.sub} · {s.lagging ? 'confirms' : 'leads'}{s.stale ? ' · last good copy' : ''}</div></div>
       <Spark v={s.spark} w={76} h={22} stroke={Math.abs(z) >= 2 ? 'var(--watch)' : 'var(--fg-3)'} fill={false} />
       <span className="num text-right text-[12.5px]" style={{ color: Math.abs(z) >= 3 ? 'var(--elev)' : Math.abs(z) >= 2 ? 'var(--watch)' : 'var(--fg-2)' }}>{fmtZ(s.z)}</span>
-    </motion.div>
-  )
-}
-export function SignalsView({ th, brief, go }: { th?: string; brief: Brief; go: Go }) {
-  const sq = useSignals()
-  const [q, setQ] = useState(''), [g, setG] = useState<string>('All'), [t, setT] = useState(th || 'all'), [only, setOnly] = useState(false)
-  const all = sq.data?.signals || []
-  const list = useMemo(() => all.filter(s => (g === 'All' || s.group === g) && (t === 'all' || s.theatre === t) && (!only || Math.abs(s.z ?? 0) >= 2) && (!q || (s.label + ' ' + s.sub + ' ' + s.id).toLowerCase().includes(q.toLowerCase())))
-    .sort((a, b) => Math.abs(b.z ?? -1) - Math.abs(a.z ?? -1)), [all, q, g, t, only])
-  return (
-    <div>
-      <Header back={{ v: 'brief' }} crumbs={[['Brief', { v: 'brief' }], ['Signals']]} go={go} />
-      <div className="px-5 pt-3">
-        <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Signals</h1>
-        <p className="mt-1 text-[13px] text-fg3"><span className="num">{sq.data?.signals.length ?? brief.counts.signals}</span> public series, each scored against its own history.</p>
-        <label className="mt-3 flex items-center gap-2 rounded-lg border border-line bg-raised px-2.5 py-2 focus-within:border-accent"><Search size={14} className="text-fg3" /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search name or source" aria-label="Search signals" className="w-full bg-transparent text-[13.5px] outline-none placeholder:text-fg3" /></label>
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {['All', ...GROUPS].map(x => <button key={x} onClick={() => setG(x)} aria-pressed={g === x} className={`rounded-full border px-2.5 py-1 text-[12px] ${g === x ? 'border-accent bg-accentsoft text-fg' : 'border-line text-fg2 hover:border-line2'}`}>{x}</button>)}
-          <button onClick={() => setOnly(!only)} aria-pressed={only} className={`rounded-full border px-2.5 py-1 text-[12px] ${only ? 'border-watch text-watch' : 'border-line text-fg2'}`}>Unusual only</button>
-          <select value={t} onChange={e => setT(e.target.value)} aria-label="Theatre" className="rounded-full border border-line bg-panel px-2 py-1 text-[12px] text-fg2"><option value="all">All theatres</option>{brief.theatres.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}<option value="global">Global markets</option></select>
-        </div>
-        <div className="num mt-3 text-[12px] text-fg3">{sq.isPending ? 'Loading…' : `${list.length} shown`}</div>
-      </div>
-      {sq.isError ? <Failed what="the signals" error={sq.error} /> : <div className="px-5 pb-6">{list.slice(0, 120).map((s, i) => <SignalRow key={s.id} s={s} i={i} />)}</div>}
-    </div>
-  )
-}
-
-/* ---------------------------------------------------------------- Record */
-export function RecordView({ brief, go }: { brief: Brief; go: Go }) {
-  const rq = useRecord()
-  const g = brief.model.gates
-  const rows: [string, string, boolean][] = g ? [
-    ['Ranks past theatre-months better than a coin flip', `AUC ${g.auc.toFixed(2)} (${g.auc_lo.toFixed(2)} to ${g.auc_hi.toFixed(2)})`, g.auc_lo_above_half],
-    ["Beats each theatre's usual rate", `Brier skill ${g.bss >= 0 ? '+' : ''}${g.bss.toFixed(3)}`, g.bss_positive],
-    ['Beats the same signals with timing shuffled', `p ${g.shuffle_p_auc.toFixed(2)}, needs below 0.05`, g.beats_shuffled],
-  ] : []
-  return (
-    <div>
-      <Header back={{ v: 'brief' }} crumbs={[['Brief', { v: 'brief' }], ['Record']]} go={go} />
-      <div className="px-5 pt-3">
-        <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Track record</h1>
-        <p className="mt-2 font-[family-name:var(--font-serif)] text-[16.5px] leading-[1.45]">Every day WarWatch logs its chance for every theatre before anything happens, in a hash-chained record that nobody can edit later. Until the model passes all three checks, it runs in shadow.</p>
-      </div>
-      {g && <Section title={`Model v${brief.model.version}, refitted ${shortDate(brief.model.fitted)}`} aside={g.pass ? 'Live' : 'In shadow'}>
-        {rows.map(([a, b, ok], i) => (
-          <motion.div key={i} {...listAnim(i)} className="flex items-start gap-3 py-2">
-            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full" style={{ background: ok ? 'color-mix(in oklab, var(--accent) 18%, transparent)' : 'color-mix(in oklab, var(--crit) 16%, transparent)', color: ok ? 'var(--accent)' : 'var(--crit)' }} aria-label={ok ? 'passes' : 'fails'}>{ok ? <Check size={12} strokeWidth={3} /> : <X size={12} strokeWidth={3} />}</span>
-            <span className="flex-1 text-[13px]">{a}<span className="num block text-[12px] text-fg3">{b}</span></span>
-          </motion.div>
-        ))}
-      </Section>}
-      <Section title="Forecasts logged before the fact" aside="90 scored days to judge">
-        {rq.isPending && <Skeleton lines={4} />}
-        {(rq.data?.forward || []).map((f, i) => (
-          <div key={i} className="py-2.5">
-            <div className="flex justify-between gap-3 text-[13px]"><span>{f.name}</span><span className="num shrink-0 text-fg3">{f.days} / {f.need}</span></div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--line)]"><motion.i className="block h-full rounded-full bg-accent" initial={{ width: 0 }} animate={{ width: `${Math.max(2, f.days / f.need * 100)}%` }} transition={{ duration: .9, ease: [.22, 1, .36, 1] }} /></div>
-            <div className="mt-1.5 text-[11.5px] text-fg3">Logged since {shortDate(f.first)} · outcomes known to {shortDate(f.through)}</div>
-          </div>
-        ))}
-      </Section>
-      <div className="mx-5 mb-6 rounded-xl border border-line bg-raised px-3.5 py-3 text-[12.5px] leading-relaxed text-fg2">Events are complete to {shortDate(brief.eventsThrough)}. Forecasts after that date are scored once the event list catches up.</div>
-    </div>
+    </motion.button>
   )
 }
