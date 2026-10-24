@@ -19,8 +19,8 @@ ali_al_salem,apron,2026-10-23,2026-10-17,20,3,2
 ali_al_salem,ground,2026-10-23,2026-10-17,258,45,43
 amari,apron,2026-10-20,2026-10-14,4,0,2
 amari,ground,2026-10-20,2026-10-14,64,10,28
-ambala,apron,2026-10-19,2026-09-25,10,4,2
-ambala,ground,2026-10-19,2026-09-25,70,29,22
+ambala,apron,2026-10-23,2026-10-11,10,2,7
+ambala,ground,2026-10-23,2026-10-11,73,25,56
 andersen,apron,2026-10-17,2026-10-05,4,1,3
 andersen,ground,2026-10-17,2026-10-05,1552,1221,731
 assab,apron,2026-10-23,2026-10-17,1,0,0
@@ -139,9 +139,9 @@ kulbakino,apron,2026-10-20,2026-10-14,10,0,1
 kulbakino,ground,2026-10-20,2026-10-14,65,20,3
 kunsan,apron,2026-10-18,2026-10-06,12,9,0
 kunsan,ground,2026-10-18,2026-10-06,226,103,65
-la_carlota,apron,2026-10-23,2026-10-17,16,10,7
-la_carlota,ground,2026-10-23,2026-10-17,33,24,25
-la_carlota,harbour,2026-10-23,2026-10-17,2,1,1
+la_carlota,apron,2026-10-23,2026-10-11,8,0,6
+la_carlota,ground,2026-10-23,2026-10-11,41,20,26
+la_carlota,harbour,2026-10-23,2026-10-11,1,0,2
 lemonnier,apron,2026-10-23,2026-10-17,5,1,0
 lemonnier,ground,2026-10-23,2026-10-17,28,7,4
 lemonnier,harbour,2026-10-23,2026-10-17,2,0,0
@@ -192,8 +192,8 @@ osan,apron,2026-10-18,2026-09-24,12,3,0
 osan,ground,2026-10-18,2026-09-24,313,167,165
 palmachim,apron,2026-10-16,2026-10-10,0,0,0
 palmachim,ground,2026-10-16,2026-10-10,267,61,57
-pathankot,apron,2026-10-12,2026-09-30,5,2,5
-pathankot,ground,2026-10-12,2026-09-30,167,82,52
+pathankot,apron,2026-10-23,2026-10-11,0,0,0
+pathankot,ground,2026-10-23,2026-10-11,105,39,69
 pk_akro_garrison,ground,2026-10-15,2026-10-03,51,13,16
 pk_gujranwala_garrison,ground,2026-10-17,2026-10-05,103,58,40
 pk_khuzdar_garrison,ground,2026-10-20,2026-10-08,186,39,83
@@ -204,8 +204,8 @@ port_sudan,harbour,2026-10-19,2026-10-13,170,63,84
 powidz,apron,2026-10-23,2026-10-17,11,3,5
 powidz,ground,2026-10-23,2026-10-17,126,54,16
 prince_sultan,apron,2026-10-14,2026-10-02,44,8,5
-puerto_cabello,ground,2026-10-23,2026-10-17,59,52,45
-puerto_cabello,harbour,2026-10-23,2026-10-17,24,18,25
+puerto_cabello,ground,2026-10-23,2026-10-11,70,41,28
+puerto_cabello,harbour,2026-10-23,2026-10-11,29,7,6
 ramat_david,apron,2026-10-23,2026-10-17,1,1,2
 ramat_david,ground,2026-10-23,2026-10-17,115,97,91
 ramon,apron,2026-10-23,2026-10-17,0,0,1
