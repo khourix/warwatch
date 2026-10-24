@@ -1434,7 +1434,7 @@ class TestEngine(unittest.TestCase):
                "points": [], "score": {"z": 5.0}, "scored": False}
         self.assertEqual(engine.theatre_items([row], "iran"), [])
         zero = [s["id"] for s in catalog.SERIES if not s["scored"]]
-        self.assertTrue(zero and all(i.startswith(catalog.ZERO_WEIGHT + catalog.TELL_ONLY) for i in zero))
+        self.assertTrue(zero and all(i.startswith(catalog.ZERO_WEIGHT + catalog.TELL_ONLY + catalog.NOT_TESTED) for i in zero))
         self.assertTrue(any(i.startswith("ooni_") for i in zero))
 
     def test_levels_do_not_depend_on_the_day_s_other_readings(self):

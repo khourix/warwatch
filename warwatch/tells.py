@@ -144,7 +144,7 @@ TELLS = [
     {"id": "bizjets", "name": "Business jets fly out",
      "series": ["bizjet_out_{t}"], "rule": lambda p, d: surge(p, d, 2, 5),
      "says": "Business jets leaving the theatre for other countries averaged at least 5 a day for 3 days, double the usual count or more.",
-     "cases": "Private jets streamed out of Moscow in the days before 24 February 2022.",
+     "cases": "About twenty private and charter jets left Kyiv on 13 February 2022, eleven days before the invasion.",
      "note": "Not tested yet: counted from the adsb.lol daily archive, one day behind (docs/FLIGHTS.md)."},
     {"id": "dark", "name": "Ships go dark",
      "series": ["darkshare_{t}"], "rule": lambda p, d: surge(p, d, 1.5, 30, recent=1, base=90, need=10),

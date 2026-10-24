@@ -94,7 +94,13 @@ def extras(name):
     loiter = [{"lat": 25.62, "lon": 55.91, "d": day + "T03:10", "th": "iran", "n": "OCEAN STAR", "flag": "PAN", "k": "carrier", "h": 31}]
     ships = [{"n": "HDMS ESBERN SNARE", "k": "navy", "loc": "55.62, 12.71", "lat": 55.62, "lon": 12.71, "g": "Military ship (AIS)", "flag": "Denmark",
               "dest": "", "spd": 11.2, "d": "live", "th": "europe_east", "note": "Demo ship.", "tr": [[55.30, 12.40], [55.45, 12.55], [55.62, 12.71]]}]
-    return {"fires": fires, "bases": demo_bases(), "air": air, "div": div, "dark": dark, "loiter": loiter, "ships": ships}
+    mil = [{"lat": 33.10, "lon": 43.20, "cls": "tanker", "call": "QID41", "t": "K35R", "trk": 120, "hex": "ae04c5", "th": "iraq",
+            "o": "US Air Force", "ct": "United States", "d": "Boeing KC-135R Stratotanker (aerial tanker)", "r": "62-3519", "alt": 28000,
+            "gs": 455, "sq": "", "em": False, "rt": "heading towards Al Udeid AB, Qatar, about 490 nm ahead (inferred from track, not a flight plan)"},
+           {"lat": 43.60, "lon": 33.40, "cls": "uav", "call": "FORTE12", "t": "Q4", "trk": 75, "hex": "ae5420", "th": "ukraine",
+            "o": "US Air Force", "ct": "United States", "d": "Northrop Grumman RQ-4 Global Hawk (drone)", "r": "", "alt": 52000,
+            "gs": 330, "sq": "", "em": False, "rt": ""}]
+    return {"fires": fires, "bases": demo_bases(), "mil": mil, "air": air, "div": div, "dark": dark, "loiter": loiter, "ships": ships}
 
 
 def demo_bases():

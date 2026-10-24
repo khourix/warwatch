@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import { Protocol, PMTiles } from 'pmtiles'
 import { X, Flame, Plane, Ship, TriangleAlert, Satellite, ExternalLink, ImageIcon, Maximize2, PlaneLanding, Radar, Anchor } from 'lucide-react'
@@ -65,6 +65,17 @@ type Peek = { kind: 'base'; x: MapBase } | { kind: 'fire'; x: MapFire } | { kind
 const PICKABLE = ['aircraft-cluster', 'bases', 'fires', 'aircraft', 'ships', 'warnings', 'diversions', 'airports', 'loitering', 'dark'] as const
 const PEEK_KIND: Record<string, Peek['kind']> = { bases: 'base', fires: 'fire', aircraft: 'air', ships: 'ship', warnings: 'warn', airports: 'airport', diversions: 'divert', dark: 'dark', loitering: 'loiter' }
 const BONUS: Record<string, number> = { bases: 4, fires: 3, diversions: 3, 'aircraft-cluster': 0, dark: -2 }   // px: on a tie, a base or a fire wins over a passing aircraft; a radar cell loses to anything
+/* what each class of military aircraft does, in a line a reader without aviation knowledge can follow */
+const ROLE: Record<string, [string, string]> = {
+  tanker: ['Air-to-air refuelling', 'A tanker: it refuels other aircraft in flight, so fighters and bombers can reach further. Tankers moving forward often come before air operations.'],
+  isr: ['Surveillance', 'A surveillance aircraft: it watches, listens to radio and radar signals, or maps the ground from a distance. Where it flies shows where attention is.'],
+  fighter: ['Fighter or strike', 'A fighter or strike jet. Most fly with their transponder off, so the few seen here are a small part of what is flying.'],
+  lift: ['Military transport', 'A military transport: it carries troops, vehicles and supplies. A run of transports into a region is how forces are moved in.'],
+  bomber: ['Bomber', 'A bomber: it carries long-range weapons. Bomber flights near a theatre are often a deliberate show of force.'],
+  uav: ['Drone', 'A large military drone, flown remotely, for surveillance or strike. It can stay up for a day or more.'],
+  heli: ['Helicopter', 'A military helicopter: transport, rescue, anti-submarine patrol or attack.'],
+  other: ['Military or government', 'A military or government aircraft broadcasting its position: a trainer, VIP transport, utility or special-mission aircraft.'],
+}
 const SHIFT: Record<string, number> = { diversions: 11 }   // px a layer's icon sits up and right of its point (icon-offset × icon-size)
 /* a theatre airport stands out when its departures fell well below usual, or flights were diverted away from it this week */
 const airportState = (a: MapAirport) => a.usual >= 10 && a.departures <= .6 * a.usual ? 2 : a.divertedAway > 0 || a.turnbacks > 0 ? 1 : 0
@@ -179,7 +190,7 @@ export function MapView({ brief, live, route, theme, padRight, padBottom, onPick
           const id = f.layer.id
           if (id === 'aircraft-cluster') text = `${f.properties!.point_count} aircraft · click to zoom in`
           else { const x = JSON.parse(f.properties!.json); text = id === 'bases' ? `${x.name.split(',')[0]} · ${baseWord(x.state, x.part)}` : id === 'fires' ? `${x.site ? 'Heat near ' + x.site : fireWord(x.class)} · ${Math.round(x.mw)} MW · ${shortDate(x.date)}`
-            : id === 'aircraft' ? [x.call || x.hex || 'Military aircraft', x.t].filter(Boolean).join(' · ') : id === 'ships' ? x.name
+            : id === 'aircraft' ? [x.call || x.hex || 'Military aircraft', (x.d || '').replace(/\s*\(.*\)$/, '') || x.t].filter(Boolean).join(' · ') : id === 'ships' ? x.name
             : id === 'airports' ? `${x.name} · ${x.departures} departures, usually ${Math.round(x.usual)}` : id === 'diversions' ? `${x.call} ${x.kind === 'turnback' ? 'turned back' : 'diverted to ' + x.landed} · ${shortDate(x.date)}`
             : id === 'dark' ? `${x.count} ${x.count === 1 ? 'ship' : 'ships'} with no AIS on radar · ${shortDate(x.date)}` : id === 'loitering' ? `${x.name || 'A ship'} loitering · ${x.hours} h`
             : `Navigational warning ${x.id}` }
@@ -512,9 +523,23 @@ function PeekCard({ p, cardRef, onClose, onPick, brief, style, shown, onShow, on
     </>
     if (f.theatre) action = [`Open ${name(f.theatre)}`, { v: 'theatre', id: f.theatre, tab: 'ground' }]
   } else if (p.kind === 'air') {
-    const a = p.x
-    icon = <Plane size={15} className="text-accent" />; title = a.call || a.hex || 'Military aircraft'; sub = [a.t, a.o || a.ct].filter(Boolean).join(' · ')
-    body = <p className={row}>{[a.alt != null && `${Math.round(a.alt / 100) * 100} ft`, a.gs != null && `${Math.round(a.gs)} kt`, a.sq && `squawk ${a.sq}`].filter(Boolean).join(' · ') || 'Seen on ADS-B at the last run.'}</p>
+    const a = p.x, model = (a.d || '').replace(/\s*\(.*\)$/, ''), role = ROLE[a.class] || ROLE.other
+    icon = <Plane size={15} className="text-accent" />; title = a.call || a.hex || 'Military aircraft'; sub = [model || a.t, a.o || a.ct].filter(Boolean).join(' · ')
+    const alt = typeof a.alt === 'number' ? `${(Math.round(a.alt / 100) * 100).toLocaleString('en')} ft` : ''
+    const facts: [string, string][] = ([['Role', role[0]], ['Type', [model, a.t && `(${a.t})`].filter(Boolean).join(' ')], ['Operator', a.o || ''], ['Registered in', a.ct || ''],
+      ['Tail number', a.r || ''], ['Flying', [alt, a.gs != null && `${Math.round(a.gs)} kt`, a.trk != null && `track ${Math.round(a.trk)}°`].filter(Boolean).join(', ')],
+      ['Squawk', a.sq ? a.sq + (a.emergency ? ' (emergency)' : '') : '']] as [string, string][]).filter(f => f[1])
+    const link = 'inline-flex items-center gap-1 rounded-md border border-line px-2 py-1 text-[11.5px] text-fg2 hover:bg-hover hover:text-fg'
+    body = <>
+      <p className={row}>{role[1]}</p>
+      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[12px] leading-snug">
+        {facts.map(([k, v]) => <Fragment key={k}><dt className="text-fg3">{k}</dt><dd className="min-w-0 text-fg2">{v}</dd></Fragment>)}
+      </dl>
+      {a.rt && <p className="mt-1.5 text-[11.5px] leading-snug text-fg3">{a.rt[0].toUpperCase() + a.rt.slice(1)}.</p>}
+      {a.hex && <div className="mt-2 flex flex-wrap gap-1.5">
+        <a className={link} href={`https://globe.adsb.lol/?icao=${a.hex}`} target="_blank" rel="noreferrer">Track on adsb.lol <ExternalLink size={11} /></a>
+      </div>}
+    </>
     if (a.th && name(a.th)) action = [`Open ${name(a.th)}`, { v: 'theatre', id: a.th, tab: 'ground' }]
   } else if (p.kind === 'ship') {
     const x = p.x

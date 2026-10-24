@@ -332,7 +332,7 @@ def live_map(data):
     return _head(
         "map", data["generated"],
         theatres={t: {"center": _box_center(t), "view": _view(t), "countries": th.get("countries", [])} for t, th in C.THEATRES.items()},
-        aircraft=[dict(ll=ll(a["xy"]), call=a.get("call", ""), **{"class": a.get("c", "")}, **keep(a, "t", "trk", "hex", "th", "o", "ct", "alt", "gs", "sq", "rt"),
+        aircraft=[dict(ll=ll(a["xy"]), call=a.get("call", ""), **{"class": a.get("c", "")}, **keep(a, "t", "d", "r", "trk", "hex", "th", "o", "ct", "alt", "gs", "sq", "rt"),
                        emergency=bool(a.get("em"))) for a in m.get("mil") or []],
         squawks=[dict(ll=ll(a["xy"]), **keep(a, "sq", "mean", "why", "call", "hex", "t", "o", "ct", "alt", "trk", "th")) for a in m.get("sqk") or []],
         ships=[dict(ll=ll(s["xy"]), name=s.get("n", ""), **keep(s, "k", "loc", "g", "d", "tx", "u", "flag", "dest", "spd", "note", "th"),
