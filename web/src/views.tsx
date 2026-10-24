@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import NumberFlow from '@number-flow/react'
-import { ArrowLeft, ChevronRight, Satellite, Flame, ShieldAlert, FileText, Check, Info } from 'lucide-react'
-import { GROUPS, GROUP_HINT, useTheatre, useSignals, summary, levelVar, fmtZ, shortDate, ago, parseGen, type Brief, type LiveMap, type Route, type Signal, type FeedItem } from './data'
+import { ArrowLeft, ChevronRight, Check, Info } from 'lucide-react'
+import { GROUPS, GROUP_HINT, useTheatre, useSignals, summary, levelVar, fmtZ, shortDate, parseGen, type Brief, type LiveMap, type Route, type Signal, type FeedItem } from './data'
 import { GroundTab } from './ground'
 import { usePrefs, fmtTime } from './settings'
 import { LevelChip, TellDots, Spark, Strip, Section, Tabs, Skeleton, Failed, listAnim } from './ui'
 
 type Go = (r: Route, replace?: boolean) => void
-const KIND: Record<FeedItem['kind'], [typeof ShieldAlert, string]> = { tell: [ShieldAlert, 'var(--watch)'], base: [Satellite, 'var(--elev)'], fire: [Flame, 'var(--elev)'], official: [FileText, 'var(--fg-3)'] }
 export const toRoute = (to: FeedItem['to']): Route => to.view === 'theatre' && to.id ? { v: 'theatre', id: to.id, tab: to.tab } : to.view === 'base' && to.id ? { v: 'base', id: to.id } : { v: 'brief' }
 
 function Header({ back, crumbs, go }: { back?: Route; crumbs: [string, Route?][]; go: Go }) {
@@ -24,8 +23,6 @@ function Header({ back, crumbs, go }: { back?: Route; crumbs: [string, Route?][]
 export function BriefView({ brief, go }: { brief: Brief; go: Go }) {
   const now = parseGen(brief.generated)
   const { prefs } = usePrefs()
-  const name = (id: string) => brief.theatres.find(t => t.id === id)?.name || id
-  const week = brief.feed.filter(f => (now.getTime() - new Date(f.date.slice(0, 10) + 'T12:00Z').getTime()) / 864e5 <= 7.5)
   const byId = Object.fromEntries(brief.theatres.map(t => [t.id, t]))
   return (
     <div>
@@ -41,19 +38,6 @@ export function BriefView({ brief, go }: { brief: Brief; go: Go }) {
           ))}
         </div>
       </div>
-      <Section title="Since last week" aside={`${week.length} items`}>
-        {week.length === 0 && <p className="text-[13px] text-fg3">Nothing new this week: no timing tell, base change, unusual fire or CrisisWatch alert.</p>}
-        <ul className="-mx-2">
-          {week.map((f, i) => { const [I, tone] = KIND[f.kind]; return (
-            <motion.li key={i} {...listAnim(i)}>
-              <button onClick={() => go(toRoute(f.to))} className="group flex w-full items-start gap-3 rounded-lg px-2 py-2 text-left hover:bg-hover">
-                <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md border border-line" style={{ color: tone }}><I size={14} /></span>
-                <span className="min-w-0 flex-1"><span className="block text-[13.5px] leading-snug text-fg"><b className="font-medium">{name(f.theatre)}</b> · {f.title}</span><span className="block text-[12px] text-fg3">{f.detail}</span></span>
-                <span className="num shrink-0 pt-0.5 text-[11.5px] text-fg3">{ago(now, f.date)}</span>
-              </button>
-            </motion.li>) })}
-        </ul>
-      </Section>
       <Section title="Theatres" aside={<span className="flex items-center gap-3"><span>Tells</span><span>Groups, slow to fast</span></span>}>
         {brief.regions.map(r => (
           <div key={r.id} className="mb-3 last:mb-0">

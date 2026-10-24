@@ -7,6 +7,7 @@ The data travels as one JSON block inside the page.
 """
 import datetime as dt
 import json
+import math
 import os
 import statistics
 
@@ -165,9 +166,22 @@ def dom_strips(res, ser_json, generated, days=STRIP_DAYS):
     return out
 
 
-def fire_json(m, xy):
+def fire_centres():
+    """{cluster id: (lat, lon)}: the point firereview.py centred each cluster's chips on (history/cache/fire_anoms.csv)."""
+    import store
+    out = {}
+    for r in store.cache_rows("fire_anoms"):
+        try:
+            out[r[0]] = (float(r[2]), float(r[3]))
+        except (IndexError, ValueError):
+            continue
+    return out
+
+
+def fire_json(m, xy, centres=None):
     """One map fire: position, heat, time, class (c), score (a), plain reason (why), nearby site, and the Sentinel-2 chips
-    when the imagery review has them. r = 1 for explained classes (industry, farm burning, volcano, offshore)."""
+    when the imagery review has them, with the window they cover (bb: west, south, east, north) so the map can lay them
+    on the ground. r = 1 for explained classes (industry, farm burning, volcano, offshore)."""
     d = dict(xy=xy(m["lat"], m["lon"]), ll=[round(m["lat"], 3), round(m["lon"], 3)], p=m["frp"], d=m["date"], ts=m.get("ts", ""),
              r=int(bool(m.get("routine"))), th=m.get("th", ""), c=m.get("c", "unex"), a=m.get("a", 0), why=m.get("why", ""), site=m.get("site", ""),
              dn=m.get("daynight", ""))
@@ -175,6 +189,11 @@ def fire_json(m, xy):
     if rv and rv.get("verdict") in ("scar", "none", "unclear") and m.get("cid"):
         b = f"img/fires/{m['cid']}"
         d["img"] = {"b": b + "_b.jpg", "a": b + "_a.jpg", "s": b + "_s.jpg", "bd": rv.get("bd", ""), "ad": rv.get("ad", ""), "v": rv["verdict"]}
+        c = (centres or {}).get(m["cid"])
+        if c:
+            import firereview
+            dla, dlo = firereview.HALF_KM / 110.574, firereview.HALF_KM / (111.320 * max(0.05, math.cos(math.radians(c[0]))))
+            d["img"]["bb"] = [round(c[1] - dlo, 5), round(c[0] - dla, 5), round(c[1] + dlo, 5), round(c[0] + dla, 5)]
     return d
 
 
@@ -183,6 +202,7 @@ def map_json(topo, ex, levels_by_country):
     pr = rm["proj"]
     w, h = rm["w"], rm["h"]
     xy = lambda lat, lon: [round(c, 1) for c in pr.xy(lon, lat)]
+    centres = fire_centres() if any((m.get("rv") or {}).get("verdict") for m in ex.get("fires", [])) else {}
     theatres = {}
     for t, th in C.THEATRES.items():
         la0, la1, lo0, lo1 = C.BOXES[t] if t in C.BOXES else (-6, 74, -26, 76)
@@ -212,7 +232,7 @@ def map_json(topo, ex, levels_by_country):
             "ships": [dict(xy=xy(m["lat"], m["lon"]), n=m["n"], k=m["k"], loc=m.get("loc", ""), g=m.get("g", ""), d=m.get("d", ""), tx=m.get("tx", ""), u=m.get("u", ""),
                            flag=m.get("flag", ""), dest=m.get("dest", ""), spd=m.get("spd"), note=m.get("note", ""), th=m.get("th", "")) for m in ex.get("ships", [])],
             "inc": [dict(xy=xy(m["lat"], m["lon"]), t=m["t"], d=m["d"], src=m["src"], u=m["u"], loc=m["loc"], th=m["th"], tx=m.get("tx", "")) for m in ex.get("inc", [])],
-            "fires": [fire_json(m, xy) for m in ex.get("fires", [])],
+            "fires": [fire_json(m, xy, centres) for m in ex.get("fires", [])],
             "bases": [dict({k: v for k, v in b.items() if k not in ("lat", "lon")}, xy=xy(b["lat"], b["lon"]), ll=[round(b["lat"], 3), round(b["lon"], 3)],
                            th=(b.get("ths") or [""])[0]) for b in ex.get("bases", [])],
             "seas": [{"n": n, "xy": xy(la, lo)} for n, la, lo in C.SEAS],

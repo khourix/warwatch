@@ -755,11 +755,26 @@ def _part_img(site, part, chips_):
     return out
 
 
-def layer(path=BASES):
-    """Map items for the base layer: site facts, state, a plain sentence, the last 30 radar z values and chip paths."""
+def past_states(zs, today, days=30, alerts=True):
+    """[(date, state)] for each scored pass in the last `days` days whose state on that day (replayed over the passes up to
+    it) was out, in or changed: the base changes the 30-day strip under the map shows."""
+    since = (today - dt.timedelta(days=days)).isoformat()
+    out = []
+    for k, (d, z) in enumerate(zs):
+        if d >= since and z is not None:
+            st, _ = state(zs[:k + 1], dt.date.fromisoformat(d), alerts)
+            if st in ("out", "in", "changed"):
+                out.append((d, st))
+    return out
+
+
+def layer(path=BASES, today=None):
+    """Map items for the base layer: site facts, state, a plain sentence, the last 30 radar z values, the changes of the last
+    30 days, chip paths and the window the whole-site chips cover (west, south, east, north)."""
     sites = load_bases(path)
     if not sites:
         return []
+    today = today or dt.datetime.now(dt.timezone.utc).date()
     st = {r["site"]: r for r in read_csv(os.path.join(CACHE, "base_state.csv"))}
     marks_ = {(r["site"], r["part"]): {"d": r["date"], "b": r["before"], "n": int(float(r["objects"])),
                                        "new": int(float(r["new"])) if r["new"] else None, "gone": int(float(r["gone"])) if r["gone"] else None}
@@ -775,12 +790,14 @@ def layer(path=BASES):
         part = r.get("part") or ("harbour" if s["kind"] in ("naval", "port") else "apron")
         what, where = PART_WHAT.get(part, PART_WHAT["apron"])
         dates = " and ".join(x for x in (r.get("dates") or "").split(";") if x) or r.get("last_radar", "")
-        pts = []
+        zs = []
         try:
             with open(os.path.join(CACHE, f"base_{s['id']}.csv"), newline="") as f:
-                pts = [round(float(x[1]), 2) for x in csv.reader(f) if len(x) == 2][-30:]
-        except OSError:
+                zs = [(x[0], float(x[1])) for x in csv.reader(f) if len(x) == 2]
+        except (OSError, ValueError):
             pass
+        pts = [round(z, 2) for _, z in zs][-30:]
+        ev = past_states(zs[-60:], today, alerts=ALERTS)
         c = chips_.get(s["id"], {})
         img = {}
         for k in ("a", "b", "r", "rb"):
@@ -816,7 +833,7 @@ def layer(path=BASES):
         out.append({"id": s["id"], "n": s["name"], "pr": prt, "mp": part, "lat": s["lat"], "lon": s["lon"], "k": s["kind"], "side": s["side"], "ths": s["theatres"],
                     "st": state_, "z": float(r["z"]) if r.get("z") else None, "last": r.get("last_radar", ""), "lo": r.get("last_optical", ""),
                     "pts": pts, "why": why_, "note": r.get("note", ""),
-                    "wy": s.get("why", ""), "img": img})
+                    "wy": s.get("why", ""), "img": img, "ev": ev, "bb": [round(x, 5) for x in site_bbox(s)]})
     return out
 
 
