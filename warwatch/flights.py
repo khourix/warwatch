@@ -7,8 +7,8 @@ or, where the receivers lose the aircraft low down, the first or last point belo
 coverage while the aircraft is high (over Iran or the open sea, say) does not end the leg, so a Doha-London flight stays one leg.
 
     departure   an airline flight (ICAO airline callsign on an airliner) seen taking off from a theatre airport
-    diversion   came within 400 km of the airport its route goes to, then landed at least 50 km away at an airport not on the
-                route (routes from github.com/vradarserver/standing-data, CC0, updated daily)
+    diversion   came down below 20,000 ft within 150 km of the airport its route goes to, then landed at least 50 km away at an
+                airport not on the route (routes from github.com/vradarserver/standing-data, CC0, updated daily)
     turnback    an airline flight that landed back where it took off after 20 minutes to 4 hours in the air, in view throughout
     holding     an airline flight that circled at least twice (720 degrees of turning) within 60 km of where it landed, below 20,000 ft
 
@@ -57,7 +57,7 @@ MIN_AIR_S = 300
 TURNBACK_S, TURNBACK_MAX_S = 1200, 4 * 3600
 SEEN_GAP_S = 600      # a turnback must have no gap longer than this
 HOLD_KM, HOLD_FT, HOLD_DEG = 60, 20000, 720
-APPROACH_KM, DIVERT_KM = 400, 50
+APPROACH_KM, APPROACH_FT, DIVERT_KM = 150, 20000, 50
 # Airliner type designators, for legs whose emitter category is missing: Airbus, Boeing, Embraer and Bombardier jets, ATR, Dash 8,
 # Superjet, A220, MD-80/90/11, COMAC, Ilyushin, Antonov, Tupolev, Fokker, BAe 146 and the larger turboprops.
 AIRLINER = re.compile(r"^(A3\d[\dA-Z]|A2[01]N|A3[45][\dK]|A388|A30B|A31\d|B7[1-8][\dA-Z]|B3[789XM]M|B3XM|E1[79]\d|E2[79]\d|E7[05][\dLS]|"
@@ -185,7 +185,7 @@ def legs(trace, airports, t0=0.0):
                 cats[d["category"]] = cats.get(d["category"], 0) + 1
         out.append({"dep": cur["dep"], "arr": arr, "t0": t0 + pts[0][0], "t1": t0 + pts[-1][0],
                     "call": max(calls, key=calls.get) if calls else "", "cat": max(cats, key=cats.get) if cats else "",
-                    "hold": _holding(pts, airports, arr), "gap": cur["gap"], "path": [(q[1], q[2]) for q in pts[::4]] + [(pts[-1][1], pts[-1][2])]})
+                    "hold": _holding(pts, airports, arr), "gap": cur["gap"], "path": [(q[1], q[2], _alt(q)) for q in pts[::4]] + [(pts[-1][1], pts[-1][2], _alt(pts[-1]))]})
 
     for p in trace:
         if p[1] is None or p[2] is None:
@@ -255,9 +255,10 @@ def airline(leg, typ=""):
 
 def judge(leg, routes, airports):
     """-> 'diversion', 'turnback', 'normal' or None (cannot be judged: take-off or landing unseen, or a route that cannot be trusted).
-    A diversion needs the flight to have come within 400 km of the airport its route goes to and then landed at least 50 km away:
-    route tables go stale (charters, cargo and reused flight numbers), and a flight that never headed for the planned airport was
-    not going there."""
+    A diversion needs the flight to have come down below 20,000 ft within 150 km of the airport its route goes to, then landed at
+    least 50 km away: route tables go stale (charters, cargo and reused flight numbers), and a flight that never started its
+    descent into the planned airport may never have been going there. Flights turned away far out (a closure announced en route)
+    are missed by this rule; they show in the departures and turnbacks instead."""
     dep, arr, call = leg["dep"], leg["arr"], leg["call"]
     if not dep or not arr:
         return None
@@ -275,7 +276,8 @@ def judge(leg, routes, airports):
         return "normal"
     _, _, pla, plo = airports.info[planned]
     _, _, ala, alo = airports.info[arr]
-    if km(ala, alo, pla, plo) < DIVERT_KM or min(km(la, lo, pla, plo) for la, lo in leg["path"]) > APPROACH_KM:
+    near = [a for la, lo, a in leg["path"] if a is not None and km(la, lo, pla, plo) <= APPROACH_KM]
+    if km(ala, alo, pla, plo) < DIVERT_KM or not near or min(near) > APPROACH_FT:
         return None
     return "diversion"
 
@@ -384,3 +386,79 @@ def write_rows(path, day, rows, header):
         w = csv.writer(f)
         w.writerow(header)
         w.writerows(sorted(keep + rows))
+
+
+def write_places(path, day):
+    """Name, country and position of every theatre airport seen so far, for the map (which never reads the route table)."""
+    have = {}
+    if os.path.exists(path):
+        with open(path, newline="") as f:
+            have = {r[0]: r for r in csv.reader(f) if r and r[0] != "icao"}
+    for k in day.apt:
+        if k in day.ap.info and k not in have:
+            name, iso, la, lo = day.ap.info[k]
+            have[k] = [k, name, iso, f"{la:.4f}", f"{lo:.4f}"]
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["icao", "name", "iso", "lat", "lon"])
+        w.writerows(v for _, v in sorted(have.items()))
+
+
+def _rows(folder, prefix, months):
+    out = []
+    for m in months:
+        try:
+            with open(os.path.join(folder, f"{prefix}-{m}.csv"), newline="") as f:
+                out += [r for r in csv.DictReader(f)]
+        except OSError:
+            pass
+    return out
+
+
+def map_items(folder, today=None, days=7, base=28):
+    """-> (airports, events) for the map from the archive tables: each theatre airport's departures on the newest day against its
+    median over the 28 days before, with its diversions, turnbacks, holds and business-jet departures in the last 7 days; and the
+    last 7 days' diversions and turnbacks."""
+    import datetime as dt
+    import statistics
+    try:
+        with open(os.path.join(folder, "places.csv"), newline="") as f:
+            places = {r["icao"]: r for r in csv.DictReader(f)}
+    except OSError:
+        return [], []
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    months = sorted({(today - dt.timedelta(days=i)).isoformat()[:7] for i in range(days + base + 2)})
+    rows = _rows(folder, "airports", months)
+    if not rows:
+        return [], []
+    last = max(r["date"] for r in rows)
+    d_last = dt.date.fromisoformat(last)
+    recent = (d_last - dt.timedelta(days=days - 1)).isoformat()
+    first = (d_last - dt.timedelta(days=days + base - 1)).isoformat()
+    by = {}
+    for r in rows:
+        if r["date"] >= first:
+            by.setdefault(r["icao"], []).append(r)
+    airports = []
+    for k, rs in by.items():
+        p = places.get(k)
+        if not p:
+            continue
+        th = THEATRE_ISO.get(p["iso"]) or ("ukraine" if k.startswith(RU_WEST) else None)
+        if not th:
+            continue
+        dep = {r["date"]: int(r["dep"]) for r in rs}
+        hist = [dep.get((d_last - dt.timedelta(days=i)).isoformat(), 0) for i in range(days, days + base)]
+        week = [r for r in rs if r["date"] >= recent]
+        tot = {h: sum(int(r[h]) for r in week) for h in ("div_away", "div_in", "turnback", "hold", "bizjet_dep", "bizjet_out")}
+        usual = statistics.median(hist) if hist else 0
+        if usual < 3 and not any(tot.values()):
+            continue
+        airports.append({"icao": k, "n": p["name"], "lat": float(p["lat"]), "lon": float(p["lon"]), "th": th, "d": last,
+                         "dep": dep.get(last, 0), "usual": usual, **tot})
+    events = [{"lat": float(e["lat"]), "lon": float(e["lon"]), "k": e["kind"], "call": e["call"], "type": e["type"], "from": e["from"],
+               "planned": e["planned"], "landed": e["landed"], "t": int(e["time"]), "d": e["date"],
+               "th": THEATRE_ISO.get((places.get(e["planned"]) or places.get(e["landed"]) or {}).get("iso", ""), "")}
+              for e in _rows(folder, "events", months) if e["date"] >= recent]
+    return airports, events

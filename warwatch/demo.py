@@ -76,7 +76,25 @@ def extras(name):
         d, t = ts(h)
         fires.append({"lat": la, "lon": lo, "date": d, "ts": t, "frp": float(mw), "th": th, "c": c, "a": a, "why": why, "site": site,
                       "routine": c in ("seas", "ind", "volc", "off"), "daynight": "N" if h % 2 else "D"})
-    return {"fires": fires, "bases": demo_bases()}
+    day = (now - dt.timedelta(days=1)).strftime("%Y-%m-%d")
+    t0 = int((now - dt.timedelta(hours=20)).timestamp())
+    air = [{"icao": "LLBG", "n": "Ben Gurion International Airport", "lat": 32.011, "lon": 34.887, "th": "israel", "d": day, "dep": 61, "usual": 205,
+            "div_away": 9, "div_in": 0, "turnback": 3, "hold": 4, "bizjet_dep": 31, "bizjet_out": 24},
+           {"icao": "OTHH", "n": "Hamad International Airport", "lat": 25.273, "lon": 51.608, "th": "gulf", "d": day, "dep": 259, "usual": 262,
+            "div_away": 0, "div_in": 2, "turnback": 0, "hold": 1, "bizjet_dep": 3, "bizjet_out": 1},
+           {"icao": "OMDB", "n": "Dubai International Airport", "lat": 25.253, "lon": 55.364, "th": "gulf", "d": day, "dep": 441, "usual": 447,
+            "div_away": 0, "div_in": 3, "turnback": 0, "hold": 12, "bizjet_dep": 2, "bizjet_out": 1}]
+    div = [{"lat": 34.875, "lon": 33.625, "k": "diversion", "call": "ELY28", "type": "B789", "from": "KJFK", "planned": "LLBG", "landed": "LCLK",
+            "t": t0, "d": day, "th": "israel"},
+           {"lat": 31.723, "lon": 35.993, "k": "diversion", "call": "WZZ7351", "type": "A21N", "from": "LROP", "planned": "LLBG", "landed": "OJAI",
+            "t": t0 + 1800, "d": day, "th": "israel"},
+           {"lat": 32.011, "lon": 34.887, "k": "turnback", "call": "ELY315", "type": "B738", "from": "LLBG", "planned": "", "landed": "LLBG",
+            "t": t0 + 3600, "d": day, "th": "israel"}]
+    dark = [{"lat": 26.4 + i * 0.1, "lon": 56.2 + (i % 4) * 0.1, "n": 1 + i % 5, "d": day, "th": "iran"} for i in range(12)]
+    loiter = [{"lat": 25.62, "lon": 55.91, "d": day + "T03:10", "th": "iran", "n": "OCEAN STAR", "flag": "PAN", "k": "carrier", "h": 31}]
+    ships = [{"n": "HDMS ESBERN SNARE", "k": "navy", "loc": "55.62, 12.71", "lat": 55.62, "lon": 12.71, "g": "Military ship (AIS)", "flag": "Denmark",
+              "dest": "", "spd": 11.2, "d": "live", "th": "europe_east", "note": "Demo ship.", "tr": [[55.30, 12.40], [55.45, 12.55], [55.62, 12.71]]}]
+    return {"fires": fires, "bases": demo_bases(), "air": air, "div": div, "dark": dark, "loiter": loiter, "ships": ships}
 
 
 def demo_bases():

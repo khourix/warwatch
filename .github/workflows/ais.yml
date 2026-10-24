@@ -1,0 +1,51 @@
+name: ais
+# Live ships from free AIS (aisstream.io), every 30 minutes (warwatch/aiswatch.py, docs/SHIPS.md). Listens about nine minutes
+# and keeps a small state file on the orphan branch `ais` (one commit, rewritten each run). When the UTC day turns, the day's
+# counts (ships seen per region and class, strait crossings) are committed to main's history cache. The dashboard build reads
+# the state for the map instead of listening itself.
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: "how long to listen"
+        required: false
+        default: "540"
+permissions:
+  contents: write
+concurrency:
+  group: warwatch-ais
+  cancel-in-progress: false
+jobs:
+  ais:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the state
+        run: git fetch -q --depth=1 origin ais && git show FETCH_HEAD:state.json > "$RUNNER_TEMP/state.json" || echo "no state yet: starting fresh"
+      - name: Listen
+        env:
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+        run: python3 warwatch/aiswatch.py --state "$RUNNER_TEMP/state.json" --seconds "${{ github.event.inputs.seconds || '540' }}"
+      - name: Save the state (orphan branch, public data only)
+        run: |
+          d="$RUNNER_TEMP/aisbranch"; rm -rf "$d"; mkdir -p "$d"; cp "$RUNNER_TEMP/state.json" "$d/state.json"
+          cd "$d" && git init -q && git checkout -q -b ais
+          git config user.name "warwatch-bot"; git config user.email "warwatch-bot@users.noreply.github.com"
+          git add state.json && git commit -qm "ais: $(date -u +%FT%H:%MZ)"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ais
+      - name: Commit a finished day (public data only)
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add warwatch/history/cache/aisday_* warwatch/history/cache/strait_* 2>/dev/null || true
+          git diff --cached --quiet && exit 0
+          git commit -qm "ais day: $(date -u +%FT%H:%MZ)"
+          for i in 1 2 3; do
+            git pull --rebase -q -X theirs origin main && git push -q && exit 0
+            git rebase --abort 2>/dev/null || true
+            sleep $((i * 5))
+          done
+          echo "push skipped"

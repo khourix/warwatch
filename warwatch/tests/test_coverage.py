@@ -50,8 +50,8 @@ class TestFlights(unittest.TestCase):
         self.assertEqual(len(F.legs(a + b, AIRPORTS)), 2)
 
     def test_diversion_needs_an_approach_to_the_planned_airport(self):
-        # Heading for Ben Gurion, lands at Larnaca from 300 km out: a diversion. Same landing straight from London's side: unknown.
-        near = (LLBG[0] + 0.5, LLBG[1] - 2.5)
+        # Descends towards Ben Gurion, then lands at Larnaca: a diversion. Straight to Larnaca without coming near Ben Gurion: unknown.
+        near = (LLBG[0] + 0.3, LLBG[1] - 0.9)
         a, t = leg(EGLL, near, 0, 240, "ELY1", ground=False)
         a[0][3] = "ground"
         b, _ = leg(near, LCLK, t, 30, "ELY1")
@@ -59,7 +59,6 @@ class TestFlights(unittest.TestCase):
         self.assertEqual((lg["dep"], lg["arr"]), ("EGLL", "LCLK"))
         self.assertEqual(F.judge(lg, ROUTES, AIRPORTS), "diversion")
         far = F.legs(leg(EGLL, LCLK, 0, 240, "ELY1")[0], AIRPORTS)[0]
-        far["path"] = [p for p in far["path"] if p[1] < 20]        # never came within 400 km of Ben Gurion
         self.assertIsNone(F.judge(far, ROUTES, AIRPORTS))
 
     def test_turnback_needs_an_airliner_in_view(self):
@@ -76,7 +75,7 @@ class TestFlights(unittest.TestCase):
         self.assertEqual(school.series()["flights_dep_gulf"], 0.0)
 
     def test_day_counts_and_hides_ladd_aircraft(self):
-        near = (LLBG[0] + 0.5, LLBG[1] - 2.5)
+        near = (LLBG[0] + 0.3, LLBG[1] - 0.9)
         a, t = leg(EGLL, near, 0, 240, "ELY1", ground=False)
         a[0][3] = "ground"
         b, _ = leg(near, LCLK, t, 30, "ELY1")

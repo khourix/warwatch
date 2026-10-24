@@ -665,7 +665,8 @@ def collect():
     """All map and panel layers; any failure leaves that layer empty."""
     import os
     import osint
-    ex = {"mil": [], "sqk": [], "ships": [], "inc": [], "fires": [], "bases": [], "nga": [], "markets": [], "levels": {}, "czib": [], "pizza": None, "errors": []}
+    ex = {"mil": [], "sqk": [], "ships": [], "inc": [], "fires": [], "bases": [], "nga": [], "markets": [], "levels": {}, "czib": [], "pizza": None,
+          "air": [], "div": [], "dark": [], "loiter": [], "errors": []}
     def nga():
         if "nga" not in _CACHE:
             _CACHE["nga"] = fetch_nga()
@@ -684,11 +685,21 @@ def collect():
             out.extend(osint.fetch_digitraffic()[0])
         except Exception as e:
             ex["errors"].append(f"digitraffic: {str(e)[:80]}")
-        key = os.environ.get("AISSTREAM_API_KEY")
-        if key:
+        state = os.environ.get("WARWATCH_AIS_STATE")
+        if state and os.path.exists(state):     # collected every 30 minutes by the ais job (aiswatch.py)
             try:
-                boxes = [C.BOXES[t] for t in ("iran", "yemen", "israel", "ukraine", "europe_east")] + [(30, 46, -6, 36), (12, 32, 32, 45)] + [C.BOXES[t] for t in ("taiwan", "scs", "korea", "venezuela")]   # Gulf and Red Sea coverage is thin on aisstream
-                for m in osint.fetch_aisstream(key, boxes).values():
+                import aiswatch
+                st = aiswatch.load(state)
+                if st.get("updated"):
+                    out.extend(aiswatch.map_ships(st))
+                    return out
+            except Exception as e:
+                ex["errors"].append(f"ais state: {str(e)[:80]}")
+        key = os.environ.get("AISSTREAM_API_KEY")
+        if key:      # no collected state: a short look of our own
+            try:
+                import aiswatch
+                for m in osint.fetch_aisstream(key, aiswatch.boxes()).values():
                     if m["lat"] is None or int(m["type"] or 0) not in (35, 55):
                         continue
                     out.append({"n": m["n"] or m["mmsi"], "k": "navy", "loc": f'{m["lat"]:.2f}, {m["lon"]:.2f}', "g": "Military ship (AIS)", "lat": m["lat"], "lon": m["lon"],
@@ -724,6 +735,17 @@ def collect():
             ex[key] = fn()
         except Exception as e:
             ex["errors"].append(f"{key}: {str(e)[:80]}")
+    try:      # theatre airports and diversions from the archive tables (flights.py), one day behind
+        import flights
+        import store
+        ex["air"], ex["div"] = flights.map_items(os.path.join(store.BACKFILL, "flights"))
+    except Exception as e:
+        ex["errors"].append(f"flights: {str(e)[:80]}")
+    try:      # dark ships on radar and loitering, cached by the slow job (gfw.py), about five days behind
+        import gfw
+        ex["dark"], ex["loiter"] = gfw.map_items()
+    except Exception as e:
+        ex["errors"].append(f"gfw map: {str(e)[:80]}")
     # squawks seen anywhere: also surface any military aircraft in the main list that squawk an emergency
     seen = {m["hex"] for m in ex["sqk"]}
     for m in ex["mil"]:

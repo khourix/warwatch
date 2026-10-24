@@ -335,7 +335,18 @@ def live_map(data):
         aircraft=[dict(ll=ll(a["xy"]), call=a.get("call", ""), **{"class": a.get("c", "")}, **keep(a, "t", "trk", "hex", "th", "o", "ct", "alt", "gs", "sq", "rt"),
                        emergency=bool(a.get("em"))) for a in m.get("mil") or []],
         squawks=[dict(ll=ll(a["xy"]), **keep(a, "sq", "mean", "why", "call", "hex", "t", "o", "ct", "alt", "trk", "th")) for a in m.get("sqk") or []],
-        ships=[dict(ll=ll(s["xy"]), name=s.get("n", ""), **keep(s, "k", "loc", "g", "d", "tx", "u", "flag", "dest", "spd", "note", "th")) for s in m.get("ships") or []],
+        ships=[dict(ll=ll(s["xy"]), name=s.get("n", ""), **keep(s, "k", "loc", "g", "d", "tx", "u", "flag", "dest", "spd", "note", "th"),
+                    **({"trail": [ll(p) for p in s["tr"]]} if s.get("tr") else {})) for s in m.get("ships") or []],
+        # Added October 2026, optional (docs/FLIGHTS.md, docs/SHIPS.md): theatre airports, diversions and turnbacks (archive, a day
+        # behind), dark-ship radar cells and loitering ships (Global Fishing Watch, about five days behind).
+        airports=[{"ll": ll(a["xy"]), "icao": a["icao"], "name": a["n"], "theatre": a["th"], "date": a["d"], "departures": a["dep"], "usual": a["usual"],
+                   "divertedAway": a["div_away"], "divertedIn": a["div_in"], "turnbacks": a["turnback"], "holds": a["hold"],
+                   "bizjets": a["bizjet_dep"], "bizjetsOut": a["bizjet_out"]} for a in m.get("air") or []],
+        diversions=[{"ll": ll(e["xy"]), "kind": e["k"], "call": e["call"], "type": e["type"], "from": e["from"], "planned": e["planned"],
+                     "landed": e["landed"], "time": e["t"], "date": e["d"], "theatre": e["th"]} for e in m.get("div") or []],
+        darkShips=[{"ll": ll(c["xy"]), "count": c["n"], "date": c["d"], "theatre": c["th"]} for c in m.get("dark") or []],
+        loitering=[{"ll": ll(x["xy"]), "name": x["n"], "flag": x["flag"], "type": x["k"], "hours": x["h"], "start": x["d"], "theatre": x["th"]}
+                   for x in m.get("loiter") or []],
         incidents=[dict(ll=ll(i["xy"]), **keep(i, "t", "d", "src", "u", "loc", "th", "tx")) for i in m.get("inc") or []],
         fires=[dict(ll=[f["ll"][1], f["ll"][0]], mw=f["p"], date=f["d"], time=f.get("ts", ""), **{"class": f.get("c", "")}, score=f.get("a", 0),
                     why=f.get("why", ""), site=f.get("site", ""), theatre=f.get("th", ""), night=f.get("dn") == "N", images=f.get("img")) for f in m.get("fires") or []],

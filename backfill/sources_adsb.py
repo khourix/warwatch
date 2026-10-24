@@ -147,6 +147,7 @@ def save_flights(d, day):
     out = os.path.join(K.DATA, "flights")
     F.write_rows(os.path.join(out, f"airports-{iso[:7]}.csv"), iso, day.airport_rows(iso), F.AIRPORT_HEAD)
     F.write_rows(os.path.join(out, f"events-{iso[:7]}.csv"), iso, day.event_rows(iso), F.EVENT_HEAD)
+    F.write_places(os.path.join(out, "places.csv"), day)
 
 
 def cmd_adsb(start, end, step=1, token=None, only=None, mil=True, flights=True):

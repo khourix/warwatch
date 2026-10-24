@@ -1,15 +1,16 @@
 name: slow-sources
-# Rate-limited sources (SAM.gov tenders) run here, away from the
-# dashboard build, and cache their last good result in warwatch/history/cache.
+# Rate-limited and slow sources run here, away from the dashboard build, and cache their last good result in
+# warwatch/history/cache: SAM.gov tenders, and Global Fishing Watch ships (dark ships on radar, loitering, port calls;
+# warwatch/gfw.py), whose first run reads history back to September 2023.
 on:
   schedule:
-    - cron: "0 4 * * *"      # SAM.gov (about 10 requests a day allowed)
+    - cron: "0 4 * * *"      # SAM.gov (about 10 requests a day allowed) and Global Fishing Watch (posts daily, about four days late)
   workflow_dispatch:
     inputs:
       which:
-        description: "sam"
+        description: "sam | gfw | all"
         required: false
-        default: "sam"
+        default: "all"
 permissions:
   contents: write
 concurrency:
@@ -21,15 +22,21 @@ env:
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - name: Fetch and cache
         env:
           SAM_API_KEY: ${{ secrets.SAM_API_KEY }}
-          WHICH: ${{ github.event.inputs.which || 'sam' }}
+          GFW_TOKEN: ${{ secrets.GFW_TOKEN }}
+          WHICH: ${{ github.event.inputs.which || 'all' }}
         run: |
-          IDS="us_kit_tenders,us_medical_tenders"
+          IDS=""
+          case "$WHICH" in sam|all) IDS="us_kit_tenders,us_medical_tenders";; esac
+          case "$WHICH" in gfw|all)
+            GFW=$(python3 -c "import sys; sys.path.insert(0, '$WW'); import gfw; print(','.join(f'{k}_{t}' for t in gfw.BOX for k in ('darkships', 'darkshare', 'loiter', 'portcalls')))")
+            IDS="${IDS:+$IDS,}$GFW";;
+          esac
           python3 $WW/run.py --only "$IDS" --fetch-only
       - name: Commit cache (public data only)
         run: |

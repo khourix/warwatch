@@ -38,6 +38,8 @@ jobs:
         run: python3 $WW/tests/test_warwatch.py
       - name: Install h3 (GPSJam cell centres)
         run: python3 -m pip install --quiet --break-system-packages h3
+      - name: Live ships collected by the ais job (orphan branch; none yet is fine)
+        run: git fetch -q --depth=1 origin ais && git show FETCH_HEAD:state.json > "$RUNNER_TEMP/ais_state.json" || echo "no ais state yet"
       - name: Fetch, score, render
         env:
           CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
@@ -52,6 +54,7 @@ jobs:
           FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
           FIRMS_MAX: "12"
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          WARWATCH_AIS_STATE: ${{ runner.temp }}/ais_state.json
           OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
           OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
         run: python3 $WW/run.py --only "${{ github.event.inputs.only }}" --out site/index.html

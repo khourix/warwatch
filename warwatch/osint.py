@@ -950,8 +950,9 @@ def parse_ais_messages(msgs):
     return ships
 
 
-def fetch_aisstream(key, boxes, seconds=75, max_msgs=20000, host="stream.aisstream.io", path="/v0/stream"):
-    """Reads an aisstream-compatible websocket (aisstream.io, or Open Waters at ais.openwaters.io /v1/stream)."""
+def ais_messages(key, boxes, seconds=75, host="stream.aisstream.io", path="/v0/stream"):
+    """Yields messages from an aisstream-compatible websocket (aisstream.io, or Open Waters at ais.openwaters.io /v1/stream)
+    for `seconds`, as parsed JSON."""
     ctx = ssl.create_default_context()
     sock = ctx.wrap_socket(socket.create_connection((host, 443), timeout=20), server_hostname=host)
     k = base64.b64encode(os.urandom(16)).decode()
@@ -965,31 +966,42 @@ def fetch_aisstream(key, boxes, seconds=75, max_msgs=20000, host="stream.aisstre
     sub = {"APIKey": key, "BoundingBoxes": [[[b[0], b[2]], [b[1], b[3]]] for b in boxes], "FilterMessageTypes": ["PositionReport", "ShipStaticData"]}
     sock.sendall(ws_frame(json.dumps(sub)))
     sock.settimeout(10)
-    msgs, t0 = [], time.time()
-    while time.time() - t0 < seconds and len(msgs) < max_msgs:
-        try:
-            d = sock.recv(65536)
-        except socket.timeout:
-            continue
-        if not d:
-            break
-        buf += d
-        while True:
-            fr = ws_read(buf)
-            if not fr:
+    t0 = time.time()
+    try:
+        while time.time() - t0 < seconds:
+            try:
+                d = sock.recv(65536)
+            except socket.timeout:
+                continue
+            if not d:
                 break
-            op, pl, buf = fr
-            if op in (1, 2):   # aisstream sends JSON in binary frames
-                try:
-                    m = json.loads(pl)
-                except ValueError:
-                    continue
-                if "error" in m or "Error" in m:
-                    raise RuntimeError("aisstream: " + str(m.get("error") or m.get("Error"))[:100])
-                msgs.append(m)
-            elif op == 9:
-                sock.sendall(ws_frame(pl, 10))
-            elif op == 8:
-                return parse_ais_messages(msgs)
-    sock.close()
+            buf += d
+            while True:
+                fr = ws_read(buf)
+                if not fr:
+                    break
+                op, pl, buf = fr
+                if op in (1, 2):   # aisstream sends JSON in binary frames
+                    try:
+                        m = json.loads(pl)
+                    except ValueError:
+                        continue
+                    if "error" in m or "Error" in m:
+                        raise RuntimeError("aisstream: " + str(m.get("error") or m.get("Error"))[:100])
+                    yield m
+                elif op == 9:
+                    sock.sendall(ws_frame(pl, 10))
+                elif op == 8:
+                    return
+    finally:
+        sock.close()
+
+
+def fetch_aisstream(key, boxes, seconds=75, max_msgs=20000, host="stream.aisstream.io", path="/v0/stream"):
+    """{mmsi: ship} from a short listen (see ais_messages)."""
+    msgs = []
+    for m in ais_messages(key, boxes, seconds, host, path):
+        msgs.append(m)
+        if len(msgs) >= max_msgs:
+            break
     return parse_ais_messages(msgs)

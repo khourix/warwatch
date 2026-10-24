@@ -71,7 +71,7 @@ export function SignalsView({ th, brief, go }: { th?: string; brief: Brief; go: 
             <button key={s.id} role="listitem" onClick={() => go({ v: 'signal', id: s.id })} className="absolute inset-x-0 grid grid-cols-[1fr_auto_48px] items-center gap-3 border-b border-line text-left hover:bg-hover"
               style={{ top: 0, height: it.size, transform: `translateY(${it.start - margin}px)` }}>
               <span className="min-w-0"><span className="block truncate text-[13px] text-fg" title={s.label}>{s.label}</span>
-                <span className="block truncate text-[11.5px] text-fg3">{thName(s.theatre)} · {s.group} · {s.sub}{s.status !== 'ok' ? ` · ${STATUS[s.status]?.[0] || s.status}` : s.stale ? ' · last good copy' : ''}</span></span>
+                <span className="block truncate text-[11.5px] text-fg3">{thName(s.theatre)} · {s.group} · {s.sub}{s.untested ? ' · not tested' : ''}{s.status !== 'ok' ? ` · ${STATUS[s.status]?.[0] || s.status}` : s.stale ? ' · last good copy' : ''}</span></span>
               <Spark v={s.spark} w={76} h={22} stroke={Math.abs(s.z ?? 0) >= 2 ? 'var(--watch)' : 'var(--fg-3)'} fill={false} />
               <span className="num text-right text-[12.5px]" style={{ color: zTone(s.z) }}>{fmtZ(s.z)}</span>
             </button>) })}
@@ -101,7 +101,7 @@ export function SignalView({ id, brief, go }: { id: string; brief: Brief; go: Go
       {head}
       <div className="px-5 pb-2 pt-3">
         <h1 className="text-[21px] font-semibold leading-snug tracking-[-0.015em]">{s.label}</h1>
-        <div className="mt-1.5 flex flex-wrap gap-x-3 text-[12.5px] text-fg3"><span>{s.group} · {s.sub}</span><span>{s.kind === 'monthly' ? 'Monthly' : 'Daily'}</span><span>{s.lagging ? 'Confirms (published late)' : 'Leads'}</span></div>
+        <div className="mt-1.5 flex flex-wrap gap-x-3 text-[12.5px] text-fg3"><span>{s.group} · {s.sub}</span><span>{s.kind === 'monthly' ? 'Monthly' : 'Daily'}</span><span>{s.lagging ? 'Confirms (published late)' : 'Leads'}</span>{s.untested && <span style={{ color: 'var(--watch)' }} title="New in October 2026. Shown and used in the timing tells, but kept out of the score until a test on past events passes.">Not tested yet, not in the score</span>}</div>
         <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-line bg-[var(--line)]">
           {([['From its normal', <span style={{ color: zTone(s.z) }}>{s.z == null ? 'n/a' : `${fmtZ(s.z)} SD`}</span>, Math.abs(s.z ?? 0) >= 3 ? 'strong' : Math.abs(s.z ?? 0) >= 2 ? 'unusual' : 'usual range'],
             ['Latest value', s.last ? shortDate(s.last.slice(0, 10)) : 'none', s.stale ? `stale, copy of ${s.stale}` : 'fresh'],
