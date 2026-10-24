@@ -1502,3 +1502,17 @@ class ShareCard(unittest.TestCase):
         self.assertNotRegex(page, r"__(ABOUT|SHARE|OGALT|OGV)__")
         self.assertIn('og.jpg?v=202610240117"', page)
         self.assertIn('<meta property="og:description" content="Yemen is the only theatre above quiet.', page)
+
+
+class ContextLine(unittest.TestCase):
+    def test_context_lines_are_well_formed(self):
+        import re
+        for t, (line, month) in C.CONTEXT.items():
+            self.assertIn(t, C.THEATRES)
+            self.assertTrue(line and len(line) <= 40 and not line.endswith("."), line)
+            self.assertRegex(month, r"^20\d\d-(0[1-9]|1[0-2])$")
+        v = {"doms": {d: {"z": None, "n": 0, "fast": False, "drivers": [], "w": 0, "contrib": 0} for d in C.DOMAINS}, "level": "Normal",
+             "firing": [], "scorable": 0, "basis": "", "score": 0, "zc": 0, "index": 0, "imbalance": 0, "worst": None, "confidence": 0,
+             "conf_label": "", "missing": [], "th": None}
+        self.assertEqual(dashboard.theatre_json("ukraine", v, [])["ctx"], C.CONTEXT["ukraine"][0])
+        self.assertIsNone(dashboard.theatre_json("libya", v, [])["ctx"])

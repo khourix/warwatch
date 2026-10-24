@@ -125,6 +125,7 @@ a{color:var(--accent)}
 .brand{height:52px;display:flex;align-items:center;gap:10px;padding:0 17px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;cursor:pointer;flex:none}
 .brand svg{flex:none}
 .brand b{font-weight:600;letter-spacing:-.015em;font-size:15px}
+.ctx{color:var(--mute)}
 #sb:not(.open) .brand b,#sb:not(.open) .tx,#sb:not(.open) .grp,#sb:not(.open) .sc,#sb:not(.open) .kids{display:none}
 #sbnav{flex:1;min-height:0;padding:8px;display:flex;flex-direction:column;gap:2px;overflow:hidden auto;scrollbar-width:none}
 .ni{display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:8px;color:var(--mute);white-space:nowrap;width:100%;text-align:left;position:relative;flex:none}
@@ -1033,6 +1034,7 @@ const actChip = t => {   // Activity v1 (docs/ACTIVITY.md): experimental, beside
   return `<span class="act${a.on ? ' on' : ''}" data-tip="${esc(tip)}" tabindex="0" aria-label="${esc(tip)}">${a.on ? 'ACTIVE' : 'QUIET'}<i>EXP</i></span>`;
 };
 const spillTag = (cls) => `<span class="${cls || 'subl'}" data-tip="No war of its own: at risk because a neighbour's war reaches it">spillover</span>`;
+const ctxTag = (k) => D.theatres[k].ctx ? ` <span class="subl" data-tip="Set by hand, checked monthly (last ${esc(D.theatres[k].ctxd || '')}). Context only: it does not change the level.">${esc(D.theatres[k].ctx.toLowerCase())}</span>` : '';
 function gateWhy(){
   const G = (D.model || {}).gates || {}, why = [];
   if (G.bss_positive === false) why.push('it does not beat the base rates');
@@ -1247,7 +1249,7 @@ $('#bnav').addEventListener('click', e => { const n = e.target.closest('[data-na
 pref.pm = store.get('ww_pm', 'list');
 function pRow(t){
   const th = D.theatres[t], sc = seriesOf(t).filter(s => s.z != null && !isEv(s)), st = sc.filter(s => s.z >= T_SIG).length;
-  return `<button class="prow" data-nav="${t}"><span class="tn"><b>${thn(t, th.name, false)}</b><small>${st} strong of ${sc.length} scored${isSpill(t) ? ' · spillover' : ''}</small></span><span class="bw"><span class="bar6"><i style="width:${Math.min(100, th.score || 0)}%;background:${LEVEL[th.level]}"></i></span><b>${PM && leadP() ? esc(lead(t).txt) : fs(th.score)}</b></span><span class="r">${tellChip(t)}<span class="xu">${th.xu != null ? th.xu.toFixed(1) + '× usual' : ''}</span></span></button>`;
+  return `<button class="prow" data-nav="${t}"><span class="tn"><b>${thn(t, th.name, false)}</b><small>${th.ctx ? `<span class="ctx" data-tip="Set by hand, checked monthly (last ${esc(th.ctxd || '')}). Context only: it does not change the level.">${esc(th.ctx)}</span> · ` : ''}${st} strong of ${sc.length} scored${isSpill(t) ? ' · spillover' : ''}</small></span><span class="bw"><span class="bar6"><i style="width:${Math.min(100, th.score || 0)}%;background:${LEVEL[th.level]}"></i></span><b>${PM && leadP() ? esc(lead(t).txt) : fs(th.score)}</b></span><span class="r">${tellChip(t)}<span class="xu">${th.xu != null ? th.xu.toFixed(1) + '× usual' : ''}</span></span></button>`;
 }
 function renderPList(){
   const el = $('#plist'); if (R.v !== 'overview') { el.innerHTML = ''; return; }
@@ -1274,7 +1276,7 @@ function renderTop(){
     activity: ['Activity', 'Aircraft, ships, fires and warnings now'], record: ['Track record', 'Forecasts logged before the fact, and how they score'], settings: ['Settings', 'Display, data health, sources and method']};
   let t = titles[R.v];
   if (R.v === 'region') t = [REGBY[R.id].name, 'Region overview'];
-  if (R.v === 'theatre') t = [thName(R.id), regOf[R.id] ? regOf[R.id].name : 'Markets and procurement worldwide'];
+  if (R.v === 'theatre') t = [thName(R.id), (regOf[R.id] ? regOf[R.id].name : 'Markets and procurement worldwide') + (D.theatres[R.id].ctx ? ' · ' + D.theatres[R.id].ctx : '')];
   if (isPhone() && R.v === 'overview') t = ['Overview', t[1]];   // the phone bar is narrow: a title that fits beats one cut off
   const back = R.v === 'theatre' ? (regOf[R.id] && regOf[R.id].kids.length > 1 ? 'region/' + regOf[R.id].id : 'overview') : R.v === 'region' ? 'overview' : null;
   $('#tt').innerHTML = (back ? `<button class="bk" data-nav="${back}" aria-label="Back">${ic('back', 's')}</button>` : '') + `<div><h1>${esc(t[0])}</h1><small>${esc(t[1])}</small></div>`;
@@ -1982,7 +1984,7 @@ function showHover(key){
   { const tc = tellsCount(t); if (tc.n) h += `<p class="hint" style="margin:-2px 0 6px">Timing tells this week: <b style="color:${tc.on.length ? 'var(--tell)' : 'var(--ink)'}">${tc.on.length} of ${tc.n}</b>${tc.on.length ? ' · ' + tc.on.map(x => esc(x.n)).join(', ') : ''}</p>`; }
   h += `<div class="sh">What pushes ${esc(th.name)} up ${inf(PM ? 'The signal families of this theatre that add most to the 30-day chance. World tempo, the same for every theatre, is left out. A longer bar adds more.' : 'The signal families of this theatre that add most to the model\'s 30-day chance. World tempo, the same for every theatre, is left out. The model has not passed its release checks, so this is for reference only.')}</div>${drvBars(t, 3)}`;
   if (kids) h += PM ? `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">${leadP() ? '30 days' : 'Pressure'}</span><span class="h r">Change</span>${kids.map(k => `<span>${thn(k)}</span><b class="num r">${esc(lead(k).txt)}</b><span class="r">${changeTxt(k)}</span>`).join('')}</div>`
-    : `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">Unusual</span><span class="h r">Tells</span>${kids.map(k => `<span>${thn(k, null, false)}${isSpill(k) ? ' ' + spillTag() : ''}</span><b class="num r">${fs(D.theatres[k].score)}</b><span class="r">${tellChip(k)}</span>`).join('')}</div>`;
+    : `<div class="mini"><span class="h">${esc(r.name)}</span><span class="h r">Unusual</span><span class="h r">Tells</span>${kids.map(k => `<span>${thn(k, null, false)}${isSpill(k) ? ' ' + spillTag() : ''}${ctxTag(k)}</span><b class="num r">${fs(D.theatres[k].score)}</b><span class="r">${tellChip(k)}</span>`).join('')}</div>`;
   h += `<div class="row" style="justify-content:space-between;margin-top:6px"><span class="hint">Data coverage ${Math.round((1 - (th.miss || 0)) * 100)}% · confidence ${esc(String(th.confl || '').toLowerCase())}</span><button class="btn pri" data-nav="${target}">Open ${esc(p.region && kids ? r.name : th.name)} ${ic('chev', 's')}</button></div>`;
   const c = $('#hcard'); c.innerHTML = h; c.style.display = 'block';
   const [cw, ch] = clientSize(), w = c.offsetWidth, hh = c.offsetHeight, b = p.box;
@@ -2008,7 +2010,7 @@ function moversList(n){
 const RANKW = () => THEATRES.slice().sort((a, b) => tellsCount(b).on.length - tellsCount(a).on.length || (D.theatres[b].score || 0) - (D.theatres[a].score || 0));
 function thRowN(t){
   const th = D.theatres[t];
-  return `<div class="tr tr2" data-th="${t}"><span class="n">${thn(t, th.name, false)}${isSpill(t) ? '<em>spillover</em>' : ''}</span>${tellChip(t)}<span class="bw"><span class="bar6"><i style="width:${Math.min(100, th.score || 0)}%;background:${LEVEL[th.level]}"></i></span><b class="num">${fs(th.score)}</b></span><span class="num xu" data-tip="Standing risk: 30-day chance as a multiple of the usual chance here. Not validated.">${th.xu != null ? th.xu.toFixed(1) + '×' : '–'}</span></div>`;
+  return `<div class="tr tr2" data-th="${t}"><span class="n">${thn(t, th.name, false)}${isSpill(t) ? '<em>spillover</em>' : ''}${th.ctx ? `<em data-tip="Set by hand, checked monthly. Context only: it does not change the level.">${esc(th.ctx.toLowerCase())}</em>` : ''}</span>${tellChip(t)}<span class="bw"><span class="bar6"><i style="width:${Math.min(100, th.score || 0)}%;background:${LEVEL[th.level]}"></i></span><b class="num">${fs(th.score)}</b></span><span class="num xu" data-tip="Standing risk: 30-day chance as a multiple of the usual chance here. Not validated.">${th.xu != null ? th.xu.toFixed(1) + '×' : '–'}</span></div>`;
 }
 let dockTab = store.get('ww_dtab', 'mov');
 function renderDock(){
@@ -2360,7 +2362,7 @@ function regionBody(r){
   if (PM) h += `<table class="cmp"><thead><tr><th class="c1">Theatre</th><th class="r cn">${leadP() ? '30 days' : 'Pressure'}</th><th class="r cn">Change</th><th class="cause">Own main cause</th><th class="r cv" data-tip="Share of signals with a score now">Coverage</th></tr></thead><tbody>` +
     kids.map(k => `<tr data-go="${k}">${nm(k)}<td class="r num" style="color:${LEVEL[D.theatres[k].level]};font-weight:600">${esc(lead(k).txt)}</td><td class="r">${changeTxt(k)}</td>${cause(k)}${cov(k)}</tr>`).join('') + `</tbody></table>`;
   const mrow = k => { const th = D.theatres[k], w = ownWhy(k)[0];
-    return `<tr><td class="n" data-go="${k}">${dot(th.level)}${thn(k, null, false)}${isSpill(k) ? ' ' + spillTag() : ''}${w ? `<span class="mcz" title="${esc(w[0])}">${esc(causeL(k, w[0]))}</span>` : ''}</td>${LADDER.map(d => { const z = th.doms[d].z;
+    return `<tr><td class="n" data-go="${k}">${dot(th.level)}${thn(k, null, false)}${isSpill(k) ? ' ' + spillTag() : ''}${ctxTag(k)}${w ? `<span class="mcz" title="${esc(w[0])}">${esc(causeL(k, w[0]))}</span>` : ''}</td>${LADDER.map(d => { const z = th.doms[d].z;
       return `<td class="c${z != null && z >= T_WATCH ? ' w' : ''}" style="background:${z == null ? 'transparent' : zcell(z)}" data-cell="${k}:${d}" data-tip="${esc(thName(k) + ', ' + GN[d] + ': ' + (z == null ? 'no score' : fmtz(z) + ' SD from normal'))}">${z == null ? '–' : z.toFixed(1)}</td>`; }).join('')}<td>${tellChip(k, 1)}</td><td class="r">${fs(th.score)}</td></tr>`; };
   h += `<div class="sh"${PM ? ' style="margin-top:16px"' : ''}>Theatres by signal group ${inf('Each cell is a group\'s distance from its normal now, in SD, on the warm scale: grey is usual, amber from 2 SD, orange from 3 SD, red from 4.5 SD. Groups run slow to fast, left to right. Click a name to open the theatre, or a cell for that group\'s signals.')}<small>SD from normal</small></div><div class="tw"><table class="mx"><thead><tr><th>Theatre</th>${LADDER.map(d => `<th data-tip="${esc(GN[d] + ': ' + GQ[d][0])}">${ic(GI[d])}${GN[d]}</th>`).join('')}<th data-tip="Timing tells seen in the last 7 days, of those watched">Tells</th><th style="text-align:right" data-tip="Unusual readings, 0 to 100 (signal pressure). Not a chance.">Unusual</th></tr></thead><tbody>${kids.map(mrow).join('')}</tbody></table></div>`;
   const wt = (D.theatres[top].why || []).find(WORLDW);

@@ -51,6 +51,14 @@ THEATRES = {
 }
 # Main tabs: the market-moving theatres. A region with several sub-theatres shows them as a secondary tab row;
 # a region with one sub-theatre is that theatre. Region level = the highest sub-theatre level.
+# theatre -> (context line, month it was last checked). Set by hand, and checked each month by a Claude Code routine that opens a
+# PR when a line should change; never by the model or the scores. It says what is already happening, so a war under way does
+# not read like a calm theatre whose signals happen to sit near their usual range. Theatres without a line show none.
+CONTEXT = {
+    "ukraine": ("War under way", "2026-10"),
+    "sudan": ("War under way", "2026-10"),
+    "israel": ("Conflict under way", "2026-10"),
+}
 REGIONS = [
     ("mideast", "Middle East", ["iran", "israel", "yemen", "iraq", "gulf", "lebanon", "syria"]),
     ("europe_r", "Europe", ["ukraine", "europe_east"]),
