@@ -7,16 +7,22 @@ never stored: military traces are kept, the rest are skipped after one byte-leve
 Value written per theatre and class: how many different military aircraft of that class were seen inside the theatre's box on that UTC day.
 The live series counts aircraft present at one instant, so its level is lower; the two are NOT interchangeable. validate.py scores each on its own baseline.
 `adsb_global_mil` (military aircraft seen anywhere that day) is written as a denominator, because the feeder network grew over the period.
+
+The same pass also reads the civil traces that come near a theatre airport (warwatch/flights.py): airline departures, diversions,
+turnbacks, holding and business-jet departures per theatre (flights_* and bizjet_* series), with the day's diversions and per-airport
+counts in backfill/flights/. `backfill.py flights` reads the archive for those alone, for days the military counts already hold.
 """
 import datetime as dt
 import gzip
 import json
+import os
 import re
 import tarfile
 import urllib.request
 
 import common as K
 import config as C
+import flights as F
 import sources as S
 
 CLASSES = {"lift": S.AIRLIFT, "tanker": S.TANKER, "isr": S.ISR, "fighter": S.FIGHTER}
@@ -98,7 +104,15 @@ def count_trace(header, points, boxes, seen):
             seen[(th, c)].add(hexid)
 
 
-def run_day(urls, boxes):
+try:
+    import orjson                    # several times faster on the civil traces; the workflow installs it, plain json works too
+    loads = orjson.loads
+except ImportError:
+    loads = json.loads
+
+
+def run_day(urls, boxes, day=None, mil=True):
+    """day: a flights.Day that also takes the civil traces passing near a theatre airport. mil=False skips the military counts."""
     seen = {("global", "mil"): set()}
     for th in boxes:
         for c in ["mil"] + list(CLASSES):
@@ -114,31 +128,60 @@ def run_day(urls, boxes):
             b = gzip.decompress(b)
         f = FLAGS.search(b[:600])
         if not f or not int(f.group(1)) & 1:
+            if day is not None and day.ap.maybe_near(b):
+                d = loads(b)
+                day.add(d, d.get("trace", []))
             continue
         n_mil += 1
-        d = json.loads(b)
-        count_trace(d, d.get("trace", []), boxes, seen)
+        if mil:
+            d = loads(b)
+            count_trace(d, d.get("trace", []), boxes, seen)
     return {k: float(len(v)) for k, v in seen.items()}, n_files, n_mil
 
 
-def cmd_adsb(start, end, step=1, token=None, only=None):
+def save_flights(d, day):
+    """One day of flights: the per-theatre series into data/, the diversions and per-airport rows into flights/ (monthly files)."""
+    iso = d.isoformat()
+    for sid, v in day.series().items():
+        K.save(sid, {iso: v})
+    out = os.path.join(K.DATA, "flights")
+    F.write_rows(os.path.join(out, f"airports-{iso[:7]}.csv"), iso, day.airport_rows(iso), F.AIRPORT_HEAD)
+    F.write_rows(os.path.join(out, f"events-{iso[:7]}.csv"), iso, day.event_rows(iso), F.EVENT_HEAD)
+    F.write_places(os.path.join(out, "places.csv"), day)
+
+
+def cmd_adsb(start, end, step=1, token=None, only=None, mil=True, flights=True):
     """only: theatre ids to fill (e.g. ["iraq", "gulf"]) for theatres added after the archive was first read; days are then
-    re-read whatever the other theatres already hold, and only those theatres' files are written."""
+    re-read whatever the other theatres already hold, and only those theatres' files are written (no flights).
+    mil / flights: which of the two counts to make; a day is read when either is missing."""
     boxes = {t: b for t, b in C.BOXES.items() if not only or t in only}
+    flights = flights and not only
     avail = releases(range(start.year, end.year + 1), token)
     todo = [d for d in K.days(start, end) if (d - start).days % step == 0 and d in avail]
     K.log("adsb: days with an archive", len(todo), "of", (end - start).days + 1)
-    have = {} if only else K.load("adsb_global_mil")
+    have = {} if only or not mil else K.load("adsb_global_mil")
+    have_fl = K.load(F.DONE) if flights else {}
+    ap = routes = None
     for d in todo:
-        if d.isoformat() in have:
+        need_mil = mil and d.isoformat() not in have
+        need_fl = flights and d.isoformat() not in have_fl
+        if not (need_mil or need_fl):
             continue
+        if need_fl and ap is None:
+            ap, routes = F.fetch_standing_data()
+            K.log("standing data: airports", len(ap.info), "routes", len(routes))
+        day = F.Day(ap, routes) if need_fl else None
         try:
-            res, nf, nm = run_day(avail[d], boxes)
+            res, nf, nm = run_day(avail[d], boxes, day, need_mil)
         except Exception as e:     # a truncated or missing asset: leave the day empty and move on
             K.log("fail", d, str(e)[:120])
             continue
-        for (th, c), v in res.items():
-            if only and th == "global":
-                continue
-            K.save("adsb_global_mil" if th == "global" else f"adsb_{th}_{c}", {d.isoformat(): v})
-        K.log("ok", d, "traces", nf, "military", nm, {k: int(v) for k, v in res.items() if k[1] in ("mil",) and v})
+        if need_mil:
+            for (th, c), v in res.items():
+                if only and th == "global":
+                    continue
+                K.save("adsb_global_mil" if th == "global" else f"adsb_{th}_{c}", {d.isoformat(): v})
+        if need_fl:
+            save_flights(d, day)
+        K.log("ok", d, "traces", nf, "military", nm, {k: int(v) for k, v in res.items() if k[1] in ("mil",) and v},
+              "flights", day.summary() if day else "-")

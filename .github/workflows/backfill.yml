@@ -254,6 +254,7 @@ jobs:
           if [[ "$S" > "$E" ]]; then echo "outside this quarter"; exit 0; fi
           export BACKFILL_DATA="$PWD/backfill/shards/$1"
           # ONLY (e.g. iraq,gulf) re-reads the archive for theatres added later; blank = every theatre, skipping days already held
+          python3 -m pip install --quiet --break-system-packages orjson || true   # faster trace parsing for the flights pass; json works without it
           python3 backfill/backfill.py adsb "$ONLY" --start "$S" --end "$E"
       - uses: ./.github/actions/commit-backfill
         if: always()

@@ -30,7 +30,7 @@ export type Theatre = {
   history: [string, number, number, string][]; items: { date: string; kind: string; text: string; signal: string }[]
   events: { date: string; kind: string; text: string }[]
 }
-export type Signal = { id: string; label: string; group: Group; sub: string; theatre: string; z: number | null; status: string; stale: string; last: string; lagging: boolean; kind: string; why: string; url: string; event: string | null; spark: (number | null)[] }
+export type Signal = { id: string; label: string; group: Group; sub: string; theatre: string; z: number | null; status: string; stale: string; last: string; lagging: boolean; kind: string; why: string; url: string; event: string | null; untested?: boolean; spark: (number | null)[] }
 export type Signals = { generated: string; groups: Record<Group, string>; signals: Signal[] }
 /* west, south, east, north: the ground a satellite chip covers, so the map can lay it in place */
 export type Bounds = [number, number, number, number]
@@ -38,8 +38,14 @@ export type MapBase = { id: string; name: string; kind: string; side: string; th
 /* the Sentinel-2 check of an unusual fire (firereview.py): before (b), after (a) and short-wave infrared (s) chips, their dates, and the verdict */
 export type FireImages = { b: string; a: string; s: string; bd: string; ad: string; v: string; bb?: Bounds }
 export type MapFire = { ll: LonLat; mw: number; date: string; time: string; class: string; score: number; why: string; site: string; theatre: string; night: boolean; images?: FireImages | null }
-export type MapAircraft = { ll: LonLat; call: string; class: string; t?: string; trk?: number; hex?: string; th?: string; o?: string; ct?: string; alt?: number; gs?: number; sq?: string; emergency: boolean }
-export type MapShip = { ll: LonLat; name: string; k?: string; loc?: string; g?: string; d?: string; tx?: string; u?: string; flag?: string; dest?: string; spd?: number; note?: string; th?: string }
+export type MapAircraft = { ll: LonLat; call: string; class: string; t?: string; d?: string; r?: string; rt?: string; trk?: number; hex?: string; th?: string; o?: string; ct?: string; alt?: number; gs?: number; sq?: string; emergency: boolean }
+export type MapShip = { ll: LonLat; name: string; k?: string; loc?: string; g?: string; d?: string; tx?: string; u?: string; flag?: string; dest?: string; spd?: number; note?: string; th?: string; trail?: LonLat[] }
+/* Added October 2026 (docs/FLIGHTS.md, docs/SHIPS.md): theatre airports and diversions from the flight archive (a day behind),
+   dark-ship radar cells and loitering ships from Global Fishing Watch (about five days behind). Optional in the file. */
+export type MapAirport = { ll: LonLat; icao: string; name: string; theatre: string; date: string; departures: number; usual: number; divertedAway: number; divertedIn: number; turnbacks: number; holds: number; bizjets: number; bizjetsOut: number }
+export type MapDiversion = { ll: LonLat; kind: 'diversion' | 'turnback'; call: string; type: string; from: string; planned: string; landed: string; time: number; date: string; theatre: string }
+export type MapDark = { ll: LonLat; count: number; date: string; theatre: string }
+export type MapLoiter = { ll: LonLat; name: string; flag: string; type: string; hours: number; start: string; theatre: string }
 export type MapWarning = { ll: LonLat; id: string; text: string; issued: string; theatre: string }
 export type MapIncident = { ll: LonLat; t?: string; d?: string; src?: string; u?: string; loc?: string; th?: string; tx?: string }
 export type Pic = { src: string; date: string } | null
@@ -50,6 +56,7 @@ export type BaseFile = { generated: string; id: string; name: string; type: stri
 export type LiveMap = {
   generated: string; theatres: Record<string, { center: LonLat | null; view: [LonLat, LonLat] | null; countries: string[] }>
   bases: MapBase[]; fires: MapFire[]; aircraft: MapAircraft[]; squawks: MapAircraft[]; ships: MapShip[]; warnings: MapWarning[]; incidents: MapIncident[]; cities: { ll: LonLat; name: string; theatre: string }[]; chokepoints: { ll: LonLat; name: string; theatre: string }[]
+  airports?: MapAirport[]; diversions?: MapDiversion[]; darkShips?: MapDark[]; loitering?: MapLoiter[]
 }
 export type Forward = { k: string; name: string; first: string; logged: number; days: number; need: number; through: string; ready: boolean; pass: boolean }
 export type RecordFile = { generated: string; forward: Forward[] | null; model: { v: string; fitted: string; active: boolean; gates: Gates } | null; health: { statuses: Record<string, number>; errors: unknown[]; unavailable: { n: string; w: string }[]; updates: { s: string; e: string; l: string }[] } }

@@ -5,7 +5,8 @@
     python3 backfill/backfill.py firms THEATRE [--start D --end D]
     python3 backfill/backfill.py gfw   THEATRE [--start D --end D]
     python3 backfill/backfill.py nga   [--start D --end D]
-    python3 backfill/backfill.py adsb [theatre,theatre] [--start D --end D --step N]
+    python3 backfill/backfill.py adsb [theatre,theatre] [--start D --end D --step N]   # military counts and civil flights (warwatch/flights.py)
+    python3 backfill/backfill.py flights [--start D --end D]   # civil flights only, for days whose military counts are held
     python3 backfill/backfill.py pla   [--start D --end D]
     python3 backfill/backfill.py wiki  [--start D --end D]     # Wikipedia page views per theatre
     python3 backfill/backfill.py news THEATRE[,THEATRE...] [--start D --end D]   # Google News headline counts per day
@@ -102,6 +103,35 @@ def cmd_msa():
         K.log("msa", th, K.save(f"msa_{th}", extras.msa_counts(list(rows.values()), th, first, K.YDAY)), "days from", first)
 
 
+def merge_flights(src, dst):
+    """Folds one shard's flights table into data/flights: places.csv by airport (the union), a monthly table by day (the shard's
+    days replace the same days, other days stay, so a quarter job does not wipe days the daily job added since)."""
+    import csv
+    def rows(p):
+        try:
+            with open(p, newline="") as f:
+                return list(csv.reader(f))
+        except OSError:
+            return []
+    new, old = rows(src), rows(dst)
+    if not new:
+        return
+    head, new = new[0], new[1:]
+    old = old[1:]
+    if os.path.basename(src) == "places.csv":
+        have = {r[0]: r for r in old if r}
+        have.update({r[0]: r for r in new if r})
+        body = [have[k] for k in sorted(have)]
+    else:
+        days = {r[0] for r in new if r}
+        body = sorted([r for r in old if r and r[0] not in days] + [r for r in new if r])
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    with open(dst, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(head)
+        w.writerows(body)
+
+
 def cmd_merge():
     """Fold backfill/shards/*/ (one dir per ADS-B quarter) into backfill/data/ and remove the shards."""
     import shutil
@@ -110,6 +140,10 @@ def cmd_merge():
     os.makedirs(out, exist_ok=True)
     for sh in sorted(os.listdir(base)) if os.path.isdir(base) else []:
         d = os.path.join(base, sh)
+        fl = os.path.join(d, "flights")     # monthly tables and places.csv (warwatch/flights.py)
+        if os.path.isdir(fl):
+            for f in sorted(os.listdir(fl)):
+                merge_flights(os.path.join(fl, f), os.path.join(out, "flights", f))
         for f in sorted(os.listdir(d)):
             if not f.endswith(".csv"):
                 continue
@@ -143,6 +177,9 @@ def main():
     elif a.cmd == "adsb":
         import sources_adsb as A
         A.cmd_adsb(max(a.start, dt.date(2022, 1, 1)), a.end, a.step, os.environ.get("GITHUB_TOKEN"), [t for t in a.arg.split(",") if t])
+    elif a.cmd == "flights":
+        import sources_adsb as A
+        A.cmd_adsb(max(a.start, dt.date(2022, 1, 1)), a.end, a.step, os.environ.get("GITHUB_TOKEN"), mil=False)
     elif a.cmd == "news":
         import sources_news as N
         N.cmd_news([t for t in a.arg.split(",") if t], a.start, min(a.end, K.YDAY))

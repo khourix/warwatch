@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import { Protocol, PMTiles } from 'pmtiles'
-import { X, Flame, Plane, Ship, TriangleAlert, Satellite, ExternalLink, ImageIcon, Maximize2 } from 'lucide-react'
+import { X, Flame, Plane, Ship, TriangleAlert, Satellite, ExternalLink, ImageIcon, Maximize2, PlaneLanding, Radar, Anchor } from 'lucide-react'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import { feature } from 'topojson-client'
 import type { FeatureCollection } from 'geojson'
 import coarse from 'world-atlas/countries-110m.json'
-import { levelVar, asset, baseState, shortDate, useBase, type Brief, type LiveMap, type LonLat, type Route, type MapBase, type MapFire, type MapAircraft, type MapShip, type MapWarning } from './data'
+import { levelVar, asset, baseState, shortDate, useBase, type Brief, type LiveMap, type LonLat, type Route, type MapBase, type MapFire, type MapAircraft, type MapShip, type MapWarning, type MapAirport, type MapDiversion, type MapDark, type MapLoiter } from './data'
 import { fireImages, baseImages, copernicusUrl, worldviewUrl, type SatImage, type Focus } from './sat'
 import { baseWord, fireWord, fireColour } from './ground'
 import { reducedMotion as reduced } from './settings'
@@ -61,9 +61,25 @@ const dist = (a: LonLat, b: LonLat) => {   // great-circle angle in degrees
 
 type Props = { brief: Brief; live?: LiveMap; route: Route; theme: string; padRight: number; padBottom: number; onPick: (r: Route) => void; flat?: boolean; day?: string | null; labels?: number }
 type Peek = { kind: 'base'; x: MapBase } | { kind: 'fire'; x: MapFire } | { kind: 'air'; x: MapAircraft } | { kind: 'ship'; x: MapShip } | { kind: 'warn'; x: MapWarning }
-const PICKABLE = ['aircraft-cluster', 'bases', 'fires', 'aircraft', 'ships', 'warnings'] as const
-const PEEK_KIND: Record<string, Peek['kind']> = { bases: 'base', fires: 'fire', aircraft: 'air', ships: 'ship', warnings: 'warn' }
-const BONUS: Record<string, number> = { bases: 4, fires: 3, 'aircraft-cluster': 0 }   // px: on a tie, a base or a fire wins over a passing aircraft
+  | { kind: 'airport'; x: MapAirport } | { kind: 'divert'; x: MapDiversion } | { kind: 'dark'; x: MapDark } | { kind: 'loiter'; x: MapLoiter }
+const PICKABLE = ['aircraft-cluster', 'bases', 'fires', 'aircraft', 'ships', 'warnings', 'diversions', 'airports', 'loitering', 'dark'] as const
+const PEEK_KIND: Record<string, Peek['kind']> = { bases: 'base', fires: 'fire', aircraft: 'air', ships: 'ship', warnings: 'warn', airports: 'airport', diversions: 'divert', dark: 'dark', loitering: 'loiter' }
+const BONUS: Record<string, number> = { bases: 4, fires: 3, diversions: 3, 'aircraft-cluster': 0, dark: -2 }   // px: on a tie, a base or a fire wins over a passing aircraft; a radar cell loses to anything
+/* what each class of military aircraft does, in a line a reader without aviation knowledge can follow */
+const ROLE: Record<string, [string, string]> = {
+  tanker: ['Air-to-air refuelling', 'A tanker: it refuels other aircraft in flight, so fighters and bombers can reach further. Tankers moving forward often come before air operations.'],
+  isr: ['Surveillance', 'A surveillance aircraft: it watches, listens to radio and radar signals, or maps the ground from a distance. Where it flies shows where attention is.'],
+  fighter: ['Fighter or strike', 'A fighter or strike jet. Most fly with their transponder off, so the few seen here are a small part of what is flying.'],
+  lift: ['Military transport', 'A military transport: it carries troops, vehicles and supplies. A run of transports into a region is how forces are moved in.'],
+  bomber: ['Bomber', 'A bomber: it carries long-range weapons. Bomber flights near a theatre are often a deliberate show of force.'],
+  uav: ['Drone', 'A large military drone, flown remotely, for surveillance or strike. It can stay up for a day or more.'],
+  heli: ['Helicopter', 'A military helicopter: transport, rescue, anti-submarine patrol or attack.'],
+  other: ['Military or government', 'A military or government aircraft broadcasting its position: a trainer, VIP transport, utility or special-mission aircraft.'],
+}
+const SHIFT: Record<string, number> = { diversions: 11 }   // px a layer's icon sits up and right of its point (icon-offset × icon-size)
+/* a theatre airport stands out when its departures fell well below usual, or flights were diverted away from it this week */
+const airportState = (a: MapAirport) => a.usual >= 10 && a.departures <= .6 * a.usual ? 2 : a.divertedAway > 0 || a.turnbacks > 0 ? 1 : 0
+const utcTime = (t: number) => new Date(t * 1000).toISOString().slice(11, 16) + ' UTC'
 const coarsePointer = () => matchMedia('(pointer: coarse)').matches
 
 export function MapView({ brief, live, route, theme, padRight, padBottom, onPick, flat = false, day = null, labels = 1 }: Props) {
@@ -133,7 +149,8 @@ export function MapView({ brief, live, route, theme, padRight, padBottom, onPick
       const layers = PICKABLE.filter(l => m.getLayer(l))
       let best: maplibregl.MapGeoJSONFeature | null = null, bd = Infinity
       for (const f of m.queryRenderedFeatures([[pt.x - r, pt.y - r], [pt.x + r, pt.y + r]], { layers: [...layers] })) {
-        const q = m.project((f.geometry as GeoJSON.Point).coordinates as [number, number]), d = Math.hypot(q.x - pt.x, q.y - pt.y) - (BONUS[f.layer.id] || 0)
+        const q = m.project((f.geometry as GeoJSON.Point).coordinates as [number, number]), o = SHIFT[f.layer.id] || 0
+        const d = Math.hypot(q.x + o - pt.x, q.y - o - pt.y) - (BONUS[f.layer.id] || 0)
         if (d < bd) { bd = d; best = f }
       }
       return best
@@ -173,7 +190,10 @@ export function MapView({ brief, live, route, theme, padRight, padBottom, onPick
           const id = f.layer.id
           if (id === 'aircraft-cluster') text = `${f.properties!.point_count} aircraft · click to zoom in`
           else { const x = JSON.parse(f.properties!.json); text = id === 'bases' ? `${x.name.split(',')[0]} · ${baseWord(x.state, x.part)}` : id === 'fires' ? `${x.site ? 'Heat near ' + x.site : fireWord(x.class)} · ${Math.round(x.mw)} MW · ${shortDate(x.date)}`
-            : id === 'aircraft' ? [x.call || x.hex || 'Military aircraft', x.t].filter(Boolean).join(' · ') : id === 'ships' ? x.name : `Navigational warning ${x.id}` }
+            : id === 'aircraft' ? [x.call || x.hex || 'Military aircraft', (x.d || '').replace(/\s*\(.*\)$/, '') || x.t].filter(Boolean).join(' · ') : id === 'ships' ? x.name
+            : id === 'airports' ? `${x.name} · ${x.departures} departures, usually ${Math.round(x.usual)}` : id === 'diversions' ? `${x.call} ${x.kind === 'turnback' ? 'turned back' : 'diverted to ' + x.landed} · ${shortDate(x.date)}`
+            : id === 'dark' ? `${x.count} ${x.count === 1 ? 'ship' : 'ships'} with no AIS on radar · ${shortDate(x.date)}` : id === 'loitering' ? `${x.name || 'A ship'} loitering · ${x.hours} h`
+            : `Navigational warning ${x.id}` }
         } else if (!peekRef.current) {
           const t = landTheatre(e.point)
           if (t) text = `Open ${nameRef.current(t)}`
@@ -218,7 +238,12 @@ export function MapView({ brief, live, route, theme, padRight, padBottom, onPick
     set('bases', fc(live.bases.filter(b => !day || b.last === day).map(b => pt(b.ll, b, { id: b.id, st: b.state, hi: ['out', 'in', 'changed'].includes(b.state) ? 1 : 0 }))))
     set('aircraft', fc(day ? [] : [...live.aircraft, ...live.squawks].map(a => pt(a.ll, a, { trk: a.trk ?? 0, em: a.emergency || !!a.sq ? 1 : 0 }))))
     set('ships', fc(day ? [] : live.ships.map(x => pt(x.ll, x))))
+    set('ship-trails', fc(day ? [] : live.ships.filter(x => (x.trail?.length || 0) > 1).map(x => ({ type: 'Feature', geometry: { type: 'LineString', coordinates: x.trail }, properties: {} }))))
     set('warnings', fc(day ? [] : live.warnings.map(x => pt(x.ll, x))))
+    set('airports', fc(day ? [] : (live.airports || []).map(a => pt(a.ll, a, { st: airportState(a) }))))
+    set('diversions', fc((live.diversions || []).filter(d => !day || d.date === day).map(d => pt(d.ll, d, { tb: d.kind === 'turnback' ? 1 : 0 }))))
+    set('dark', fc(day ? [] : (live.darkShips || []).map(c => pt(c.ll, c, { n: c.count }))))
+    set('loitering', fc(day ? [] : (live.loitering || []).map(x => pt(x.ll, x))))
   }, [live, ready, day])
 
   /* the open base is drawn larger */
@@ -382,15 +407,28 @@ function addIcons(m: maplibregl.Map) {
   make('arrow', 32, (c, s) => { c.beginPath(); c.moveTo(s / 2, 3); c.lineTo(s - 7, s - 5); c.lineTo(s / 2, s - 10); c.lineTo(7, s - 5); c.closePath(); c.fill() })
   make('boat', 32, (c, s) => { c.beginPath(); c.moveTo(s / 2, 4); c.lineTo(s - 9, s / 2); c.lineTo(s - 9, s - 5); c.lineTo(9, s - 5); c.lineTo(9, s / 2); c.closePath(); c.fill() })
   make('warn', 32, (c, s) => { c.lineWidth = 3; c.beginPath(); c.moveTo(s / 2, 4); c.lineTo(s - 4, s - 5); c.lineTo(4, s - 5); c.closePath(); c.stroke() })
+  /* a diversion: an arrow bent off its line; a turnback: the same bent all the way round */
+  make('divert', 32, (c, s) => { c.lineWidth = 3.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(6, s - 6); c.lineTo(s / 2, s / 2); c.lineTo(s - 9, 9); c.stroke()
+    c.beginPath(); c.moveTo(s - 5, 5); c.lineTo(s - 16, 7); c.lineTo(s - 7, 16); c.closePath(); c.fill() })
+  make('turnback', 32, (c, s) => { c.lineWidth = 3.5; c.lineCap = 'round'; c.beginPath(); c.arc(s / 2, s / 2, s / 2 - 8, Math.PI * .15, Math.PI * 1.75); c.stroke()
+    c.beginPath(); c.moveTo(s - 4, s / 2 - 6); c.lineTo(s - 14, s / 2 - 9); c.lineTo(s - 9, s / 2 + 2); c.closePath(); c.fill() })
 }
 const EMPTY = { type: 'FeatureCollection' as const, features: [] }
 function addLiveLayers(m: maplibregl.Map) {
-  for (const id of ['fires', 'bases', 'ships', 'warnings', 'drape-edge']) m.addSource(id, { type: 'geojson', data: EMPTY })
+  for (const id of ['fires', 'bases', 'ships', 'ship-trails', 'warnings', 'drape-edge', 'airports', 'diversions', 'dark', 'loitering']) m.addSource(id, { type: 'geojson', data: EMPTY })
   m.addLayer({ id: 'drape-edge', type: 'line', source: 'drape-edge', paint: { 'line-width': 1, 'line-dasharray': [3, 2] } })
   m.addSource('aircraft', { type: 'geojson', data: EMPTY, cluster: true, clusterMaxZoom: 4, clusterRadius: 28 })
+  // radar cells of ships sending no AIS sit under everything: a faint field that thickens where many went dark
+  m.addLayer({ id: 'dark', type: 'circle', source: 'dark', minzoom: 3.5, paint: {} })
+  // diversions sit just up and right of the airport they landed at, so the airport's ring stays visible and clickable
+  // theatre airports: quiet ones from zoom 4.5, ones with fewer departures than usual or diversions this week from the world view
+  m.addLayer({ id: 'airports', type: 'circle', source: 'airports', filter: ['any', ['>', ['get', 'st'], 0], ['>=', ['zoom'], 4.5]], paint: {} })
   m.addLayer({ id: 'fires', type: 'circle', source: 'fires', paint: {} })
   m.addLayer({ id: 'warnings', type: 'symbol', source: 'warnings', minzoom: 3, layout: { 'icon-image': 'warn', 'icon-size': .8, 'icon-allow-overlap': true }, paint: {} })
+  m.addLayer({ id: 'ship-trails', type: 'line', source: 'ship-trails', minzoom: 4, layout: { 'line-cap': 'round' }, paint: { 'line-width': 1.2, 'line-dasharray': [1, 2] } })
   m.addLayer({ id: 'ships', type: 'symbol', source: 'ships', minzoom: 3, layout: { 'icon-image': 'boat', 'icon-size': .75, 'icon-allow-overlap': true }, paint: {} })
+  m.addLayer({ id: 'loitering', type: 'symbol', source: 'loitering', minzoom: 3.5, layout: { 'icon-image': 'boat', 'icon-size': .65, 'icon-allow-overlap': true }, paint: {} })
+  m.addLayer({ id: 'diversions', type: 'symbol', source: 'diversions', minzoom: 2.5, layout: { 'icon-image': ['case', ['==', ['get', 'tb'], 1], 'turnback', 'divert'], 'icon-size': .8, 'icon-offset': [14, -14], 'icon-allow-overlap': true }, paint: {} })
   m.addLayer({ id: 'aircraft-cluster', type: 'circle', source: 'aircraft', filter: ['has', 'point_count'], paint: {} })
   m.addLayer({ id: 'aircraft', type: 'symbol', source: 'aircraft', filter: ['!', ['has', 'point_count']], layout: { 'icon-image': 'arrow', 'icon-size': .7, 'icon-rotate': ['get', 'trk'], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true }, paint: {} })
   // changed bases show from the world view; the other 150 from zoom 3.5, so the globe is not a field of diamonds
@@ -411,7 +449,18 @@ function paintLive(m: maplibregl.Map) {
   m.setPaintProperty('aircraft-cluster', 'circle-opacity', .35)
   m.setPaintProperty('aircraft-cluster', 'circle-radius', ['interpolate', ['linear'], ['get', 'point_count'], 2, 6, 50, 16])
   m.setPaintProperty('ships', 'icon-color', fg2)
+  m.setPaintProperty('ship-trails', 'line-color', fg2)
+  m.setPaintProperty('ship-trails', 'line-opacity', .55)
   m.setPaintProperty('warnings', 'icon-color', watch)
+  m.setPaintProperty('loitering', 'icon-color', watch)
+  m.setPaintProperty('diversions', 'icon-color', watch)
+  m.setPaintProperty('dark', 'circle-radius', ['interpolate', ['linear'], ['get', 'n'], 1, 2.5, 10, 6])
+  m.setPaintProperty('dark', 'circle-color', fg3)
+  m.setPaintProperty('dark', 'circle-opacity', .35)
+  m.setPaintProperty('airports', 'circle-radius', ['case', ['>', ['get', 'st'], 0], 4.5, 3])
+  m.setPaintProperty('airports', 'circle-color', panel)
+  m.setPaintProperty('airports', 'circle-stroke-width', 1.5)
+  m.setPaintProperty('airports', 'circle-stroke-color', ['match', ['get', 'st'], 2, elev, 1, watch, fg3])
   m.setPaintProperty('drape-edge', 'line-color', accent)
 }
 
@@ -474,15 +523,56 @@ function PeekCard({ p, cardRef, onClose, onPick, brief, style, shown, onShow, on
     </>
     if (f.theatre) action = [`Open ${name(f.theatre)}`, { v: 'theatre', id: f.theatre, tab: 'ground' }]
   } else if (p.kind === 'air') {
-    const a = p.x
-    icon = <Plane size={15} className="text-accent" />; title = a.call || a.hex || 'Military aircraft'; sub = [a.t, a.o || a.ct].filter(Boolean).join(' · ')
-    body = <p className={row}>{[a.alt != null && `${Math.round(a.alt / 100) * 100} ft`, a.gs != null && `${Math.round(a.gs)} kt`, a.sq && `squawk ${a.sq}`].filter(Boolean).join(' · ') || 'Seen on ADS-B at the last run.'}</p>
+    const a = p.x, model = (a.d || '').replace(/\s*\(.*\)$/, ''), role = ROLE[a.class] || ROLE.other
+    icon = <Plane size={15} className="text-accent" />; title = a.call || a.hex || 'Military aircraft'; sub = [model || a.t, a.o || a.ct].filter(Boolean).join(' · ')
+    const alt = typeof a.alt === 'number' ? `${(Math.round(a.alt / 100) * 100).toLocaleString('en')} ft` : ''
+    const facts: [string, string][] = ([['Role', role[0]], ['Type', [model, a.t && `(${a.t})`].filter(Boolean).join(' ')], ['Operator', a.o || ''], ['Registered in', a.ct || ''],
+      ['Tail number', a.r || ''], ['Flying', [alt, a.gs != null && `${Math.round(a.gs)} kt`, a.trk != null && `track ${Math.round(a.trk)}°`].filter(Boolean).join(', ')],
+      ['Squawk', a.sq ? a.sq + (a.emergency ? ' (emergency)' : '') : '']] as [string, string][]).filter(f => f[1])
+    const link = 'inline-flex items-center gap-1 rounded-md border border-line px-2 py-1 text-[11.5px] text-fg2 hover:bg-hover hover:text-fg'
+    body = <>
+      <p className={row}>{role[1]}</p>
+      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[12px] leading-snug">
+        {facts.map(([k, v]) => <Fragment key={k}><dt className="text-fg3">{k}</dt><dd className="min-w-0 text-fg2">{v}</dd></Fragment>)}
+      </dl>
+      {a.rt && <p className="mt-1.5 text-[11.5px] leading-snug text-fg3">{a.rt[0].toUpperCase() + a.rt.slice(1)}.</p>}
+      {a.hex && <div className="mt-2 flex flex-wrap gap-1.5">
+        <a className={link} href={`https://globe.adsb.lol/?icao=${a.hex}`} target="_blank" rel="noreferrer">Track on adsb.lol <ExternalLink size={11} /></a>
+      </div>}
+    </>
     if (a.th && name(a.th)) action = [`Open ${name(a.th)}`, { v: 'theatre', id: a.th, tab: 'ground' }]
   } else if (p.kind === 'ship') {
     const x = p.x
     icon = <Ship size={15} className="text-fg2" />; title = x.name; sub = [x.k, x.flag, x.loc].filter(Boolean).join(' · ')
     body = <p className={row}>{x.note || x.tx || (x.dest ? `Bound for ${x.dest}` : '')}</p>
     if (x.th && name(x.th)) action = [`Open ${name(x.th)}`, { v: 'theatre', id: x.th, tab: 'ground' }]
+  } else if (p.kind === 'airport') {
+    const a = p.x, low = airportState(a) === 2
+    icon = <PlaneLanding size={15} style={{ color: low ? 'var(--elev)' : airportState(a) ? 'var(--watch)' : 'var(--fg-3)' }} />; title = a.name; sub = `${a.icao} · airline flights, ${shortDate(a.date)} · adsb.lol archive`
+    const week = [a.divertedAway && `${a.divertedAway} diverted away`, a.divertedIn && `${a.divertedIn} diverted in`, a.turnbacks && `${a.turnbacks} turned back`,
+      a.holds && `${a.holds} held before landing`, a.bizjets && `${a.bizjets} business-jet departures${a.bizjetsOut ? `, ${a.bizjetsOut} abroad` : ''}`].filter(Boolean)
+    body = <>
+      <p className={row}><span className="num font-medium" style={{ color: low ? 'var(--elev)' : undefined }}>{a.departures}</span> departures, against a usual {Math.round(a.usual)} a day over the four weeks before.</p>
+      <p className={row}>Last 7 days: {week.length ? week.join(', ') : 'no diversions, turnbacks or holds'}.</p>
+      <p className="mt-1.5 text-[10.5px] leading-snug text-fg3">Not tested yet: shown on the map and in the timing tells, kept out of the score until a test on past events passes.</p>
+    </>
+    if (a.theatre && name(a.theatre)) action = [`Open ${name(a.theatre)}`, { v: 'theatre', id: a.theatre, tab: 'ground' }]
+  } else if (p.kind === 'divert') {
+    const d = p.x, tb = d.kind === 'turnback'
+    icon = <Plane size={15} style={{ color: 'var(--watch)' }} />; title = tb ? `${d.call} turned back` : `${d.call} diverted to ${d.landed}`
+    sub = [d.type, `${shortDate(d.date)} ${utcTime(d.time)}`].filter(Boolean).join(' · ')
+    body = <p className={row}>{tb ? `Took off from ${d.from} and landed back there.` : `Flying ${d.from} to ${d.planned}, it came down towards ${d.planned} and landed at ${d.landed} instead.`} Airline flights seen in the adsb.lol archive, a day behind.</p>
+    if (d.theatre && name(d.theatre)) action = [`Open ${name(d.theatre)}`, { v: 'theatre', id: d.theatre, tab: 'ground' }]
+  } else if (p.kind === 'dark') {
+    const c = p.x
+    icon = <Radar size={15} className="text-fg2" />; title = `${c.count} ${c.count === 1 ? 'ship' : 'ships'} with no AIS`; sub = `Sentinel-1 radar, ${shortDate(c.date)} · Global Fishing Watch`
+    body = <p className={row}>Radar saw {c.count === 1 ? 'a vessel' : 'vessels'} in this 10 km square that sent no AIS signal: a ship hiding where it goes, or one too small to carry AIS. The latest pass, about five days behind.</p>
+    if (c.theatre && name(c.theatre)) action = [`Open ${name(c.theatre)}`, { v: 'theatre', id: c.theatre, tab: 'ground' }]
+  } else if (p.kind === 'loiter') {
+    const x = p.x
+    icon = <Anchor size={15} style={{ color: 'var(--watch)' }} />; title = x.name || 'A ship loitering'; sub = [x.type.replace(/_/g, ' '), x.flag, `from ${shortDate(x.start.slice(0, 10))}`].filter(Boolean).join(' · ')
+    body = <p className={row}>Slowed or drifted at sea for {x.hours} {x.hours === 1 ? 'hour' : 'hours'}: how ship-to-ship transfers, and waiting out a threat, look on AIS. Global Fishing Watch, about five days behind.</p>
+    if (x.theatre && name(x.theatre)) action = [`Open ${name(x.theatre)}`, { v: 'theatre', id: x.theatre, tab: 'ground' }]
   } else {
     const w = p.x
     icon = <TriangleAlert size={15} style={{ color: 'var(--watch)' }} />; title = `Navigational warning ${w.id}`; sub = w.issued ? `Issued ${w.issued}` : 'NGA'

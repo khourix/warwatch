@@ -26,6 +26,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           DAYS: ${{ github.event.inputs.days || '5' }}
         run: |
+          python3 -m pip install --quiet --break-system-packages orjson || true   # faster trace parsing for the flights pass; json works without it
           python3 backfill/backfill.py adsb --start "$(date -u -d "$DAYS days ago" +%F)" --end "$(date -u -d yesterday +%F)"
       - uses: ./.github/actions/commit-backfill
         if: always()

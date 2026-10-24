@@ -136,7 +136,7 @@ class T(unittest.TestCase):
         seen = []
         orig = (A.releases, A.run_day)
         A.releases = lambda years, token=None: {day: ["u"]}
-        A.run_day = lambda urls, boxes: (seen.append(sorted(boxes)) or {("global", "mil"): 9.0, ("iraq", "mil"): 3.0, ("gulf", "mil"): 0.0}, 1, 1)
+        A.run_day = lambda urls, boxes, day=None, mil=True: (seen.append(sorted(boxes)) or {("global", "mil"): 9.0, ("iraq", "mil"): 3.0, ("gulf", "mil"): 0.0}, 1, 1)
         try:
             A.cmd_adsb(day, day, only=["iraq", "gulf"])
         finally:
@@ -211,6 +211,30 @@ class NightLights(unittest.TestCase):
         got = NL.read_tile(p, [("iran", "Tehran", 35.69, 51.39), ("iran", "Isfahan", 32.65, 51.67)])
         self.assertEqual(got[("iran", "Tehran")], (10.0, 0.8))
         self.assertEqual(got[("iran", "Isfahan")], (10.0, 1.0))
+
+
+class TestMergeFlights(unittest.TestCase):
+    def test_shard_days_replace_same_days_and_places_union(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("backfill_cli", os.path.join(os.path.dirname(os.path.abspath(__file__)), "backfill.py"))
+        B = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(B)
+        d = tempfile.mkdtemp()
+        def put(name, rows):
+            with open(os.path.join(d, name), "w") as f:
+                f.write("\n".join(",".join(r) for r in rows) + "\n")
+        def get(name):
+            with open(os.path.join(d, name)) as f:
+                return [line.strip().split(",") for line in f if line.strip()]
+        put("old.csv", [["date", "icao", "dep"], ["2026-10-01", "LLBG", "1"], ["2026-10-20", "LLBG", "5"]])
+        put("new.csv", [["date", "icao", "dep"], ["2026-10-01", "LLBG", "2"], ["2026-10-01", "OTHH", "3"]])
+        B.merge_flights(os.path.join(d, "new.csv"), os.path.join(d, "old.csv"))
+        self.assertEqual(get("old.csv")[1:], [["2026-10-01", "LLBG", "2"], ["2026-10-01", "OTHH", "3"], ["2026-10-20", "LLBG", "5"]])
+        os.makedirs(os.path.join(d, "a")); os.makedirs(os.path.join(d, "b"))
+        put("a/places.csv", [["icao", "name"], ["LLBG", "Ben Gurion"]])
+        put("b/places.csv", [["icao", "name"], ["OTHH", "Hamad"]])
+        B.merge_flights(os.path.join(d, "a/places.csv"), os.path.join(d, "b/places.csv"))
+        self.assertEqual(get("b/places.csv")[1:], [["LLBG", "Ben Gurion"], ["OTHH", "Hamad"]])
 
 
 if __name__ == "__main__":
