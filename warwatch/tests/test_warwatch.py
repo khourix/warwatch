@@ -1533,7 +1533,7 @@ class DataContract(unittest.TestCase):
         self.assertEqual(bad, {})
         self.assertIn("brief.json", self.files)
         self.assertTrue(all(f"theatres/{t}.json" in self.files for t in C.THEATRES if t != "global"))
-        self.assertLess(len(json.dumps(self.files["brief.json"], separators=(",", ":"))), 40_000)
+        self.assertLess(len(json.dumps(self.files["brief.json"], separators=(",", ":"))), 80_000)   # 30 days of feed: about 45 KB live
 
     def test_validate_catches_a_broken_file(self):
         import contract
@@ -1579,6 +1579,66 @@ class DataContract(unittest.TestCase):
         p = f["parts"][0]
         self.assertEqual((p["part"], p["low"], p["high"], p["marks"]["gone"]), ("apron", 15.0, 26.0, 12))
         self.assertEqual(p["images"], {"marked": {"src": "img/bases/x_m_apron.jpg", "date": "2026-10-22"}, "before": None})
+
+    def test_feed_reaches_back_30_days(self):
+        """The 30-day strip under the map: tells, travel steps, CrisisWatch, base passes and fires from the whole window, not
+        only the newest 40 items (which stopped the strip at the last day or two)."""
+        import contract
+        store.cache_rows_save("fire_anoms", [["cid", "box", "lat", "lon", "first_ts", "last_ts", "max_frp", "score", "c"],
+                                             ["iran_1_2_2026-10-08", "iran", "32.1", "51.2", "2026-10-08T01:00Z", "2026-10-08T01:00Z", "40.0", "80", "anom"],
+                                             ["iran_1_3_2026-10-08", "iran", "32.2", "51.3", "2026-10-08T01:10Z", "2026-10-08T01:10Z", "12.0", "70", "anom"],
+                                             ["iran_1_4_2026-10-09", "iran", "32.3", "51.4", "2026-10-09T01:10Z", "2026-10-09T01:10Z", "9.0", "65", "anom"],
+                                             ["iran_1_5_2026-08-01", "iran", "32.3", "51.4", "2026-08-01T01:10Z", "2026-08-01T01:10Z", "9.0", "65", "anom"]])
+        store.cache_rows_save("fire_review", [["cid", "verdict", "burn_ha", "landcover", "before_date", "after_date", "before_id", "after_id", "checked_at"],
+                                              ["iran_1_4_2026-10-09", "scar", "2.0", "cropland", "2026-10-01", "2026-10-11", "a", "b", "2026-10-12"]])
+        try:
+            data = {"generated": "2026-10-24 01:17 UTC", "theatres": {"iran": {"tells": [], "official": []}, "yemen": {"tells": [], "official": []}},
+                    "hist": {"iran": {"items": [["2026-10-03", "tell", "Airspace closed or restricted", "notam_iran"],
+                                                ["2026-10-14", "advisory", "US travel advisories raised: level sum 7.81818 to 8", "state_iran"],
+                                                ["2026-10", "rating", "CrisisWatch: conflict-risk alert", "crisiswatch_iran"],
+                                                ["2026-08-13", "advice", "UK travel advice updated", "fcdo_iran"]]},
+                             "yemen": {"items": [["2026-10-20", "advice", "UK travel advice updated on 3 days that week", "fcdo_yemen"]]}},
+                    "map": {"bases": [{"id": "x", "n": "X Air Base, Qatar", "mp": "apron", "th": "iran", "st": "out", "last": "2026-10-22",
+                                       "ev": [["2026-10-05", "changed"], ["2026-10-21", "out"]]}],
+                            "fires": [{"d": "2026-10-23", "c": "anom", "th": "iran", "p": 86.0, "site": "Isfahan air base"},
+                                      {"d": "2026-10-23", "c": "seas", "th": "iran", "p": 5.0, "site": ""}]}}
+            f = contract.feed(data)
+        finally:
+            store.cache_rows_save("fire_anoms", [])
+            store.cache_rows_save("fire_review", [])
+        got = {(x["date"], x["kind"], x["theatre"], x["title"]) for x in f}
+        self.assertEqual(got, {
+            ("2026-10-03", "tell", "iran", "Airspace closed or restricted"),
+            ("2026-10-14", "official", "iran", "US travel advisories raised"),
+            ("2026-10-01", "official", "iran", "CrisisWatch: conflict-risk alert"),
+            ("2026-10-20", "official", "yemen", "UK travel advice updated on 3 days that week"),
+            ("2026-10-22", "base", "iran", "X Air Base: fewer aircraft than usual"),
+            ("2026-10-05", "base", "iran", "X Air Base: one pass differed"),           # 21 Oct is the current reading, not a second item
+            ("2026-10-23", "fire", "iran", "Heat near Isfahan air base"),
+            ("2026-10-08", "fire", "iran", "2 unusual fires"),                        # one item per theatre and day; 9 Oct was a burnt field
+        })
+        self.assertEqual([x["date"] for x in f], sorted((x["date"] for x in f), reverse=True))
+        adv = next(x for x in f if x["title"] == "US travel advisories raised")
+        self.assertEqual(adv["detail"], "Level sum 7.8 to 8. US State Department")
+        self.assertEqual(next(x for x in f if x["kind"] == "fire" and x["date"] == "2026-10-08")["detail"], "Strongest 40 MW, NASA VIIRS")
+
+    def test_base_changes_replay_each_pass(self):
+        import basewatch as B
+        zs = [("2026-09-01", 0.2), ("2026-10-02", -3.0), ("2026-10-06", -2.8), ("2026-10-12", 0.1), ("2026-10-20", 3.1), ("2026-10-23", None)]
+        self.assertEqual(B.past_states(zs, dt.date(2026, 10, 24)), [("2026-10-02", "changed"), ("2026-10-06", "out"), ("2026-10-20", "changed")])
+        self.assertEqual(B.past_states(zs, dt.date(2026, 10, 24), alerts=False)[1], ("2026-10-06", "changed"))
+
+    def test_satellite_pictures_carry_their_footprint(self):
+        """The map lays a base's chips and a fire's Sentinel-2 close-ups on the ground, so each carries the window it covers."""
+        import contract
+        m = {"lat": 32.75, "lon": 51.86, "frp": 86.0, "date": "2026-10-24", "cid": "iran_1_2_2026-10-24", "rv": {"verdict": "none", "bd": "2026-10-20", "ad": "2026-10-25"}}
+        d = dashboard.fire_json(m, lambda la, lo: [0, 0], {"iran_1_2_2026-10-24": (32.7512, 51.8601)})
+        w, s, e, n = d["img"]["bb"]
+        self.assertAlmostEqual((n - s) * 110.574, 2.56, places=2)                # 2.56 km tall, centred where firereview.py cut the chips
+        self.assertAlmostEqual((w + e) / 2, 51.8601, places=4)
+        self.assertNotIn("bb", dashboard.fire_json(m, lambda la, lo: [0, 0], {})["img"])
+        live = contract.live_map(dict(self.data, map=dict(self.data["map"], bases=[dict(self.data["map"]["bases"][0], bb=[51.29, 25.08, 51.33, 25.14])])))
+        self.assertEqual(live["bases"][0]["bounds"], [51.29, 25.08, 51.33, 25.14])
 
     def test_write_lays_out_the_tree(self):
         import contract

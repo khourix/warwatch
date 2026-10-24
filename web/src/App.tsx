@@ -10,6 +10,7 @@ import { SignalsView, SignalView } from './signals'
 import { RecordView } from './record'
 import { BaseView } from './ground'
 import { TimeStrip } from './strip'
+import { NotificationBell } from './bell'
 import { Wordmark, Mark, LevelChip, Skeleton, Failed } from './ui'
 import { useBrief, useLiveMap, useSignals, currentRoute, legacyHash, routeHref, parseGen, levelVar, fmtZ, type Brief, type LiveMap, type Route } from './data'
 
@@ -111,6 +112,7 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
             <Search size={14} /><span className="flex-1 text-left">Search theatres, bases, signals</span><kbd className="rounded border border-line px-1.5 font-mono text-[10.5px]">⌘K</kbd>
           </button>
           <div className="flex-1" />
+          <NotificationBell brief={brief} live={live} go={go} />
           <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-line bg-panel/80 px-3 py-1.5 text-[12px] text-fg2 backdrop-blur-md" title={`Built ${brief.generated}. The next run is due within 30 minutes.`}>
             <span className="relative h-1.5 w-1.5 rounded-full bg-accent text-accent live-dot" /><span className="num">Updated {fmtTime(now, prefs.tz)}</span>
           </div>
@@ -123,7 +125,7 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
             </motion.aside>
           )}
         </AnimatePresence>
-      </> : <PhoneShell route={route} go={go} nav={nav} navActive={navActive} openCmd={() => setCmd(true)} openSettings={() => setSettings(true)} panelRef={panelRef} brief={brief}>{view}</PhoneShell>}
+      </> : <PhoneShell route={route} go={go} nav={nav} navActive={navActive} openCmd={() => setCmd(true)} openSettings={() => setSettings(true)} panelRef={panelRef} brief={brief} live={live}>{view}</PhoneShell>}
 
       <CommandMenu open={cmd} setOpen={setCmd} go={go} toggleTheme={toggleTheme} openSettings={() => setSettings(true)} brief={brief} live={live} />
       <SettingsSheet open={settings} onClose={() => setSettings(false)} />
@@ -133,9 +135,9 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
 }
 
 /* ---------------------------------------------------------------- Phone: map behind, sheet on top */
-function PhoneShell({ route, go, nav, navActive, openCmd, openSettings, children, panelRef, brief }: {
+function PhoneShell({ route, go, nav, navActive, openCmd, openSettings, children, panelRef, brief, live }: {
   route: Route; go: (r: Route) => void; nav: [Route['v'], string, typeof Newspaper][]; navActive: (k: string) => boolean; openCmd: () => void; openSettings: () => void
-  children: React.ReactNode; panelRef: React.RefObject<HTMLDivElement | null>; brief: Brief
+  children: React.ReactNode; panelRef: React.RefObject<HTMLDivElement | null>; brief: Brief; live?: LiveMap
 }) {
   const [H, setH] = useState(innerHeight)
   useEffect(() => { const f = () => setH(innerHeight); addEventListener('resize', f); return () => removeEventListener('resize', f) }, [])
@@ -145,10 +147,16 @@ function PhoneShell({ route, go, nav, navActive, openCmd, openSettings, children
   const controls = useDragControls()
   const snapTo = (i: number) => animate(y, snaps[i], { type: 'spring', stiffness: 420, damping: 42 })
   useEffect(() => { if (route.v === 'map') snapTo(2); else if (y.get() > snaps[1] + 10) snapTo(1) }, [route])
+  useEffect(() => {   // a fire picked in a list, or a card opened on the map: lower the sheet so the map shows it
+    const f = () => snapTo(2)
+    addEventListener('ww-focus', f); addEventListener('ww-peek', f)
+    return () => { removeEventListener('ww-focus', f); removeEventListener('ww-peek', f) }
+  }, [H])
   return (
     <>
-      <header className="absolute inset-x-0 top-0 z-20 flex h-[60px] items-center gap-2 px-4" style={{ background: 'linear-gradient(var(--bg), color-mix(in oklab, var(--bg) 0%, transparent))' }}>
+      <header className="absolute inset-x-0 top-0 z-30 flex h-[60px] items-center gap-2 px-4" style={{ background: 'linear-gradient(var(--bg), color-mix(in oklab, var(--bg) 0%, transparent))' }}>
         <Wordmark size={16} /><div className="flex-1" />
+        <NotificationBell brief={brief} live={live} go={go} phone />
         <button onClick={openCmd} aria-label="Search" className="grid h-9 w-9 place-items-center rounded-full border border-line bg-panel/80 backdrop-blur"><Search size={16} /></button>
         <button onClick={openSettings} aria-label="Settings" className="grid h-9 w-9 place-items-center rounded-full border border-line bg-panel/80 backdrop-blur"><Settings2 size={16} /></button>
       </header>
