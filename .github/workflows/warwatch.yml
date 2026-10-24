@@ -12,7 +12,7 @@ on:
         default: ""
   push:
     branches: [main]
-    paths: ["warwatch/**/*.py", "warwatch/page.html", ".github/workflows/warwatch.yml"]
+    paths: ["warwatch/**/*.py", "warwatch/page.html", "web/**", ".github/workflows/warwatch.yml"]
 permissions:
   contents: write
   actions: write      # the "next" job dispatches the following run
@@ -87,6 +87,19 @@ jobs:
           google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --allow-file-access-from-files --force-device-scale-factor=1 \
             --window-size=1200,630 --screenshot="$PWD/site/og-new.jpg" "file://$PWD/site/og-card.html" \
             && [ -s site/og-new.jpg ] && mv site/og-new.jpg site/og.jpg || echo "share card render failed; keeping the static og.jpg"
+      # The new app (web/, React) is a preview at /warwatch/next/ until the switch-over. It reads site/data/v1 written above.
+      # A failed build leaves it out of this deploy; the main page is never held back by it.
+      - uses: actions/setup-node@v4
+        continue-on-error: true
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: New app (web/ built into site/next)
+        continue-on-error: true
+        run: |
+          cd web && npm ci --no-audit --no-fund && npm run build
+          rm -rf ../site/next && cp -r dist ../site/next
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/
