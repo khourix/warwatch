@@ -81,8 +81,8 @@ haifa_naval,ground,2026-10-23,2026-10-17,9,2,2
 haifa_naval,harbour,2026-10-23,2026-10-17,76,40,42
 hamadan_3tab,apron,2026-10-23,2026-10-17,4,4,2
 hamadan_3tab,ground,2026-10-23,2026-10-17,118,104,83
-hatzerim,apron,2026-10-17,2026-10-11,2,0,0
-hatzerim,ground,2026-10-17,2026-10-11,252,87,50
+hatzerim,apron,2026-10-23,2026-10-17,2,0,0
+hatzerim,ground,2026-10-23,2026-10-17,218,55,89
 hmeimim,apron,2026-10-23,2026-10-17,4,3,1
 hmeimim,ground,2026-10-23,2026-10-17,65,29,28
 hodeidah,ground,2026-10-23,2026-10-11,17,4,10
@@ -153,8 +153,8 @@ longtian,apron,2026-10-07,2026-09-25,1,0,0
 longtian,ground,2026-10-07,2026-09-25,18,5,8
 machulishchy,apron,2026-10-23,2026-10-11,2,2,0
 machulishchy,ground,2026-10-23,2026-10-11,66,26,10
-mashhad_14tab,apron,2026-10-16,2026-10-04,19,5,5
-mashhad_14tab,ground,2026-10-16,2026-10-04,45,9,12
+mashhad_14tab,apron,2026-10-22,2026-10-10,17,6,4
+mashhad_14tab,ground,2026-10-22,2026-10-10,52,10,13
 masroor,apron,2026-10-15,2026-10-03,6,1,2
 masroor,ground,2026-10-15,2026-10-03,130,28,36
 merowe,apron,2026-10-22,2026-10-10,3,0,0
@@ -171,8 +171,8 @@ muwaffaq_salti,apron,2026-10-24,2026-10-18,5,3,1
 muwaffaq_salti,ground,2026-10-24,2026-10-18,156,39,49
 myrhorod,apron,2026-10-23,2026-10-17,6,2,1
 myrhorod,ground,2026-10-23,2026-10-17,32,8,11
-nevatim,apron,2026-10-17,2026-10-11,14,8,4
-nevatim,ground,2026-10-17,2026-10-11,174,25,36
+nevatim,apron,2026-10-23,2026-10-17,11,3,6
+nevatim,ground,2026-10-23,2026-10-17,181,45,38
 ningbo_zhuangqiao,apron,2026-10-21,2026-10-09,8,1,2
 ningbo_zhuangqiao,ground,2026-10-21,2026-10-09,114,38,27
 ningbo_zhuangqiao,harbour,2026-10-21,2026-10-09,9,1,2
@@ -190,8 +190,8 @@ omidiyeh_5tab,apron,2026-10-22,2026-10-16,2,0,0
 omidiyeh_5tab,ground,2026-10-22,2026-10-16,252,58,52
 osan,apron,2026-10-18,2026-09-24,12,3,0
 osan,ground,2026-10-18,2026-09-24,313,167,165
-palmachim,apron,2026-10-16,2026-10-10,0,0,0
-palmachim,ground,2026-10-16,2026-10-10,267,61,57
+palmachim,apron,2026-10-22,2026-10-16,0,0,0
+palmachim,ground,2026-10-22,2026-10-16,288,74,53
 pathankot,apron,2026-10-24,2026-10-12,7,3,1
 pathankot,ground,2026-10-24,2026-10-12,121,40,87
 pk_akro_garrison,ground,2026-10-15,2026-10-03,51,13,16
