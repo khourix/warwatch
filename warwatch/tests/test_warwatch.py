@@ -1552,6 +1552,16 @@ class DataContract(unittest.TestCase):
         for b in m["bases"]:
             self.assertEqual(self.files[f"bases/{b['id']}.json"]["ll"], b["ll"])
 
+    def test_counts_agree_between_brief_and_theatre(self):
+        b = self.files["brief.json"]
+        for t in b["theatres"]:
+            th = self.files[f"theatres/{t['id']}.json"]
+            self.assertEqual(t["strong"], th["signals"]["strong"], t["id"])
+            self.assertEqual(t["tellsTotal"], len(th["tells"]), t["id"])
+            self.assertLessEqual(th["signals"]["strong"], th["signals"]["scored"])
+            self.assertLessEqual(th["signals"]["scored"], th["signals"]["total"])
+        self.assertEqual(b["counts"]["strong"], sum(t["strong"] for t in b["theatres"]))
+
     def test_write_lays_out_the_tree(self):
         import contract
         out = tempfile.mkdtemp()

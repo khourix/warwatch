@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/* WarWatch "Night desk" tokens. Dark first; light is "Day desk". */
+:root {
+  --bg: #090b0f; --panel: #0f1218; --raised: #151922; --hover: #1b202b;
+  --line: rgba(148,163,190,.12); --line-2: rgba(148,163,190,.22);
+  --fg: #e9edf3; --fg-2: #a5aebd; --fg-3: #7a8597;
+  --accent: #7da8ff; --accent-soft: rgba(125,168,255,.14); --accent-ink: #08132b;
+  --watch: #e9b44c; --elev: #f28a3e; --crit: #f0524f; --event: #f3eadb;
+  --ocean: #07090c; --land: #161b23; --land-2: #1d232e; --border: #2b3342; --grat: rgba(148,163,190,.06);
+  --shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 12px 32px -12px rgba(0,0,0,.6);
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #f4f5f7; --panel: #ffffff; --raised: #f1f3f6; --hover: #e8ebf0;
+  --line: rgba(15,23,42,.09); --line-2: rgba(15,23,42,.16);
+  --fg: #0d1220; --fg-2: #485366; --fg-3: #6b7487;
+  --accent: #2c5ad8; --accent-soft: rgba(44,90,216,.10); --accent-ink: #ffffff;
+  --watch: #9a6412; --elev: #b8480b; --crit: #c81e1e; --event: #3b3427;
+  --ocean: #e3e8ef; --land: #fbfcfd; --land-2: #f2f4f7; --border: #c3cad6; --grat: rgba(15,23,42,.05);
+  --shadow: 0 1px 2px rgba(15,23,42,.06), 0 12px 32px -16px rgba(15,23,42,.25);
+  color-scheme: light;
+}
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-cond: "IBM Plex Sans Condensed", "IBM Plex Sans", ui-sans-serif, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-serif: "Source Serif 4", Georgia, serif;
+  --color-bg: var(--bg); --color-panel: var(--panel); --color-raised: var(--raised); --color-hover: var(--hover);
+  --color-line: var(--line); --color-line2: var(--line-2);
+  --color-fg: var(--fg); --color-fg2: var(--fg-2); --color-fg3: var(--fg-3);
+  --color-accent: var(--accent); --color-accentsoft: var(--accent-soft); --color-accentink: var(--accent-ink);
+  --color-watch: var(--watch); --color-elev: var(--elev); --color-crit: var(--crit); --color-event: var(--event);
+  --ease-out-quint: cubic-bezier(.22, 1, .36, 1);
+}
+
+html, body, #root { height: 100%; }
+body { overflow: hidden; overscroll-behavior: none; }
+#root { position: fixed; inset: 0; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-sans); font-size: 14px; -webkit-font-smoothing: antialiased; font-feature-settings: "ss02"; }
+.num { font-variant-numeric: tabular-nums; }
+.eyebrow { font-family: var(--font-cond); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-3); font-weight: 500; }
+.hair { border-color: var(--line); }
+.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+button { cursor: pointer; }
+
+@keyframes breathe { 0%,100% { opacity: 0; transform: scale(.8); } 50% { opacity: .35; transform: scale(1.4); } }
+.live-dot::after { content: ""; position: absolute; inset: -2px; border-radius: 999px; background: currentColor; opacity: .3; animation: breathe 2.4s ease-in-out infinite; }
+@keyframes ping { 0% { transform: scale(.6); opacity: .7; } 100% { transform: scale(2.4); opacity: 0; } }
+.ping::before { content: ""; position: absolute; inset: 0; border-radius: 999px; border: 1.5px solid currentColor; animation: ping 2.2s cubic-bezier(.22,1,.36,1) infinite; }
+@keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+
+
+
+/* MapLibre controls in the desk's colours */
+.maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib.maplibregl-compact { background: color-mix(in oklab, var(--panel) 85%, transparent) !important; color: var(--fg-3); font: 11px var(--font-sans); border: 1px solid var(--line); }
+.maplibregl-ctrl-attrib a { color: var(--fg-2); }
+.maplibregl-ctrl-attrib-button { filter: var(--attrib-icon, invert(.75)); background-color: transparent !important; }
+:root[data-theme="light"] { --attrib-icon: none; }
+.maplibregl-canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }

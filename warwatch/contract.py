@@ -29,7 +29,7 @@ NUM = (int, float)
 OPT_NUM = (int, float, type(None))
 SHAPES = {
     "brief": {"generated": str, "headline": str, "counts": dict, "global": dict, "regions[]": list, "theatres[]": list, "feed[]": list, "model": dict},
-    "theatre": {"id": str, "name": str, "region": str, "level": str, "score": OPT_NUM, "tells[]": list, "groups": dict, "official[]": list,
+    "theatre": {"id": str, "name": str, "region": str, "level": str, "score": OPT_NUM, "signals": dict, "tells[]": list, "groups": dict, "official[]": list,
                 "history[]": list, "items[]": list, "events[]": list, "center": (list, type(None)), "countries": list},
     "signals": {"generated": str, "groups": dict, "signals[]": list},
     "series": {"id": str, "points": list, "zHistory": list},
@@ -41,7 +41,8 @@ SHAPES = {
 }
 ITEMS = {
     "brief.regions": {"id": str, "name": str, "theatres": list, "level": str},
-    "brief.theatres": {"id": str, "name": str, "region": str, "level": str, "tellsOn": int, "context": (str, type(None)), "groups": dict},
+    "brief.theatres": {"id": str, "name": str, "region": str, "level": str, "tellsOn": int, "tellsTotal": int, "strong": int, "context": (str, type(None)),
+                       "groups": dict},
     "brief.feed": {"date": str, "kind": str, "theatre": str, "title": str, "detail": str, "to": dict},
     "theatre.tells": {"id": str, "name": str, "on": bool, "says": str},
     "theatre.official": {"name": str, "id": str, "date": str, "value": str},
@@ -191,14 +192,16 @@ def brief(data):
     for t in order:
         v = data["theatres"][t]
         ctx, ctxd = _ctx(t)
+        sc = _scored(data["series"], t)
         ths.append({"id": t, "name": v["name"], "region": reg[t]["id"] if t in reg else "", "level": v["level"], "score": v.get("score"),
-                    "standingRisk": v.get("xu"), "tellsOn": sum(1 for x in v.get("tells") or [] if x.get("on")), "context": ctx, "contextChecked": ctxd,
+                    "standingRisk": v.get("xu"), "tellsOn": sum(1 for x in v.get("tells") or [] if x.get("on")), "tellsTotal": len(v.get("tells") or []),
+                    "strong": sum(1 for s in sc if abs(s["z"]) >= 3), "context": ctx, "contextChecked": ctxd,
                     "spillover": t in (data.get("spill") or {}), "parents": (data.get("spill") or {}).get(t, []), "center": _box_center(t),
                     "groups": {k: g["z"] for k, g in _groups(data, t).items()}})
     mo = data.get("model") or {}
     g = data.get("global") or {}
     return _head("brief", data["generated"], demo=bool(data.get("demo")), eventsThrough=(data.get("events") or {}).get("through", ""),
-                 headline=head, counts=counts, **{"global": {"level": g.get("level"), "score": g.get("score"), "lead": g.get("lead")}},
+                 headline=head, counts=dict(counts, strong=sum(x["strong"] for x in ths)), **{"global": {"level": g.get("level"), "score": g.get("score"), "lead": g.get("lead")}},
                  regions=[{"id": r["id"], "name": r["name"], "theatres": r["kids"], "level": r["level"], "lead": r.get("lead")} for r in data.get("regions") or []],
                  theatres=ths, feed=feed(data)[:40],
                  model={"version": mo.get("v"), "fitted": mo.get("fitted"), "active": bool(mo.get("active")), "gates": mo.get("gates")})
@@ -210,7 +213,9 @@ def theatre(data, t):
     ctx, ctxd = _ctx(t)
     ev = (data.get("events") or {}).get("list") or []
     hist = (data.get("hist") or {}).get(t) or {}
+    sc = _scored(data["series"], t)
     return _head("theatre", data["generated"], id=t, name=v["name"], region=reg[t]["name"] if t in reg else "", level=v["level"], score=v.get("score"),
+                 signals={"scored": len(sc), "total": sum(1 for s in data["series"] if s["t"] == t), "strong": sum(1 for s in sc if abs(s["z"]) >= 3)},
                  standingRisk=v.get("xu"), chance={"p": v.get("p"), "lo": v.get("plo"), "hi": v.get("phi"), "usual": v.get("pb"), "change": v.get("pd")},
                  confidence=v.get("confl"), context=ctx, contextChecked=ctxd, spillover=t in (data.get("spill") or {}),
                  parents=(data.get("spill") or {}).get(t, []), center=_box_center(t), view=_view(t), countries=C.THEATRES.get(t, {}).get("countries", []),
