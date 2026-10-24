@@ -19,6 +19,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import activity  # noqa: E402
 import catalog  # noqa: E402
+import contract  # noqa: E402
 import config as C  # noqa: E402
 import dashboard  # noqa: E402
 import engine  # noqa: E402
@@ -167,6 +168,10 @@ def main():
         f.write(dashboard.page_html(data, now, out_dir=os.path.dirname(os.path.abspath(a.out))))
     with open(os.path.join(os.path.dirname(os.path.abspath(a.out)), "feed.xml"), "w", encoding="utf-8") as f:   # This week, for feed readers
         f.write(dashboard.feed_xml(data))
+    try:   # data/v1/: the JSON the new app reads (contract.py). Like the card, it must never break the build.
+        print("data contract:", contract.write(os.path.dirname(os.path.abspath(a.out)), data), "files")
+    except Exception as e:
+        print("data contract skipped:", str(e)[:200])
     try:   # the link-preview card; the workflow screenshots it into og.jpg. It must never break the build.
         with open(os.path.join(os.path.dirname(os.path.abspath(a.out)), "og-card.html"), "w", encoding="utf-8") as f:
             f.write(share.card_html(data, topo))

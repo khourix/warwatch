@@ -989,7 +989,8 @@ const ICON = {
 };
 const ic = (n, c) => `<svg class="ic ${c || ''}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
 const inf = t => `<i class="info" data-tip="${esc(t)}">i</i>`;
-const lvPill = l => `<span class="lv${RANKL[l] < 2 ? ' n' : ''}" style="--c:${LEVEL[l]}">${esc(String(l).toUpperCase())}</span>`;
+const LVW = l => l === 'Normal' ? 'Quiet' : l;   // the level is still called Normal in the data; the page says Quiet, which reads right next to a war
+const lvPill = l => `<span class="lv${RANKL[l] < 2 ? ' n' : ''}" style="--c:${LEVEL[l]}">${esc(String(LVW(l)).toUpperCase())}</span>`;
 const dot = l => `<span class="dot" style="--c:${LEVEL[l]}"></span>`;
 /* a theatre name carries its own state: tinted by level when the model is live (in shadow the levels stay uncoloured), and an
    orange contour around it when a timing tell fired this week. No separate dot in front of it. Rows that already show the
@@ -1218,11 +1219,11 @@ function renderSB(){
   REG.forEach(r => {
     const top = regionTop(r), lv = regionLevel(r), isOpen = cur === r, multi = r.kids.length > 1;
     const target = multi ? 'region/' + r.id : r.kids[0];
-    h += `<button class="ni ${isOpen ? 'on' : ''}" data-nav="${target}" data-sbtip="${esc(r.name)} · ${esc(lead(top).txt)}${leadP() && hasP(top) ? ' in 30 days' : ''} · ${esc(lv)}"><span class="code" style="--c:${LEVEL[lv]}">${CODE[r.id] || esc(r.name.slice(0, 3).toUpperCase())}</span><span class="tx">${esc(r.name)}</span><span class="sc" data-n="l:${top}">${esc(lead(top).txt)}</span></button>`;
+    h += `<button class="ni ${isOpen ? 'on' : ''}" data-nav="${target}" data-sbtip="${esc(r.name)} · ${esc(lead(top).txt)}${leadP() && hasP(top) ? ' in 30 days' : ''} · ${esc(LVW(lv))}"><span class="code" style="--c:${LEVEL[lv]}">${CODE[r.id] || esc(r.name.slice(0, 3).toUpperCase())}</span><span class="tx">${esc(r.name)}</span><span class="sc" data-n="l:${top}">${esc(lead(top).txt)}</span></button>`;
     if (isOpen && multi && open) h += `<div class="kids">` + r.kids.map(k => `<button class="ni ${R.id === k ? 'on' : ''}" data-nav="${k}"><span class="tx">${thn(k, D.theatres[k].name)}</span><span class="sc" data-n="l:${k}">${esc(lead(k).txt)}</span></button>`).join('') + `</div>`;
   });
   const g = D.theatres.global;
-  if (g) h += `<button class="ni ${R.id === 'global' ? 'on' : ''}" data-nav="global" data-sbtip="Global markets and procurement · ${esc(g.level)}"><span class="code" style="--c:${LEVEL[g.level]}">GLB</span><span class="tx">Global markets</span><span class="sc" data-n="l:global">${fs(g.score)}</span></button>`;
+  if (g) h += `<button class="ni ${R.id === 'global' ? 'on' : ''}" data-nav="global" data-sbtip="Global markets and procurement · ${esc(LVW(g.level))}"><span class="code" style="--c:${LEVEL[g.level]}">GLB</span><span class="tx">Global markets</span><span class="sc" data-n="l:global">${fs(g.score)}</span></button>`;
   const bad = D.series.some(s => s.st === 'error' || s.stale) || D.errors.length;
   h += `<div class="grp">Workspace</div>` + item('signals', 'table', 'Signals') + item('activity', 'radar', 'Activity') + item('record', 'check', 'Track record') + item('settings', 'cog', 'Settings', bad ? `<span class="alarm" aria-label="Data problems"></span>` : '');
   h += `</nav><div class="sbf"><button class="ni" id="sbt" data-sbtip="${open ? 'Collapse the sidebar' : 'Expand the sidebar'}">${ic('panel')}<span class="tx">Collapse</span></button></div>`;
@@ -1301,7 +1302,7 @@ function popGTI(){
   const g = D.global || {};
   const rows = RANK.filter(hasP).slice(0, 6).map(t => { const th = D.theatres[t]; return `<div class="wf"><span>${thn(t, th.name)}</span><span class="bar"><i style="width:${Math.min(100, th.p / Math.max(0.12, D.theatres[RANK[0]].p || 0) * 100)}%;background:${LEVEL[th.level]}"></i></span><b>${pct(th.p)}</b></div>`; }).join('');
   const cnt = {}; THEATRES.forEach(t => { const l = D.theatres[t].level; cnt[l] = (cnt[l] || 0) + 1; });
-  const counts = `<div class="row">${['Critical', 'Elevated', 'Watch', 'Normal'].map(l => `<span class="chip" style="height:24px">${dot(l)}${l}<b>${cnt[l] || 0}</b></span>`).join('')}</div>`;
+  const counts = `<div class="row">${['Critical', 'Elevated', 'Watch', 'Normal'].map(l => `<span class="chip" style="height:24px">${dot(l)}${LVW(l)}<b>${cnt[l] || 0}</b></span>`).join('')}</div>`;
   if (!PM) return popWeek();
   const G = PM.gates || {};
   return `<div class="ph"><h4>Why ${pct(g.p_any)} for any theatre</h4><small>next 30 days</small></div><div class="pb">
@@ -1734,7 +1735,7 @@ function popLayers(){
 function popLegend(){
   let h = `<div class="ph"><h4>Legend</h4><small>layers that are on</small></div><div class="pb" style="padding:0 0 6px">`;
   const tint = ['#1d242c', '#504132', '#4e3327', '#4b282a'];
-  h += `<div class="lgrp">Theatre level · ${PM ? '30-day chance' : 'how unusual the signals are'}</div><div class="lkey">${['Normal', 'Watch', 'Elevated', 'Critical'].map((l, i) => `<svg width="16" height="16"><rect x="1.5" y="1.5" width="13" height="13" rx="3" fill="${tint[i]}" stroke="${i ? LEVEL[l] : '#46515c'}" stroke-width="1.5"/></svg><span><b style="color:var(--ink)">${l}</b> · ${PM ? [`below ${pct(BANDS[0])}`, `${pct(BANDS[0])} to ${pct(BANDS[1])}`, `${pct(BANDS[1])} to ${pct(BANDS[2])}`, `${pct(BANDS[2])} or more`][i] : ['the usual range', 'top 10% of calm days', 'top 5%', 'top 1%, several groups agree'][i]}</span>`).join('')}<svg width="16" height="16"><rect x="1" y="3" width="14" height="10" rx="5" fill="none" stroke="${TELLC}" stroke-width="1.5"/></svg><span>Amber ring round a name = a timing tell fired this week</span><span></span><span style="color:var(--dim)">Warm always means unusual: amber, then orange, then red. Grey and white are context.</span></div>`;
+  h += `<div class="lgrp">Theatre level · ${PM ? '30-day chance' : 'how unusual the signals are'}</div><div class="lkey">${['Normal', 'Watch', 'Elevated', 'Critical'].map((l, i) => `<svg width="16" height="16"><rect x="1.5" y="1.5" width="13" height="13" rx="3" fill="${tint[i]}" stroke="${i ? LEVEL[l] : '#46515c'}" stroke-width="1.5"/></svg><span><b style="color:var(--ink)">${LVW(l)}</b> · ${PM ? [`below ${pct(BANDS[0])}`, `${pct(BANDS[0])} to ${pct(BANDS[1])}`, `${pct(BANDS[1])} to ${pct(BANDS[2])}`, `${pct(BANDS[2])} or more`][i] : ['the usual range', 'top 10% of calm days', 'top 5%', 'top 1%, several groups agree'][i]}</span>`).join('')}<svg width="16" height="16"><rect x="1" y="3" width="14" height="10" rx="5" fill="none" stroke="${TELLC}" stroke-width="1.5"/></svg><span>Amber ring round a name = a timing tell fired this week</span><span></span><span style="color:var(--dim)">Warm always means unusual: amber, then orange, then red. Grey and white are context.</span></div>`;
   if (layerState.mil) h += `<div class="lgrp">Aircraft · shape = role, hollow = support · click to hide</div><div class="lkey">${Object.keys(CLS).filter(k => classOff[k] || M.mil.some(a => a.c === k)).map(k => `<svg width="18" height="18" viewBox="-10 -10 20 20">${AIR(0, CLS[k][1], k)}</svg><span data-cls="${k}" class="${classOff[k] ? 'off' : ''}">${CLS[k][0]} <span style="color:var(--dim)">${M.mil.filter(a => a.c === k).length}</span></span>`).join('')}</div>`;
   if (layerState.sqk) h += `<div class="lgrp">Emergency squawks</div><div class="lkey"><svg width="16" height="16"><circle cx="8" cy="8" r="7.5" fill="${HALO}"/><circle cx="8" cy="8" r="6" fill="#e14d44" stroke="#fff" stroke-width="1.5"/></svg><span>7500 hijack · 7700 emergency (pulsing)</span><svg width="16" height="16"><circle cx="8" cy="8" r="7.5" fill="${HALO}"/><circle cx="8" cy="8" r="6" fill="#6b747e" stroke="#fff" stroke-width="1.5"/></svg><span>7600 radio failure</span></div>`;
   if (layerState.ships) h += `<div class="lgrp">Ships · hollow = civil</div><div class="lkey">${['carrier', 'navy', 'tanker'].map(k => `<svg width="18" height="14" viewBox="-14 -8 28 16">${shipSvg(k)}</svg><span>${SHIPK[k][0]}</span>`).join('')}</div>`;
@@ -2401,7 +2402,7 @@ function popPressure(t){
     <p class="hint" style="margin:0 0 8px">Signal pressure shows how unusual all the signals are together. It is not a chance. 50 is the Watch line and 90 is the Critical line.</p>
     <svg viewBox="0 0 100 12" preserveAspectRatio="none" style="width:100%;height:14px;display:block"><rect x="0" y="4" width="50" height="4" fill="#1d2a2e"/><rect x="50" y="4" width="40" height="4" fill="#6b4a17"/><rect x="90" y="4" width="10" height="4" fill="#6b2326"/><rect x="${pos - .6}" y="0" width="1.2" height="12" fill="#fff"/></svg>
     <div class="rampl" style="margin-bottom:8px"><span>0</span><span>50 Watch</span><span>90 Critical</span><span>100</span></div>
-    ${th.p != null && th.lvc && th.lvc !== th.level ? `<p class="hint" style="margin:0 0 8px"><b style="color:var(--ink)">Why the level is ${esc(th.level)}:</b> the model sets the level from the 30-day chance, ${pct(th.p)}. The signals are unusual, but in the past signals like these did not often come before events here.</p>` : ''}
+    ${th.p != null && th.lvc && th.lvc !== th.level ? `<p class="hint" style="margin:0 0 8px"><b style="color:var(--ink)">Why the level is ${esc(LVW(th.level))}:</b> the model sets the level from the 30-day chance, ${pct(th.p)}. The signals are unusual, but in the past signals like these did not often come before events here.</p>` : ''}
     <div class="kv"><span>Index (100 is normal) ${inf('A weighted Mazziotta-Pareto index of the five groups. 100 is normal; each 10 points is about 1 SD.')}</span><b class="num">${th.index == null ? '–' : th.index.toFixed(1)}</b></div>
     <div class="kv"><span>Imbalance ${inf('The spread between the groups. A high value means that one group does most of the work.')}</span><b class="num">${th.imb == null ? '–' : th.imb.toFixed(1)}</b></div>
     <div class="kv"><span>Strongest signal</span><b>${th.worst && SERIES[th.worst.id] ? `<a data-id="${esc(th.worst.id)}" style="cursor:pointer;color:var(--ink)">${esc(shortL(SERIES[th.worst.id].l))}</a> <span class="num" style="${zsty(th.worst.z)}">${zTxt(SERIES[th.worst.id])}</span>` : '–'}</b></div>
@@ -2447,8 +2448,13 @@ function searchAll(q){
   if (M) {
     M.mil.forEach(a => { if ((a.call + ' ' + a.hex + ' ' + (a.o || '') + ' ' + (a.ct || '') + ' ' + (a.t || '') + ' ' + (a.r || '')).toLowerCase().includes(q)) out.push({g: 'Aircraft', t: (a.call || a.hex) + ' ' + (a.t || ''), s: (a.o || (CLS[a.c] || CLS.other)[0]) + (a.th ? ' · ' + thName(a.th) : ''), run: () => { nav(a.th || 'overview'); setTimeout(() => { focusXY(a.xy, 300); openCard('mil', a); }, 80); }}); });
     (M.ships || []).forEach(a => { if ((a.n + ' ' + (a.g || '') + ' ' + (a.loc || '')).toLowerCase().includes(q)) out.push({g: 'Ships', t: a.n, s: (a.loc || '') + (a.th ? ' · ' + thName(a.th) : ''), run: () => { nav(a.th || 'overview'); setTimeout(() => { focusXY(a.xy, 700); openCard('ships', a); }, 80); }}); });
+    const fly = (th, o, type) => () => { nav(th && D.theatres[th] ? th : 'overview'); setTimeout(() => { focusXY(o.xy, 700); openCard(type, o); }, 80); };
+    (M.bases || []).forEach(b => { if ((b.n + ' ' + b.id + ' ' + (b.side || '')).toLowerCase().includes(q)) out.push({g: 'Bases', t: b.n, s: (BASEN[b.st] || '') + (b.th ? ' · ' + thName(b.th) : ''), run: fly(b.th, b, 'bases')}); });
+    (M.fires || []).filter(f => f.site || f.why).forEach(f => { if (((f.site || '') + ' ' + (f.why || '')).toLowerCase().includes(q)) out.push({g: 'Fires', t: f.site ? 'Heat near ' + f.site : FIRE_CLS[fireCls(f)], s: f.d + ' · ' + Math.round(f.p || 0) + ' MW' + (f.th ? ' · ' + thName(f.th) : ''), run: fly(f.th, f, 'fires')}); });
+    (M.nga || []).forEach(w => { if ((w.id + ' ' + w.tx).toLowerCase().includes(q)) out.push({g: 'Warnings', t: 'Hazard warning ' + w.id, s: w.tx.slice(0, 60) + (w.th ? ' · ' + thName(w.th) : ''), run: fly(w.th, w, 'nga')}); });
     M.countries.forEach(c => { if (c.name.toLowerCase().includes(q)) out.push({g: 'Countries', t: c.name, s: thOfCountry[c.name] ? thName(thOfCountry[c.name]) : '', run: () => { const th = thOfCountry[c.name]; if (th && D.theatres[th]) nav(th); else { nav('overview'); setTimeout(() => focusXY([c.cx, c.cy], 500), 80); } }}); });
   }
+  ((D.events && D.events.list) || []).filter(e => e[4].toLowerCase().includes(q)).slice(-6).reverse().forEach(e => out.push({g: 'Past events', t: e[4], s: e[0] + ' · ' + thName(e[1]), run: () => nav(e[1])}));
   D.markets.filter(m => m.q.toLowerCase().includes(q)).slice(0, 4).forEach(m => out.push({g: 'Markets', t: m.q, s: Math.round(m.p * 100) + '%', run: () => openMarket(D.markets.indexOf(m))}));
   return out.slice(0, 40);
 }
@@ -2845,7 +2851,7 @@ function guideBody(){
     <h3 style="margin-top:22px">Words you will see</h3>
     <ul>
       ${qa('SD', 'standard deviations from the signal\'s own normal. Capped at ±5.')}
-      ${qa('Normal, Watch, Elevated, Critical', PM ? 'the levels, set by the 30-day chance.' : 'the levels, set by signal pressure (how unusual the signals are together), while the model is in shadow.')}
+      ${qa('Quiet, Watch, Elevated, Critical', PM ? 'the levels, set by the 30-day chance.' : 'the levels, set by signal pressure (how unusual the signals are together), while the model is in shadow.')}
       ${qa('Signal pressure', 'a 0 to 100 index of how unusual a theatre\'s signals are together. 50 is the Watch line.')}
       ${qa('Standing risk', 'how often this theatre has had events, not whether one is near.')}
       ${qa('Sub-theatre', 'a country drawn into a neighbour\'s war, such as Iraq or the GCC. It reads its own signals and its neighbours\'.')}
