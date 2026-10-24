@@ -1516,3 +1516,46 @@ class ContextLine(unittest.TestCase):
              "conf_label": "", "missing": [], "th": None}
         self.assertEqual(dashboard.theatre_json("ukraine", v, [])["ctx"], C.CONTEXT["ukraine"][0])
         self.assertIsNone(dashboard.theatre_json("libya", v, [])["ctx"])
+
+
+class DataContract(unittest.TestCase):
+    """data/v1/ (contract.py): every file matches its shape, positions are [lon, lat], and the brief stays small."""
+
+    @classmethod
+    def setUpClass(cls):
+        import contract
+        cls.data = dashboard.build_data(run.evaluate(demo.scenario("buildup")), "2026-10-24 01:17 UTC", True, demo.extras("buildup"), geo.load())
+        cls.files = contract.files(cls.data)
+
+    def test_every_file_matches_its_shape(self):
+        import contract
+        bad = {k: p for k, v in self.files.items() for p in [contract.validate(v)] if p}
+        self.assertEqual(bad, {})
+        self.assertIn("brief.json", self.files)
+        self.assertTrue(all(f"theatres/{t}.json" in self.files for t in C.THEATRES if t != "global"))
+        self.assertLess(len(json.dumps(self.files["brief.json"], separators=(",", ":"))), 40_000)
+
+    def test_validate_catches_a_broken_file(self):
+        import contract
+        b = json.loads(json.dumps(self.files["brief.json"]))
+        del b["theatres"][0]["level"]
+        b["regions"] = "x"
+        self.assertTrue(any("missing level" in p for p in contract.validate(b)))
+        self.assertTrue(any("brief.regions" in p for p in contract.validate(b)))
+        self.assertEqual(contract.validate({"schema": "warwatch/v0"}), ["schema is 'warwatch/v0', not 'warwatch/v1'"])
+
+    def test_positions_are_lon_lat(self):
+        m = self.files["map/live.json"]
+        kyiv = next(c for c in m["cities"] if c["name"] == "Kyiv")
+        self.assertAlmostEqual(kyiv["ll"][0], 30.52, delta=0.05)     # lon first
+        self.assertAlmostEqual(kyiv["ll"][1], 50.45, delta=0.05)
+        for b in m["bases"]:
+            self.assertEqual(self.files[f"bases/{b['id']}.json"]["ll"], b["ll"])
+
+    def test_write_lays_out_the_tree(self):
+        import contract
+        out = tempfile.mkdtemp()
+        n = contract.write(out, self.data)
+        self.assertEqual(n, len(self.files))
+        with open(os.path.join(out, "data", "v1", "brief.json")) as f:
+            self.assertEqual(json.load(f)["kind"], "brief")

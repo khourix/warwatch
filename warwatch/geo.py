@@ -76,6 +76,11 @@ class Proj:
         return ((lon - self.lo) / (self.hi - self.lo) * self.w,
                 (self.y0 - self._m(lat)) / (self.y0 - self.y1) * self.h)
 
+    def lonlat(self, x, y):
+        """The inverse of xy: pixel position -> (lon, lat)."""
+        m = self.y0 - y / self.h * (self.y0 - self.y1)
+        return self.lo + x / self.w * (self.hi - self.lo), math.degrees(2 * math.atan(math.exp(m)) - math.pi / 2)
+
     def inside(self, lon, lat, pad=0.0):
         return self.lo - pad <= lon <= self.hi + pad and self.la0 - pad <= lat <= self.la1 + pad
 
