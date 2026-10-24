@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import { Protocol, PMTiles } from 'pmtiles'
-import { X, Flame, Plane, Ship, TriangleAlert, Satellite } from 'lucide-react'
+import { X, Flame, Plane, Ship, TriangleAlert, Satellite, ExternalLink, ImageIcon, Maximize2 } from 'lucide-react'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import { feature } from 'topojson-client'
 import type { FeatureCollection } from 'geojson'
 import coarse from 'world-atlas/countries-110m.json'
-import { levelVar, asset, baseState, shortDate, type Brief, type LiveMap, type LonLat, type Route, type MapBase, type MapFire, type MapAircraft, type MapShip, type MapWarning } from './data'
+import { levelVar, asset, baseState, shortDate, useBase, type Brief, type LiveMap, type LonLat, type Route, type MapBase, type MapFire, type MapAircraft, type MapShip, type MapWarning } from './data'
+import { fireImages, baseImages, copernicusUrl, worldviewUrl, type SatImage, type Focus } from './sat'
 import { baseWord, fireWord, fireColour } from './ground'
 import { reducedMotion as reduced } from './settings'
 
@@ -60,6 +61,10 @@ const dist = (a: LonLat, b: LonLat) => {   // great-circle angle in degrees
 
 type Props = { brief: Brief; live?: LiveMap; route: Route; theme: string; padRight: number; padBottom: number; onPick: (r: Route) => void; flat?: boolean; day?: string | null; labels?: number }
 type Peek = { kind: 'base'; x: MapBase } | { kind: 'fire'; x: MapFire } | { kind: 'air'; x: MapAircraft } | { kind: 'ship'; x: MapShip } | { kind: 'warn'; x: MapWarning }
+const PICKABLE = ['aircraft-cluster', 'bases', 'fires', 'aircraft', 'ships', 'warnings'] as const
+const PEEK_KIND: Record<string, Peek['kind']> = { bases: 'base', fires: 'fire', aircraft: 'air', ships: 'ship', warnings: 'warn' }
+const BONUS: Record<string, number> = { bases: 4, fires: 3, 'aircraft-cluster': 0 }   // px: on a tie, a base or a fire wins over a passing aircraft
+const coarsePointer = () => matchMedia('(pointer: coarse)').matches
 
 export function MapView({ brief, live, route, theme, padRight, padBottom, onPick, flat = false, day = null, labels = 1 }: Props) {
   const box = useRef<HTMLDivElement>(null), ov = useRef<HTMLDivElement>(null)
@@ -74,13 +79,32 @@ export function MapView({ brief, live, route, theme, padRight, padBottom, onPick
   const [basemap, setBasemap] = useState(false)
   const selBase = route.v === 'base' ? route.id : null
   const primaryRef = useRef(primary); primaryRef.current = primary
+  const peekRef = useRef(peek); peekRef.current = peek
+  const selRef = useRef(sel); selRef.current = sel
+  const nameRef = useRef((id: string) => th[id]?.name || id); nameRef.current = (id: string) => th[id]?.name || id
+  const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(null)
+  const wide = padBottom === 0
+
+  /* satellite pictures laid on the map: the open fire's (Sentinel-2 close-ups, that day's VIIRS pass) or the open base's */
+  const baseQ = useBase(selBase || '', !!selBase)
+  const fire = peek?.kind === 'fire' ? peek.x : null
+  const focusKey = fire ? `fire:${fire.ll.join()}:${fire.time || fire.date}` : selBase ? `base:${selBase}` : ''
+  const imgs = useMemo<SatImage[]>(() => fire ? fireImages(fire) : selBase && baseQ.data ? baseImages(baseQ.data) : [], [focusKey, baseQ.data])
+  const [imgKey, setImgKey] = useState('')        // '' the first picture, 'off' none
+  useEffect(() => setImgKey(''), [focusKey])
+  const shown = imgKey === 'off' ? null : imgs.find(i => i.key === imgKey) || imgs[0] || null
+  const [big, setBig] = useState<SatImage | null>(null)
+  /* the card sits bottom left; on a phone, just above the lowered sheet (the shell lowers it when a card opens) */
+  const card = useRef<HTMLDivElement>(null)
+  const cardBottom = wide ? 96 : 208
+  useEffect(() => { if (peek && !wide) dispatchEvent(new Event('ww-peek')) }, [peek])
 
   /* create once */
   useEffect(() => {
     const p = paints()
     const m = new maplibregl.Map({
       container: box.current!, attributionControl: false, renderWorldCopies: false, maxPitch: 0, dragRotate: false,
-      center: HOME, zoom: worldZoom(box.current!.clientWidth - padRight, box.current!.clientHeight - padBottom), minZoom: 0.6, maxZoom: 13,
+      center: HOME, zoom: worldZoom(box.current!.clientWidth - padRight, box.current!.clientHeight - padBottom), minZoom: 0.6, maxZoom: 16,   // 16: a base's or a fire's satellite picture fills the screen
       style: {
         version: 8, projection: { type: flat ? 'mercator' : 'globe' },
         sources: { countries: { type: 'geojson', data: toFC(coarse), promoteId: 'name' } },
@@ -101,15 +125,65 @@ export function MapView({ brief, live, route, theme, padRight, padBottom, onPick
       setReady(true)
       import('world-atlas/countries-50m.json').then(fine => (m.getSource('countries') as maplibregl.GeoJSONSource)?.setData(toFC(fine.default)))
     })
-    m.on('click', 'land', e => { const n = e.features?.[0]?.properties?.name; const t = n && primaryRef.current[n]; if (t) pick.current({ v: 'theatre', id: t }) })
-    m.on('mousemove', 'land', e => { const n = e.features?.[0]?.properties?.name; m.getCanvas().style.cursor = n && primaryRef.current[n] ? 'pointer' : '' })
-    m.on('mouseleave', 'land', () => { m.getCanvas().style.cursor = '' })
-    for (const [layer, kind] of [['bases', 'base'], ['fires', 'fire'], ['aircraft', 'air'], ['ships', 'ship'], ['warnings', 'warn']] as const) {
-      m.on('click', layer, e => { const f = e.features?.[0]; if (f) { e.preventDefault(); setPeek({ kind, x: JSON.parse(f.properties!.json) } as Peek) } })
-      m.on('mouseenter', layer, () => { m.getCanvas().style.cursor = 'pointer' })
-      m.on('mouseleave', layer, () => { m.getCanvas().style.cursor = '' })
+    /* One click handler, so the country under a dot never wins: the nearest base, fire, aircraft, ship or warning within a few
+       pixels (more on touch) opens; a base opens its page. Only an empty click on a theatre's country, from the world view
+       (zoom under 5), moves to that theatre; an empty click with a card open just closes the card. */
+    const near = (pt: maplibregl.Point) => {
+      const r = coarsePointer() ? 16 : 9
+      const layers = PICKABLE.filter(l => m.getLayer(l))
+      let best: maplibregl.MapGeoJSONFeature | null = null, bd = Infinity
+      for (const f of m.queryRenderedFeatures([[pt.x - r, pt.y - r], [pt.x + r, pt.y + r]], { layers: [...layers] })) {
+        const q = m.project((f.geometry as GeoJSON.Point).coordinates as [number, number]), d = Math.hypot(q.x - pt.x, q.y - pt.y) - (BONUS[f.layer.id] || 0)
+        if (d < bd) { bd = d; best = f }
+      }
+      return best
     }
-    m.on('click', e => { if (!e.defaultPrevented && !m.queryRenderedFeatures(e.point, { layers: ['bases', 'fires', 'aircraft', 'ships', 'warnings'] }).length) setPeek(null) })
+    const landTheatre = (pt: maplibregl.Point) => {
+      if (m.getZoom() >= 5) return null
+      const n = m.queryRenderedFeatures(pt, { layers: ['land'] })[0]?.properties?.name
+      const t = n && primaryRef.current[n]
+      return t && t !== selRef.current ? t : null
+    }
+    m.on('click', e => {
+      const f = near(e.point)
+      if (f) {
+        const id = f.layer.id, c = (f.geometry as GeoJSON.Point).coordinates as [number, number]
+        if (id === 'aircraft-cluster') {
+          (m.getSource('aircraft') as maplibregl.GeoJSONSource).getClusterExpansionZoom(f.properties!.cluster_id).then(z => m.easeTo({ center: c, zoom: z + .2, duration: reduced() ? 0 : 500 }))
+          return
+        }
+        const x = JSON.parse(f.properties!.json)
+        if (id === 'bases') { setPeek(null); pick.current({ v: 'base', id: x.id }); return }
+        setPeek({ kind: PEEK_KIND[id], x } as Peek)
+        return
+      }
+      if (peekRef.current) { setPeek(null); return }
+      const t = landTheatre(e.point)
+      if (t) pick.current({ v: 'theatre', id: t })
+    })
+    /* hover, with a mouse: a pointer and a one-line label for what a click would open */
+    let raf = 0
+    m.on('mousemove', e => {
+      if (coarsePointer()) return
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
+        const f = near(e.point)
+        let text = ''
+        if (f) {
+          const id = f.layer.id
+          if (id === 'aircraft-cluster') text = `${f.properties!.point_count} aircraft · click to zoom in`
+          else { const x = JSON.parse(f.properties!.json); text = id === 'bases' ? `${x.name.split(',')[0]} · ${baseWord(x.state, x.part)}` : id === 'fires' ? `${x.site ? 'Heat near ' + x.site : fireWord(x.class)} · ${Math.round(x.mw)} MW · ${shortDate(x.date)}`
+            : id === 'aircraft' ? [x.call || x.hex || 'Military aircraft', x.t].filter(Boolean).join(' · ') : id === 'ships' ? x.name : `Navigational warning ${x.id}` }
+        } else if (!peekRef.current) {
+          const t = landTheatre(e.point)
+          if (t) text = `Open ${nameRef.current(t)}`
+        }
+        m.getCanvas().style.cursor = text ? 'pointer' : ''
+        setTip(text ? { x: e.point.x, y: e.point.y, text } : null)
+      })
+    })
+    m.on('mouseout', () => { cancelAnimationFrame(raf); setTip(null); m.getCanvas().style.cursor = '' })
+    m.on('movestart', () => setTip(null))
     map.current = m
     if (new URLSearchParams(location.search).has('debug')) (window as any).__map = m   // for the browser checks
     return () => { m.remove(); map.current = null }
@@ -154,6 +228,40 @@ export function MapView({ brief, live, route, theme, padRight, padBottom, onPick
     if (selBase) setPeek(null)
   }, [selBase, ready])
 
+  /* the picture on the ground, under the live layers, with a thin outline of what it covers */
+  useEffect(() => {
+    const m = map.current; if (!m || !ready) return
+    const edge = m.getSource('drape-edge') as maplibregl.GeoJSONSource | undefined
+    if (!shown) {
+      if (m.getLayer('drape')) m.setLayoutProperty('drape', 'visibility', 'none')
+      edge?.setData(EMPTY)
+      return
+    }
+    const [w, s, e, n] = shown.bounds, coordinates: [[number, number], [number, number], [number, number], [number, number]] = [[w, n], [e, n], [e, s], [w, s]]
+    const src = m.getSource('drape') as maplibregl.ImageSource | undefined
+    if (src) src.updateImage({ url: shown.url, coordinates })
+    else {
+      m.addSource('drape', { type: 'image', url: shown.url, coordinates })
+      m.addLayer({ id: 'drape', type: 'raster', source: 'drape', paint: { 'raster-fade-duration': 200 } }, 'drape-edge')
+    }
+    m.setLayoutProperty('drape', 'visibility', 'visible')
+    edge?.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[...coordinates, coordinates[0]]] } }] })
+  }, [shown?.url, ready])
+
+  /* a fire opened (on the map or from a list): fly to its first picture */
+  useEffect(() => {
+    const m = map.current; if (!m || !ready || !fire) return
+    const b = fireImages(fire)[0].bounds
+    const padding = wide ? { top: 80, bottom: 110, left: 400, right: padRight + 70 } : { top: 116, bottom: cardBottom + (card.current?.offsetHeight || 260) + 12, left: 24, right: 24 }
+    m.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding, maxZoom: 15, duration: reduced() ? 0 : 1200, essential: true })
+  }, [focusKey, ready])
+
+  /* lists outside the map (a theatre's fires) open a fire here */
+  useEffect(() => {
+    const f = (e: Event) => { const d = (e as CustomEvent<Focus>).detail; if (d?.kind === 'fire') setPeek({ kind: 'fire', x: d.x }) }
+    addEventListener('ww-focus', f); return () => removeEventListener('ww-focus', f)
+  }, [])
+
   /* flat or globe (Settings, PR 5) */
   useEffect(() => { const m = map.current; if (m && ready) m.setProjection({ type: flat ? 'mercator' : 'globe' }) }, [flat, ready])
 
@@ -174,11 +282,12 @@ export function MapView({ brief, live, route, theme, padRight, padBottom, onPick
   /* camera */
   useEffect(() => {
     const m = map.current; if (!m || !ready) return
-    const padding = { top: 60, bottom: padBottom + 40, left: 40, right: padRight + 40 }
+    const padding = { top: 80, bottom: padBottom + (wide ? 100 : 40), left: 40, right: padRight + 40 }   // 100: clear of the 30-day strip
     const duration = reduced() ? 0 : undefined
     const focus = route.v === 'theatre' ? route.id : route.v === 'signals' ? route.th : undefined   // Signals filtered to a theatre shows that theatre
     const b = route.v === 'base' ? live?.bases.find(x => x.id === route.id) : undefined
-    if (b) m.flyTo({ center: b.ll, zoom: basemap ? 10.5 : 8, padding, duration: duration ?? 1400, essential: true })   // without the basemap's coastline, closer than 8 shows nothing
+    if (b?.bounds && b.thumb) m.fitBounds([[b.bounds[0], b.bounds[1]], [b.bounds[2], b.bounds[3]]], { padding, maxZoom: 15, duration: duration ?? 1400, essential: true })   // its satellite picture fills the view
+    else if (b) m.flyTo({ center: b.ll, zoom: basemap ? 10.5 : 8, padding, duration: duration ?? 1400, essential: true })   // without the basemap's coastline, closer than 8 shows nothing
     else if (focus) {
       const v = live?.theatres[focus]?.view, c = th[focus]?.center
       if (v) m.fitBounds([v[0], v[1]], { padding, maxZoom: 6, duration: duration ?? 1100, essential: true })
@@ -207,7 +316,7 @@ export function MapView({ brief, live, route, theme, padRight, padBottom, onPick
         const cut = (r[0] < 0 || r[2] > W || r[3] > Hb) && el.dataset.id !== sel      // a label running off the edge reads as broken; the panel lists it anyway
         if (cut || placed.some(q => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1])) { el.style.opacity = '0'; el.style.pointerEvents = 'none'; return }
         placed.push(r)
-        el.style.opacity = '1'; el.style.pointerEvents = 'auto'
+        el.style.opacity = '1'; el.style.pointerEvents = kind === 'theatre' ? 'auto' : 'none'   // city and strait names never take a click meant for the dot under them
         el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`
       })
     }
@@ -242,7 +351,16 @@ export function MapView({ brief, live, route, theme, padRight, padBottom, onPick
           </span>
         ))}
       </div>
-      {peek && <PeekCard p={peek} onClose={() => setPeek(null)} onPick={r => { setPeek(null); onPick(r) }} brief={brief} style={{ left: 16, bottom: padBottom + (padBottom ? 16 : 96), maxWidth: `min(340px, calc(100% - ${padRight + 96}px))` }} />}
+      {tip && <div className="pointer-events-none absolute z-10 max-w-[280px] truncate rounded-md border border-line2 bg-panel/95 px-2 py-1 text-[12px] text-fg shadow-[var(--shadow)]" style={{ left: tip.x + 14, top: tip.y + 14 }}>{tip.text}</div>}
+      {imgs.length > 0 && <div role="group" aria-label="Satellite picture on the map" className="absolute z-10 flex max-w-[calc(100%-32px)] items-center gap-0.5 overflow-x-auto rounded-xl border border-line bg-panel/90 p-1 text-[12px] shadow-[var(--shadow)] backdrop-blur-md" style={{ left: 16, top: wide ? 76 : 66, maxWidth: `calc(100% - ${padRight + 32}px)` }}>
+        <ImageIcon size={14} className="mx-1.5 shrink-0 text-fg3" />
+        {imgs.map(i => <button key={i.key} aria-pressed={shown?.key === i.key} onClick={() => setImgKey(i.key)} title={i.caption} className={`shrink-0 whitespace-nowrap rounded-lg px-2 py-1 ${shown?.key === i.key ? 'bg-accent text-accentink' : 'text-fg2 hover:bg-hover hover:text-fg'}`}>{i.label}</button>)}
+        <button aria-pressed={!shown} onClick={() => setImgKey('off')} className={`shrink-0 rounded-lg px-2 py-1 ${!shown ? 'bg-hover text-fg' : 'text-fg3 hover:bg-hover hover:text-fg'}`}>Off</button>
+        {shown && <span className="num shrink-0 whitespace-nowrap px-1.5 text-fg3">{shortDate(shown.date)}</span>}
+      </div>}
+      {peek && <PeekCard p={peek} cardRef={card} onClose={() => setPeek(null)} onPick={r => { setPeek(null); onPick(r) }} brief={brief} shown={shown} onShow={setImgKey} onEnlarge={setBig}
+        style={{ left: wide ? 16 : 8, bottom: cardBottom, maxWidth: wide ? `min(360px, calc(100% - ${padRight + 32}px))` : 'calc(100% - 16px)', maxHeight: `calc(100% - ${cardBottom + (wide ? 130 : 116)}px)` }} />}
+      {big && <Lightbox img={big} onClose={() => setBig(null)} />}
       <div className="absolute flex flex-col overflow-hidden rounded-xl border border-line bg-panel/80 shadow-[var(--shadow)] backdrop-blur-md" style={{ right: padRight + 16, bottom: padBottom + (padBottom ? 16 : 96) }}>
         <button aria-label="Zoom in" onClick={() => zoom(1)} className="grid h-9 w-9 place-items-center text-fg2 hover:bg-hover hover:text-fg">+</button>
         <button aria-label="Zoom out" onClick={() => zoom(-1)} className="grid h-9 w-9 place-items-center border-t border-line text-fg2 hover:bg-hover hover:text-fg">−</button>
@@ -267,7 +385,8 @@ function addIcons(m: maplibregl.Map) {
 }
 const EMPTY = { type: 'FeatureCollection' as const, features: [] }
 function addLiveLayers(m: maplibregl.Map) {
-  for (const id of ['fires', 'bases', 'ships', 'warnings']) m.addSource(id, { type: 'geojson', data: EMPTY })
+  for (const id of ['fires', 'bases', 'ships', 'warnings', 'drape-edge']) m.addSource(id, { type: 'geojson', data: EMPTY })
+  m.addLayer({ id: 'drape-edge', type: 'line', source: 'drape-edge', paint: { 'line-width': 1, 'line-dasharray': [3, 2] } })
   m.addSource('aircraft', { type: 'geojson', data: EMPTY, cluster: true, clusterMaxZoom: 4, clusterRadius: 28 })
   m.addLayer({ id: 'fires', type: 'circle', source: 'fires', paint: {} })
   m.addLayer({ id: 'warnings', type: 'symbol', source: 'warnings', minzoom: 3, layout: { 'icon-image': 'warn', 'icon-size': .8, 'icon-allow-overlap': true }, paint: {} })
@@ -293,6 +412,7 @@ function paintLive(m: maplibregl.Map) {
   m.setPaintProperty('aircraft-cluster', 'circle-radius', ['interpolate', ['linear'], ['get', 'point_count'], 2, 6, 50, 16])
   m.setPaintProperty('ships', 'icon-color', fg2)
   m.setPaintProperty('warnings', 'icon-color', watch)
+  m.setPaintProperty('drape-edge', 'line-color', accent)
 }
 
 /* ---------------------------------------------------------------- basemap (optional) */
@@ -325,7 +445,8 @@ function paintBasemap(m: maplibregl.Map) {
 }
 
 /* ---------------------------------------------------------------- peek cards */
-function PeekCard({ p, onClose, onPick, brief, style }: { p: Peek; onClose: () => void; onPick: (r: Route) => void; brief: Brief; style: React.CSSProperties }) {
+function PeekCard({ p, cardRef, onClose, onPick, brief, style, shown, onShow, onEnlarge }: { p: Peek; cardRef: React.RefObject<HTMLDivElement | null>; onClose: () => void; onPick: (r: Route) => void; brief: Brief
+  style: React.CSSProperties; shown: SatImage | null; onShow: (key: string) => void; onEnlarge: (i: SatImage) => void }) {
   const name = (id?: string) => brief.theatres.find(t => t.id === id)?.name || ''
   const row = 'mt-1 text-[12.5px] leading-snug text-fg2'
   let icon, title: string, sub: string, body: React.ReactNode = null, action: [string, Route] | null = null
@@ -335,9 +456,22 @@ function PeekCard({ p, onClose, onPick, brief, style }: { p: Peek; onClose: () =
     body = <div className="mt-2 flex gap-3">{b.thumb && <img src={asset(b.thumb)} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />}<p className={row}>{b.why}</p></div>
     action = ['Open base', { v: 'base', id: b.id }]
   } else if (p.kind === 'fire') {
-    const f = p.x
-    icon = <Flame size={15} style={{ color: fireColour(f.class) }} />; title = f.site ? `Heat near ${f.site}` : fireWord(f.class); sub = `${Math.round(f.mw)} MW · ${shortDate(f.date)}${f.night ? ', night' : ''} · NASA VIIRS`
-    body = <p className={row}>{f.why || fireWord(f.class)}</p>
+    const f = p.x, imgs = fireImages(f), v = f.images?.v
+    icon = <Flame size={15} style={{ color: fireColour(f.class) }} />; title = f.site ? `Heat near ${f.site}` : fireWord(f.class); sub = `${Math.round(f.mw)} MW · ${shortDate(f.date)}${f.time ? ' ' + f.time.slice(11, 16) + ' UTC' : ''}${f.night ? ', night' : ''} · NASA VIIRS`
+    const link = 'inline-flex items-center gap-1 rounded-md border border-line px-2 py-1 text-[11.5px] text-fg2 hover:bg-hover hover:text-fg'
+    body = <>
+      <p className={`${row} line-clamp-3`}>{f.why || fireWord(f.class)}</p>
+      <div className="mt-2.5 text-[11.5px] text-fg3">{f.images ? `Sentinel-2 close-up${v === 'scar' ? ': burn scar seen' : v === 'none' ? ': no burn scar seen' : ''}, and that day's VIIRS pass` : 'That day\'s satellite pass'}</div>
+      <div className="mt-1 grid grid-cols-4 gap-1.5">
+        {imgs.map(i => <SatThumb key={i.key} i={i} on={shown?.key === i.key} onShow={() => shown?.key === i.key ? onEnlarge(i) : onShow(i.key)} ring={i.key === 'viirs' ? 6 : 12} />)}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        <a className={link} href={copernicusUrl(f.ll, f.date)} target="_blank" rel="noreferrer">Sentinel-2 <ExternalLink size={11} /></a>
+        <a className={link} href={copernicusUrl(f.ll, f.date, '6-SWIR')} target="_blank" rel="noreferrer">Infrared <ExternalLink size={11} /></a>
+        <a className={link} href={worldviewUrl(f.ll, f.date)} target="_blank" rel="noreferrer">NASA Worldview <ExternalLink size={11} /></a>
+      </div>
+      <p className="mt-1.5 text-[10.5px] leading-snug text-fg3">Tap a picture to lay it on the map, again to enlarge. {f.images ? 'Close-ups 2.5 km across; ' : ''}VIIRS 26 km across, NASA GIBS.{f.images ? ' Contains modified Copernicus Sentinel data.' : ''}</p>
+    </>
     if (f.theatre) action = [`Open ${name(f.theatre)}`, { v: 'theatre', id: f.theatre, tab: 'ground' }]
   } else if (p.kind === 'air') {
     const a = p.x
@@ -356,7 +490,7 @@ function PeekCard({ p, onClose, onPick, brief, style }: { p: Peek; onClose: () =
     if (w.theatre && name(w.theatre)) action = [`Open ${name(w.theatre)}`, { v: 'theatre', id: w.theatre, tab: 'ground' }]
   }
   return (
-    <div role="dialog" aria-label={title} className="absolute z-10 w-[340px] rounded-xl border border-line2 bg-panel/95 p-3 shadow-[var(--shadow)] backdrop-blur-md" style={style}>
+    <div ref={cardRef} role="dialog" aria-label={title} className="scroll-thin absolute z-10 w-[360px] overflow-y-auto rounded-xl border border-line2 bg-panel/95 p-3 shadow-[var(--shadow)] backdrop-blur-md" style={style}>
       <div className="flex items-start gap-2">
         <span className="mt-0.5">{icon}</span>
         <div className="min-w-0 flex-1"><div className="truncate text-[13.5px] font-medium">{title}</div><div className="truncate text-[11.5px] text-fg3">{sub}</div></div>
@@ -364,6 +498,35 @@ function PeekCard({ p, onClose, onPick, brief, style }: { p: Peek; onClose: () =
       </div>
       {body}
       {action && <button onClick={() => onPick(action![1])} className="mt-2.5 rounded-lg bg-accent px-3 py-1.5 text-[12.5px] font-medium text-accentink">{action[0]}</button>}
+    </div>
+  )
+}
+
+/* a picture in a card: the one on the map is ringed; tapping it again opens it full size */
+function SatThumb({ i, on, onShow, ring }: { i: SatImage; on: boolean; onShow: () => void; ring: number }) {
+  const [bad, setBad] = useState(false)
+  return (
+    <button onClick={onShow} title={on ? `${i.caption}. Tap again to enlarge` : i.caption} aria-pressed={on} className={`group relative overflow-hidden rounded-lg border text-left ${on ? 'border-accent ring-1 ring-accent' : 'border-line hover:border-line2'}`}>
+      <span className="relative block aspect-square bg-raised">
+        {bad ? <span className="grid h-full place-items-center px-1 text-center text-[10px] text-fg3">No image</span>
+          : <img src={i.url} alt={i.caption} loading="lazy" onError={() => setBad(true)} className="h-full w-full object-cover" />}
+        {!bad && <span className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 shadow-[0_0_0_1px_rgba(0,0,0,.35)]" style={{ width: `${ring * 2}%`, height: `${ring * 2}%` }} />}
+        {on && <Maximize2 size={11} className="absolute right-1 top-1 text-white drop-shadow" />}
+      </span>
+      <span className="block truncate px-1 py-0.5 text-[10.5px] text-fg2">{i.label}</span>
+    </button>
+  )
+}
+
+function Lightbox({ img, onClose }: { img: SatImage; onClose: () => void }) {
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); onClose() } }; addEventListener('keydown', k, true); return () => removeEventListener('keydown', k, true) }, [onClose])
+  return (
+    <div role="dialog" aria-label={img.caption} onClick={onClose} className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4 backdrop-blur-[2px]">
+      <figure onClick={e => e.stopPropagation()} className="relative max-h-full max-w-[min(92vw,900px)]">
+        <img src={img.url} alt={img.caption} className="max-h-[80vh] w-auto rounded-lg" />
+        <figcaption className="mt-2 text-center text-[12.5px] text-white/85">{img.caption}</figcaption>
+        <button onClick={onClose} aria-label="Close" className="absolute -right-2 -top-2 grid h-8 w-8 place-items-center rounded-full bg-white text-black shadow"><X size={15} /></button>
+      </figure>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 """Data contract v1: the JSON files the new app reads, written next to the page every run. Standard library only.
 
-    data/v1/brief.json                 first paint: headline, levels, the week's feed (about 20 KB)
+    data/v1/brief.json                 first paint: headline, levels, the feed of the last 30 days (about 45 KB)
     data/v1/theatres/<id>.json         one theatre in full
     data/v1/signals/index.json         every signal, with a 40-point spark line
     data/v1/signals/series/<id>.json   one signal's full history, loaded on demand
@@ -13,6 +13,7 @@ Every file carries {"schema": "warwatch/v1", "kind": ..., "generated": ...}. Pos
 The files are built from the page data (dashboard.build_data), so the old page and the new app always show the same run.
 SHAPES below is the contract; validate() checks a file against it and the tests run it on every file.
 """
+import datetime as dt
 import json
 import os
 import re
@@ -160,32 +161,105 @@ def _ctx(t):
 PART_THINGS = {"apron": "aircraft", "harbour": "ships", "ground": "vehicles"}
 
 
-def feed(data):
-    """What changed this week, newest first: timing tells, bases that changed on radar, unexplained fires, CrisisWatch alerts."""
+FEED_DAYS = 30    # the strip under the map shows 30 days; the bell, the last 7
+
+
+def _num(m):
+    return f"{round(float(m.group()), 1):g}"
+
+
+def _fire_items(data, since):
+    """Unusual fires, one item per theatre and day: the live map for the days it covers, the 21-day cluster cache
+    (history/cache/fire_anoms.csv, read with the imagery review) for the days before."""
+    import firecls
+    import store
+    fires = (data.get("map") or {}).get("fires") or []
+    first = min((f["d"] for f in fires if f.get("d")), default="9999")
+    by = {}
+    for f in fires:
+        if f.get("c") in firecls.ANOMALY and f.get("d", "") >= since:
+            by.setdefault((f.get("th", ""), f["d"]), []).append((f.get("p") or 0, f.get("site", "")))
+    rev = firecls.load_review()
+    for r in store.cache_rows(firecls.ANOMS):
+        if len(r) != 9 or r[0] == "cid":
+            continue
+        day, c, rv = r[4][:10], r[8], rev.get(r[0]) or {}
+        if not since <= day < first or c not in firecls.ANOMALY:
+            continue
+        v, lc = rv.get("verdict"), rv.get("lc")
+        if (v == "scar" and lc == "cropland") or (lc == "water" and v in ("none", "unclear")) or (v == "none" and c == "anom" and int(r[7]) - 10 < firecls.ANOM_AT):
+            continue     # the satellite image explained it (burnt field, flare on water) or took it below the anomaly bar
+        by.setdefault((r[1], day), []).append((float(r[6] or 0), ""))
     out = []
+    for (t, d), L in by.items():
+        mw, site = max(L)
+        site = site or next((x for _, x in L if x), "")
+        title = (("Heat " + (f"near {site}" if site else "with no usual source")) if len(L) == 1
+                 else f"{len(L)} unusual fires" + (f", one near {site}" if site else ""))
+        out.append({"date": d, "kind": "fire", "theatre": t, "title": title, "detail": f"Strongest {round(mw)} MW, NASA VIIRS",
+                    "to": {"view": "theatre", "id": t, "tab": "ground"}})
+    return out
+
+
+def feed(data):
+    """What happened on each of the last FEED_DAYS days, newest first: timing tells fired, US and UK travel steps, CrisisWatch
+    ratings and strike waves (data["hist"], built from the hash-chained records), base changes on satellite radar (every pass
+    replayed), unusual fires (one item per theatre and day) and CrisisWatch alerts."""
+    day = data["generated"][:10]
+    since = (dt.date.fromisoformat(day) - dt.timedelta(days=FEED_DAYS - 1)).isoformat()
+    out, seen = [], set()
+
+    def add(item):
+        key = (item["date"][:10], item["theatre"], item["kind"], item["title"])
+        if item["date"][:10] >= since and key not in seen:
+            seen.add(key)
+            out.append(item)
     for t, v in data["theatres"].items():
         for x in v.get("tells") or []:
             if x.get("on") and x.get("date"):
                 rec = x.get("rec") or {}
                 detail = (f"Timing tell. Fired before {rec['caught']} of {rec['events']} past events" if rec.get("events")
                           else "Timing tell. New, no history to test yet")
-                out.append({"date": x["date"], "kind": "tell", "theatre": t, "title": x["n"], "detail": detail, "to": {"view": "theatre", "id": t}})
+                add({"date": x["date"], "kind": "tell", "theatre": t, "title": x["n"], "detail": detail, "to": {"view": "theatre", "id": t}})
+    for t, h in (data.get("hist") or {}).items():
+        if t not in data["theatres"] or t == "global":
+            continue
+        for i in h.get("items") or []:
+            d, k, text = i[0] + ("-01" if len(i[0]) == 7 else ""), i[1], i[2]
+            to = {"view": "theatre", "id": t}
+            if k == "tell":
+                add({"date": d, "kind": "tell", "theatre": t, "title": text, "detail": "Timing tell", "to": to})
+            elif k == "wave":
+                add({"date": d, "kind": "tell", "theatre": t, "title": "Strike wave", "detail": text.split(": ", 1)[-1].capitalize(), "to": to})
+            elif k == "advisory":
+                head, _, rest = text.partition(": ")
+                add({"date": d, "kind": "official", "theatre": t, "title": head, "detail": re.sub(r"\d+\.\d+", _num, rest).capitalize() + ". US State Department", "to": to})
+            elif k == "advice":
+                add({"date": d, "kind": "official", "theatre": t, "title": text, "detail": "UK Foreign Office", "to": to})
+            elif k == "rating" and d[:7] >= since[:7]:
+                add({"date": d, "kind": "official", "theatre": t, "title": text, "detail": "Crisis Group, monthly", "to": to})
     m = data.get("map") or {}
     words = {"out": "fewer {} than usual", "in": "more {} than usual", "changed": "one pass differed"}
     for b in m.get("bases") or []:
+        what = PART_THINGS.get(b.get("mp") or "", "objects")
+        name = b["n"].split(",")[0]
+        to = {"view": "base", "id": b["id"]}
+        last = b.get("last") or ""
         if b.get("st") in words:
-            what = PART_THINGS.get(b.get("mp") or "", "objects")
-            out.append({"date": b.get("last") or "", "kind": "base", "theatre": b.get("th", ""), "title": f"{b['n'].split(',')[0]}: {words[b['st']].format(what)}",
-                        "detail": "Satellite radar, two passes", "to": {"view": "base", "id": b["id"]}})
-    for f in m.get("fires") or []:
-        if f.get("c") in ("anom", "hot"):
-            out.append({"date": f["d"], "kind": "fire", "theatre": f.get("th", ""), "title": "Heat " + (f"near {f['site']}" if f.get("site") else "with no usual source"),
-                        "detail": f"{round(f['p'])} MW at night, NASA VIIRS", "to": {"view": "theatre", "id": f.get("th", ""), "tab": "ground"}})
+            add({"date": last, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[b['st']].format(what)}", "detail": "Satellite radar, two passes", "to": to})
+        for d, st in b.get("ev") or []:
+            near = last and b.get("st") in words and abs((dt.date.fromisoformat(d) - dt.date.fromisoformat(last[:10])).days) <= 1
+            if st in words and not near:
+                add({"date": d, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[st].format(what)}",
+                     "detail": "Satellite radar, one pass" if st == "changed" else "Satellite radar, two passes", "to": to})
+    for f in _fire_items(data, since):
+        add(f)
     for t, v in data["theatres"].items():
         for o in v.get("official") or []:
             if o["n"].startswith("CrisisWatch") and re.search(r"alert|deteriorated", o["v"]):
-                out.append({"date": o["d"] + ("-01" if len(o["d"]) == 7 else ""), "kind": "official", "theatre": t, "title": f"CrisisWatch: {o['v']}",
-                            "detail": "Crisis Group, monthly", "to": {"view": "theatre", "id": t}})
+                d = o["d"] + ("-01" if len(o["d"]) == 7 else "")
+                if not any(x["theatre"] == t and x["title"].startswith("CrisisWatch") and x["date"][:7] == d[:7] for x in out):
+                    add({"date": d, "kind": "official", "theatre": t, "title": f"CrisisWatch: {o['v']}", "detail": "Crisis Group, monthly", "to": {"view": "theatre", "id": t}})
     return sorted(out, key=lambda f: f["date"], reverse=True)
 
 
@@ -208,7 +282,7 @@ def brief(data):
     return _head("brief", data["generated"], demo=bool(data.get("demo")), eventsThrough=(data.get("events") or {}).get("through", ""),
                  headline=head, counts=dict(counts, strong=sum(x["strong"] for x in ths)), **{"global": {"level": g.get("level"), "score": g.get("score"), "lead": g.get("lead")}},
                  regions=[{"id": r["id"], "name": r["name"], "theatres": r["kids"], "level": r["level"], "lead": r.get("lead")} for r in data.get("regions") or []],
-                 theatres=ths, feed=feed(data)[:40],
+                 theatres=ths, feed=feed(data)[:400],
                  model={"version": mo.get("v"), "fitted": mo.get("fitted"), "active": bool(mo.get("active")), "gates": mo.get("gates")})
 
 
@@ -267,7 +341,8 @@ def live_map(data):
                     why=f.get("why", ""), site=f.get("site", ""), theatre=f.get("th", ""), night=f.get("dn") == "N", images=f.get("img")) for f in m.get("fires") or []],
         bases=[{"id": b["id"], "name": b["n"], "kind": b.get("k", ""), "side": b.get("side", ""), "theatres": b.get("ths", []), "state": b.get("st", ""),
                 "z": b.get("z"), "last": b.get("last", ""), "ll": [b["ll"][1], b["ll"][0]], "why": b.get("why", ""), "radar": (b.get("pts") or [])[-30:],
-                "thumb": (b.get("img") or {}).get("r") or (b.get("img") or {}).get("a") or "", "part": b.get("mp", "")} for b in m.get("bases") or []],
+                "thumb": (b.get("img") or {}).get("r") or (b.get("img") or {}).get("a") or "", "part": b.get("mp", ""),
+                "bounds": b.get("bb")} for b in m.get("bases") or []],
         warnings=[{"ll": ll(w["xy"]), "id": w.get("id", ""), "text": w.get("tx", ""), "issued": w.get("iss", ""), "theatre": w.get("th", "")} for w in m.get("nga") or []],
         conflictZones=[{"ll": ll(z["xy"]), "name": z.get("n", ""), "updated": z.get("u", ""), "theatre": z.get("th", "")} for z in m.get("czib") or []],
         cities=[{"ll": ll(c["xy"]), "name": c["n"], "theatre": c["t"]} for c in m.get("cities") or []],
@@ -281,7 +356,8 @@ def _pic(img, k):
 
 
 def base(data, b):
-    """One base. images: the whole-site chips (radar and optical, latest and earlier pass). parts: apron, harbour or ground, each
+    """One base. images: the whole-site chips (radar and optical, latest and earlier pass), which cover bounds (west, south,
+    east, north). parts: apron, harbour or ground, each
     with its own state, counts against the usual band, the last 30 passes [date, count, usual, low, high] and its marked radar chip."""
     img = b.get("img") or {}
     parts = [{"part": x["p"], "what": x.get("w", ""), "where": x.get("wh", ""), "state": x.get("st", ""), "z": x.get("z"), "dates": x.get("d", ""),
@@ -291,7 +367,7 @@ def base(data, b):
               "images": {"marked": _pic(x.get("img") or {}, "m"), "before": _pic(x.get("img") or {}, "rb")}} for x in b.get("pr") or []]
     return _head("base", data["generated"], id=b["id"], name=b["n"], type=b.get("k", ""), side=b.get("side", ""), theatres=b.get("ths", []),
                  state=b.get("st", ""), z=b.get("z"), last=b.get("last", ""), previous=b.get("lo", ""), ll=[b["ll"][1], b["ll"][0]],
-                 radar=b.get("pts") or [], why=b.get("why", ""), about=b.get("wy", ""), note=b.get("note", ""), mainPart=b.get("mp", ""),
+                 radar=b.get("pts") or [], why=b.get("why", ""), about=b.get("wy", ""), note=b.get("note", ""), mainPart=b.get("mp", ""), bounds=b.get("bb"),
                  images={"radar": _pic(img, "r"), "radarBefore": _pic(img, "rb"), "optical": _pic(img, "a"), "opticalBefore": _pic(img, "b")},
                  parts=parts)
 

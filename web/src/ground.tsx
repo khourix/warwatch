@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
-import { Satellite, Flame, Plane, Ship, TriangleAlert, ExternalLink, Radar, ArrowLeft, ChevronRight } from 'lucide-react'
+import { Satellite, Flame, Plane, Ship, TriangleAlert, ExternalLink, Radar, ArrowLeft, ChevronRight, ImageIcon } from 'lucide-react'
+import { focusOnMap } from './sat'
 import { useBase, asset, baseState, shortDate, ago, parseGen, type Brief, type LiveMap, type Route, type BasePart, type Pic, type MapBase } from './data'
 import { Spark, Section, Skeleton, Failed, listAnim } from './ui'
 
@@ -40,12 +41,13 @@ export function GroundTab({ id, live, brief, go }: { id: string; live?: LiveMap;
     <Section title="Fires and heat, last 48 hours" aside="NASA VIIRS">
       {fires.length === 0 && <p className="text-[13px] text-fg3">No fire detected in this theatre in the last 48 hours.</p>}
       {fires.slice(0, 12).map((f, i) => (
-        <motion.div key={i} {...listAnim(i)} className="flex gap-3 py-1.5 text-[12.5px]">
+        <motion.button key={i} {...listAnim(i)} onClick={() => focusOnMap({ kind: 'fire', x: f })} title="Show it on the map, with the satellite pictures" className="-mx-2 flex w-[calc(100%+16px)] gap-3 rounded-lg px-2 py-1.5 text-left text-[12.5px] hover:bg-hover">
           <Flame size={14} className="mt-0.5 shrink-0" style={{ color: fireColour(f.class) }} />
-          <span className="min-w-0 flex-1"><span className="block text-fg">{f.site ? `Near ${f.site}` : fireWord(f.class)}</span><span className="block text-fg3">{f.why || fireWord(f.class)}</span></span>
+          <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 text-fg">{f.site ? `Near ${f.site}` : fireWord(f.class)}{f.images && <ImageIcon size={12} className="text-fg3" aria-label="Sentinel-2 close-up" />}</span><span className="block text-fg3">{f.why || fireWord(f.class)}</span></span>
           <span className="num shrink-0 text-right text-fg3">{Math.round(f.mw)} MW<span className="block text-[11px]">{ago(now, f.date)}{f.night ? ', night' : ''}</span></span>
-        </motion.div>
+        </motion.button>
       ))}
+      {fires.length > 0 && <p className="mt-1 text-[11.5px] text-fg3">Pick a fire to see it on the map with that day's satellite pass and, where checked, the Sentinel-2 close-ups.</p>}
     </Section>
     <Section title="Military aircraft seen now" aside="adsb.lol, OpenSky">
       {air.length === 0 ? <p className="text-[13px] text-fg3">None broadcasting over this theatre at the last run. Most military aircraft fly with their transponder off, so none seen is not none there.</p>

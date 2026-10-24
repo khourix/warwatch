@@ -32,8 +32,12 @@ export type Theatre = {
 }
 export type Signal = { id: string; label: string; group: Group; sub: string; theatre: string; z: number | null; status: string; stale: string; last: string; lagging: boolean; kind: string; why: string; url: string; event: string | null; spark: (number | null)[] }
 export type Signals = { generated: string; groups: Record<Group, string>; signals: Signal[] }
-export type MapBase = { id: string; name: string; kind: string; side: string; theatres: string[]; state: string; z: number | null; last: string; ll: LonLat; why: string; radar: number[]; thumb: string; part: string }
-export type MapFire = { ll: LonLat; mw: number; date: string; time: string; class: string; score: number; why: string; site: string; theatre: string; night: boolean }
+/* west, south, east, north: the ground a satellite chip covers, so the map can lay it in place */
+export type Bounds = [number, number, number, number]
+export type MapBase = { id: string; name: string; kind: string; side: string; theatres: string[]; state: string; z: number | null; last: string; ll: LonLat; why: string; radar: number[]; thumb: string; part: string; bounds?: Bounds | null }
+/* the Sentinel-2 check of an unusual fire (firereview.py): before (b), after (a) and short-wave infrared (s) chips, their dates, and the verdict */
+export type FireImages = { b: string; a: string; s: string; bd: string; ad: string; v: string; bb?: Bounds }
+export type MapFire = { ll: LonLat; mw: number; date: string; time: string; class: string; score: number; why: string; site: string; theatre: string; night: boolean; images?: FireImages | null }
 export type MapAircraft = { ll: LonLat; call: string; class: string; t?: string; trk?: number; hex?: string; th?: string; o?: string; ct?: string; alt?: number; gs?: number; sq?: string; emergency: boolean }
 export type MapShip = { ll: LonLat; name: string; k?: string; loc?: string; g?: string; d?: string; tx?: string; u?: string; flag?: string; dest?: string; spd?: number; note?: string; th?: string }
 export type MapWarning = { ll: LonLat; id: string; text: string; issued: string; theatre: string }
@@ -42,7 +46,7 @@ export type Pic = { src: string; date: string } | null
 export type BasePart = { part: string; what: string; where: string; state: string; z: number | null; dates: string; note: string; tested: boolean; now: number | null; usual: number | null; low: number | null; high: number | null
   history: [string, number, number | null, number | null, number | null][]; marks: { date: string; before: string; objects: number; new: number | null; gone: number | null } | null; images: { marked: Pic; before: Pic } }
 export type BaseFile = { generated: string; id: string; name: string; type: string; side: string; theatres: string[]; state: string; z: number | null; last: string; previous: string; ll: LonLat
-  radar: number[]; why: string; about: string; note: string; mainPart: string; images: { radar: Pic; radarBefore: Pic; optical: Pic; opticalBefore: Pic }; parts: BasePart[] }
+  radar: number[]; why: string; about: string; note: string; mainPart: string; bounds?: Bounds | null; images: { radar: Pic; radarBefore: Pic; optical: Pic; opticalBefore: Pic }; parts: BasePart[] }
 export type LiveMap = {
   generated: string; theatres: Record<string, { center: LonLat | null; view: [LonLat, LonLat] | null; countries: string[] }>
   bases: MapBase[]; fires: MapFire[]; aircraft: MapAircraft[]; squawks: MapAircraft[]; ships: MapShip[]; warnings: MapWarning[]; incidents: MapIncident[]; cities: { ll: LonLat; name: string; theatre: string }[]; chokepoints: { ll: LonLat; name: string; theatre: string }[]
@@ -73,7 +77,7 @@ export const useBrief = () => useQuery({ queryKey: ['brief'], queryFn: () => get
 export const useTheatre = (id: string) => useQuery({ queryKey: ['theatre', id], queryFn: () => get<Theatre>(`theatres/${id}.json`) })
 export const useSignals = (on = true) => useQuery({ queryKey: ['signals'], queryFn: () => get<Signals>('signals/index.json'), enabled: on })
 export const useLiveMap = () => useQuery({ queryKey: ['map'], queryFn: () => get<LiveMap>('map/live.json') })
-export const useBase = (id: string) => useQuery({ queryKey: ['base', id], queryFn: () => get<BaseFile>(`bases/${id}.json`) })
+export const useBase = (id: string, on = true) => useQuery({ queryKey: ['base', id], queryFn: () => get<BaseFile>(`bases/${id}.json`), enabled: on && !!id })
 export type SeriesFile = { generated: string; id: string; points: [string, number | null][]; zHistory: [string, number | null][] }
 export const useSeries = (id: string) => useQuery({ queryKey: ['series', id], queryFn: () => get<SeriesFile>(`signals/series/${id}.json`) })
 export const useRecord = () => useQuery({ queryKey: ['record'], queryFn: () => get<RecordFile>('record.json') })
