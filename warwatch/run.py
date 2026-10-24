@@ -26,6 +26,7 @@ import extras  # noqa: E402
 import geo  # noqa: E402
 import model  # noqa: E402
 import scoring  # noqa: E402
+import share  # noqa: E402
 import stats  # noqa: E402
 import store  # noqa: E402
 import tells  # noqa: E402
@@ -160,11 +161,17 @@ def main():
     static = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")   # tab icons and the link-preview image, served next to the page
     for fn in os.listdir(static) if os.path.isdir(static) else []:
         shutil.copyfile(os.path.join(static, fn), os.path.join(os.path.dirname(os.path.abspath(a.out)), fn))
-    data = dashboard.build_data(res, now, bool(a.demo), ex, geo.load())
+    topo = geo.load()
+    data = dashboard.build_data(res, now, bool(a.demo), ex, topo)
     with open(a.out, "w", encoding="utf-8") as f:
         f.write(dashboard.page_html(data, now, out_dir=os.path.dirname(os.path.abspath(a.out))))
     with open(os.path.join(os.path.dirname(os.path.abspath(a.out)), "feed.xml"), "w", encoding="utf-8") as f:   # This week, for feed readers
         f.write(dashboard.feed_xml(data))
+    try:   # the link-preview card; the workflow screenshots it into og.jpg. It must never break the build.
+        with open(os.path.join(os.path.dirname(os.path.abspath(a.out)), "og-card.html"), "w", encoding="utf-8") as f:
+            f.write(share.card_html(data, topo))
+    except Exception as e:
+        print("share card skipped:", str(e)[:200])
     summ = {"generated": now, "demo": a.demo, "weights_version": res["weights_version"], "global": res["global"],
             "theatres": {t: {k: v[k] for k in ("level", "score", "zc", "index", "imbalance", "worst", "confidence", "conf_label", "firing", "scorable", "basis")}
                          for t, v in res["theatres"].items()},

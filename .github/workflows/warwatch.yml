@@ -81,6 +81,12 @@ jobs:
         run: |
           mkdir -p site/img
           (git fetch --depth 1 origin imagery && git --work-tree=site/img checkout FETCH_HEAD -- . && git reset -q) || echo "no imagery yet"
+      - name: Share card (og.jpg drawn from this run's data; the static card stays if this fails)
+        run: |
+          [ -s site/og-card.html ] || { echo "no og-card.html; keeping the static og.jpg"; exit 0; }
+          google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --allow-file-access-from-files --force-device-scale-factor=1 \
+            --window-size=1200,630 --screenshot="$PWD/site/og-new.jpg" "file://$PWD/site/og-card.html" \
+            && [ -s site/og-new.jpg ] && mv site/og-new.jpg site/og.jpg || echo "share card render failed; keeping the static og.jpg"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/

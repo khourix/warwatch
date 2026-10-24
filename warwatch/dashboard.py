@@ -114,7 +114,7 @@ def theatre_json(t, v, res_series, base=None, change=None, tells=None):
             "p": _r(v.get("p"), 4), "plo": _r(v.get("p_lo"), 4), "phi": _r(v.get("p_hi"), 4), "why": _why(t, v.get("p_why", []), res_series), "aft": bool(v.get("p_aftermath")),
             "lvc": v.get("level_composite"), "pb": _r(base, 4), "pd": change,
             "xu": _r(v["p"] / base, 2) if v.get("p") is not None and base else None,      # standing risk: times this theatre's usual
-            "tells": tells or []}
+            "tells": tells or [], "ctx": (C.CONTEXT.get(t) or (None, None))[0], "ctxd": (C.CONTEXT.get(t) or (None, None))[1]}
 
 
 STRIP_DAYS = 60
@@ -564,4 +564,11 @@ def page_html(data, generated, out_dir=None):
     blob = json.dumps(data, separators=(",", ":"), ensure_ascii=False).replace("<", "\\u003c").replace("\u2028", "\\u2028")
     with open(os.path.join(HERE, "page.html"), encoding="utf-8") as f:
         page = f.read()
+    import share
+    from html import escape
+    head, f = share.summary(data)
+    about = f"Early warning for {f['theatres']} theatres in {len(data.get('regions') or [])} regions, from {f['signals']} public signals. Updated every 30 minutes."
+    for k, v in (("__ABOUT__", about), ("__SHARE__", head + " " + about), ("__OGALT__", "WarWatch: " + head),
+                 ("__OGV__", "".join(c for c in generated if c.isdigit()))):
+        page = page.replace(k, escape(v))
     return page.replace("__DATA__", blob).replace("__GENERATED__", generated)
