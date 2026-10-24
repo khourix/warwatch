@@ -564,4 +564,11 @@ def page_html(data, generated, out_dir=None):
     blob = json.dumps(data, separators=(",", ":"), ensure_ascii=False).replace("<", "\\u003c").replace("\u2028", "\\u2028")
     with open(os.path.join(HERE, "page.html"), encoding="utf-8") as f:
         page = f.read()
+    import share
+    from html import escape
+    head, f = share.summary(data)
+    about = f"Early warning for {f['theatres']} theatres in {len(data.get('regions') or [])} regions, from {f['signals']} public signals. Updated every 30 minutes."
+    for k, v in (("__ABOUT__", about), ("__SHARE__", head + " " + about), ("__OGALT__", "WarWatch: " + head),
+                 ("__OGV__", "".join(c for c in generated if c.isdigit()))):
+        page = page.replace(k, escape(v))
     return page.replace("__DATA__", blob).replace("__GENERATED__", generated)

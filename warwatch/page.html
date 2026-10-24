@@ -6,28 +6,29 @@
 <meta name="color-scheme" content="dark">
 <meta name="darkreader-lock">
 <title>WarWatch: war early-warning dashboard</title>
-<meta name="description" content="Timing tells and unusual readings for 17 theatres in 6 regions, from 600+ public signals. Updated every 30 minutes.">
+<meta name="description" content="__ABOUT__">
 <meta name="theme-color" content="#0e1217">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="site.webmanifest">
-<!-- link previews (WhatsApp, X/Twitter, Slack, LinkedIn): the image URL must be absolute -->
+<!-- link previews (WhatsApp, X/Twitter, Slack, LinkedIn): the image URL must be absolute. The card and its text are redrawn every run (share.py);
+     the ?v= stamp makes the apps fetch the new card instead of a cached one. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="WarWatch">
 <meta property="og:title" content="WarWatch: war early-warning dashboard">
-<meta property="og:description" content="Timing tells and unusual readings for 17 theatres in 6 regions, from 600+ public signals. Updated every 30 minutes.">
+<meta property="og:description" content="__SHARE__">
 <link rel="alternate" type="application/rss+xml" title="WarWatch: this week" href="feed.xml">
 <meta property="og:url" content="https://khourix.github.io/warwatch/">
-<meta property="og:image" content="https://khourix.github.io/warwatch/og.jpg">
+<meta property="og:image" content="https://khourix.github.io/warwatch/og.jpg?v=__OGV__">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="WarWatch logo over a dark world map with the watched theatres marked">
+<meta property="og:image:alt" content="__OGALT__">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="WarWatch: war early-warning dashboard">
-<meta name="twitter:description" content="Timing tells and unusual readings for 17 theatres in 6 regions, from 600+ public signals. Updated every 30 minutes.">
-<meta name="twitter:image" content="https://khourix.github.io/warwatch/og.jpg">
+<meta name="twitter:description" content="__SHARE__">
+<meta name="twitter:image" content="https://khourix.github.io/warwatch/og.jpg?v=__OGV__">
 <link rel="preload" href="inter-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="jbmono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 /* Inter and JetBrains Mono (SIL Open Font License 1.1), Latin subsets, served next to the page */
@@ -123,8 +124,7 @@ a{color:var(--accent)}
 #sb.open{width:224px}
 .brand{height:52px;display:flex;align-items:center;gap:10px;padding:0 17px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;cursor:pointer;flex:none}
 .brand svg{flex:none}
-.brand b{font-weight:700;letter-spacing:.2em;font-size:12.5px}
-.brand b span{color:var(--accent)}
+.brand b{font-weight:600;letter-spacing:-.015em;font-size:15px}
 #sb:not(.open) .brand b,#sb:not(.open) .tx,#sb:not(.open) .grp,#sb:not(.open) .sc,#sb:not(.open) .kids{display:none}
 #sbnav{flex:1;min-height:0;padding:8px;display:flex;flex-direction:column;gap:2px;overflow:hidden auto;scrollbar-width:none}
 .ni{display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:8px;color:var(--mute);white-space:nowrap;width:100%;text-align:left;position:relative;flex:none}
@@ -1210,7 +1210,7 @@ function render(first, faded){
 function renderSB(){
   const cur = R.v === 'region' ? REGBY[R.id] : R.v === 'theatre' ? regOf[R.id] : null, open = $('#sb').classList.contains('open');
   const item = (v, icon, label, extra) => `<button class="ni ${R.v === v ? 'on' : ''}" data-nav="${v}" data-sbtip="${esc(label)}">${ic(icon)}<span class="tx">${label}</span>${extra || ''}</button>`;
-  let h = `<div class="brand" data-nav="overview" title="WarWatch"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="#5ad1f0" stroke-width="1.4" opacity=".55"/><circle cx="12" cy="12" r="5" fill="none" stroke="#5ad1f0" stroke-width="1.4" opacity=".8"/><path d="M12 12L19 5" stroke="#5ad1f0" stroke-width="1.6" stroke-linecap="round"/><circle cx="16.6" cy="8.6" r="1.8" fill="#7ef0c0"/></svg><b>WAR<span>WATCH</span></b></div><nav id="sbnav">`;
+  let h = `<div class="brand" data-nav="overview" title="WarWatch"><svg width="22" height="22" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M3 9.5 9.6 24 16 13.6 22.4 24 26.2 15.4" stroke="var(--ink)" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="28" cy="10.4" r="3.2" fill="#7da8ff"/></svg><b>WarWatch</b></div><nav id="sbnav">`;
   h += item('overview', 'globe', 'World overview');
   h += `<div class="grp">${leadP() ? 'Theatres · 30-day chance' : 'Theatres · signal pressure'}</div>`;
   REG.forEach(r => {

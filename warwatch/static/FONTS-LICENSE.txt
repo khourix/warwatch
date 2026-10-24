@@ -3,3 +3,8 @@ jbmono-latin.woff2, jbmono-latin-ext.woff2: JetBrains Mono, copyright 2020 The J
 
 Both are licensed under the SIL Open Font License, Version 1.1: https://openfontlicense.org/open-font-license-official-text/
 The files are the Latin and Latin Extended subsets served by Google Fonts.
+
+plex-sans-latin-400/500/600.woff2, plex-mono-latin-400.woff2: IBM Plex, copyright 2018 IBM Corp. (https://github.com/IBM/plex).
+source-serif-latin-400.woff2: Source Serif 4, copyright 2014-2021 Adobe (https://github.com/adobe-fonts/source-serif), Reserved Font Name 'Source'.
+Both are licensed under the SIL Open Font License, Version 1.1. The files are the Latin subsets published by Fontsource (@fontsource 5.1.0).
+They are the new brand type; today only the link-preview card (og-card.html) uses them.
