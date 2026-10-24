@@ -70,6 +70,8 @@ def series_json(s):
          "dir": s["direction"], "why": s["why"], "url": s.get("url", ""), "st": s["status"], "er": s.get("error", ""),
          "stale": s.get("stale", ""), "kind": kind, "n": len(pts), "need": stats.min_points(kind, s.get("transform")),
          "needs": s.get("needs", []), "z": None, "w0": not s.get("scored", True)}
+    if s.get("untested"):
+        d["ut"] = True      # a new family outside the score until its test passes (catalog.NOT_TESTED)
     if s.get("transform") in ("step", "event"):     # actions and ratings: the page shows them as what happened, not as SD
         d["tf"] = s["transform"]
         if _seam(s["id"]):

@@ -12,6 +12,8 @@ import os
 
 import config as C
 import extras
+import flights
+import gfw
 import sources as S
 import store
 
@@ -23,6 +25,8 @@ TH = {t: v["name"] for t, v in C.THEATRES.items()}
 # The noise floor each family is scored with (stats.noise_floor): small counts and small shares, where a
 # near-empty history otherwise reads one aircraft or a tenth of a percent as a maximal change.
 SCALE = (("adsb_", "count"), ("package_", "count"), ("civil_", "count"), ("firms_", "count"), ("gdelt_", "count"),
+         ("flights_", "count"), ("bizjet_", "count"), ("darkships_", "count"), ("loiter_", "count"), ("portcalls_", "count"),
+         ("darkshare_", ("share", 1.0)),
          ("news_", "count"), ("ports_", "count"), ("portwatch_", "count"), ("fcdo_", "count"),
          ("nga_", "window"), ("notam_", "window"), ("msa_", "window"), ("jcg_", "window"), ("ukmto_", "window"),
          ("czib_", "window"), ("tzeva_", "window"), ("uaair_", "window"),
@@ -648,13 +652,64 @@ for th in (_base_theatres() if _bw.ALERTS else []):   # registered once the back
         _bases(f"bases_in_{th}"), url="https://planetarycomputer.microsoft.com/dataset/sentinel-1-rtc", sub="Satellite")
 
 # ============ Vessel presence from Global Fishing Watch (fills the gaps where live AIS has no receivers) ============
-GFW_BOX = {"iran": (23, 29, 48, 60), "yemen": (11, 22, 37, 46), "israel": (31, 36, 29, 36), "ukraine": (41, 46, 27, 41), "taiwan": (21, 27, 117, 124),
-           "scs": (5, 20, 108, 121), "korea": (33, 40, 124, 131), "venezuela": (8, 14, -74, -60)}
+GFW_BOX = gfw.BOX
+GFW = "https://globalfishingwatch.org/map"
 for th, box in GFW_BOX.items():
     add(f"ais_presence_{th}", f"Vessel-hours at sea in the {TH[th]} waters box (Global Fishing Watch AIS)", "geospatial", th, "daily", False,
         "Satellite and coastal AIS vessel presence from Global Fishing Watch, about five days late. A fall means traffic is avoiding the area (war-risk premiums, closures); an unusual rise means surging naval or shipping activity. It fills the gap where live AIS has no receivers.",
         (lambda b=box: S.fetch_gfw_presence(b, _key("GFW_TOKEN"))),
-        direction="both", needs=["GFW_TOKEN"], drop=3, url="https://globalfishingwatch.org/map", sub="Sea")
+        direction="both", needs=["GFW_TOKEN"], drop=3, url=GFW, sub="Sea")
+    # Not tested yet (NOT_TESTED below): on the page, the map and the timing tells, outside the score until a test on the event list passes.
+    for sid, label, why, fn, direction in (
+        (f"darkships_{th}", f"Dark ships on satellite radar, {TH[th]} waters (Global Fishing Watch)",
+         "Sentinel-1 radar detections of vessels sending no AIS, on each pass day (every few days, about five days late). Ships go dark to hide "
+         "where they go: sanctions runs, military moves, ships avoiding being targeted.", gfw.darkships, "up"),
+        (f"darkshare_{th}", f"Share of radar-detected ships sending no AIS, {TH[th]} waters (%)",
+         "Dark detections as a percent of all radar detections that pass, so a pass that saw only part of the box does not look like a quiet day.",
+         gfw.darkshare, "up"),
+        (f"loiter_{th}", f"Ships loitering at sea, {TH[th]} waters (Global Fishing Watch)",
+         "Loitering events that started each day: carrier vessels slowing or drifting for hours at sea, which is how ship-to-ship transfers "
+         "and waiting out a threat look on AIS.", (lambda t, k: gfw.events("loitering", t, k)), "up"),
+        (f"portcalls_{th}", f"Port calls in the {TH[th]} waters box (Global Fishing Watch)",
+         "Port visits that started each day. A fall means shipping is staying away; a rise in a naval port can mean a fleet coming in.",
+         (lambda t, k: gfw.events("port-visits", t, k)), "both"),
+    ):
+        add(sid, label, "geospatial", th, "daily", False, why, _slow(sid, (lambda f=fn, t=th: f(t, _key("GFW_TOKEN")))), direction=direction,
+            needs=["GFW_TOKEN"], url=GFW, sub="Sea")
+
+
+# ============ Civil flights at theatre airports, from the adsb.lol daily archives (warwatch/flights.py, docs/FLIGHTS.md) ============
+def _flights(sid):
+    def go():
+        pts = store.backfill(sid)
+        if not pts:
+            raise C.Pending("no archive history yet (the adsb-daily job fills it)")
+        return pts
+    return go
+
+
+for th in sorted(set(flights.THEATRE_ISO.values())):
+    nm = TH[th]
+    for key, label, domain, why, direction in (
+        ("flights_dep", f"Airline departures from {nm} airports", "geospatial",
+         "Airline flights seen taking off from the theatre's airports each day. Airlines cancel before governments act: Lufthansa dropped "
+         "Tehran two days before Iran's April 2024 attack.", "down"),
+        ("flights_div", f"Flights diverted away from {nm} airports", "geospatial",
+         "Flights that landed somewhere other than the theatre airport their route goes to: closures, threats and GPS jamming on approach "
+         "show up as diversions before they are announced.", "up"),
+        ("flights_turnback", f"Airline turnbacks at {nm} airports", "geospatial",
+         "Airline flights that landed back where they took off after 20 minutes to 4 hours, in view throughout.", "up"),
+        ("flights_hold", f"Airliners holding before landing at {nm} airports", "geospatial",
+         "Airline flights that circled at least twice near the airport they landed at: airspace closing for a while, or an airport shut.", "up"),
+        ("bizjet_dep", f"Business-jet departures from {nm} airports", "behavioral",
+         "Private jets leaving the theatre's airports each day. Business jets flew out of Moscow in the days before 24 February 2022; "
+         "people with money and inside knowledge leave first.", "up"),
+        ("bizjet_out", f"Business jets flying out of {nm} to other countries", "behavioral",
+         "The business-jet departures that landed outside the theatre.", "up"),
+    ):
+        add(f"{key}_{th}", label + " (adsb.lol)", domain, th, "daily", False,
+            why + " Counted from the adsb.lol daily archive, one day behind (docs/FLIGHTS.md).", _flights(f"{key}_{th}"), direction=direction,
+            url=ADS, sub="Air" if domain == "geospatial" else "Travel")
 
 
 # ============ Derived indicators, built from series already collected ============
@@ -810,6 +865,15 @@ ZERO_WEIGHT = ("ioda_", "ooni_", "diesel_nyh", "jet_fuel_gulf", "fx_ils", "dod_b
 for _s in SERIES:
     if _s["id"].startswith(ZERO_WEIGHT):
         _s["scored"] = False
+
+# ============ Not tested yet: new families added in October 2026 (docs/FLIGHTS.md, docs/SHIPS.md) ============
+# Shown on the page and the map and read by the timing tells, but outside the composite and the model until a test written
+# down before it is run, on the labelled event list, shows they lead events (docs/METHODOLOGY.md). Remove a prefix to give it weight.
+NOT_TESTED = ("flights_", "bizjet_", "darkships_", "darkshare_", "loiter_", "portcalls_")
+for _s in SERIES:
+    if _s["id"].startswith(NOT_TESTED):
+        _s["scored"] = False
+        _s["untested"] = True
 
 
 # ============ Prices scored on their change ============

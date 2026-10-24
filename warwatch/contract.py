@@ -315,7 +315,7 @@ def signals(data):
         pts = s.get("pts") or []
         out.append({"id": s["id"], "label": s["l"], "group": GROUPS.get(s["d"], s["d"]), "sub": s.get("s", ""), "theatre": s["t"], "z": s.get("z"),
                     "status": s["st"], "stale": s.get("stale", ""), "last": s.get("last", ""), "lagging": bool(s.get("lag")), "kind": s["kind"],
-                    "why": s.get("why", ""), "url": s.get("url", ""), "event": s.get("tf"),
+                    "why": s.get("why", ""), "url": s.get("url", ""), "event": s.get("tf"), "untested": bool(s.get("ut")),
                     "spark": [_r(p[1]) if isinstance(p[1], (int, float)) else None for p in pts[-40:]]})
     return _head("signals", data["generated"], groups={GROUPS[k]: C.GROUP_HELP.get(k, "") for k in GROUPS},
                  signals=out)

@@ -6,13 +6,13 @@ Each trace is cut into legs, from a take-off to a landing. A take-off or landing
 or, where the receivers lose the aircraft low down, the first or last point below 3,000 ft within 15 km of an airport. A gap in
 coverage while the aircraft is high (over Iran or the open sea, say) does not end the leg, so a Doha-London flight stays one leg.
 
-    departure   an airline flight (ICAO callsign: three letters, then a digit) seen taking off from a theatre airport
-    diversion   landed at an airport that is not on the route the standing-data table gives for its callsign
-                (github.com/vradarserver/standing-data, CC0, updated daily)
+    departure   an airline flight (ICAO airline callsign on an airliner) seen taking off from a theatre airport
+    diversion   came within 400 km of the airport its route goes to, then landed at least 50 km away at an airport not on the
+                route (routes from github.com/vradarserver/standing-data, CC0, updated daily)
     turnback    an airline flight that landed back where it took off after 20 minutes to 4 hours in the air, in view throughout
     holding     an airline flight that circled at least twice (720 degrees of turning) within 60 km of where it landed, below 20,000 ft
 
-Training circuits, helicopters and private flights have no airline callsign and are not judged. A diversion needs the route
+Training flights, helicopters and private flights are not judged, even under an airline-style callsign. A diversion needs the route
 table, so an unknown callsign is skipped rather than guessed. Business jets are counted, never listed, and aircraft whose owners
 asked not to be shown (LADD and PIA flags) never appear by name in anything this writes.
 """
@@ -46,7 +46,7 @@ THEATRE_ISO = {
 DONE = "flights_legs"  # airline legs seen touching a theatre airport each day: coverage, and the mark that a day was read
 AIRPORT_HEAD = ["date", "icao", "dep", "arr", "div_away", "div_in", "turnback", "hold", "bizjet_dep", "bizjet_out"]
 EVENT_HEAD = ["date", "time", "kind", "call", "type", "from", "planned", "landed", "lat", "lon"]
-POINT = re.compile(rb"\[-?[\d.]+,(-?\d+\.\d+),(-?\d+\.\d+),")
+POINT = re.compile(rb"\[-?[\d.]+,\s*(-?\d+\.\d+),\s*(-?\d+\.\d+),")
 RU_WEST = ("UU", "UL", "UR", "UW")   # ICAO prefixes of Moscow, St Petersburg, the south and the Volga
 GAP_S = 1800          # a gap this long while low (or with a new callsign after it) ends a leg
 MAX_GAP_S = 5 * 3600  # any gap longer than this ends a leg
@@ -57,6 +57,11 @@ MIN_AIR_S = 300
 TURNBACK_S, TURNBACK_MAX_S = 1200, 4 * 3600
 SEEN_GAP_S = 600      # a turnback must have no gap longer than this
 HOLD_KM, HOLD_FT, HOLD_DEG = 60, 20000, 720
+APPROACH_KM, DIVERT_KM = 400, 50
+# Airliner type designators, for legs whose emitter category is missing: Airbus, Boeing, Embraer and Bombardier jets, ATR, Dash 8,
+# Superjet, A220, MD-80/90/11, COMAC, Ilyushin, Antonov, Tupolev, Fokker, BAe 146 and the larger turboprops.
+AIRLINER = re.compile(r"^(A3\d[\dA-Z]|A2[01]N|A3[45][\dK]|A388|A30B|A31\d|B7[1-8][\dA-Z]|B3[789XM]M|B3XM|E1[79]\d|E2[79]\d|E7[05][\dLS]|"
+                      r"E29\d|CRJ\d|AT[47]\d|DH8[A-D]|SU95|BCS[13]|MD[89]\d|MD11|C919|ARJ21|IL[679]\d|AN\d{2,3}|T20\d|F100|F70|B46\d|RJ[0-9]{2}|SF34|J328)$")
 
 
 def km(la1, lo1, la2, lo2):
@@ -170,13 +175,17 @@ def legs(trace, airports, t0=0.0):
         pts = cur["pts"]
         if pts[-1][0] - pts[0][0] < MIN_AIR_S or len(pts) < 5:
             return
-        calls = {}
+        calls, cats = {}, {}
         for q in pts:
             c = _call(q)
             if c:
                 calls[c] = calls.get(c, 0) + 1
+            d = q[8] if len(q) > 8 else None
+            if isinstance(d, dict) and d.get("category"):
+                cats[d["category"]] = cats.get(d["category"], 0) + 1
         out.append({"dep": cur["dep"], "arr": arr, "t0": t0 + pts[0][0], "t1": t0 + pts[-1][0],
-                    "call": max(calls, key=calls.get) if calls else "", "hold": _holding(pts, airports, arr), "gap": cur["gap"]})
+                    "call": max(calls, key=calls.get) if calls else "", "cat": max(cats, key=cats.get) if cats else "",
+                    "hold": _holding(pts, airports, arr), "gap": cur["gap"], "path": [(q[1], q[2]) for q in pts[::4]] + [(pts[-1][1], pts[-1][2])]})
 
     for p in trace:
         if p[1] is None or p[2] is None:
@@ -231,25 +240,44 @@ def _holding(pts, airports, arr):
     return turn
 
 
-def airline(call):
-    return len(call) >= 4 and call[:3].isalpha() and call[3].isdigit()
+def airline(leg, typ=""):
+    """An airline flight: an ICAO airline callsign (three letters, then a digit) on an airliner. The emitter category says
+    airliner (A2 small to A5 heavy) for most; when it is missing or 'no information' (A0), the type designator decides.
+    Flight schools and helicopter operators also use airline callsigns, which is why the aircraft is checked too."""
+    call = leg["call"]
+    if len(call) < 4 or not call[:3].isalpha() or not call[3].isdigit():
+        return False
+    cat = leg.get("cat") or ""
+    if cat in ("A2", "A3", "A4", "A5"):
+        return True
+    return cat in ("", "A0") and bool(AIRLINER.match(typ or ""))
 
 
-def judge(leg, routes):
-    """-> 'diversion', 'turnback', 'normal' or None (cannot be judged: not an airline flight, take-off or landing unseen, or a
-    callsign the route table does not know where it was going)."""
+def judge(leg, routes, airports):
+    """-> 'diversion', 'turnback', 'normal' or None (cannot be judged: take-off or landing unseen, or a route that cannot be trusted).
+    A diversion needs the flight to have come within 400 km of the airport its route goes to and then landed at least 50 km away:
+    route tables go stale (charters, cargo and reused flight numbers), and a flight that never headed for the planned airport was
+    not going there."""
     dep, arr, call = leg["dep"], leg["arr"], leg["call"]
-    if not dep or not arr or not airline(call):
+    if not dep or not arr:
         return None
     r = routes.get(call)
     if dep == arr:
         # Out and back with a landing elsewhere looks the same when coverage drops, so a turnback needs the whole leg in view.
-        if not TURNBACK_S <= leg["t1"] - leg["t0"] <= TURNBACK_MAX_S or leg["gap"] > SEEN_GAP_S or (r and dep in r and r.index(dep) + 1 < len(r) and r[r.index(dep) + 1] == dep):
+        if not TURNBACK_S <= leg["t1"] - leg["t0"] <= TURNBACK_MAX_S or leg["gap"] > SEEN_GAP_S or \
+                (r and dep in r and r.index(dep) + 1 < len(r) and r[r.index(dep) + 1] == dep):
             return None
         return "turnback"
     if not r or dep not in r or r.index(dep) == len(r) - 1:
         return "normal"
-    return "normal" if arr in r else "diversion"
+    planned = r[r.index(dep) + 1]
+    if arr in r or planned not in airports.info:
+        return "normal"
+    _, _, pla, plo = airports.info[planned]
+    _, _, ala, alo = airports.info[arr]
+    if km(ala, alo, pla, plo) < DIVERT_KM or min(km(la, lo, pla, plo) for la, lo in leg["path"]) > APPROACH_KM:
+        return None
+    return "diversion"
 
 
 class Day:
@@ -285,7 +313,7 @@ class Day:
                 if arr and tarr != tdep:
                     self._a(dep)["bizjet_out"] += 1
                     self._t(tdep, "bizjet_out")
-            if biz or not airline(lg["call"]):
+            if biz or not airline(lg, t):
                 continue
             self.legs += 1
             if tdep:
@@ -293,7 +321,7 @@ class Day:
                 self._t(tdep, "dep")
             if tarr:
                 self._a(arr)["arr"] += 1
-            kind = judge(lg, self.routes)
+            kind = judge(lg, self.routes, self.ap)
             if not kind:
                 continue
             if tarr and lg["hold"] >= HOLD_DEG:
