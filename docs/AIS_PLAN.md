@@ -54,7 +54,7 @@ Measured or read on 24 Oct 2026.
 
 | Source | Live positions | Gulf | Red Sea | History | Cost | Public display allowed |
 |---|---|---|---|---|---|---|
-| aisstream.io (in use) | Yes | 1 ship | 0 | Only what we store | Free | Yes, no stated limit |
+| aisstream.io (in use) | Yes | 1 ship | 0 | Only what we store | Free | Not stated |
 | Open Waters AIS (openwaters.io) | Yes, and tracks | UAE coast good, Hormuz thin | 0 | Track per ship, length varies | Free | Per source, attribution given |
 | AISHub direct | Yes | 4 UAE stations | 0 | No | Free, needs a station | Yes, with credit |
 | GFW AIS presence | No, counts only | Yes | Yes | 2012 to 96 h ago | Free, key held | Yes, non-commercial |
