@@ -33,7 +33,7 @@ def step(name):
 
 
 def post(url, body, token, timeout=120):
-    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"})
+    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Authorization": "Bearer " + token, "Content-Type": "application/json", "User-Agent": S.C.USER_AGENT if hasattr(S, "C") else "warwatch/0.3"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read())
 
@@ -92,71 +92,13 @@ def _():
     return out
 
 
-@step("aisstream")
+@step("gfw_presence_vessels")
 def _():
-    key = os.environ.get("AISSTREAM_API_KEY", "")
-    boxes = {"hormuz": (24.5, 27.8, 54.5, 58.0), "red_sea_south": (11.5, 16.5, 41.5, 45.0), "east_med": (31.0, 36.5, 32.0, 36.5),
-             "black_sea": (41.0, 46.8, 27.5, 41.8), "taiwan": (21.5, 26.5, 117.0, 122.5), "baltic": (53.5, 60.5, 10.0, 30.0)}
-    ships = osint.fetch_aisstream(key, list(boxes.values()), seconds=240, max_msgs=200000)
-    out = {"ships": len(ships)}
-    for nm, (la0, la1, lo0, lo1) in boxes.items():
-        inb = [s for s in ships.values() if s["lat"] is not None and la0 <= s["lat"] <= la1 and lo0 <= s["lon"] <= lo1]
-        kinds = {}
-        for s in inb:
-            kinds[osint.ship_kind(s["type"]) if s["type"] else "unknown"] = kinds.get(osint.ship_kind(s["type"]) if s["type"] else "unknown", 0) + 1
-        out[nm] = {"n": len(inb), "kinds": kinds}
-    return out
-
-
-def get_text(url, headers=None):
-    req = urllib.request.Request(url, headers=dict({"User-Agent": UA, "Accept-Language": "en-US,en;q=0.8"}, **(headers or {})))
-    try:
-        with urllib.request.urlopen(req, timeout=40) as r:
-            return r.status, r.read(3000).decode("utf-8", "replace")
-    except urllib.error.HTTPError as e:
-        return e.code, e.read(600).decode("utf-8", "replace")
-
-
-@step("adsb_archive_headers")
-def _():
-    tok = os.environ.get("GITHUB_TOKEN", "")
-    rel = S.get("https://api.github.com/repos/adsblol/globe_history_2026/releases?per_page=3", headers={"Authorization": "Bearer " + tok})
-    r = rel[0]
-    assets = sorted([a for a in r["assets"] if ".tar." in a["name"]], key=lambda a: a["name"])
-    url = assets[0]["browser_download_url"]
-    resp = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "warwatch"}), timeout=120)
-    tf = tarfile.open(fileobj=resp, mode="r|")
-    out = {"tag": r["tag_name"], "assets": [(a["name"], a["size"]) for a in assets], "samples": []}
-    n = 0
-    for m in tf:
-        if not m.isfile() or "trace_full" not in m.name:
-            continue
-        b = tf.extractfile(m).read()
-        if b[:2] == b"\x1f\x8b":
-            b = gzip.decompress(b)
-        d = json.loads(b)
-        n += 1
-        tr = d.get("trace", [])
-        det = next((p for p in tr if len(p) > 8 and isinstance(p[8], dict)), None)
-        if len(out["samples"]) < 6 and d.get("t"):
-            out["samples"].append({"keys": [k for k in d if k != "trace"], "hdr": {k: d[k] for k in d if k != "trace"}, "n": len(tr), "p0": tr[:2], "det": det,
-                                   "ground": sum(1 for p in tr if p[3] == "ground")})
-        if n >= 400:
-            break
-    out["read"] = n
-    return out
-
-
-@step("opensky_arrivals")
-def _():
-    import extras  # noqa: F401
-    cid, sec = os.environ.get("OPENSKY_CLIENT_ID", ""), os.environ.get("OPENSKY_CLIENT_SECRET", "")
-    req = urllib.request.Request("https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token",
-                                 data=urllib.parse.urlencode({"grant_type": "client_credentials", "client_id": cid, "client_secret": sec}).encode())
-    tok = json.loads(urllib.request.urlopen(req, timeout=40).read())["access_token"]
-    t1 = int(time.time()) - 86400 * 2
-    rows = S.get(f"https://opensky-network.org/api/flights/arrival?airport=OTHH&begin={t1}&end={t1 + 43200}", headers={"Authorization": "Bearer " + tok})
-    return {"n": len(rows), "sample": rows[:2]}
+    prm = {"spatial-resolution": "HIGH", "temporal-resolution": "ENTIRE", "group-by": "VESSEL_ID", "datasets[0]": "public-global-presence:latest",
+           "date-range": f"{END - dt.timedelta(days=7)},{END}", "format": "JSON"}
+    p = post("https://gateway.api.globalfishingwatch.org/v3/4wings/report?" + urllib.parse.urlencode(prm), {"geojson": {"type": "Polygon", "coordinates": HORMUZ}}, GFW, 180)
+    rows = [x for e in p.get("entries", []) for v in e.values() for x in v]
+    return {"rows": len(rows), "sample": rows[:3], "keys": sorted({k for r in rows[:50] for k in r})}
 
 
 json.dump(OUT, open(os.path.join(ROOT, "probe", "out.json"), "w"), indent=1, default=str)
