@@ -1,0 +1,160 @@
+icao,name,iso,lat,lon
+EEKE,Kuressaare Airport,EE,58.2299,22.5095
+EEPU,Pärnu Airport,EE,58.4190,24.4728
+EETN,Tallinn Airport,EE,59.4133,24.8328
+EETU,Tartu Airport,EE,58.3075,26.6904
+EFHF,Helsinki Malmi Airport,FI,60.2546,25.0428
+EFHK,Helsinki Vantaa Airport,FI,60.3172,24.9633
+EFJY,Jyvaskyla Airport,FI,62.3995,25.6783
+EFKK,Kruunupyy Airport,FI,63.7212,23.1431
+EFLP,Lappeenranta Airport,FI,61.0446,28.1444
+EFMA,Mariehamn,FI,60.1222,19.8982
+EFOU,Oulu Airport,FI,64.9301,25.3546
+EFRO,Rovaniemi Airport,FI,66.5648,25.8304
+EFSI,Seinäjoki Airport,FI,62.6921,22.8323
+EFTP,Tampere-Pirkkala Airport,FI,61.4141,23.6044
+EFTU,Turku Airport,FI,60.5141,22.2628
+EFVA,Vaasa Airport,FI,63.0507,21.7622
+EFVR,Varkaus Airport,FI,62.1711,27.8686
+EPBY,Bydgoszcz Ignacy Jan Paderewski Airport,PL,53.0968,17.9777
+EPGD,Gdańsk Lech Wałęsa Airport,PL,54.3776,18.4662
+EPKK,John Paul II International Airport Kraków-Balice Airport,PL,50.0777,19.7848
+EPKT,Katowice International Airport,PL,50.4743,19.0800
+EPLB,Lublin Airport,PL,51.2393,22.7144
+EPLL,Łódź Władysław Reymont Airport,PL,51.7219,19.3981
+EPMO,Modlin Airport,PL,52.4511,20.6518
+EPNT,Nowy Targ Airport,PL,49.4628,20.0503
+EPOK,Oksywie Military Air Base,PL,54.5797,18.5172
+EPPO,Poznań-Ławica Airport,PL,52.4210,16.8263
+EPRA,Radom Airport,PL,51.3892,21.2136
+EPRZ,Rzeszów-Jasionka Airport,PL,50.1100,22.0190
+EPSY,Olsztyn-Mazury Airport,PL,53.4819,20.9378
+EPWA,Warsaw Chopin Airport,PL,52.1657,20.9671
+EPWR,Copernicus Wrocław Airport,PL,51.1027,16.8858
+EVDA,Daugavpils Intrenational Airport,LV,55.9447,26.6650
+EVRA,Riga International Airport,LV,56.9236,23.9711
+EYKA,Kaunas International Airport,LT,54.9639,24.0848
+EYKL,Klaipėda Airport,LT,55.7119,21.2428
+EYPA,Palanga International Airport,LT,55.9732,21.0939
+EYPP,Panevėžys Air Base,LT,55.7294,24.4608
+EYVI,Vilnius International Airport,LT,54.6341,25.2858
+HLGD,Gardabya Airport,LY,31.0635,16.5950
+HLLB,Benina International Airport,LY,32.0968,20.2695
+HLLM,Mitiga Airport,LY,32.8941,13.2760
+HLLQ,La Abraq Airport,LY,32.7887,21.9643
+HLLT,Tripoli International Airport,LY,32.6635,13.1590
+HLMS,Misratah Airport,LY,32.3250,15.0610
+HSPN,Port Sudan New International Airport,SD,19.4336,37.2341
+LCEN,Ercan International Airport,CY,35.1547,33.4961
+LCLK,Larnaca International Airport,CY,34.8751,33.6249
+LCPH,Paphos International Airport,CY,34.7180,32.4857
+LCRA,Akrotiri,CY,34.5904,32.9879
+LLBG,Ben Gurion International Airport,IL,32.0114,34.8867
+LLER,Ramon Airport,IL,29.7237,35.0114
+LLHA,Haifa International Airport,IL,32.8094,35.0431
+LLNV,Nevatim Air Base,IL,31.2083,35.0123
+LLRM,Ramon Air Base,IL,30.7761,34.6667
+LLSD,Sde Dov Airport,IL,32.1147,34.7822
+LRAR,Arad International Airport,RO,46.1766,21.2620
+LRBS,Băneasa International Airport,RO,44.5032,26.1021
+LRBV,Brașov-Ghimbav International Airport,RO,45.7062,25.5235
+LRCK,Mihail Kogălniceanu International Airport,RO,44.3622,28.4883
+LRCL,Cluj-Napoca International Airport,RO,46.7852,23.6862
+LRCV,Craiova Airport,RO,44.3181,23.8886
+LROD,Oradea International Airport,RO,47.0253,21.9025
+LROP,Henri Coandă International Airport,RO,44.5722,26.1022
+LRTR,Timişoara Traian Vuia Airport,RO,45.8099,21.3379
+LUKK,Chişinău International Airport,MD,46.9277,28.9310
+OBBI,Bahrain International Airport,BH,26.2708,50.6336
+OEDF,King Fahd International Airport,SA,26.4712,49.7979
+OEJN,King Abdulaziz International Airport,SA,21.6796,39.1565
+OIBA,Abu Musa Airport,IR,25.8756,55.0328
+OIBI,Asaloyeh Airport,IR,27.4814,52.6155
+OIBK,Kish International Airport,IR,26.5262,53.9802
+OIBP,Persian Gulf International Airport,IR,27.3796,52.7377
+OIBS,Sirri Island Airport,IR,25.9089,54.5394
+OIBV,Lavan Airport,IR,26.8103,53.3563
+OIKB,Bandar Abbas International Airport,IR,27.2183,56.3778
+OIKP,Havadarya Airport,IR,27.1583,56.1725
+OIKQ,Qeshm International Airport,IR,26.7546,55.9024
+OIZC,Konarak Airport,IR,25.4433,60.3821
+OJAI,Queen Alia International Airport,JO,31.7226,35.9932
+OJAQ,Aqaba King Hussein International Airport,JO,29.6116,35.0181
+OLBA,Beirut Rafic Hariri International Airport,LB,33.8209,35.4884
+OMAA,Abu Dhabi International Airport,AE,24.4330,54.6511
+OMAD,Bateen,AE,24.4283,54.4581
+OMAL,Al Ain International Airport,AE,24.2617,55.6092
+OMDB,Dubai International Airport,AE,25.2528,55.3644
+OMDL,Dalma Airport,AE,24.5031,52.3358
+OMDM,Al Minhad Air Base,AE,25.0268,55.3662
+OMDW,Al Maktoum International Airport,AE,24.8967,55.1614
+OMFJ,Fujairah International Airport,AE,25.1122,56.3240
+OMRK,Ras Al Khaimah International Airport,AE,25.6135,55.9388
+OMSJ,Sharjah International Airport,AE,25.3286,55.5172
+OOFD,Fahud Airport,OM,22.3548,56.4841
+OOKB,Khasab Air Base,OM,26.1710,56.2406
+OOMS,Muscat International Airport,OM,23.5933,58.2844
+OOSH,Sohar Airport,OM,24.4642,56.6283
+OPGD,Gwadar International Airport,PK,25.2333,62.3295
+OPMT,Multan International Airport,PK,30.2032,71.4191
+OPTU,Turbat International Airport,PK,25.9864,63.0302
+OTBD,Doha International Airport,QA,25.2611,51.5651
+OTBH,Al Udeid Air Base,QA,25.1173,51.3150
+OTHH,Hamad International Airport,QA,25.2731,51.6081
+RCFG,Matsu Nangan Airport,TW,26.1598,119.9580
+RCLG,Taichung Airport,TW,24.1863,120.6540
+RCMT,Matsu Beigan Airport,TW,26.2242,120.0030
+RCSS,Taipei Songshan Airport,TW,25.0694,121.5520
+RCTP,Taiwan Taoyuan International Airport,TW,25.0777,121.2330
+RKJJ,Gwangju Airport,KR,35.1264,126.8090
+RKNC,A-306 Airport,KR,37.8838,127.7180
+RKPE,Jinhae Airport,KR,35.1412,128.6960
+RKPK,Gimhae International Airport,KR,35.1795,128.9380
+RKPS,Sacheon Air Base,KR,35.0885,128.0700
+RKSI,Incheon International Airport,KR,37.4691,126.4510
+RKSM,Seoul Ab,KR,37.4458,127.1139
+RKSO,Osan Air Base,KR,37.0906,127.0296
+RKSS,Gimpo International Airport,KR,37.5583,126.7910
+RKTU,Cheongju International Airport,KR,36.7166,127.4990
+RPLB,Subic Bay International Airport,PH,14.7944,120.2710
+RPLL,Ninoy Aquino International Airport,PH,14.5086,121.0200
+RPLS,Sangley Point Air Base,PH,14.4954,120.9040
+RPMD,Francisco Bangoy International Airport,PH,7.1255,125.6460
+RPUN,Naga Airport,PH,13.5849,123.2700
+UKFF,Simferopol International Airport,UA,45.0522,33.9751
+ULLI,Pulkovo Airport,RU,59.8003,30.2625
+ULSS,Rzhevka Airport,RU,59.9800,30.5856
+UMGG,Gomel Airport,BY,52.5270,31.0167
+UMMS,Minsk International Airport,BY,53.8825,28.0307
+UMOO,Mogilev Airport,BY,53.9549,30.0951
+UUBB,Bykovo Airport,RU,55.6172,38.0600
+UUBW,Ramenskoye Airport,RU,55.5533,38.1500
+UUDD,Domodedovo Mikhail Lomonosov International Airport,RU,55.4088,37.9063
+UUEE,Sheremetyevo Alexander S. Pushkin International Airport,RU,55.9726,37.4146
+UUMO,Ostafyevo International Airport,RU,55.5117,37.5072
+UUMU,Chkalovskiy Airport,RU,55.8783,38.0617
+UUWW,Vnukovo Andrei Tupolev International Airport,RU,55.5915,37.2615
+VABB,Chhatrapati Shivaji International Airport,IN,19.0887,72.8679
+VANM,Navi Mumbai International Airport,IN,18.9919,73.0617
+VAPO,Pune Airport,IN,18.5821,73.9197
+VEAT,Agartala Airport,IN,23.8870,91.2404
+VEBS,Biju Patnaik Airport,IN,20.2444,85.8178
+VECC,Netaji Subhash Chandra Bose International Airport,IN,22.6547,88.4467
+VIAR,"Sri Guru Ram Dass Jee International Airport, Amritsar",IN,31.7096,74.7973
+VIAX,Adampur Airport,IN,31.4331,75.7606
+VICG,Chandigarh Airport,IN,30.6735,76.7885
+VIDN,Dehradun Airport,IN,30.1897,78.1803
+VIDP,Indira Gandhi International Airport,IN,28.5665,77.1031
+VIDX,Hindon Airport,IN,28.7058,77.3421
+VISM,Shimla Airport,IN,31.0817,77.0681
+VOBM,Belgaum Airport,IN,15.8593,74.6183
+VOBZ,Vijayawada Airport,IN,16.5289,80.7958
+VOCB,Coimbatore International Airport,IN,11.0300,77.0434
+VOCI,Cochin International Airport,IN,10.1520,76.4019
+VOHB,Hubli Airport,IN,15.3617,75.0849
+VOHS,"Rajiv Gandhi International Airport, Shamshabad",IN,17.2313,78.4299
+VOHY,Begumpet Airport,IN,17.4531,78.4676
+VOTV,Trivandrum International Airport,IN,8.4821,76.9201
+VVCI,Cat Bi International Airport,VN,20.8194,106.7250
+VVNB,Noi Bai International Airport,VN,21.2212,105.8070
+VVVD,Van Don International Airport,VN,21.1178,107.4142
