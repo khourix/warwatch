@@ -7,7 +7,7 @@ import { GroundTab } from './ground'
 import { usePrefs, fmtTime } from './settings'
 import { LevelChip, TellDots, Spark, Strip, Section, Tabs, Skeleton, Failed, listAnim } from './ui'
 
-type Go = (r: Route) => void
+type Go = (r: Route, replace?: boolean) => void
 const KIND: Record<FeedItem['kind'], [typeof ShieldAlert, string]> = { tell: [ShieldAlert, 'var(--watch)'], base: [Satellite, 'var(--elev)'], fire: [Flame, 'var(--elev)'], official: [FileText, 'var(--fg-3)'] }
 export const toRoute = (to: FeedItem['to']): Route => to.view === 'theatre' && to.id ? { v: 'theatre', id: to.id, tab: to.tab } : to.view === 'base' && to.id ? { v: 'base', id: to.id } : { v: 'brief' }
 
@@ -115,7 +115,7 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
           ))}
         </dl>
       </div>
-      <Tabs id="th" value={sub} onChange={setSub} tabs={[['now', 'Now'], ['ground', 'On the ground', live ? live.bases.filter(b => b.theatres.includes(id)).length + live.fires.filter(f => f.theatre === id).length : undefined], ['signals', 'Signals', t.signals.scored], ['history', 'History', t.events.length]]} />
+      <Tabs id="th" value={sub} onChange={s => { setSub(s); go({ v: 'theatre', id, tab: s }, true) }} tabs={[['now', 'Now'], ['ground', 'On the ground', live ? live.bases.filter(b => b.theatres.includes(id)).length + live.fires.filter(f => f.theatre === id).length : undefined], ['signals', 'Signals', t.signals.scored], ['history', 'History', t.events.length]]} />
       <AnimatePresence mode="wait">
         <motion.div key={sub} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: .2, ease: [.22, 1, .36, 1] }}>
           {sub === 'now' && <>

@@ -172,9 +172,8 @@ def main():
         print("data contract:", contract.write(os.path.dirname(os.path.abspath(a.out)), data), "files")
     except Exception as e:
         print("data contract skipped:", str(e)[:200])
-    try:   # the link-preview card; the workflow screenshots it into og.jpg. It must never break the build.
-        with open(os.path.join(os.path.dirname(os.path.abspath(a.out)), "og-card.html"), "w", encoding="utf-8") as f:
-            f.write(share.card_html(data, topo))
+    try:   # the link-preview cards; the workflow screenshots them into og.jpg and og/<theatre>.jpg. They must never break the build.
+        print("share cards:", share.write_cards(os.path.dirname(os.path.abspath(a.out)), data, topo))
     except Exception as e:
         print("share card skipped:", str(e)[:200])
     summ = {"generated": now, "demo": a.demo, "weights_version": res["weights_version"], "global": res["global"],

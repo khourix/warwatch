@@ -2635,7 +2635,7 @@ $('#modal').addEventListener('click', e => {
 const STN = {ok: 'Has a score', collecting: 'Collecting history', awaiting_key: 'Needs a key', error: 'Failed'};
 let SF = {q: '', quick: '', group: 'th', sk: 'z', sd: -1, st: [], dom: [], th: [], spd: [], sel: null, closed: []};
 function sfFromQs(qs){ const p = new URLSearchParams(qs || ''); SF.q = p.get('q') || ''; SF.th = p.get('th') ? p.get('th').split(',') : []; SF.dom = p.get('g') ? p.get('g').split(',') : []; SF.st = p.get('st') ? p.get('st').split(',') : []; SF.quick = p.get('quick') || ''; if (p.get('by')) SF.group = p.get('by'); }
-function sfToHash(){ const p = new URLSearchParams(); if (SF.q) p.set('q', SF.q); if (SF.th.length) p.set('th', SF.th.join(',')); if (SF.dom.length) p.set('g', SF.dom.join(',')); if (SF.st.length) p.set('st', SF.st.join(',')); if (SF.quick) p.set('quick', SF.quick); if (SF.group !== 'th') p.set('by', SF.group); const s = p.toString(); history.replaceState(null, '', '#signals' + (s ? '?' + s : '')); }
+function sfToHash(){ const p = new URLSearchParams(); if (SF.q) p.set('q', SF.q); if (SF.th.length) p.set('th', SF.th.join(',')); if (SF.dom.length) p.set('g', SF.dom.join(',')); if (SF.st.length) p.set('st', SF.st.join(',')); if (SF.quick) p.set('quick', SF.quick); if (SF.group !== 'th') p.set('by', SF.group); const s = p.toString(); history.replaceState(null, '', location.pathname + location.search + '#signals' + (s ? '?' + s : '')); }
 const today = (D.generated || '').slice(0, 10);
 function sfPass(s, skip){
   const q = SF.q.trim().toLowerCase();
