@@ -35,10 +35,10 @@ zhangzhou,normal,2026-10-24,2026-10-24,2026-10-24,0.00,apron,,apron:normal:0.00:
 shuimen,nodata,,2026-10-14,2026-10-19,0.00,apron,,apron:nodata:0.00::0:0:0:0;ground:nodata:-0.93::23:29:23:42
 ningbo_zhuangqiao,normal,2026-10-21,2026-10-21,2026-10-08,-0.67,apron,,apron:normal:-0.67:2026-10-21:8:9:8:12;harbour:normal:0.00:2026-10-21:9:9:7:11;ground:normal:-0.34:2026-10-21:114:123:98:171
 hsinchu,normal,2026-10-22,2026-10-22,2026-10-21,2.02,apron,Burn scars seen on 2026-10-21 (1.8 ha).,apron:normal:2.02:2026-10-22:10:7:6:10;harbour:changed:5.00:2026-10-22:7:2:2:3;ground:changed:5.40:2026-10-22:220:116:101:191
-ching_chuan_kang,changed,2026-10-22,2026-10-22,2026-10-16,2.70,apron,,apron:changed:2.70:2026-10-22:9:5:4:10;ground:normal:-2.42:2026-10-22:173:244:207:302
-chiayi,normal,2026-10-22,2026-10-22,2026-10-16,-1.80,apron,,apron:normal:-1.80:2026-10-22:14:18:16:24;ground:normal:-1.76:2026-10-22:90:115:103:183
+ching_chuan_kang,changed,2026-10-22,2026-10-22,2026-10-26,2.70,apron,,apron:changed:2.70:2026-10-22:9:5:4:10;ground:normal:-2.42:2026-10-22:173:244:207:302
+chiayi,normal,2026-10-22,2026-10-22,2026-10-26,-1.80,apron,,apron:normal:-1.80:2026-10-22:14:18:16:24;ground:normal:-1.76:2026-10-22:90:115:103:183
 hualien,normal,2026-10-22,2026-10-22,2026-10-21,0.67,apron,Burn scars seen on 2026-10-21 (1.0 ha).,apron:normal:0.67:2026-10-22:4:3:2:4;harbour:normal:2.02:2026-10-22:21:16:13:22;ground:changed:4.63:2026-10-22:98:74:70:113
-chihhang,normal,2026-10-22,2026-10-22,2026-10-21,-2.00,apron,,apron:normal:-2.00:2026-10-22:1:3:2:4;harbour:normal:-1.35:2026-10-22:4:6:3:9;ground:normal:-1.17:2026-10-22:76:101:78:183
+chihhang,normal,2026-10-22,2026-10-22,2026-10-26,-2.00,apron,,apron:normal:-2.00:2026-10-22:1:3:2:4;harbour:normal:-1.35:2026-10-22:4:6:3:9;ground:normal:-1.17:2026-10-22:76:101:78:183
 zuoying,normal,2026-10-22,2026-10-22,,-0.54,harbour,,apron:normal:1.00:2026-10-22:4:3:2:4;harbour:normal:-0.54:2026-10-22:41:44:39:50;ground:normal:-1.10:2026-10-22:482:527:496:681
 kadena,normal,2026-10-17,2026-10-17,2026-10-15,0.84,apron,,apron:normal:0.84:2026-10-17:45:40:31:48;harbour:normal:-1.00:2026-10-17:1:2:1:2;ground:normal:1.31:2026-10-17:515:480:420:584
 andersen,normal,2026-10-17,2026-10-17,,0.00,apron,,apron:normal:0.00:2026-10-17:4:4:1:7;ground:normal:1.30:2026-10-17:1552:1062:727:1703
@@ -49,7 +49,7 @@ fiery_cross,nodata,,2021-12-19,2026-10-22,,apron,,apron:nodata::::::;harbour:nod
 subi,optical,,,2026-10-22,,apron,,
 mischief,optical,,,2026-10-21,,apron,,
 basa,normal,2026-10-25,2026-10-25,2026-10-18,-1.35,apron,,apron:normal:-1.35:2026-10-25:4:6:4:8;ground:normal:0.39:2026-10-25:26:24:20:105
-bautista,normal,2026-10-16,2026-10-16,2026-10-21,-0.67,apron,,apron:normal:-0.67:2026-10-16:6:7:4:9;harbour:normal:0.00:2026-10-16:8:8:6:10;ground:normal:0.67:2026-10-16:22:20:17:23
+bautista,normal,2026-10-16,2026-10-16,2026-10-26,-0.67,apron,Burn scars seen on 2026-10-26 (1.6 ha).,apron:normal:-0.67:2026-10-16:6:7:4:9;harbour:normal:0.00:2026-10-16:8:8:6:10;ground:normal:0.67:2026-10-16:22:20:17:23
 cam_ranh,normal,2026-10-25,2026-10-25,2026-10-23,0.67,apron,,apron:normal:0.67:2026-10-25:13:12:11:14;harbour:normal:0.34:2026-10-25:18:17:13:20;ground:normal:-0.67:2026-10-25:23:25:22:31
 sunan,nodata,,2026-08-06,2026-10-21,-0.34,apron,,apron:nodata:-0.34::6:7:4:9;ground:nodata:0.33::64:57:36:128
 sohae,normal,2026-10-23,2026-10-23,2026-10-21,-1.03,ground,,ground:normal:-1.03:2026-10-23:71:194:92:577
