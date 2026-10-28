@@ -3,8 +3,8 @@ adampur,apron,2026-10-12,2026-09-30,7,1,0
 adampur,ground,2026-10-12,2026-09-30,157,76,62
 ain_al_asad,apron,2026-10-26,2026-10-20,3,0,0
 ain_al_asad,ground,2026-10-26,2026-10-20,410,75,62
-akrotiri,apron,2026-10-21,2026-10-15,12,3,4
-akrotiri,ground,2026-10-21,2026-10-15,184,33,73
+akrotiri,apron,2026-10-26,2026-10-20,21,7,5
+akrotiri,ground,2026-10-26,2026-10-20,205,44,43
 al_dhafra,apron,2026-10-27,2026-10-21,39,15,7
 al_dhafra,ground,2026-10-27,2026-10-21,435,271,32
 al_jufra,apron,2026-10-26,2026-10-20,30,4,3
@@ -15,8 +15,8 @@ al_udeid,apron,2026-10-25,2026-10-19,50,15,19
 al_udeid,ground,2026-10-25,2026-10-19,575,128,118
 al_watiya,apron,2026-10-23,2026-10-17,1,0,0
 al_watiya,ground,2026-10-23,2026-10-17,48,2,9
-ali_al_salem,apron,2026-10-23,2026-10-17,20,3,2
-ali_al_salem,ground,2026-10-23,2026-10-17,258,45,43
+ali_al_salem,apron,2026-10-27,2026-10-21,16,2,4
+ali_al_salem,ground,2026-10-27,2026-10-21,310,55,52
 amari,apron,2026-10-26,2026-10-20,5,1,0
 amari,ground,2026-10-26,2026-10-20,109,55,9
 ambala,apron,2026-10-23,2026-10-11,10,2,7
@@ -69,8 +69,8 @@ cn_616_brigade_ganzhou,ground,2026-10-17,2026-10-05,292,107,184
 cn_617_brigade_jinhua,ground,2026-10-26,2026-10-14,312,143,126
 crimea_cape_zyuk_airdef,ground,2026-10-27,2026-10-21,18,7,7
 crimea_kurhanne_s400,ground,2026-10-22,2026-10-16,137,60,66
-dezful_4tab,apron,2026-10-23,2026-10-17,0,0,0
-dezful_4tab,ground,2026-10-23,2026-10-17,33,12,12
+dezful_4tab,apron,2026-10-27,2026-10-21,0,0,0
+dezful_4tab,ground,2026-10-27,2026-10-21,42,6,15
 duqm,ground,2026-10-25,2026-10-13,21,4,1
 duqm,harbour,2026-10-25,2026-10-13,28,9,10
 engels,apron,2026-10-25,2026-10-13,6,2,0
@@ -99,9 +99,9 @@ incirlik,apron,2026-10-22,2026-10-16,6,0,0
 incirlik,ground,2026-10-22,2026-10-16,282,66,89
 iran_hajiabad_missile,ground,2026-10-25,2026-10-13,645,130,138
 iran_isfahan_west_missile,ground,2026-10-24,2026-10-12,591,184,182
-iran_kermanshah_missile,ground,2026-10-22,2026-10-16,570,179,366
+iran_kermanshah_missile,ground,2026-10-27,2026-10-21,723,270,333
 iran_khorgu_missile,ground,2026-10-25,2026-10-13,410,139,192
-iran_khorramabad_imam_ali,ground,2026-10-23,2026-10-17,539,192,292
+iran_khorramabad_imam_ali,ground,2026-10-27,2026-10-21,636,192,314
 iran_modarres_bid_kaneh,ground,2026-10-24,2026-10-12,12,2,1
 iran_shiraz_north_missile,ground,2026-10-23,2026-10-17,401,158,136
 iran_shiraz_south_missile,ground,2026-10-25,2026-10-19,634,245,230
