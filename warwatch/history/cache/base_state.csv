@@ -29,9 +29,9 @@ olenya,nodata,,2026-10-16,2026-10-23,0.00,apron,,apron:nodata:0.00::6:6:5:9;grou
 shaykovka,nodata,,2026-10-14,2026-10-28,0.00,apron,Burn scars seen on 2026-10-28 (114.8 ha).,apron:nodata:0.00::3:3:1:34;ground:nodata:0.51::25:21:14:188
 mozdok,normal,2026-10-26,2026-10-26,2026-10-12,1.35,apron,,apron:normal:1.35:2026-10-26:3:1:0:4;ground:normal:0.39:2026-10-26:68:66:58:83
 novorossiysk,changed,2026-10-28,2026-10-28,,-6.41,harbour,,harbour:changed:-6.41:2026-10-28:8:27:25:34;ground:normal:1.00:2026-10-28:1:0:0:1
-longtian,nodata,,2026-10-07,2026-10-21,0.00,apron,,apron:nodata:0.00::1:1:0:1;ground:nodata:-0.90::18:26:18:66
-huian,nodata,,2026-10-07,2026-10-21,0.00,apron,,apron:nodata:0.00::2:2:2:3;ground:nodata:-0.53::42:53:38:95
-zhangzhou,normal,2026-10-24,2026-10-24,2026-10-24,0.00,apron,,apron:normal:0.00:2026-10-24:3:3:1:5;ground:normal:-0.43:2026-10-24:52:64:47:126
+longtian,nodata,,2026-10-07,2026-10-29,0.00,apron,,apron:nodata:0.00::1:1:0:1;ground:nodata:-0.90::18:26:18:66
+huian,nodata,,2026-10-07,2026-10-29,0.00,apron,Burn scars seen on 2026-10-29 (42.0 ha).,apron:nodata:0.00::2:2:2:3;ground:nodata:-0.53::42:53:38:95
+zhangzhou,normal,2026-10-24,2026-10-24,2026-10-29,0.00,apron,Burn scars seen on 2026-10-29 (74.5 ha).,apron:normal:0.00:2026-10-24:3:3:1:5;ground:normal:-0.43:2026-10-24:52:64:47:126
 shuimen,normal,2026-10-26,2026-10-26,2026-10-19,0.00,apron,,apron:normal:0.00:2026-10-26:0:0:0:0;ground:normal:-0.67:2026-10-26:24:28:23:42
 ningbo_zhuangqiao,normal,2026-10-21,2026-10-21,2026-10-08,-0.67,apron,,apron:normal:-0.67:2026-10-21:8:9:8:12;harbour:normal:0.00:2026-10-21:9:9:7:11;ground:normal:-0.34:2026-10-21:114:123:98:171
 hsinchu,normal,2026-10-26,2026-10-26,2026-10-28,-1.35,apron,Burn scars seen on 2026-10-28 (151.5 ha).,apron:normal:-1.35:2026-10-26:6:8:7:11;harbour:normal:0.00:2026-10-26:1:1:0:3;ground:normal:-0.84:2026-10-26:68:94:69:235
@@ -40,7 +40,7 @@ chiayi,normal,2026-10-26,2026-10-26,2026-10-28,-0.67,apron,Burn scars seen on 20
 hualien,normal,2026-10-26,2026-10-26,2026-10-21,0.00,apron,Burn scars seen on 2026-10-21 (1.0 ha).,apron:normal:0.00:2026-10-26:5:5:3:7;harbour:normal:-1.35:2026-10-26:15:19:16:23;ground:normal:0.00:2026-10-26:83:85:63:138
 chihhang,normal,2026-10-22,2026-10-22,2026-10-26,-2.00,apron,,apron:normal:-2.00:2026-10-22:1:3:2:4;harbour:normal:-1.35:2026-10-22:4:6:3:9;ground:normal:-1.17:2026-10-22:76:101:78:183
 zuoying,normal,2026-10-22,2026-10-22,,-0.54,harbour,,apron:normal:1.00:2026-10-22:4:3:2:4;harbour:normal:-0.54:2026-10-22:41:44:39:50;ground:normal:-1.10:2026-10-22:482:527:496:681
-kadena,nodata,,2026-10-17,2026-10-27,0.84,apron,,apron:nodata:0.84::45:40:31:48;harbour:nodata:-1.00::1:2:1:2;ground:nodata:1.31::515:480:420:584
+kadena,nodata,,2026-10-17,2026-10-29,0.84,apron,Burn scars seen on 2026-10-29 (451.5 ha).,apron:nodata:0.84::45:40:31:48;harbour:nodata:-1.00::1:2:1:2;ground:nodata:1.31::515:480:420:584
 andersen,nodata,,2026-10-17,,0.00,apron,,apron:nodata:0.00::4:4:1:7;ground:nodata:1.30::1552:1062:727:1703
 yulin,normal,2026-10-26,2026-10-26,,-0.90,harbour,,harbour:normal:-0.90:2026-10-26:5:9:5:15;ground:normal:-0.47:2026-10-26:504:543:454:735
 zhanjiang,normal,2026-10-26,2026-10-26,,0.67,harbour,,harbour:normal:0.67:2026-10-26:10:8:5:12;ground:normal:-1.01:2026-10-26:33:36:34:41
@@ -149,7 +149,7 @@ cn_613_brigade_shangrao,nodata,,2026-10-07,2026-10-27,-0.09,ground,,ground:nodat
 cn_614_brigade_yongan,normal,2026-10-24,2026-10-24,2026-10-27,-0.95,ground,,ground:normal:-0.95:2026-10-24:226:281:234:354
 cn_615_brigade_meizhou,normal,2026-10-24,2026-10-24,2026-10-14,-2.00,ground,,ground:normal:-2.00:2026-10-24:238:318:255:443
 cn_616_brigade_ganzhou,nodata,,2026-10-17,2026-10-27,-1.05,ground,,ground:nodata:-1.05::292:370:282:591
-cn_617_brigade_jinhua,normal,2026-10-26,2026-10-26,2026-10-19,-0.22,ground,,ground:normal:-0.22:2026-10-26:312:323:271:444
+cn_617_brigade_jinhua,normal,2026-10-26,2026-10-26,2026-10-29,-0.22,ground,Burn scars seen on 2026-10-29 (287.6 ha).,ground:normal:-0.22:2026-10-26:312:323:271:444
 pk_akro_garrison,normal,2026-10-24,2026-10-24,2026-10-24,-0.34,ground,,ground:normal:-0.34:2026-10-24:37:38:34:42
 pk_gujranwala_garrison,nodata,,2026-10-16,2026-10-28,1.08,ground,Burn scars seen on 2026-10-28 (277.2 ha).,ground:nodata:1.08::82:50:30:93
 pk_sargodha_garrison,nodata,,2026-10-09,2026-10-28,-0.56,ground,Burn scars seen on 2026-10-28 (253.3 ha).,ground:nodata:-0.56::89:94:77:135
