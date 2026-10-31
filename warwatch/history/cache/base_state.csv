@@ -84,7 +84,7 @@ starokostiantyniv,normal,2026-10-28,2026-10-28,2026-10-11,1.00,apron,,apron:norm
 myrhorod,normal,2026-10-28,2026-10-28,2026-10-30,2.00,apron,,apron:normal:2.00:2026-10-28:4:2:2:3;ground:normal:-1.21:2026-10-28:7:12:8:18
 vasylkiv,normal,2026-10-30,2026-10-30,2026-10-11,0.00,apron,,apron:normal:0.00:2026-10-30:0:0:0:0;ground:normal:-0.12:2026-10-30:29:31:20:53
 kulbakino,nodata,,2026-10-15,2026-10-12,1.35,apron,,apron:nodata:1.35::13:11:8:13;ground:nodata:0.25::55:54:49:68
-libertador,normal,2026-10-29,2026-10-29,2026-10-28,-0.67,apron,,apron:normal:-0.67:2026-10-29:22:24:21:28;ground:normal:1.08:2026-10-29:163:139:122:177
+libertador,normal,2026-10-29,2026-10-29,2026-10-30,-0.67,apron,,apron:normal:-0.67:2026-10-29:22:24:21:28;ground:normal:1.08:2026-10-29:163:139:122:177
 la_carlota,normal,2026-10-29,2026-10-29,2026-10-27,-0.22,apron,Burn scars seen on 2026-10-27 (22.7 ha).,apron:normal:-0.22:2026-10-29:10:11:8:13;harbour:normal:0.00:2026-10-29:1:1:0:3;ground:normal:0.00:2026-10-29:48:48:40:53
 puerto_cabello,normal,2026-10-29,2026-10-29,2026-10-23,2.25,harbour,,harbour:normal:2.25:2026-10-29:34:29:27:35;ground:normal:0.34:2026-10-29:76:73:56:90
 roosevelt_roads,changed,2026-10-25,2026-10-25,2026-10-28,-2.50,apron,,apron:changed:-2.50:2026-10-25:5:8:6:10;harbour:normal:0.00:2026-10-25:0:0:0:0;ground:normal:0.52:2026-10-25:34:29:21:45
@@ -98,7 +98,7 @@ pathankot,normal,2026-10-24,2026-10-24,2026-10-28,1.35,apron,Burn scars seen on 
 bhuj,normal,2026-10-22,2026-10-22,2026-10-28,-0.67,apron,Burn scars seen on 2026-10-28 (112.1 ha).,apron:normal:-0.67:2026-10-22:0:1:0:2;ground:normal:-1.18:2026-10-22:49:56:48:68
 al_khadim,normal,2026-10-28,2026-10-28,2026-10-21,0.67,apron,,apron:normal:0.67:2026-10-28:6:5:3:7;ground:normal:0.56:2026-10-28:54:52:45:55
 al_jufra,normal,2026-10-30,2026-10-30,2026-10-22,-0.84,apron,,apron:normal:-0.84:2026-10-30:42:45:42:51;ground:normal:0.34:2026-10-30:9:9:7:10
-al_watiya,normal,2026-10-29,2026-10-29,2026-10-28,0.00,apron,Burn scars seen on 2026-10-28 (27.5 ha).,apron:normal:0.00:2026-10-29:1:1:1:2;ground:normal:-1.71:2026-10-29:48:53:48:56
+al_watiya,normal,2026-10-29,2026-10-29,2026-10-30,0.00,apron,,apron:normal:0.00:2026-10-29:1:1:1:2;ground:normal:-1.71:2026-10-29:48:53:48:56
 misrata,normal,2026-10-29,2026-10-29,2026-10-27,0.67,apron,,apron:normal:0.67:2026-10-29:2:1:0:3;ground:normal:-0.34:2026-10-29:52:53:45:57
 wadi_seidna,normal,2026-10-29,2026-10-29,2026-10-30,-0.50,apron,,apron:normal:-0.50:2026-10-29:2:3:1:6;ground:normal:0.37:2026-10-29:62:61:48:74
 merowe,normal,2026-10-22,2026-10-22,2026-10-26,1.35,apron,,apron:normal:1.35:2026-10-22:3:1:0:2;ground:changed:2.70:2026-10-22:19:15:14:18
