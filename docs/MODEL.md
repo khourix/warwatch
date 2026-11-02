@@ -163,7 +163,7 @@ Best threshold per family over all labelled days. NSR is the false-alarm rate di
 
 ## Fitted model
 
-Fitted 2026-10-13 on data through 2026-10-12. Family weights (log-odds per full-scale reading, evidence = max(0, z)/5; the live model multiplies the same way):
+Fitted 2026-11-02 on data through 2026-10-12. Family weights (log-odds per full-scale reading, evidence = max(0, z)/5; the live model multiplies the same way):
 
 | Family | Weight |
 |---|---|

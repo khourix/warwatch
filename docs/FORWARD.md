@@ -1,8 +1,8 @@
 # Forward record
 
-Every day the live build appends its probabilities for every theatre it covers to `forward/log.csv` before any outcome is known. Each row carries the hash of the row before it, so a later edit anywhere breaks the chain from that row on; `python3 warwatch/forward_score.py` checks it. This report scores the forecasts that have matured: made at least 30 days before `warwatch/data/events_through.txt` (2026-09-30), outside the 30 days after an event.
+Every day the live build appends its probabilities for every theatre it covers to `forward/log.csv` before any outcome is known. Each row carries the hash of the row before it, so a later edit anywhere breaks the chain from that row on; `python3 warwatch/forward_score.py` checks it. This report scores the forecasts that have matured: made at least 30 days before `warwatch/data/events_through.txt` (2026-10-12), outside the 30 days after an event.
 
-Chain: **intact**, 72 rows, 2026-10-07 to 2026-10-11.
+Chain: **intact**, 392 rows, 2026-10-07 to 2026-10-29.
 
 Matured forecasts so far: 0. Too few to score; the first report with numbers needs about a quarter of daily forecasts.
 
