@@ -242,6 +242,11 @@ CHOKEPOINTS = {  # PortWatch portname fragment -> theatre
 CHOKE_XY = {"Hormuz": (26.6, 56.3, "Strait of Hormuz"), "Bab": (12.6, 43.3, "Bab el-Mandeb"),
             "Suez": (30.0, 32.5, "Suez Canal"), "Bosporus": (41.1, 29.0, "Bosporus"),
             "Taiwan Strait": (24.5, 119.5, "Taiwan Strait"), "Malacca": (2.5, 101.5, "Strait of Malacca"), "Panama": (9.1, -79.7, "Panama Canal")}
+# Tight boxes over each strait's shipping lanes (lat_min, lat_max, lon_min, lon_max), for Global Fishing Watch cargo and tanker
+# vessel-hours: the replacement for PortWatch's chokepoint transits, whose public layer broke in November 2026.
+CHOKE_BOX = {"Hormuz": (26.0, 27.0, 55.8, 57.0), "Bab": (12.3, 13.0, 43.1, 43.6), "Suez": (29.9, 31.3, 32.25, 32.6),
+             "Bosporus": (40.95, 41.25, 28.95, 29.15), "Taiwan Strait": (24.0, 25.0, 119.3, 120.3),
+             "Malacca": (2.0, 3.0, 100.8, 101.6), "Panama": (8.85, 9.4, -79.95, -79.5)}
 CITIES = {   # theatre -> [(name, lat, lon)] reference points drawn on the map
     "ukraine": [("Kyiv", 50.45, 30.52), ("Kharkiv", 49.99, 36.23), ("Odesa", 46.48, 30.72), ("Moscow", 55.75, 37.62),
                 ("Minsk", 53.9, 27.57), ("Sevastopol", 44.6, 33.5), ("Donetsk", 48.0, 37.8)],

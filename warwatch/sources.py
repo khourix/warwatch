@@ -557,13 +557,17 @@ def parse_gfw_presence(payload):
     return sorted(by.items())
 
 
-def fetch_gfw_presence(box, token, days=150, today=None):
-    """box = (lat_min, lat_max, lon_min, lon_max). Vessel-hours of AIS presence per day inside the box."""
+def fetch_gfw_presence(box, token, days=150, today=None, vessel_types=()):
+    """box = (lat_min, lat_max, lon_min, lon_max). Vessel-hours of AIS presence per day inside the box.
+    vessel_types, such as ("cargo", "tanker"), keeps only those GFW vessel classes."""
     la0, la1, lo0, lo1 = box
     end = (today or dt.date.today()) - dt.timedelta(days=1)
     start = end - dt.timedelta(days=days)
-    q = urllib.parse.urlencode({"spatial-resolution": "LOW", "temporal-resolution": "DAILY", "group-by": "FLAG", "datasets[0]": "public-global-presence:latest",
-                                "date-range": f"{start},{end}", "format": "JSON"})
+    q = {"spatial-resolution": "LOW", "temporal-resolution": "DAILY", "group-by": "FLAG", "datasets[0]": "public-global-presence:latest",
+         "date-range": f"{start},{end}", "format": "JSON"}
+    if vessel_types:
+        q["filters[0]"] = "vessel_type in (" + ",".join(f"'{t}'" for t in vessel_types) + ")"
+    q = urllib.parse.urlencode(q)
     body = {"geojson": {"type": "Polygon", "coordinates": [[[lo0, la0], [lo1, la0], [lo1, la1], [lo0, la1], [lo0, la0]]]}}
     return parse_gfw_presence(get(GFW + "?" + q, data=body, headers={"Authorization": "Bearer " + token}, timeout=180, retries=2))
 

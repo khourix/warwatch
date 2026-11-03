@@ -28,7 +28,7 @@ SCALE = (("adsb_", "count"), ("package_", "count"), ("civil_", "count"), ("firms
          ("flights_", "count"), ("bizjet_", "count"), ("darkships_", "count"), ("loiter_", "count"), ("portcalls_", "count"),
          ("darkshare_", ("share", 1.0)),
          ("news_", "count"), ("ports_", "count"), ("portwatch_", "count"), ("fcdo_", "count"),
-         ("nga_", "window"), ("notam_", "window"), ("msa_", "window"), ("jcg_", "window"), ("ukmto_", "window"),
+         ("nga_", "window"), ("navwarn_", "window"), ("notam_", "window"), ("msa_", "window"), ("jcg_", "window"), ("ukmto_", "window"),
          ("czib_", "window"), ("tzeva_", "window"), ("uaair_", "window"),
          ("gpsjam_", ("share", 1.0)), ("gnss_", ("share", 1.0)),        # percent
          ("gdeltshare_", ("share", 10.0)),                               # per 1,000 events
@@ -288,6 +288,11 @@ for th in C.HUBS:
     add(f"nga_{th}", f"New naval and air hazard warnings, last 30 days, {nm} (US NGA)", "geospatial", th, "daily", False,
         "Missile firing, exercises, mines, drones and GPS-interference notices to mariners and pilots; exercises are announced before they happen. From NGA's current feed, kept from 1 August 2026 and counted from 31 August.",
         (lambda t=th: extras.nga_series(t)), url=NGA, sub="Warnings")
+    add(f"navwarn_{th}", f"New naval hazard warnings, last 30 days, {nm} (NAVAREA coordinators via SeaLagom)", "geospatial", th, "daily", False,
+        "Missile firing, live fire, exercises, mines and GPS-interference warnings to mariners from the NAVAREA coordinators (UK, Spain, the US, "
+        "India, Pakistan), read from SeaLagom's public feeds. It stands in for NGA's feed, down since late October 2026. Kept from "
+        "3 November 2026 and counted from 3 December.",
+        (lambda t=th: extras.navwarn_series(t)), url="https://www.sealagom.com/", sub="Warnings")
     add(f"czib_{th}", f"EASA airspace bulletins revised in last 30 days, {nm}", "geospatial", th, "daily", False,
         "EASA revises conflict-zone bulletins when it sees rising danger to airliners. Snapshots start now.",
         _snap(f"czib_{th}", lambda t=th: extras.czib_recent(box=C.BOXES[t])),
@@ -296,6 +301,15 @@ for frag, th in C.CHOKEPOINTS.items():
     add(f"portwatch_{frag.lower().replace(' ', '_')}", f"Daily ship transits: {C.CHOKE_XY[frag][2]} (IMF PortWatch)", "geospatial", th, "daily", False,
         "A fall in transits signals disruption or avoidance; data posts weekly.",
         (lambda f=frag: S.fetch_portwatch(f)), direction="down", url="https://portwatch.imf.org/", sub="Sea")
+for frag, th in C.CHOKEPOINTS.items():
+    # PortWatch's chokepoint layer stopped answering in November 2026; GFW's AIS presence over the strait's lanes stands in.
+    # New ids, so the weights fitted on PortWatch transits are not applied to a different measure (NOT_TESTED below).
+    add(f"choke_{frag.lower().replace(' ', '_')}", f"Cargo and tanker vessel-hours in the {C.CHOKE_XY[frag][2]} (Global Fishing Watch AIS)", "geospatial", th,
+        "daily", False,
+        "Hours that cargo ships, carriers and tankers spent on AIS inside a tight box over the strait's lanes, about five days late. "
+        "A fall means shipping is avoiding the strait; it stands in for PortWatch's transit counts, which stopped in November 2026.",
+        (lambda f=frag: S.fetch_gfw_presence(C.CHOKE_BOX[f], _key("GFW_TOKEN"), vessel_types=("cargo", "carrier", "tanker"))),
+        direction="down", needs=["GFW_TOKEN"], drop=3, url="https://globalfishingwatch.org/map", sub="Sea")
 
 IODA = {"iran": "IR", "ukraine": "UA", "israel": "IL", "lebanon": "LB", "syria": "SY", "yemen": "YE", "europe_east": "PL", "taiwan": "TW", "scs": "PH", "korea": "KR",
         "southasia": "IN", "libya": "LY", "sudan": "SD", "drc": "CD", "venezuela": "VE"}
@@ -851,9 +865,9 @@ for _s in SERIES:
         _s["every"] = 6       # daily closes
     elif _id.startswith(("portwatch_", "fcdo_", "crisiswatch_")):
         _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely, CrisisWatch is monthly
-    elif _id.startswith(("ioda_", "ooni_", "ports_", "cfr_", "gas_", "power_", "fx_", "msa_", "jcg_")):
+    elif _id.startswith(("ioda_", "ooni_", "ports_", "cfr_", "gas_", "power_", "fx_", "msa_", "jcg_", "navwarn_")):
         _s["every"] = 3
-    elif _id.startswith("ais_presence_"):
+    elif _id.startswith(("ais_presence_", "choke_")):
         _s["every"] = 12      # one call per box; the source posts daily with a ~5 day delay
 
 
@@ -870,7 +884,7 @@ for _s in SERIES:
 # ============ Not tested yet: new families added in October 2026 (docs/FLIGHTS.md, docs/SHIPS.md) ============
 # Shown on the page and the map and read by the timing tells, but outside the composite and the model until a test written
 # down before it is run, on the labelled event list, shows they lead events (docs/METHODOLOGY.md). Remove a prefix to give it weight.
-NOT_TESTED = ("flights_", "bizjet_", "darkships_", "darkshare_", "loiter_", "portcalls_")
+NOT_TESTED = ("flights_", "bizjet_", "darkships_", "darkshare_", "loiter_", "portcalls_", "choke_", "navwarn_")
 for _s in SERIES:
     if _s["id"].startswith(NOT_TESTED):
         _s["scored"] = False

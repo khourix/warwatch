@@ -167,6 +167,75 @@ def nga_series(theatre, today=None):
     return out
 
 
+# ---- NAVAREA warnings as SeaLagom republishes them (a JSON Feed per NAVAREA, with the full text) ----
+# NGA's MSI portal went into maintenance in late October 2026 and its feed stopped. NGA only issues NAVAREA IV and XII and the
+# HYDROLANT/HYDROPAC broadcasts, so these are the coordinators' own warnings (UK, Spain, the US, India, Pakistan): a different
+# set of messages, kept under their own ids (navwarn_) and archived in history/cache/navwarn_msgs.csv.
+SEALAGOM_FEED = "https://www.sealagom.com/feeds/navarea/{}.json"
+SEALAGOM_AREAS = (1, 3, 4, 8, 9)   # NE Atlantic and Baltic, Mediterranean and Black Sea, W Atlantic and Caribbean, India, Gulf to Pakistan
+# NAVAREA XI (NW Pacific) is left out: jcg_ already reads it from Japan's Coast Guard.
+NAVWARN_COVERED_FROM = "2026-11-03"   # first fetch: the feeds list warnings in force, so ones issued and cancelled before this are missing
+ROMAN = {"I": 1, "II": 2, "III": 3, "IV": 4, "V": 5, "VI": 6, "VII": 7, "VIII": 8, "IX": 9, "X": 10, "XI": 11, "XII": 12}
+SPACED_COORD = re.compile(r"\b(\d{1,3})[ -](\d{2})[.,](\d+)\s?([NSEW])\b")   # '42 11,718N' and '25-54,71N' as COORD's '42-11.718N'
+
+
+def parse_sealagom(feed, area):
+    """SeaLagom JSON Feed for one NAVAREA -> hazard markers [{id, lat, lon, text, issued}] like parse_nga's, one per warning (first position).
+    The id is '<area>-<number>/<yy>' from the title ('NAVAREA IX 426/26' -> '9-426/26')."""
+    out = []
+    for it in feed.get("items") or []:
+        m = re.search(r"NAVAREA\s+([IVX]+)\s+0*(\d+)\s*/\s*(\d{2,4})", it.get("title") or "")
+        text = SPACED_COORD.sub(lambda c: f"{c.group(1)}-{c.group(2)}.{c.group(3)}{c.group(4)}", it.get("content_text") or "")
+        pos = parse_coords(text)
+        issued = (it.get("date_published") or "")[:10]
+        if not (m and pos and HAZARD.search(text) and re.match(r"\d{4}-\d{2}-\d{2}$", issued)):
+            continue
+        out.append({"id": f"{ROMAN.get(m.group(1), area)}-{m.group(2)}/{m.group(3)[-2:]}", "lat": round(pos[0][0], 2), "lon": round(pos[0][1], 2),
+                    "text": " ".join(text.split())[:160], "issued": issued, "active": True})
+    return out
+
+
+def fetch_navwarn():
+    """Hazard warnings from every NAVAREA feed that covers a theatre. Raises when a feed fails, so a gap is never read as 'no warnings'."""
+    out = []
+    for n in SEALAGOM_AREAS:
+        out += parse_sealagom(S.get(SEALAGOM_FEED.format(n), retries=2), n)
+    return out
+
+
+def _navwarn_cached():
+    """The NAVAREA feeds, fetched once per run; a failure is kept too, as _nga_cached does."""
+    if "navwarn" not in _CACHE:
+        try:
+            _CACHE["navwarn"] = fetch_navwarn()
+        except Exception as e:
+            _CACHE["navwarn"] = e
+    if isinstance(_CACHE["navwarn"], Exception):
+        raise RuntimeError(f"NAVAREA feeds failed earlier this run: {str(_CACHE['navwarn'])[:150]}")
+    return _CACHE["navwarn"]
+
+
+def navwarn_series(theatre, today=None):
+    """Hazard warnings the NAVAREA coordinators issued in the 30 days up to each day inside the theatre box -> [(date, count)]."""
+    import store
+    if "navwarn_rows" not in _CACHE:
+        rows = {r[0]: r for r in store.cache_rows("navwarn_msgs")}
+        for m in _navwarn_cached():
+            rows[m["id"]] = [m["id"], m["issued"], f"{m['lat']}", f"{m['lon']}"]
+        _CACHE["navwarn_rows"] = sorted(rows.values(), key=lambda r: (r[1], r[0]))
+        store.cache_rows_save("navwarn_msgs", _CACHE["navwarn_rows"])
+    box = C.THEATRE_BOX[theatre]
+    mine = [dt.date.fromisoformat(r[1]) for r in _CACHE["navwarn_rows"] if in_box(float(r[2]), float(r[3]), box)]
+    today = today or dt.date.today()
+    d, out = dt.date.fromisoformat(NAVWARN_COVERED_FROM) + dt.timedelta(days=30), []
+    if d > today:
+        raise C.Pending(f"archive building: first 30-day count on {d.isoformat()} ({len(mine)} warnings kept so far)")
+    while d <= today:
+        out.append((d.isoformat(), float(sum(1 for m in mine if 0 <= (d - m).days <= 30))))
+        d += dt.timedelta(days=1)
+    return out
+
+
 # ---- Japan Coast Guard navigational warnings (NAVAREA XI, which Japan coordinates, and Japan's own warnings) ----
 # The TUHO index refuses GitHub and home connections alike, but the warning list and text CGIs behind navarea11.html answer.
 JCG_CGI = "https://www1.kaiho.mlit.go.jp/TUHO/keiho/cgi/"
@@ -670,6 +739,17 @@ def country_levels(items):
     return out
 
 
+def hazard_layer(errors, today=None):
+    """Hazard warnings for the map: NGA's in force, or when NGA is down the NAVAREA coordinators' warnings of the last 30 days."""
+    try:
+        return [m for m in _nga_cached() if m.get("active", True)]
+    except Exception as e:
+        cut = str((today or dt.date.today()) - dt.timedelta(days=30))
+        out = [m for m in _navwarn_cached() if m["issued"] >= cut]
+        errors.append(f"nga: {str(e)[:80]} (map shows NAVAREA warnings via SeaLagom)")
+        return out
+
+
 def collect():
     """All map and panel layers; any failure leaves that layer empty."""
     import os
@@ -677,7 +757,7 @@ def collect():
     ex = {"mil": [], "sqk": [], "ships": [], "inc": [], "fires": [], "bases": [], "nga": [], "markets": [], "levels": {}, "czib": [], "pizza": None,
           "air": [], "div": [], "dark": [], "loiter": [], "errors": []}
     def nga():
-        return [m for m in _nga_cached() if m.get("active", True)]
+        return hazard_layer(ex["errors"])
     def czib():
         if "czib" not in _CACHE:
             _CACHE["czib"] = fetch_czib()
