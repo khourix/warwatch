@@ -48,33 +48,54 @@ def _fetch(s, rec):
     rec["points"] = pts[:-s["drop"]] if s["drop"] else pts
 
 
+DOWN_AFTER = 3          # a source whose series fail this many times in a row is skipped for the rest of the run
+FETCH_BUDGET = 30 * 60  # seconds; once collecting has taken this long, failed series go straight to their last good copy
+
+
 def collect(only=None):
     """Fetch every series. A failed fetch is retried once at the end of the
     run (rate limits clear), then falls back to the last good copy, shown as
-    stale. No copy and no data means the series is an error, never a guess."""
+    stale. No copy and no data means the series is an error, never a guess.
+
+    A source that is down (NGA's feed answering 503, PortWatch timing out) fails slowly, once per series, and a dozen
+    of those used to push the build past its 55-minute limit, so no page was published at all. Two guards keep the
+    build inside it: after DOWN_AFTER failures in a row from one source (the series' url), its remaining series are
+    not fetched this run; and the retry pass is skipped for a source that is down, and stops once FETCH_BUDGET is spent."""
     out, failed = [], []
+    t0 = time.monotonic()
+    fails = {}      # source url -> failures in a row this run
     for s in catalog.SERIES:
         if only and s["id"] not in only:
             continue
         rec = {k: v for k, v in s.items() if k != "fetch"}
         rec.update(points=[], score=None, status="ok", error="", stale="")
+        src = s.get("url") or ""
         missing = [k for k in s["needs"] if not os.environ.get(k)]
         if missing:
             rec.update(status="awaiting_key", error="needs " + ", ".join(missing))
+        elif src and fails.get(src, 0) >= DOWN_AFTER:
+            rec.update(status="error", error=f"not fetched: {src} failed {DOWN_AFTER} times in a row this run")
+            failed.append((s, rec))
         else:
             try:
                 _fetch(s, rec)
+                fails[src] = 0
             except C.Pending as e:    # working, history still filling: shown as collecting, not as a failure
                 rec.update(status="collecting", error=str(e)[:200])
             except Exception as e:
                 rec.update(status="error", error=str(e)[:200])
                 failed.append((s, rec))
+                fails[src] = fails.get(src, 0) + 1
         out.append(rec)
         print(f"{rec['status']:13} {s['id']:28} n={len(rec['points'])} {rec['error'][:80]}", flush=True)
-    retry = failed
+    retry = [(s, rec) for s, rec in failed if not (s.get("url") and fails.get(s["url"], 0) >= DOWN_AFTER)]
+    print(f"collect: {len(failed)} failed, {len(retry)} to retry, {time.monotonic() - t0:.0f}s spent", flush=True)
     if retry and not os.environ.get("WARWATCH_NO_RETRY"):
         time.sleep(60)
         for s, rec in retry:
+            if time.monotonic() - t0 > FETCH_BUDGET:
+                print(f"retry skipped (fetch budget spent) {s['id']}", flush=True)
+                continue
             try:
                 _fetch(s, rec)
                 rec.update(status="ok", error="")

@@ -163,6 +163,24 @@ class TestParsers(unittest.TestCase):
                           {"attributes": {"date": "2026-09-26", "n_total": 30}}]}
         self.assertEqual(S.parse_portwatch(p), [("2026-09-26", 30.0), ("2026-09-27", 37.0)])
 
+    def test_portwatch_ports_sums_country_totals_one_country_per_query(self):
+        calls = []
+
+        def fake(url, **kw):
+            calls.append(url)
+            iso = "ARE" if "ARE" in url else "SAU"
+            n = 3 if iso == "ARE" else 2
+            return {"features": [{"attributes": {"date": "2026-10-22", "portcalls": n}}, {"attributes": {"date": "2026-10-23", "portcalls": n + 1}}]}
+        saved = S.get
+        S.get = fake
+        try:
+            got = S.fetch_portwatch_ports(("ARE", "SAU"), ("Jebel Ali",))
+        finally:
+            S.get = saved
+        self.assertEqual(got, [("2026-10-22", 5.0), ("2026-10-23", 7.0)])
+        self.assertEqual(len(calls), 2)
+        self.assertTrue(all("Daily_Trade_Data_REG" in u for u in calls))
+
     def test_census_filters_named_partners(self):
         rows = [["CTY_CODE", "CTY_NAME", "ALL_VAL_MO", "time"], ["1", "UKRAINE", "5", "2026-06"],
                 ["2", "FRANCE", "9", "2026-06"], ["3", "UKRAINE", "7", "2026-07"]]
@@ -994,6 +1012,52 @@ class TestModel(unittest.TestCase):
             os.environ.pop("WARWATCH_NO_RETRY", None)
         self.assertEqual(out["p"]["status"], "collecting")
         self.assertEqual(out["b"]["status"], "error")
+
+    def test_a_source_that_is_down_is_not_fetched_for_every_series(self):
+        calls = []
+
+        def down():
+            calls.append(1)
+            raise RuntimeError("HTTP Error 503")
+        saved = list(catalog.SERIES)
+        mk = lambda sid, fn, url: dict(id=sid, label=sid, domain="geospatial", theatre="iraq", kind="daily", lag=False, why="", fetch=fn,
+                                       direction="up", needs=[], drop=0, url=url, sub="", every=None, scored=True, scale=None)
+        try:
+            catalog.SERIES[:] = [mk(f"d{i}", down, "https://down.example/") for i in range(6)] + [mk("other", lambda: [("2026-11-01", 1.0)], "https://up.example/")]
+            os.environ["WARWATCH_NO_RETRY"] = "1"
+            out = {r["id"]: r for r in run.collect()}
+        finally:
+            catalog.SERIES[:] = saved
+            os.environ.pop("WARWATCH_NO_RETRY", None)
+        self.assertEqual(len(calls), run.DOWN_AFTER)                 # the rest of that source's series are not fetched
+        self.assertEqual(out["d5"]["status"], "error")
+        self.assertIn("not fetched", out["d5"]["error"])
+        self.assertEqual(out["other"]["status"], "ok")               # another source is unaffected
+
+    def test_nga_feed_failure_is_fetched_once_per_run(self):
+        import extras
+        calls = []
+
+        def boom():
+            calls.append(1)
+            raise RuntimeError("HTTP Error 503")
+        saved = extras.fetch_nga
+        extras._CACHE.pop("nga", None)
+        extras.fetch_nga = boom
+        try:
+            for th in ("iran", "gulf"):
+                with self.assertRaises(RuntimeError):
+                    extras.nga_series(th)
+        finally:
+            extras.fetch_nga = saved
+            extras._CACHE.pop("nga", None)
+        self.assertEqual(len(calls), 1)
+
+    def test_arcgis_error_body_raises(self):
+        with self.assertRaises(RuntimeError) as cm:
+            S._arcgis({"error": {"code": 504, "message": "Your request has timed out.", "details": []}})
+        self.assertIn("timed out", str(cm.exception))
+        self.assertEqual(S._arcgis({"features": []}), {"features": []})
 
     def test_opensky_airborne_counts_only_aircraft_in_the_air(self):
         import extras

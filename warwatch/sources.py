@@ -211,6 +211,15 @@ def fetch_sam(ccodes, key, days=360):
 
 
 # ---- IMF PortWatch: daily chokepoint transits ---------------------------------
+def _arcgis(p):
+    """ArcGIS answers a failed query (a timeout, a bad field) with HTTP 200 and {"error": {...}}; raise its message
+    instead of reading it as a day with no ships."""
+    e = p.get("error") if isinstance(p, dict) else None
+    if e:
+        raise RuntimeError(f"ArcGIS error {e.get('code', '')}: {e.get('message', '')} {' '.join(map(str, e.get('details') or []))}"[:200])
+    return p
+
+
 def parse_portwatch(p):
     return sorted((f["attributes"]["date"], float(f["attributes"]["n_total"]))
                   for f in p.get("features", []))
@@ -222,31 +231,36 @@ def fetch_portwatch(name_fragment, days=900):
     q = urllib.parse.urlencode({"where": where, "outFields": "date,portname,n_total",
                                 "returnGeometry": "false", "orderByFields": "date ASC",
                                 "resultRecordCount": 2000, "f": "json"})
-    return parse_portwatch(get(PW + "Daily_Chokepoints_Data/FeatureServer/0/query?" + q))
+    return parse_portwatch(_arcgis(get(PW + "Daily_Chokepoints_Data/FeatureServer/0/query?" + q)))
 
 
 def fetch_portwatch_ports(iso3, names=(), field="portcalls", days=300):
-    """Daily vessel calls summed over the named ports of one country, or of several (iso3 a tuple), all their ports if no name. IMF PortWatch, keyless."""
+    """Daily vessel calls at all ports of one country, or summed over several (iso3 a tuple). IMF PortWatch, keyless.
+
+    Reads Daily_Trade_Data_REG (country by day). PortWatch's per-port layer, Daily_Ports_Data, began answering
+    "Token Required" in late October 2026, so the named ports in `names` can no longer be picked out; they are kept
+    in the signature only so the catalogue reads the same. One country per query: an IN (...) list over several
+    countries runs into the service's time limit. A country that fails is retried once before the whole fetch fails."""
     since = (dt.date.today() - dt.timedelta(days=days)).isoformat()
     isos = (iso3,) if isinstance(iso3, str) else tuple(iso3)
-    where = "ISO3 IN (" + ", ".join(f"'{i}'" for i in isos) + f") AND date >= DATE '{since}'"
-    if names:
-        where += " AND (" + " OR ".join(f"portname LIKE '%{n}%'" for n in names) + ")"
-    by, offset = {}, 0
-    while True:
-        q = urllib.parse.urlencode({"where": where, "outFields": f"date,{field}", "returnGeometry": "false", "orderByFields": "date ASC",
-                                    "resultOffset": offset, "resultRecordCount": 2000, "f": "json"})
-        p = get(PW + "Daily_Ports_Data/FeatureServer/0/query?" + q)
-        feats = p.get("features", [])
-        for f in feats:
+    by = {}
+    for iso in isos:
+        q = urllib.parse.urlencode({"where": f"ISO3 = '{iso}' AND date >= DATE '{since}'", "outFields": f"date,{field}",
+                                    "returnGeometry": "false", "orderByFields": "date ASC", "resultRecordCount": 2000, "f": "json"})
+        for attempt in range(2):
+            try:
+                p = _arcgis(get(PW + "Daily_Trade_Data_REG/FeatureServer/0/query?" + q, retries=2))
+                break
+            except RuntimeError:
+                if attempt:
+                    raise
+                time.sleep(5)
+        for f in p.get("features", []):
             a = f["attributes"]
             d = a["date"]
             if isinstance(d, (int, float)):
                 d = dt.datetime.fromtimestamp(d / 1000, dt.timezone.utc).date().isoformat()
             by[d] = by.get(d, 0) + float(a.get(field) or 0)
-        if not p.get("exceededTransferLimit") or not feats:
-            break
-        offset += len(feats)
     return sorted(by.items())
 
 
