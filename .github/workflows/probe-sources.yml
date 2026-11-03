@@ -6,32 +6,22 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
-      - name: NGA apology text
+      - name: NGA fallback links
         run: |
-          curl -sS -m 60 "https://msi.nga.mil/api/publications/smaps?output=json&status=all" > a.html || true
-          python3 -c "
-          import re,html;t=open('a.html').read();t=re.sub(r'(?s)<(script|style).*?</\1>',' ',t);t=re.sub(r'<[^>]+>',' ',t);print(re.sub(r'\s+',' ',html.unescape(t))[:1500])"
+          curl -sS -m 60 "https://msi.nga.mil/api/publications/smaps?output=json&status=all" | grep -o 'href="[^"]*"' | sort -u
       - name: PortWatch
         run: |
           PW=https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services
-          q() { echo "== $1"; curl -sS -m 120 -o /tmp/b -w 'HTTP %{http_code} %{time_total}s %{size_download}B\n' "$1" || true; head -c 500 /tmp/b; echo; }
+          q() { echo "== $1"; curl -sS -m 120 -o /tmp/b -w 'HTTP %{http_code} %{time_total}s %{size_download}B\n' "$1" || true; head -c 300 /tmp/b; echo; python3 -c "
+          import json;d=json.load(open('/tmp/b'));f=d.get('features') or [];print('n',len(f),'exceeded',d.get('exceededTransferLimit'),'first',f[0]['attributes'] if f else None,'last',f[-1]['attributes'] if f else None)" 2>/dev/null || true; }
           C="$PW/Daily_Chokepoints_Data/FeatureServer/0/query"
-          q "$C?where=portname+LIKE+%27%25Hormuz%25%27+AND+date+%3E%3D+DATE+%272026-10-01%27&outFields=date,portname,n_total&returnGeometry=false&f=json"
-          q "$C?where=portname+LIKE+%27%25Hormuz%25%27+AND+date+%3E%3D+%272026-10-01%27&outFields=date,portname,n_total&returnGeometry=false&f=json"
-          q "$C?where=portname+LIKE+%27%25Hormuz%25%27&outFields=date,portname,n_total&returnGeometry=false&orderByFields=date+DESC&resultRecordCount=3&f=json"
-          q "$C?where=portname+LIKE+%27%25Hormuz%25%27&outFields=date,portname,n_total&returnGeometry=false&orderByFields=date+ASC&resultRecordCount=2000&f=json"
-          echo; echo "--- hub catalog"
-          for qq in daily ports chokepoint "port activity"; do
-            curl -sS -m 60 "https://portwatch.imf.org/api/search/v1/collections/all/items?q=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$qq")&limit=40" | python3 -c "
-          import json,sys
-          try: d=json.load(sys.stdin)
-          except Exception as e: print('parse fail',e); sys.exit()
-          for f in d.get('features',[]):
-              p=f.get('properties',{}); print(p.get('id'),'|',p.get('type'),'|',p.get('title'),'|',p.get('url'),'|',p.get('modified'))" || true
+          R="$PW/Daily_Trade_Data_REG/FeatureServer/0/query"
+          for i in 1 2 3; do
+            q "$C?where=portname+LIKE+%27%25Hormuz%25%27+AND+date+%3E%3D+DATE+%272026-09-01%27&outFields=date,portname,n_total&returnGeometry=false&orderByFields=date+ASC&resultRecordCount=2000&f=json"
           done
-          for s in Daily_Regional_Data Daily_Trade_Data_WLD Daily_Trade_Data_REG PortWatch_ports_database portsfacts; do
-            echo "== $s fields"; curl -sS -m 60 "$PW/$s/FeatureServer/0?f=json" | python3 -c "import json,sys;d=json.load(sys.stdin);print(d.get('name'),d.get('error'),[f['name'] for f in d.get('fields',[])][:40], d.get('editingInfo'))"
-            curl -sS -m 60 "$PW/$s/FeatureServer/0/query?where=1%3D1&outFields=*&resultRecordCount=1&returnGeometry=false&f=json" | head -c 600; echo
-          done
+          q "$R?where=ISO3+%3D+%27IRN%27+AND+date+%3E%3D+DATE+%272026-09-01%27&outFields=ISO3,date,portcalls&returnGeometry=false&orderByFields=date+ASC&resultRecordCount=2000&f=json"
+          q "$R?where=ISO3+%3D+%27IRN%27&outFields=ISO3,date,portcalls&returnGeometry=false&orderByFields=date+DESC&resultRecordCount=5&f=json"
+          q "$R?where=1%3D1&outFields=ISO3,country&returnDistinctValues=true&returnGeometry=false&resultRecordCount=400&f=json"
+          q "$R?where=ISO3+IN+%28%27IRN%27,%27ISR%27,%27UKR%27,%27PHL%27,%27YEM%27%29+AND+date+%3E%3D+DATE+%272026-10-20%27&outFields=ISO3,date,portcalls&returnGeometry=false&orderByFields=date+ASC&resultRecordCount=2000&f=json"
