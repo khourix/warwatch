@@ -6,22 +6,37 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
-      - name: NGA fallback links
+      - name: PortWatch country port calls
         run: |
-          curl -sS -m 60 "https://msi.nga.mil/api/publications/smaps?output=json&status=all" | grep -o 'href="[^"]*"' | sort -u
-      - name: PortWatch
-        run: |
-          PW=https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services
-          q() { echo "== $1"; curl -sS -m 120 -o /tmp/b -w 'HTTP %{http_code} %{time_total}s %{size_download}B\n' "$1" || true; head -c 300 /tmp/b; echo; python3 -c "
-          import json;d=json.load(open('/tmp/b'));f=d.get('features') or [];print('n',len(f),'exceeded',d.get('exceededTransferLimit'),'first',f[0]['attributes'] if f else None,'last',f[-1]['attributes'] if f else None)" 2>/dev/null || true; }
-          C="$PW/Daily_Chokepoints_Data/FeatureServer/0/query"
-          R="$PW/Daily_Trade_Data_REG/FeatureServer/0/query"
-          for i in 1 2 3; do
-            q "$C?where=portname+LIKE+%27%25Hormuz%25%27+AND+date+%3E%3D+DATE+%272026-09-01%27&outFields=date,portname,n_total&returnGeometry=false&orderByFields=date+ASC&resultRecordCount=2000&f=json"
-          done
-          q "$R?where=ISO3+%3D+%27IRN%27+AND+date+%3E%3D+DATE+%272026-09-01%27&outFields=ISO3,date,portcalls&returnGeometry=false&orderByFields=date+ASC&resultRecordCount=2000&f=json"
-          q "$R?where=ISO3+%3D+%27IRN%27&outFields=ISO3,date,portcalls&returnGeometry=false&orderByFields=date+DESC&resultRecordCount=5&f=json"
-          q "$R?where=1%3D1&outFields=ISO3,country&returnDistinctValues=true&returnGeometry=false&resultRecordCount=400&f=json"
-          q "$R?where=ISO3+IN+%28%27IRN%27,%27ISR%27,%27UKR%27,%27PHL%27,%27YEM%27%29+AND+date+%3E%3D+DATE+%272026-10-20%27&outFields=ISO3,date,portcalls&returnGeometry=false&orderByFields=date+ASC&resultRecordCount=2000&f=json"
+          python3 - <<'PY'
+          import json, time, urllib.request, urllib.parse
+          PW = "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/"
+          def get(svc, params):
+              t = time.time()
+              u = PW + svc + "/FeatureServer/0/query?" + urllib.parse.urlencode(params)
+              try:
+                  with urllib.request.urlopen(u, timeout=90) as r: d = json.loads(r.read())
+              except Exception as e: d = {"error": str(e)}
+              return d, time.time() - t
+          for iso in "IRN IRQ ARE SAU QAT ISR LBN SYR YEM TWN KOR POL UKR PAK LBY VEN COD SDN PHL".split():
+              d, s = get("Daily_Trade_Data_REG", {"where": f"ISO3 = '{iso}' AND date >= DATE '2026-01-05'", "outFields": "date,portcalls", "returnGeometry": "false",
+                                                  "orderByFields": "date ASC", "resultRecordCount": 2000, "f": "json"})
+              f = d.get("features", [])
+              print(iso, f"{s:.1f}s", "n", len(f), "last", f[-1]["attributes"] if f else None, "err", d.get("error"), "more", d.get("exceededTransferLimit"))
+          print("--- chokepoints")
+          W = "portname LIKE '%Hormuz%'"
+          for p in [{"where": W + " AND date >= DATE '2026-09-01'"},
+                    {"where": W + " AND date BETWEEN DATE '2026-09-01' AND DATE '2026-12-31'"},
+                    {"where": W + " AND date > '2026-09-01'"},
+                    {"where": "portid = 'chokepoint6'"},
+                    {"where": W, "orderByFields": "date DESC", "resultRecordCount": 120},
+                    {"where": W, "resultOffset": 2000, "resultRecordCount": 2000},
+                    {"where": W},
+                    {"where": W, "orderByFields": "date DESC", "resultRecordCount": 120}]:
+              q = {"outFields": "date,portname,n_total", "returnGeometry": "false", "f": "json"}; q.update(p)
+              d, s = get("Daily_Chokepoints_Data", q)
+              f = d.get("features", [])
+              print(p, f"{s:.1f}s", "n", len(f), "dates", (f[0]["attributes"]["date"], f[-1]["attributes"]["date"]) if f else None, "err", d.get("error"))
+          PY
