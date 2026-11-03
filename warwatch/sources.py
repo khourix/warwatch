@@ -211,6 +211,15 @@ def fetch_sam(ccodes, key, days=360):
 
 
 # ---- IMF PortWatch: daily chokepoint transits ---------------------------------
+def _arcgis(p):
+    """ArcGIS answers a failed query (a timeout, a bad field) with HTTP 200 and {"error": {...}}; raise its message
+    instead of reading it as a day with no ships."""
+    e = p.get("error") if isinstance(p, dict) else None
+    if e:
+        raise RuntimeError(f"ArcGIS error {e.get('code', '')}: {e.get('message', '')} {' '.join(map(str, e.get('details') or []))}"[:200])
+    return p
+
+
 def parse_portwatch(p):
     return sorted((f["attributes"]["date"], float(f["attributes"]["n_total"]))
                   for f in p.get("features", []))
@@ -222,7 +231,7 @@ def fetch_portwatch(name_fragment, days=900):
     q = urllib.parse.urlencode({"where": where, "outFields": "date,portname,n_total",
                                 "returnGeometry": "false", "orderByFields": "date ASC",
                                 "resultRecordCount": 2000, "f": "json"})
-    return parse_portwatch(get(PW + "Daily_Chokepoints_Data/FeatureServer/0/query?" + q))
+    return parse_portwatch(_arcgis(get(PW + "Daily_Chokepoints_Data/FeatureServer/0/query?" + q)))
 
 
 def fetch_portwatch_ports(iso3, names=(), field="portcalls", days=300):
@@ -236,7 +245,7 @@ def fetch_portwatch_ports(iso3, names=(), field="portcalls", days=300):
     while True:
         q = urllib.parse.urlencode({"where": where, "outFields": f"date,{field}", "returnGeometry": "false", "orderByFields": "date ASC",
                                     "resultOffset": offset, "resultRecordCount": 2000, "f": "json"})
-        p = get(PW + "Daily_Ports_Data/FeatureServer/0/query?" + q)
+        p = _arcgis(get(PW + "Daily_Ports_Data/FeatureServer/0/query?" + q))
         feats = p.get("features", [])
         for f in feats:
             a = f["attributes"]

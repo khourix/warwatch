@@ -79,11 +79,9 @@ _CACHE = {}
 
 def nga_recent(theatre, days=30, today=None):
     """Hazard warnings issued in the last `days` whose position falls in the theatre box."""
-    if "nga" not in _CACHE:
-        _CACHE["nga"] = fetch_nga()
     cut = str((today or dt.date.today()) - dt.timedelta(days=days))
     box = C.THEATRE_BOX[theatre]
-    return float(sum(1 for m in _CACHE["nga"] if m["issued"] >= cut and in_box(m["lat"], m["lon"], box)))
+    return float(sum(1 for m in _nga_cached() if m["issued"] >= cut and in_box(m["lat"], m["lon"], box)))
 
 
 def hub_stats(theatre):
@@ -129,6 +127,19 @@ def fetch_nga():
     return parse_nga(smaps_to_warnings(p["smaps"]))
 
 
+def _nga_cached():
+    """NGA's feed, fetched once per run for all theatres. A failure is kept too, so a feed that is down costs one slow
+    fetch per run, not one per theatre."""
+    if "nga" not in _CACHE:
+        try:
+            _CACHE["nga"] = fetch_nga()
+        except Exception as e:
+            _CACHE["nga"] = e
+    if isinstance(_CACHE["nga"], Exception):
+        raise RuntimeError(f"NGA feed failed earlier this run: {str(_CACHE['nga'])[:150]}")
+    return _CACHE["nga"]
+
+
 def nga_archive(items):
     """Folds the warnings into history/cache/nga_msgs.csv (id, issued, lat, lon), which keeps what NGA later drops. -> all archived rows."""
     import store
@@ -144,9 +155,7 @@ def nga_archive(items):
 def nga_series(theatre, today=None):
     """Hazard warnings issued in the 30 days up to each day, inside the theatre box -> [(date, count)].
     NGA's new feed starts keeping cancelled warnings on C.NGA_COVERED_FROM, so counts start 30 days after it."""
-    if "nga" not in _CACHE:
-        _CACHE["nga"] = fetch_nga()
-    rows = nga_archive(_CACHE["nga"])
+    rows = nga_archive(_nga_cached())
     box = C.THEATRE_BOX[theatre]
     mine = [dt.date.fromisoformat(r[1]) for r in rows if in_box(float(r[2]), float(r[3]), box)]
     today = today or dt.date.today()
@@ -668,9 +677,7 @@ def collect():
     ex = {"mil": [], "sqk": [], "ships": [], "inc": [], "fires": [], "bases": [], "nga": [], "markets": [], "levels": {}, "czib": [], "pizza": None,
           "air": [], "div": [], "dark": [], "loiter": [], "errors": []}
     def nga():
-        if "nga" not in _CACHE:
-            _CACHE["nga"] = fetch_nga()
-        return [m for m in _CACHE["nga"] if m.get("active", True)]
+        return [m for m in _nga_cached() if m.get("active", True)]
     def czib():
         if "czib" not in _CACHE:
             _CACHE["czib"] = fetch_czib()
