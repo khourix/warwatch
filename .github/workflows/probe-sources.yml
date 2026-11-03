@@ -8,27 +8,30 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: NGA
+      - name: NGA apology text
         run: |
-          curl -sS -m 60 "https://msi.nga.mil/api/publications/smaps?output=json&status=all" | sed 's/<[^>]*>/ /g' | tr -s ' \n' ' ' | head -c 1500; echo
-          curl -sS -m 60 "https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active" -o bw.json
+          curl -sS -m 60 "https://msi.nga.mil/api/publications/smaps?output=json&status=all" > a.html || true
           python3 -c "
-          import json;d=json.load(open('bw.json'))['broadcast-warn'];print('broadcast-warn n',len(d));
-          ks=sorted(d,key=lambda m:(m.get('msgYear',0),str(m.get('issueDate',''))));print(ks[-1].get('issueDate'),ks[-1].get('msgYear'));print(list(d[0].keys()))
-          import collections;print(collections.Counter(m.get('msgYear') for m in d))"
-          for u in "https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=all" "https://msi.nga.mil/api/publications/navwarn?output=json" "https://msi.nga.mil/api/publications/smaps?output=json&status=active&navArea=4" "https://msi.nga.mil/api/publications/navwarnings?output=json"; do
-            echo "== $u"; curl -sS -m 60 -o /tmp/b -w 'HTTP %{http_code} %{size_download}B\n' "$u"; head -c 300 /tmp/b; echo; done
+          import re,html;t=open('a.html').read();t=re.sub(r'(?s)<(script|style).*?</\1>',' ',t);t=re.sub(r'<[^>]+>',' ',t);print(re.sub(r'\s+',' ',html.unescape(t))[:1500])"
       - name: PortWatch
         run: |
           PW=https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services
-          curl -sS "$PW?f=json" | python3 -c "import json,sys;[print(s['name'],s['type']) for s in json.load(sys.stdin)['services'] if any(k in s['name'].lower() for k in ('port','choke','daily','trade','ship'))]"
-          q() { echo "== $1"; curl -sS -m 120 -o /tmp/b -w 'HTTP %{http_code} %{time_total}s %{size_download}B\n' "$1" || true; head -c 600 /tmp/b; echo; }
-          q "$PW/Daily_Chokepoints_Data/FeatureServer/0/query?where=1%3D1&outFields=*&resultRecordCount=3&f=json"
-          q "$PW/Daily_Chokepoints_Data/FeatureServer/0/query?where=1=1&outFields=*&resultRecordCount=3&f=pjson"
-          q "$PW/Daily_Chokepoints_Data/FeatureServer/0/query?where=portname%20LIKE%20%27%25Hormuz%25%27&outFields=date,portname,n_total&resultRecordCount=3&f=json"
-          q "$PW/Daily_Chokepoints_Data/FeatureServer?f=json"
-          q "https://www.arcgis.com/sharing/rest/content/items/3da2b9ca97684916b75c4013f95d18ab?f=json"
-          q "https://www.arcgis.com/sharing/rest/search?q=owner%3AIMF_PortWatch&num=40&f=json"
-          q "https://www.arcgis.com/sharing/rest/search?q=%22Daily%20Ports%20Data%22&num=20&f=json"
-          q "https://portwatch.imf.org/"
-          curl -sS "https://www.arcgis.com/sharing/rest/search?q=portwatch&num=60&f=json" | python3 -c "import json,sys;[print(r['id'],r['type'],r['owner'],r['title'],r.get('url'),r.get('access')) for r in json.load(sys.stdin).get('results',[])]"
+          q() { echo "== $1"; curl -sS -m 120 -o /tmp/b -w 'HTTP %{http_code} %{time_total}s %{size_download}B\n' "$1" || true; head -c 500 /tmp/b; echo; }
+          C="$PW/Daily_Chokepoints_Data/FeatureServer/0/query"
+          q "$C?where=portname+LIKE+%27%25Hormuz%25%27+AND+date+%3E%3D+DATE+%272026-10-01%27&outFields=date,portname,n_total&returnGeometry=false&f=json"
+          q "$C?where=portname+LIKE+%27%25Hormuz%25%27+AND+date+%3E%3D+%272026-10-01%27&outFields=date,portname,n_total&returnGeometry=false&f=json"
+          q "$C?where=portname+LIKE+%27%25Hormuz%25%27&outFields=date,portname,n_total&returnGeometry=false&orderByFields=date+DESC&resultRecordCount=3&f=json"
+          q "$C?where=portname+LIKE+%27%25Hormuz%25%27&outFields=date,portname,n_total&returnGeometry=false&orderByFields=date+ASC&resultRecordCount=2000&f=json"
+          echo; echo "--- hub catalog"
+          for qq in daily ports chokepoint "port activity"; do
+            curl -sS -m 60 "https://portwatch.imf.org/api/search/v1/collections/all/items?q=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$qq")&limit=40" | python3 -c "
+          import json,sys
+          try: d=json.load(sys.stdin)
+          except Exception as e: print('parse fail',e); sys.exit()
+          for f in d.get('features',[]):
+              p=f.get('properties',{}); print(p.get('id'),'|',p.get('type'),'|',p.get('title'),'|',p.get('url'),'|',p.get('modified'))" || true
+          done
+          for s in Daily_Regional_Data Daily_Trade_Data_WLD Daily_Trade_Data_REG PortWatch_ports_database portsfacts; do
+            echo "== $s fields"; curl -sS -m 60 "$PW/$s/FeatureServer/0?f=json" | python3 -c "import json,sys;d=json.load(sys.stdin);print(d.get('name'),d.get('error'),[f['name'] for f in d.get('fields',[])][:40], d.get('editingInfo'))"
+            curl -sS -m 60 "$PW/$s/FeatureServer/0/query?where=1%3D1&outFields=*&resultRecordCount=1&returnGeometry=false&f=json" | head -c 600; echo
+          done
