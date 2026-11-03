@@ -1,0 +1,37 @@
+name: probe-sources (temporary, delete before merge)
+on:
+  push:
+    branches: [claude/project-thread-h27h9b]
+    paths: [".github/workflows/probe-sources.yml"]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: NGA
+        run: |
+          UA="warwatch/0.3 (public-data research; github.com/khourix/warwatch)"
+          BUA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
+          for u in "https://msi.nga.mil/api/publications/smaps?output=json&status=all" \
+                   "https://msi.nga.mil/api/publications/smaps?output=json&status=active" \
+                   "https://msi.nga.mil/api/publications/smaps?output=json" \
+                   "https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active" \
+                   "https://msi.nga.mil/NavWarnings" "https://msi.nga.mil/"; do
+            for ua in "$UA" "$BUA"; do
+              echo "== $u  [${ua:0:12}]"
+              curl -sS -m 90 -A "$ua" -o /tmp/b -w 'HTTP %{http_code} %{time_total}s %{size_download}B\n' "$u" || true
+              head -c 400 /tmp/b | tr '\n' ' '; echo
+            done
+          done
+      - name: PortWatch
+        run: |
+          PW=https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services
+          q() { echo "== $1"; curl -sS -m 120 -o /tmp/b -w 'HTTP %{http_code} %{time_total}s %{size_download}B\n' "$1" || true; head -c 700 /tmp/b; echo; }
+          q "$PW?f=json"
+          q "$PW/Daily_Ports_Data/FeatureServer/0?f=json"
+          q "$PW/Daily_Chokepoints_Data/FeatureServer/0?f=json"
+          q "$PW/Daily_Chokepoints_Data/FeatureServer/0/query?where=portname+LIKE+%27%25Hormuz%25%27+AND+date+%3E%3D+DATE+%272026-10-01%27&outFields=date,portname,n_total&returnGeometry=false&f=json"
+          q "$PW/Daily_Chokepoints_Data/FeatureServer/0/query?where=1%3D1&outFields=*&orderByFields=date+DESC&resultRecordCount=3&returnGeometry=false&f=json"
+          q "$PW/Daily_Ports_Data/FeatureServer/0/query?where=ISO3+IN+%28%27IRN%27%29+AND+date+%3E%3D+DATE+%272026-10-01%27&outFields=date,portcalls&returnGeometry=false&f=json"
+          q "$PW/Daily_Ports_Data/FeatureServer/0/query?where=1%3D1&outFields=*&orderByFields=date+DESC&resultRecordCount=2&returnGeometry=false&f=json"
+          q "$PW/Daily_Ports_Data/FeatureServer/0/query?where=ISO3%3D%27IRN%27&outFields=*&resultRecordCount=2&returnGeometry=false&f=json"
