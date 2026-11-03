@@ -8,7 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: PortWatch country port calls
+      - name: NGA daily memo files
+        run: |
+          for f in IV XII LAN PAC ARC; do echo "== DailyMem$f.txt"; curl -sS -m 60 -o m.txt -w 'HTTP %{http_code} %{size_download}B\n' "https://msi.nga.mil/apology_objects/DailyMem$f.txt"; head -c 1200 m.txt; echo; grep -c . m.txt; done
+      - name: Chokepoints by portid
         run: |
           python3 - <<'PY'
           import json, time, urllib.request, urllib.parse
@@ -20,23 +23,13 @@ jobs:
                   with urllib.request.urlopen(u, timeout=90) as r: d = json.loads(r.read())
               except Exception as e: d = {"error": str(e)}
               return d, time.time() - t
-          for iso in "IRN IRQ ARE SAU QAT ISR LBN SYR YEM TWN KOR POL UKR PAK LBY VEN COD SDN PHL".split():
-              d, s = get("Daily_Trade_Data_REG", {"where": f"ISO3 = '{iso}' AND date >= DATE '2026-01-05'", "outFields": "date,portcalls", "returnGeometry": "false",
-                                                  "orderByFields": "date ASC", "resultRecordCount": 2000, "f": "json"})
-              f = d.get("features", [])
-              print(iso, f"{s:.1f}s", "n", len(f), "last", f[-1]["attributes"] if f else None, "err", d.get("error"), "more", d.get("exceededTransferLimit"))
-          print("--- chokepoints")
-          W = "portname LIKE '%Hormuz%'"
-          for p in [{"where": W + " AND date >= DATE '2026-09-01'"},
-                    {"where": W + " AND date BETWEEN DATE '2026-09-01' AND DATE '2026-12-31'"},
-                    {"where": W + " AND date > '2026-09-01'"},
-                    {"where": "portid = 'chokepoint6'"},
-                    {"where": W, "orderByFields": "date DESC", "resultRecordCount": 120},
-                    {"where": W, "resultOffset": 2000, "resultRecordCount": 2000},
-                    {"where": W},
-                    {"where": W, "orderByFields": "date DESC", "resultRecordCount": 120}]:
-              q = {"outFields": "date,portname,n_total", "returnGeometry": "false", "f": "json"}; q.update(p)
-              d, s = get("Daily_Chokepoints_Data", q)
-              f = d.get("features", [])
-              print(p, f"{s:.1f}s", "n", len(f), "dates", (f[0]["attributes"]["date"], f[-1]["attributes"]["date"]) if f else None, "err", d.get("error"))
+          d, s = get("PortWatch_chokepoints_database", {"where": "1=1", "outFields": "portid,portname", "returnGeometry": "false", "f": "json"})
+          print([f["attributes"] for f in d.get("features", [])], d.get("error"))
+          for pid in ["chokepoint6", "chokepoint4"]:
+              for off in [0, 1000, 2000, 2500]:
+                  d, s = get("Daily_Chokepoints_Data", {"where": f"portid = '{pid}'", "outFields": "date,portname,n_total", "returnGeometry": "false", "resultOffset": off, "f": "json"})
+                  f = d.get("features", [])
+                  print(pid, off, f"{s:.1f}s", len(f), (f[0]["attributes"], f[-1]["attributes"]) if f else None, d.get("exceededTransferLimit"), d.get("error"))
+              d, s = get("Daily_Chokepoints_Data", {"where": f"portid = '{pid}' AND date >= DATE '2026-09-01'", "outFields": "date,portname,n_total", "returnGeometry": "false", "f": "json"})
+              f = d.get("features", []); print(pid, "datefilter", f"{s:.1f}s", len(f), f[-1]["attributes"] if f else None, d.get("error"))
           PY
