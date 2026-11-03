@@ -163,6 +163,24 @@ class TestParsers(unittest.TestCase):
                           {"attributes": {"date": "2026-09-26", "n_total": 30}}]}
         self.assertEqual(S.parse_portwatch(p), [("2026-09-26", 30.0), ("2026-09-27", 37.0)])
 
+    def test_portwatch_ports_sums_country_totals_one_country_per_query(self):
+        calls = []
+
+        def fake(url, **kw):
+            calls.append(url)
+            iso = "ARE" if "ARE" in url else "SAU"
+            n = 3 if iso == "ARE" else 2
+            return {"features": [{"attributes": {"date": "2026-10-22", "portcalls": n}}, {"attributes": {"date": "2026-10-23", "portcalls": n + 1}}]}
+        saved = S.get
+        S.get = fake
+        try:
+            got = S.fetch_portwatch_ports(("ARE", "SAU"), ("Jebel Ali",))
+        finally:
+            S.get = saved
+        self.assertEqual(got, [("2026-10-22", 5.0), ("2026-10-23", 7.0)])
+        self.assertEqual(len(calls), 2)
+        self.assertTrue(all("Daily_Trade_Data_REG" in u for u in calls))
+
     def test_census_filters_named_partners(self):
         rows = [["CTY_CODE", "CTY_NAME", "ALL_VAL_MO", "time"], ["1", "UKRAINE", "5", "2026-06"],
                 ["2", "FRANCE", "9", "2026-06"], ["3", "UKRAINE", "7", "2026-07"]]
