@@ -1053,6 +1053,80 @@ class TestModel(unittest.TestCase):
             extras._CACHE.pop("nga", None)
         self.assertEqual(len(calls), 1)
 
+    def test_sealagom_feed_parses_hazard_warnings_with_both_coordinate_styles(self):
+        import extras
+        feed = {"items": [
+            {"title": "NAVAREA IX 426/26", "date_published": "2026-11-02T17:20:00+00:00",
+             "content_text": "021720 UTC NOV 2026\nNAVAREA IX 426/26\nARABIAN SEA\n1. LIVE WEAPON FIRING SCHEDULED IN FOLLOWING AREA:\n25-54.71N 065-52.02E"},
+            {"title": "NAVAREA III 0169/26", "date_published": "2026-11-03T00:00:00+00:00",
+             "content_text": "CENTRAL MEDITERRANEAN SEA\nNAVAL EXERCISE\nFOLLOWING THE DOTTED LINE:\n42 11,718N 009 59,778E"},
+            {"title": "NAVAREA III 0168/26", "date_published": "2026-11-03T00:00:00+00:00",
+             "content_text": "NAVAREA III IN FORCE ON 03 NOV 26 AT 0600 UTC."},                 # no position: skipped
+            {"title": "NAVAREA IX 425/26", "date_published": "2026-11-02T15:00:00+00:00",
+             "content_text": "STRAIT OF HORMUZ\nTUG REPORTED SUNK IN\n26-22.55N 056-20.47E"}]}  # no hazard word: skipped
+        out = extras.parse_sealagom(feed, 9)
+        self.assertEqual([m["id"] for m in out], ["9-426/26", "3-169/26"])
+        self.assertEqual(out[0]["issued"], "2026-11-02")
+        self.assertAlmostEqual(out[0]["lat"], 25.91, places=2)
+        self.assertAlmostEqual(out[1]["lat"], 42.2, places=2)
+        self.assertAlmostEqual(out[1]["lon"], 10.0, places=2)
+
+    def test_navwarn_series_counts_archived_warnings_in_the_box(self):
+        import extras
+        msgs = [{"id": "9-1/26", "issued": "2026-11-20", "lat": 26.5, "lon": 56.3, "text": "", "active": True},
+                {"id": "3-1/26", "issued": "2026-11-20", "lat": 42.2, "lon": 10.0, "text": "", "active": True}]
+        for k in ("navwarn", "navwarn_rows"):
+            extras._CACHE.pop(k, None)
+        extras._CACHE["navwarn"] = msgs
+        try:
+            with self.assertRaises(C.Pending):
+                extras.navwarn_series("iran", today=dt.date(2026, 11, 20))
+            got = dict(extras.navwarn_series("iran", today=dt.date(2026, 12, 25)))
+        finally:
+            for k in ("navwarn", "navwarn_rows"):
+                extras._CACHE.pop(k, None)
+        self.assertEqual(got["2026-12-03"], 1.0)
+        self.assertEqual(got["2026-12-25"], 0.0)
+
+    def test_hazard_map_falls_back_to_navarea_feeds_when_nga_is_down(self):
+        import extras
+        extras._CACHE["nga"] = RuntimeError("HTTP Error 503")
+        extras._CACHE["navwarn"] = [{"id": "9-1/26", "issued": "2026-11-02", "lat": 26.5, "lon": 56.3, "text": "x", "active": True},
+                                    {"id": "9-2/25", "issued": "2025-01-01", "lat": 26.5, "lon": 56.3, "text": "x", "active": True}]
+        errors = []
+        try:
+            got = extras.hazard_layer(errors, today=dt.date(2026, 11, 3))
+        finally:
+            for k in ("nga", "navwarn"):
+                extras._CACHE.pop(k, None)
+        self.assertEqual([m["id"] for m in got], ["9-1/26"])
+        self.assertTrue(any("SeaLagom" in e for e in errors))
+
+    def test_gfw_presence_can_keep_only_some_vessel_classes(self):
+        seen = {}
+
+        def fake(url, data=None, headers=None, timeout=None, retries=3):
+            seen["url"] = url
+            return {"entries": [{"x": [{"date": "2026-10-30", "hours": 2.5}, {"date": "2026-10-30", "hours": 1.5}]}]}
+        saved = S.get
+        S.get = fake
+        try:
+            got = S.fetch_gfw_presence((26.0, 27.0, 55.8, 57.0), "tok", vessel_types=("cargo", "tanker"))
+            self.assertIn("vessel_type+in+%28%27cargo%27%2C%27tanker%27%29", seen["url"])
+            S.fetch_gfw_presence((26.0, 27.0, 55.8, 57.0), "tok")
+            self.assertNotIn("filters", seen["url"])
+        finally:
+            S.get = saved
+        self.assertEqual(got, [("2026-10-30", 4.0)])
+
+    def test_strait_replacements_are_outside_the_score_until_tested(self):
+        ids = {s["id"]: s for s in catalog.SERIES}
+        for frag in C.CHOKEPOINTS:
+            s = ids[f"choke_{frag.lower().replace(' ', '_')}"]
+            self.assertFalse(s["scored"])
+            self.assertIn(frag, C.CHOKE_BOX)
+        self.assertFalse(ids["navwarn_iran"]["scored"])
+
     def test_arcgis_error_body_raises(self):
         with self.assertRaises(RuntimeError) as cm:
             S._arcgis({"error": {"code": 504, "message": "Your request has timed out.", "details": []}})
