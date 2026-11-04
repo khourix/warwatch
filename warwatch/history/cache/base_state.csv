@@ -1,25 +1,25 @@
 site,state,dates,last_radar,last_optical,z,part,note,parts
-al_udeid,normal,2026-11-03,2026-11-03,2026-11-01,0.13,apron,New construction or earthworks seen on 2026-10-30 and 2026-11-01 (11 ha of the base changed).,apron:normal:0.13:2026-11-03:30:30:23:38;ground:normal:0.57:2026-11-03:632:616:600:632
+al_udeid,normal,2026-11-03,2026-11-03,2026-11-04,0.13,apron,New construction or earthworks seen on 2026-11-01 and 2026-11-04 (54 ha of the base changed).,apron:normal:0.13:2026-11-03:30:30:23:38;ground:normal:0.57:2026-11-03:632:616:600:632
 al_dhafra,nodata,,2026-10-15,2026-11-03,-0.13,apron,,apron:nodata:-0.13::34:35:28:44;ground:nodata:0.41::428:416:196:438
 prince_sultan,nodata,,2026-10-14,2026-11-02,1.35,apron,,apron:nodata:1.35::44:38:33:44
-ali_al_salem,normal,2026-11-02,2026-11-02,2026-10-21,1.35,apron,,apron:normal:1.35:2026-11-02:18:16:13:18;ground:normal:-0.03:2026-11-02:309:310:298:323
+ali_al_salem,changed,2026-11-04,2026-11-04,2026-10-21,2.70,apron,,apron:changed:2.70:2026-11-04:23:19:18:21;ground:normal:-1.04:2026-11-04:254:268:262:279
 muwaffaq_salti,normal,2026-11-03,2026-11-03,2026-11-02,-0.67,apron,,apron:normal:-0.67:2026-11-03:3:5:3:7;ground:normal:-0.79:2026-11-03:278:290:271:304
 nsa_bahrain,normal,2026-11-03,2026-11-03,,-0.67,harbour,,harbour:normal:-0.67:2026-11-03:8:9:7:12;ground:normal:0.00:2026-11-03:1:1:1:2
 diego_garcia,nodata,,,,,apron,,
-akrotiri,normal,2026-11-02,2026-11-02,2026-10-24,1.12,apron,,apron:normal:1.12:2026-11-02:14:12:10:15;ground:normal:-0.36:2026-11-02:189:194:177:203
+akrotiri,normal,2026-11-02,2026-11-02,2026-11-03,1.12,apron,,apron:normal:1.12:2026-11-02:14:12:10:15;ground:normal:-0.36:2026-11-02:189:194:177:203
 incirlik,nodata,,2026-10-16,2026-11-03,1.35,apron,,apron:nodata:1.35::12:8:5:11;ground:nodata:1.44::282:263:257:304
 lemonnier,normal,2026-11-03,2026-11-03,2026-10-31,2.00,apron,,apron:normal:2.00:2026-11-03:6:4:3:5;harbour:normal:0.00:2026-11-03:0:0:0:0;ground:normal:-0.27:2026-11-03:31:32:28:37
-souda,changed,2026-11-03,2026-11-03,2026-10-18,-3.37,apron,,apron:changed:-3.37:2026-11-03:10:15:13:18;harbour:normal:0.00:2026-11-03:1:1:0:1;ground:normal:-0.14:2026-11-03:62:64:52:74
+souda,normal,2026-11-04,2026-11-04,2026-10-18,0.65,apron,,apron:normal:0.65:2026-11-04:32:31:29:34;harbour:normal:0.00:2026-11-04:0:0:0:1;ground:normal:0.10:2026-11-04:67:67:57:77
 nevatim,nodata,,2026-10-15,2026-11-02,0.67,apron,,apron:nodata:0.67::21:19:16:21;ground:nodata:1.04::263:251:243:265
 ramon,normal,2026-11-02,2026-11-02,2026-11-02,0.00,apron,,apron:normal:0.00:2026-11-02:0:0:0:0
 hatzerim,nodata,,2026-10-15,2026-11-02,-1.00,apron,,apron:nodata:-1.00::2:3:2:4;ground:nodata:-0.57::238:246:234:263
 bandar_abbas,normal,2026-11-02,2026-11-02,2026-10-29,1.69,apron,Burn scars seen on 2026-10-29 (85.8 ha).,apron:normal:1.69:2026-11-02:5:3:1:4;harbour:normal:-2.02:2026-11-02:29:37:33:43;ground:normal:-0.67:2026-11-02:38:40:38:45
-isfahan_8tab,normal,2026-10-31,2026-10-31,2026-11-02,1.00,apron,,apron:normal:1.00:2026-10-31:3:2:1:4;ground:normal:1.75:2026-10-31:96:83:72:94
-hamadan_3tab,normal,2026-11-03,2026-11-03,2026-10-26,0.00,apron,,apron:normal:0.00:2026-11-03:2:2:2:4;ground:normal:1.37:2026-11-03:86:81:75:92
+isfahan_8tab,normal,2026-10-31,2026-10-31,2026-11-04,1.00,apron,,apron:normal:1.00:2026-10-31:3:2:1:4;ground:normal:1.75:2026-10-31:96:83:72:94
+hamadan_3tab,normal,2026-11-04,2026-11-04,2026-10-26,-0.22,apron,,apron:normal:-0.22:2026-11-04:3:4:2:5;ground:normal:0.45:2026-11-04:98:94:84:112
 tabriz_2tab,normal,2026-11-03,2026-11-03,2026-10-31,0.67,apron,,apron:normal:0.67:2026-11-03:7:6:5:7;ground:changed:-2.77:2026-11-03:81:94:89:106
-dezful_4tab,normal,2026-11-03,2026-11-03,2026-10-26,-1.00,apron,,apron:normal:-1.00:2026-11-03:0:1:0:1;ground:normal:0.67:2026-11-03:80:74:64:92
-bushehr_6tab,normal,2026-11-03,2026-11-03,2026-11-01,0.00,apron,,apron:normal:0.00:2026-11-03:3:3:2:4;ground:normal:-0.67:2026-11-03:228:252:228:297
-semnan_space,normal,2026-10-31,2026-10-31,2026-11-01,0.00,ground,,ground:normal:0.00:2026-10-31:0:0:0:0
+dezful_4tab,normal,2026-11-04,2026-11-04,2026-10-26,-1.00,apron,,apron:normal:-1.00:2026-11-04:0:1:0:1;ground:normal:-1.35:2026-11-04:34:40:33:44
+bushehr_6tab,normal,2026-11-03,2026-11-03,2026-11-04,0.00,apron,,apron:normal:0.00:2026-11-03:3:3:2:4;ground:normal:-0.67:2026-11-03:228:252:228:297
+semnan_space,normal,2026-10-31,2026-10-31,2026-11-04,0.00,ground,,ground:normal:0.00:2026-10-31:0:0:0:0
 jask,normal,2026-11-03,2026-11-03,,0.00,harbour,,apron:normal:0.00:2026-11-03:1:1:0:1;harbour:normal:0.00:2026-11-03:0:0:0:0;ground:normal:0.59:2026-11-03:58:54:43:74
 ain_al_asad,nodata,,2026-10-14,2026-11-03,0.00,apron,,apron:nodata:0.00::3:3:3:4;ground:nodata:-2.42::404:460:434:477
 hmeimim,normal,2026-11-03,2026-11-03,2026-11-02,-0.67,apron,,apron:normal:-0.67:2026-11-03:7:8:6:9;ground:normal:0.51:2026-11-03:81:79:70:101
@@ -34,12 +34,12 @@ huian,normal,2026-10-31,2026-10-31,2026-10-29,0.00,apron,Burn scars seen on 2026
 zhangzhou,nodata,,2026-10-24,2026-11-01,0.00,apron,,apron:nodata:0.00::3:3:1:5;ground:nodata:-0.43::52:64:47:126
 shuimen,normal,2026-10-26,2026-10-26,2026-10-19,0.00,apron,,apron:normal:0.00:2026-10-26:0:0:0:0;ground:normal:-0.67:2026-10-26:24:28:23:42
 ningbo_zhuangqiao,normal,2026-11-02,2026-11-02,2026-10-31,-0.67,apron,,apron:normal:-0.67:2026-11-02:8:9:8:12;harbour:normal:0.00:2026-11-02:9:9:7:11;ground:normal:-0.30:2026-11-02:115:123:98:171
-hsinchu,normal,2026-10-26,2026-10-26,2026-10-31,-1.35,apron,,apron:normal:-1.35:2026-10-26:6:8:7:11;harbour:normal:0.00:2026-10-26:1:1:0:3;ground:normal:-0.84:2026-10-26:68:94:69:235
-ching_chuan_kang,in,2026-10-22;2026-10-26,2026-10-26,2026-10-31,2.50,apron,,apron:in:2.50:2026-10-22/2026-10-26:6:4:2:7;ground:normal:-0.27:2026-10-26:192:202:165:361
-chiayi,normal,2026-10-26,2026-10-26,2026-10-31,-0.67,apron,,apron:normal:-0.67:2026-10-26:13:15:13:23;ground:normal:-0.84:2026-10-26:80:100:82:145
-hualien,normal,2026-10-26,2026-10-26,2026-10-31,0.00,apron,Burn scars seen on 2026-10-31 (1.0 ha).,apron:normal:0.00:2026-10-26:5:5:3:7;harbour:normal:-1.35:2026-10-26:15:19:16:23;ground:normal:0.00:2026-10-26:83:85:63:138
-chihhang,normal,2026-11-01,2026-11-01,2026-10-31,0.00,apron,,apron:normal:0.00:2026-11-01:2:2:2:3;harbour:normal:0.00:2026-11-01:2:2:2:6;ground:normal:0.37:2026-11-01:74:69:57:165
-zuoying,normal,2026-11-01,2026-11-01,,0.59,harbour,,apron:normal:0.00:2026-11-01:3:3:2:4;harbour:normal:0.59:2026-11-01:47:44:38:54;ground:normal:-0.56:2026-11-01:415:446:407:677
+hsinchu,normal,2026-11-03,2026-11-03,2026-10-31,0.67,apron,,apron:normal:0.67:2026-11-03:8:7:6:10;harbour:normal:0.00:2026-11-03:2:2:2:3;ground:normal:-0.78:2026-11-03:101:116:101:191
+ching_chuan_kang,normal,2026-11-03,2026-11-03,2026-10-31,0.67,apron,,apron:normal:0.67:2026-11-03:6:5:4:10;ground:normal:-1.36:2026-11-03:194:242:203:302
+chiayi,normal,2026-11-03,2026-11-03,2026-10-31,-0.22,apron,,apron:normal:-0.22:2026-11-03:17:18:16:24;ground:normal:-1.61:2026-11-03:92:115:103:183
+hualien,normal,2026-11-03,2026-11-03,2026-10-31,1.35,apron,Burn scars seen on 2026-10-31 (1.0 ha).,apron:normal:1.35:2026-11-03:5:3:2:4;harbour:normal:0.13:2026-11-03:17:17:13:22;ground:normal:0.34:2026-11-03:76:74:70:113
+chihhang,normal,2026-11-03,2026-11-03,2026-10-31,-1.00,apron,,apron:normal:-1.00:2026-11-03:2:3:1:4;harbour:normal:0.67:2026-11-03:7:6:3:9;ground:normal:-0.77:2026-11-03:84:101:76:183
+zuoying,normal,2026-11-03,2026-11-03,,0.81,harbour,,apron:normal:0.00:2026-11-03:3:3:2:4;harbour:normal:0.81:2026-11-03:46:44:39:50;ground:normal:-0.75:2026-11-03:496:527:496:681
 kadena,normal,2026-10-29,2026-10-29,2026-10-29,-0.15,apron,Burn scars seen on 2026-10-29 (451.5 ha).,apron:normal:-0.15:2026-10-29:39:40:34:48;harbour:normal:0.00:2026-10-29:2:2:1:2;ground:normal:0.22:2026-10-29:488:483:426:584
 andersen,normal,2026-10-29,2026-10-29,,-0.67,apron,,apron:normal:-0.67:2026-10-29:3:4:1:6;ground:normal:-0.46:2026-10-29:882:1062:727:1703
 yulin,normal,2026-11-01,2026-11-01,,-0.67,harbour,,harbour:normal:-0.67:2026-11-01:6:9:5:15;ground:normal:-0.66:2026-11-01:498:543:458:735
@@ -69,7 +69,7 @@ sevastopol,nodata,,2026-10-16,2026-10-22,3.78,harbour,,harbour:nodata:3.78::57:4
 baltiysk,normal,2026-11-03,2026-11-03,2026-10-31,0.00,harbour,,harbour:normal:0.00:2026-11-03:20:20:18:25;ground:normal:0.00:2026-11-03:1:1:1:2
 chkalovsk,normal,2026-11-03,2026-11-03,2026-09-28,0.45,apron,,apron:normal:0.45:2026-11-03:15:14:11:19;ground:normal:1.83:2026-11-03:54:45:35:107
 soltsy,nodata,,2026-10-16,2026-10-22,0.00,apron,,apron:nodata:0.00::1:1:1:1;ground:nodata:0.45::29:25:19:62
-severomorsk,normal,2026-11-03,2026-11-03,,-2.02,harbour,,harbour:normal:-2.02:2026-11-03:12:15:14:19;ground:normal:-1.00:2026-11-03:4:5:4:6
+severomorsk,normal,2026-11-04,2026-11-04,,0.40,harbour,,harbour:normal:0.40:2026-11-04:19:18:14:22;ground:normal:-1.35:2026-11-04:6:8:7:10
 morozovsk,normal,2026-11-01,2026-11-01,2026-10-30,-0.50,apron,,apron:normal:-0.50:2026-11-01:5:6:5:15;ground:normal:1.57:2026-11-01:32:26:0:30
 millerovo,normal,2026-11-01,2026-11-01,2026-11-02,0.00,apron,Burn scars seen on 2026-10-29 (65.6 ha).,apron:normal:0.00:2026-11-01:7:7:6:8;ground:normal:1.01:2026-11-01:37:33:27:57
 yeysk,normal,2026-11-03,2026-11-03,2026-10-26,0.00,apron,,apron:normal:0.00:2026-11-03:6:6:5:8;ground:normal:0.34:2026-11-03:32:30:23:53
@@ -77,13 +77,13 @@ lipetsk,normal,2026-11-03,2026-11-03,2026-10-27,2.00,apron,,apron:normal:2.00:20
 baltimor,normal,2026-11-03,2026-11-03,2026-10-29,1.35,apron,Burn scars seen on 2026-10-29 (99.9 ha).,apron:normal:1.35:2026-11-03:12:10:9:15;ground:normal:0.67:2026-11-03:27:25:20:34
 khalino,changed,2026-11-02,2026-11-02,2026-10-30,2.70,apron,,apron:changed:2.70:2026-11-02:21:17:16:21;ground:normal:1.57:2026-11-02:40:33:27:48
 savasleyka,normal,2026-10-30,2026-10-30,2026-10-31,0.00,apron,,apron:normal:0.00:2026-10-30:2:2:1:4;ground:normal:-1.16:2026-10-30:19:25:21:34
-belaya,normal,2026-10-29,2026-10-29,2026-10-21,0.00,apron,,apron:normal:0.00:2026-10-29:0:0:0:2;ground:normal:-0.27:2026-10-29:51:52:46:59
-ukrainka,normal,2026-10-29,2026-10-29,2026-11-03,-1.50,apron,,apron:normal:-1.50:2026-10-29:3:5:0:6;ground:normal:-0.60:2026-10-29:50:54:49:80
-machulishchy,normal,2026-11-03,2026-11-03,2026-10-12,0.00,apron,,apron:normal:0.00:2026-11-03:0:0:0:2;ground:normal:0.45:2026-11-03:59:56:51:64
-starokostiantyniv,normal,2026-11-03,2026-11-03,2026-10-11,0.50,apron,,apron:normal:0.50:2026-11-03:1:1:0:1;ground:normal:1.94:2026-11-03:61:50:44:80
+belaya,normal,2026-11-03,2026-11-03,2026-10-21,1.00,apron,,apron:normal:1.00:2026-11-03:1:0:0:1;ground:changed:-3.37:2026-11-03:41:59:52:71
+ukrainka,normal,2026-11-03,2026-11-03,2026-11-03,0.67,apron,,apron:normal:0.67:2026-11-03:8:6:4:11;ground:normal:-0.74:2026-11-03:54:71:51:109
+machulishchy,normal,2026-11-04,2026-11-04,2026-10-12,0.00,apron,,apron:normal:0.00:2026-11-04:0:0:0:0;ground:normal:-0.30:2026-11-04:46:49:42:66
+starokostiantyniv,normal,2026-11-04,2026-11-04,2026-10-11,0.00,apron,,apron:normal:0.00:2026-11-04:0:0:0:1;ground:changed:3.91:2026-11-04:45:31:27:46
 myrhorod,normal,2026-11-03,2026-11-03,2026-10-30,1.50,apron,,apron:normal:1.50:2026-11-03:4:3:2:4;ground:normal:0.94:2026-11-03:15:12:7:18
 vasylkiv,normal,2026-11-02,2026-11-02,2026-10-11,0.00,apron,,apron:normal:0.00:2026-11-02:0:0:0:0;ground:normal:1.94:2026-11-02:46:35:28:45
-kulbakino,nodata,,2026-10-19,2026-10-12,2.02,apron,,apron:nodata:2.02::16:12:9:17;ground:nodata:9.78::90:47:43:77
+kulbakino,nodata,,2026-10-20,2026-10-12,0.00,apron,,apron:nodata:0.00::10:10:9:12;ground:nodata:3.08::65:49:45:63
 libertador,normal,2026-10-29,2026-10-29,2026-11-02,-0.67,apron,,apron:normal:-0.67:2026-10-29:22:24:21:28;ground:normal:1.08:2026-10-29:163:139:122:177
 la_carlota,normal,2026-10-29,2026-10-29,2026-10-27,-0.22,apron,Burn scars seen on 2026-10-27 (22.7 ha).,apron:normal:-0.22:2026-10-29:10:11:8:13;harbour:normal:0.00:2026-10-29:1:1:0:3;ground:normal:0.00:2026-10-29:48:48:40:53
 puerto_cabello,normal,2026-11-03,2026-11-03,2026-10-23,0.00,harbour,,harbour:normal:0.00:2026-11-03:25:25:23:31;ground:normal:0.00:2026-11-03:70:70:60:83
@@ -92,9 +92,9 @@ nur_khan,normal,2026-11-02,2026-11-02,2026-10-31,0.27,apron,,apron:normal:0.27:2
 sargodha,nodata,,2026-10-09,2026-10-31,-0.50,apron,,apron:nodata:-0.50::4:5:3:7;ground:nodata:-2.17::69:84:77:111
 jacobabad,normal,2026-10-31,2026-10-31,2026-11-03,-1.00,apron,,apron:normal:-1.00:2026-10-31:2:3:2:4;ground:normal:-0.10:2026-10-31:45:46:37:66
 masroor,nodata,,2026-10-24,2026-11-03,0.00,apron,,apron:nodata:0.00::4:4:3:5;ground:nodata:1.24::187:176:161:193
-ambala,nodata,,2026-10-23,2026-10-25,-0.67,apron,,apron:nodata:-0.67::10:11:9:17;ground:nodata:2.02::73:58:49:104
-adampur,nodata,,2026-10-12,2026-11-02,0.50,apron,,apron:nodata:0.50::6:6:4:7;ground:nodata:6.24::157:83:75:142
-pathankot,nodata,,2026-10-24,2026-11-02,1.35,apron,,apron:nodata:1.35::7:5:3:7;ground:nodata:-0.02::121:125:106:169
+ambala,nodata,,2026-10-23,2026-11-04,-0.67,apron,,apron:nodata:-0.67::10:11:9:17;ground:nodata:2.02::73:58:49:104
+adampur,nodata,,2026-10-12,2026-11-04,0.50,apron,New construction or earthworks seen on 2026-11-02 and 2026-11-04 (8 ha of the base changed).,apron:nodata:0.50::6:6:4:7;ground:nodata:6.24::157:83:75:142
+pathankot,nodata,,2026-10-24,2026-11-04,1.35,apron,,apron:nodata:1.35::7:5:3:7;ground:nodata:-0.02::121:125:106:169
 bhuj,normal,2026-11-03,2026-11-03,2026-10-31,-0.67,apron,New construction or earthworks seen on 2026-10-28 and 2026-10-31 (63 ha of the base changed).,apron:normal:-0.67:2026-11-03:0:1:0:2;ground:normal:-0.82:2026-11-03:50:56:48:68
 al_khadim,normal,2026-11-03,2026-11-03,2026-10-21,0.00,apron,,apron:normal:0.00:2026-11-03:5:5:3:6;ground:changed:-3.04:2026-11-03:43:52:47:55
 al_jufra,normal,2026-11-01,2026-11-01,2026-11-03,-1.12,apron,,apron:normal:-1.12:2026-11-01:26:29:27:33;ground:normal:-0.67:2026-11-01:1:2:1:3
@@ -105,16 +105,16 @@ merowe,normal,2026-11-03,2026-11-03,2026-10-26,1.35,apron,,apron:normal:1.35:202
 port_sudan,normal,2026-10-31,2026-10-31,2026-10-20,-2.00,apron,,apron:normal:-2.00:2026-10-31:1:3:2:3;harbour:normal:-0.60:2026-10-31:190:202:175:226;ground:normal:-0.67:2026-10-31:15:16:14:19
 nyala,nodata,,2026-10-13,2026-10-29,0.00,apron,Burn scars seen on 2026-10-29 (29.1 ha).,apron:nodata:0.00::0:0:0:1;ground:nodata:-0.67::6:7:5:10
 tiyas,normal,2026-11-03,2026-11-03,2026-10-23,-1.00,apron,,apron:normal:-1.00:2026-11-03:0:1:0:1;ground:normal:0.00:2026-11-03:21:21:17:25
-tartus,normal,2026-11-03,2026-11-03,2026-11-02,0.90,harbour,,harbour:normal:0.90:2026-11-03:14:12:10:15;ground:normal:0.56:2026-11-03:24:22:18:28
+tartus,normal,2026-11-03,2026-11-03,2026-11-02,0.13,harbour,,harbour:normal:0.13:2026-11-03:16:16:12:22;ground:normal:-0.56:2026-11-03:28:31:26:36
 erbil,nodata,,2026-10-15,2026-11-03,0.00,apron,,apron:nodata:0.00::22:22:19:28;ground:nodata:-2.21::262:297:270:319
 tel_nof,normal,2026-11-02,2026-11-02,2026-11-02,0.98,apron,,apron:normal:0.98:2026-11-02:43:41:36:43;ground:normal:0.62:2026-11-02:132:129:123:136
 ramat_david,normal,2026-11-02,2026-11-02,2026-11-02,1.00,apron,,apron:normal:1.00:2026-11-02:1:0:0:1;ground:normal:-0.22:2026-11-02:121:123:114:131
 palmachim,nodata,,2026-10-15,2026-11-02,0.00,apron,,apron:nodata:0.00::0:0:0:0;ground:nodata:-0.11::201:204:191:227
 haifa_naval,normal,2026-11-02,2026-11-02,2026-11-02,0.07,harbour,,harbour:normal:0.07:2026-11-02:104:104:99:114;ground:normal:0.50:2026-11-02:10:10:8:11
 sanaa_dulaimi,normal,2026-10-30,2026-10-30,2026-10-31,1.35,apron,New construction or earthworks seen on 2026-10-28 and 2026-10-31 (62 ha of the base changed).,apron:normal:1.35:2026-10-30:30:26:24:31;ground:normal:-1.12:2026-10-30:70:75:71:80
-shiraz_7tab,normal,2026-10-31,2026-10-31,2026-10-30,0.51,apron,New construction or earthworks seen on 2026-10-25 and 2026-10-30 (29 ha of the base changed).,apron:normal:0.51:2026-10-31:11:10:8:13;ground:normal:-0.43:2026-10-31:118:123:111:134
+shiraz_7tab,normal,2026-10-31,2026-10-31,2026-11-04,0.51,apron,New construction or earthworks seen on 2026-10-30 and 2026-11-04 (14 ha of the base changed).,apron:normal:0.51:2026-10-31:11:10:8:13;ground:normal:-0.43:2026-10-31:118:123:111:134
 mashhad_14tab,nodata,,2026-10-16,2026-10-29,-0.34,apron,Burn scars seen on 2026-10-29 (95.8 ha).,apron:nodata:-0.34::13:14:11:17;ground:nodata:-0.13::45:46:39:51
-omidiyeh_5tab,nodata,,2026-10-16,2026-11-02,0.00,apron,,apron:nodata:0.00::2:2:2:2;ground:nodata:-1.31::249:267:254:278
+omidiyeh_5tab,nodata,,2026-10-16,2026-11-04,0.00,apron,,apron:nodata:0.00::2:2:2:2;ground:nodata:-1.31::249:267:254:278
 konarak,nodata,,2026-10-15,2026-11-02,0.90,harbour,,harbour:nodata:0.90::12:10:7:14;ground:nodata:-1.35::22:24:20:26
 duqm,normal,2026-10-25,2026-10-25,2026-10-31,1.69,harbour,,harbour:normal:1.69:2026-10-25:28:23:19:29;ground:normal:1.35:2026-10-25:21:19:16:21
 berbera,nodata,,2026-10-24,2026-11-02,0.00,apron,New construction or earthworks seen on 2026-10-28 and 2026-11-02 (40 ha of the base changed).,apron:nodata:0.00::7:7:5:8;harbour:nodata:-1.50::4:6:4:6;ground:nodata:0.67::3:2:0:3
@@ -122,26 +122,26 @@ assab,normal,2026-11-03,2026-11-03,2026-10-31,0.00,apron,,apron:normal:0.00:2026
 iran_tabriz_north_missile,normal,2026-11-02,2026-11-02,2026-11-01,-0.74,ground,,ground:normal:-0.74:2026-11-02:164:198:154:236
 iran_tabriz_south_missile,normal,2026-11-02,2026-11-02,2026-10-24,-1.35,ground,,ground:normal:-1.35:2026-11-02:15:23:13:74
 iran_kermanshah_missile,out,2026-11-02;2026-11-03,2026-11-03,2026-10-24,-3.60,ground,,ground:out:-3.60:2026-11-02/2026-11-03:474:848:652:951
-iran_khorramabad_imam_ali,out,2026-11-02;2026-11-03,2026-11-03,2026-10-26,-3.90,ground,,ground:out:-3.90:2026-11-02/2026-11-03:690:1029:897:1129
-iran_isfahan_west_missile,normal,2026-10-31,2026-10-31,2026-11-02,-0.89,ground,,ground:normal:-0.89:2026-10-31:301:315:279:335
-iran_shiraz_north_missile,normal,2026-10-31,2026-10-31,2026-11-01,-0.03,ground,,ground:normal:-0.03:2026-10-31:412:420:240:475
+iran_khorramabad_imam_ali,out,2026-11-03;2026-11-04,2026-11-04,2026-10-26,-4.81,ground,,ground:out:-4.81:2026-11-03/2026-11-04:323:693:539:771
+iran_isfahan_west_missile,normal,2026-10-31,2026-10-31,2026-11-04,-0.89,ground,,ground:normal:-0.89:2026-10-31:301:315:279:335
+iran_shiraz_north_missile,normal,2026-10-31,2026-10-31,2026-11-04,-0.03,ground,,ground:normal:-0.03:2026-10-31:412:420:240:475
 iran_shiraz_south_missile,normal,2026-10-31,2026-10-31,2026-11-01,-1.16,ground,,ground:normal:-1.16:2026-10-31:607:646:614:684
 iran_yazd_missile,normal,2026-10-30,2026-10-30,2026-11-01,0.11,ground,,ground:normal:0.11:2026-10-30:418:421:388:441
 iran_khorgu_missile,normal,2026-11-02,2026-11-02,2026-10-26,0.15,ground,New construction or earthworks seen on 2026-10-24 and 2026-10-26 (6 ha of the base changed).,ground:normal:0.15:2026-11-02:586:582:497:606
 iran_hajiabad_missile,normal,2026-11-02,2026-11-02,2026-11-03,-0.28,ground,New construction or earthworks seen on 2026-10-29 and 2026-11-03 (9 ha of the base changed).,ground:normal:-0.28:2026-11-02:564:576:410:616
 iran_modarres_bid_kaneh,nodata,,2026-10-24,2026-11-02,0.67,ground,,ground:nodata:0.67::12:11:9:25
 israel_sdot_micha,normal,2026-11-02,2026-11-02,2026-11-02,-2.06,ground,,ground:normal:-2.06:2026-11-02:61:68:65:74
-ru_luga_26_missile_brigade,normal,2026-11-03,2026-11-03,2026-10-22,0.52,ground,,ground:normal:0.52:2026-11-03:133:123:107:237
-by_asipovichy_465_missile_brigade,normal,2026-11-03,2026-11-03,2026-10-29,0.44,ground,,ground:normal:0.44:2026-11-03:140:137:130:147
+ru_luga_26_missile_brigade,normal,2026-11-04,2026-11-04,2026-10-22,-1.31,ground,,ground:normal:-1.31:2026-11-04:116:187:145:277
+by_asipovichy_465_missile_brigade,normal,2026-11-04,2026-11-04,2026-10-29,0.71,ground,,ground:normal:0.71:2026-11-04:169:160:146:178
 ru_yelnya_camp,normal,2026-11-03,2026-11-03,2026-10-28,-1.54,ground,Burn scars seen on 2026-10-28 (761.8 ha).,ground:normal:-1.54:2026-11-03:141:222:162:307
 crimea_kurhanne_s400,nodata,,2026-10-16,2026-10-22,1.29,ground,,ground:nodata:1.29::140:118:102:152
 crimea_cape_zyuk_airdef,normal,2026-11-03,2026-11-03,2026-10-26,0.67,ground,,ground:normal:0.67:2026-11-03:15:14:13:15
 ru_gelendzhik_s400,normal,2026-11-03,2026-11-03,2026-11-02,0.84,ground,,ground:normal:0.84:2026-11-03:112:105:97:119
-kp_sino_ri,normal,2026-10-29,2026-10-29,2026-10-31,0.20,ground,,ground:normal:0.20:2026-10-29:134:108:4:337
+kp_sino_ri,normal,2026-11-03,2026-11-03,2026-10-31,-0.04,ground,,ground:normal:-0.04:2026-11-03:341:351:90:529
 kp_sakkanmol,normal,2026-10-30,2026-10-30,2026-11-02,-2.01,ground,,ground:normal:-2.01:2026-10-30:186:266:138:315
 kp_kal_gol,normal,2026-10-30,2026-10-30,2026-10-31,-0.88,ground,,ground:normal:-0.88:2026-10-30:130:181:107:219
 kp_kumchon_ni,nodata,,2026-10-25,2026-11-02,-0.89,ground,,ground:nodata:-0.89::164:241:158:431
-kp_sinpung_dong,normal,2026-10-29,2026-10-29,2026-10-21,-0.91,ground,,ground:normal:-0.91:2026-10-29:320:445:190:609
+kp_sinpung_dong,normal,2026-11-03,2026-11-03,2026-10-21,-1.05,ground,,ground:normal:-1.05:2026-11-03:356:516:390:678
 kp_hoejung_ni,normal,2026-10-29,2026-10-29,2026-10-28,-0.55,ground,,ground:normal:-0.55:2026-10-29:300:386:191:561
 kp_yongjo_ri,normal,2026-10-29,2026-10-29,2026-10-28,-0.38,ground,Burn scars seen on 2026-10-28 (258.9 ha).,ground:normal:-0.38:2026-10-29:300:362:206:625
 kr_seongju_thaad,normal,2026-10-31,2026-10-31,2026-11-02,-1.16,ground,,ground:normal:-1.16:2026-10-31:32:44:36:69
@@ -151,6 +151,6 @@ cn_615_brigade_meizhou,nodata,,2026-10-24,2026-11-01,-2.00,ground,,ground:nodata
 cn_616_brigade_ganzhou,nodata,,2026-10-17,2026-10-30,-1.05,ground,,ground:nodata:-1.05::292:370:282:591
 cn_617_brigade_jinhua,normal,2026-10-26,2026-10-26,2026-10-29,-0.22,ground,Burn scars seen on 2026-10-29 (287.6 ha).,ground:normal:-0.22:2026-10-26:312:323:271:444
 pk_akro_garrison,nodata,,2026-10-24,2026-11-03,-0.34,ground,,ground:nodata:-0.34::37:38:34:42
-pk_gujranwala_garrison,nodata,,2026-10-16,2026-11-02,1.08,ground,,ground:nodata:1.08::82:50:30:93
+pk_gujranwala_garrison,nodata,,2026-10-16,2026-11-04,1.08,ground,,ground:nodata:1.08::82:50:30:93
 pk_sargodha_garrison,nodata,,2026-10-09,2026-10-31,-0.56,ground,,ground:nodata:-0.56::89:94:77:135
 pk_khuzdar_garrison,normal,2026-11-01,2026-11-01,2026-11-03,0.06,ground,,ground:normal:0.06:2026-11-01:190:186:130:260
