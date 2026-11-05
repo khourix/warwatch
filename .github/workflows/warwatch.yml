@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Basemap (Natural Earth countries, public domain)
         run: |
           mkdir -p $WW/assets
@@ -58,7 +58,7 @@ jobs:
           OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
           OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
         run: python3 $WW/run.py --only "${{ github.event.inputs.only }}" --out site/index.html
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: warwatch-dashboard
           path: site/
@@ -106,7 +106,7 @@ jobs:
       # refreshed once a month through the cache. Optional: without it the app draws Natural Earth countries only.
       - id: month
         run: echo "m=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         continue-on-error: true
         with:
           path: basemap/basemap.pmtiles
@@ -133,7 +133,7 @@ jobs:
       # The new app (web/, React) is the page at /warwatch/, with an address per theatre (/warwatch/iran/) and its own share card.
       # pages.py moves the old page to /warwatch/classic/ until its CLASSIC_UNTIL date. If the build or pages.py fails, site/ stays as
       # run.py wrote it, so the old page is served at /warwatch/ for that run and nothing is held back.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         continue-on-error: true
         with:
           node-version: 22
@@ -144,7 +144,7 @@ jobs:
         run: |
           cd web && npm ci --no-audit --no-fund && npm run build && cd ..
           python3 $WW/pages.py site web/dist
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site/
   deploy:
@@ -157,7 +157,7 @@ jobs:
       url: ${{ steps.d.outputs.page_url }}
     steps:
       - id: d
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
   next:
     # Self-scheduling: queue the next full run 30 minutes after this one started (straight away if the build ran longer).
     # A run dispatched with the workflow token is allowed to start a workflow, unlike a push made with it.

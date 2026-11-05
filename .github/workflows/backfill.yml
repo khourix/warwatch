@@ -34,7 +34,7 @@ jobs:
       end: ${{ steps.p.outputs.end }}
       only: ${{ steps.p.outputs.only }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: p
         run: |
           if [ "${{ github.event_name }}" = workflow_dispatch ]; then
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Back-fill
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
@@ -82,7 +82,7 @@ jobs:
       matrix:
         year: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Back-fill
         run: python3 backfill/backfill.py gdeltwide --start ${{ matrix.year }}-01-01 --end ${{ matrix.year }}-12-31
       - uses: ./.github/actions/commit-backfill
@@ -99,7 +99,7 @@ jobs:
       matrix:
         year: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Back-fill the added countries
         run: python3 warwatch/backfill.py gdelt-add "" ${{ matrix.year }}-01-01 ${{ matrix.year }}-12-31
       - uses: ./.github/actions/commit-backfill
@@ -110,7 +110,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: |
           git pull -q --rebase origin "$GITHUB_REF_NAME" || true
           python3 warwatch/backfill.py gdelt-merge
@@ -124,7 +124,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Fetch long histories
         env:
           ONLY: ${{ github.event.inputs.only }}
@@ -152,7 +152,7 @@ jobs:
       matrix:
         group: ["ukraine,europe_east", "iran,yemen", "israel,drc", "taiwan,scs,korea", "southasia,libya,sudan", "venezuela", "iraq,gulf", "lebanon,syria"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Back-fill advisories via Wayback
         env:
           ONLY: ${{ github.event.inputs.only }}
@@ -177,7 +177,7 @@ jobs:
       matrix:
         theatre: [ukraine, europe_east, iran, yemen, israel, korea, libya]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Back-fill fires
         env:
           FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
@@ -201,7 +201,7 @@ jobs:
       matrix:
         theatre: [iran, yemen, israel, ukraine, taiwan, scs, korea, venezuela]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Back-fill vessel presence
         env:
           GFW_TOKEN: ${{ secrets.GFW_TOKEN }}
@@ -242,7 +242,7 @@ jobs:
           - "2026-04-01 2026-06-30"
           - "2026-07-01 2026-12-31"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Back-fill military aircraft counts
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -275,7 +275,7 @@ jobs:
         theatre: [iraq, gulf, lebanon, syria]
         year: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Back-fill headline counts
         run: |
           if [ -n "$ONLY" ] && [[ ",$ONLY," != *",${{ matrix.theatre }},"* ]]; then echo "not asked for"; exit 0; fi
@@ -293,7 +293,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: |
           git pull -q --rebase origin "$GITHUB_REF_NAME" || true
           python3 backfill/backfill.py merge

@@ -24,7 +24,7 @@ jobs:
       FIRMS_ARCHIVE_CACHE: /tmp/firms-archive
       WHAT: ${{ github.event.inputs.what || 'all' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check sources
         run: python3 warwatch/fireref.py probe || echo "some sources did not answer; the steps below keep old rows for those"
       - name: Archive tables

@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install analysis libraries (the live build does not need them)
         run: python3 -m pip install --quiet --break-system-packages numpy pandas scipy
       - name: Unit tests
@@ -40,7 +40,7 @@ jobs:
         run: python3 warwatch/forward_score.py
       - name: Replay the timing tells over the stored history (their record on the page)
         run: python3 warwatch/tells.py record > /dev/null
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: model
           path: |

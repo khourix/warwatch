@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Fetch long histories
         if: github.event.inputs.fetch != 'false'
         env:
@@ -34,7 +34,7 @@ jobs:
         run: |
           python3 warwatch/backtest.py run
           python3 warwatch/backtest.py weights
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: backtest
           path: |
