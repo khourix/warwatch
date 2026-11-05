@@ -1,0 +1,30 @@
+name: predstudy-fetch
+# One-off public-data pulls for the prediction study (backtest/predstudy/fetch.py): GPR and AI-GPR, CrisisWatch via the
+# Wayback Machine, Polymarket price histories. Runs only when backtest/predstudy/fetch.txt changes on a branch that has this
+# file; it commits small CSVs to backtest/predstudy/data on that branch and never touches the live build or the model.
+on:
+  push:
+    paths: ["backtest/predstudy/fetch.txt"]
+permissions:
+  contents: write
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        job: [gpr, crisiswatch, polymarket]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pandas openpyxl xlrd
+      - name: Pull
+        run: |
+          if grep -qw "${{ matrix.job }}" backtest/predstudy/fetch.txt; then python3 backtest/predstudy/fetch.py ${{ matrix.job }}; else echo "not asked for"; fi
+      - uses: ./.github/actions/commit-backfill
+        if: always()
+        with:
+          paths: backtest/predstudy/data
