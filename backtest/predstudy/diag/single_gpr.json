@@ -1,0 +1,32 @@
+{
+ "aigpr_pair": {
+  "obs": 0.5785018051471362,
+  "null_mean": 0.4893562955041212,
+  "null_sd": 0.027072496173784738,
+  "p": 0.0033333333333333335,
+  "obs_theatre_year": 0.5064319874764031,
+  "null_mean_theatre_year": 0.49772228988354605,
+  "null_sd_theatre_year": 0.02808224047974822,
+  "p_theatre_year": 0.4
+ },
+ "aigpr_country": {
+  "obs": 0.5743434593092845,
+  "null_mean": 0.49287465986256546,
+  "null_sd": 0.028449741718842476,
+  "p": 0.0033333333333333335,
+  "obs_theatre_year": 0.48997140928903016,
+  "null_mean_theatre_year": 0.4962799239083934,
+  "null_sd_theatre_year": 0.026119311530116207,
+  "p_theatre_year": 0.5766666666666667
+ },
+ "aigpr_milconf": {
+  "obs": 0.5410680388380223,
+  "null_mean": 0.4891676993126751,
+  "null_sd": 0.029519124890180874,
+  "p": 0.04,
+  "obs_theatre_year": 0.4530229991179173,
+  "null_mean_theatre_year": 0.4941418553051627,
+  "null_sd_theatre_year": 0.02709141041662516,
+  "p_theatre_year": 0.93
+ }
+}
