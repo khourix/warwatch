@@ -24,14 +24,27 @@ DOCS = os.path.join(os.path.dirname(HERE), "docs")
 
 
 def auc(pairs):
-    pos = [p for p, y in pairs if y]
-    neg = [p for p, y in pairs if not y]
-    if not pos or not neg:
+    """Mann-Whitney AUC by ranks (ties count half): O(n log n), so the shuffled-timing control stays quick on a year of days."""
+    xs = sorted(pairs, key=lambda x: x[0])
+    n1 = sum(1 for _, y in xs if y)
+    n0 = len(xs) - n1
+    if not n1 or not n0:
         return None
-    return sum((a > b) + 0.5 * (a == b) for a in pos for b in neg) / (len(pos) * len(neg))
+    rank_sum, i = 0.0, 0
+    while i < len(xs):
+        j = i
+        while j < len(xs) and xs[j][0] == xs[i][0]:
+            j += 1
+        r = (i + j + 1) / 2                     # mean rank of the tie block (1-based)
+        rank_sum += r * sum(1 for k in range(i, j) if xs[k][1])
+        i = j
+    return (rank_sum - n1 * (n1 + 1) / 2) / (n1 * n0)
 
 
-FORWARD_DAYS = 90    # matured forecast days before the forward gates are read
+FORWARD_DAYS = 90     # matured forecast days before the first interim report
+READ_DAYS = 365       # the one read that can promote a target, fixed in advance (docs/PREDSTUDY_PLAN.md and the prediction study)
+TARGETS = 3           # targets read (main, armed, wave): the shuffled-timing p must beat 0.05 / TARGETS
+SHIFTS = 1000
 
 
 def score(rows, events, through, bands, horizon=30, after=None):
@@ -57,13 +70,56 @@ def score(rows, events, through, bands, horizon=30, after=None):
     return out, anyrows
 
 
-def gates(scored, B=500, seed=1):
-    """Forward gates: Brier skill against the base rate above 0, and the lower end of the AUC interval (resampling theatre-months) above 0.5,
-    read once FORWARD_DAYS days have matured. -> dict."""
+def _within_auc(scored):
+    """Positives-weighted mean of each theatre's own AUC: does the forecast rank a theatre's days, not just the theatres?"""
+    by = {}
+    for p, _, y, r in scored:
+        by.setdefault(r["theatre"], []).append((p, y))
+    num = den = 0.0
+    for v in by.values():
+        a = auc(v)
+        if a is not None:
+            n1 = sum(y for _, y in v)
+            num += n1 * a
+            den += n1
+    return num / den if den else None
+
+
+def shuffled_timing(scored, n=SHIFTS, seed=2):
+    """The backtest's control (validate.shifted_control) on the forward record: each theatre's probabilities are shifted circularly in time
+    against its outcomes, which keeps which theatres run hot and how the forecast moves, and breaks its timing. -> (p for AUC, p for
+    within-theatre AUC), the share of shifts that score at least as well."""
+    by = {}
+    for p, _, y, r in sorted(scored, key=lambda x: x[3]["date"]):
+        by.setdefault(r["theatre"], []).append((p, y, r))
+    a0 = auc([(p, y) for p, _, y, _ in scored])
+    w0 = _within_auc(scored)
+    if a0 is None:
+        return None, None
+    rng, ge_a, ge_w = random.Random(seed), 0, 0
+    for _ in range(n):
+        sh = []
+        for v in by.values():
+            k = len(v)
+            m = max(1, min(30, k // 4))
+            off = rng.randint(m, k - m) if k > 2 * m else 0
+            ps = [x[0] for x in v]
+            ps = ps[off:] + ps[:off]
+            sh += [(ps[i], 0.0, v[i][1], v[i][2]) for i in range(k)]
+        ge_a += (auc([(p, y) for p, _, y, _ in sh]) or 0) >= a0
+        ge_w += w0 is not None and (_within_auc(sh) or 0) >= w0
+    return ge_a / n, (ge_w / n if w0 is not None else None)
+
+
+def gates(scored, B=500, seed=1, read_days=READ_DAYS, targets=TARGETS):
+    """Forward gates, read once `read_days` days have matured: Brier skill against the base rate above 0, the lower end of the AUC interval
+    (resampling theatre-months) above 0.5, and the shuffled-timing control beaten at 0.05 / targets. The first two alone pass as often for a
+    forecast with its timing scrambled as for the real one (prediction study, section 2), so the third is what tests timing.
+    Before read_days, the same numbers are reported as an interim description that cannot promote. -> dict."""
     days = len({r["date"] for _, _, _, r in scored})
     pos = sum(y for _, _, y, _ in scored)
     if days < FORWARD_DAYS or not pos or pos == len(scored):
-        return {"days": days, "ready": False, "pass": False}
+        return {"days": days, "ready": False, "final": False, "pass": False}
     bss = 1 - sum((p - y) ** 2 for p, _, y, _ in scored) / sum((b - y) ** 2 for _, b, y, _ in scored)
     cl = {}
     for p, _, y, r in scored:
@@ -75,7 +131,12 @@ def gates(scored, B=500, seed=1):
             boot.append(a)
     boot.sort()
     lo = boot[int(0.025 * (len(boot) - 1))] if boot else 0.0
-    return {"days": days, "ready": True, "bss": bss, "auc_lo": lo, "pass": bss > 0 and lo > 0.5}
+    p_auc, p_within = shuffled_timing(scored)
+    alpha = 0.05 / targets
+    final = days >= read_days
+    ok = bss > 0 and lo > 0.5 and p_auc is not None and p_auc < alpha
+    return {"days": days, "ready": True, "final": final, "bss": bss, "auc_lo": lo, "within": _within_auc(scored), "shuffle_p": p_auc,
+            "shuffle_p_within": p_within, "alpha": alpha, "would_pass": ok, "pass": ok and final}
 
 
 KINDS = {   # record, model file, report, title, events, horizon
@@ -122,6 +183,7 @@ def scorecard(series=None):
         out.append({"k": k, "name": NAMES[k], "h": e["horizon"], "chain": e["ok"], "first": e["rows"][0]["date"] if e["rows"] else None,
                     "logged": len({r["date"] for r in e["rows"]}), "days": g["days"], "need": FORWARD_DAYS, "through": e["through"].isoformat(),
                     "ready": g["ready"], "pass": g["pass"], "bss": round(g["bss"], 4) if g["ready"] else None, "auc_lo": round(g["auc_lo"], 3) if g["ready"] else None,
+                    "shuffle_p": round(g["shuffle_p"], 3) if g["ready"] and g["shuffle_p"] is not None else None, "final": g.get("final", False), "read": READ_DAYS,
                     "auc": round(auc([(p, y) for p, _, y, _ in e["scored"]]) or 0, 3) if g["ready"] else None})
     return out
 
@@ -160,10 +222,18 @@ def main(kind="main"):
             L += ["", f"Chance of {what} in any theatre within {horizon} days: mean forecast {mp:.0%}, followed by one {fr:.0%} of days (an upper bound is expected, as theatres move together)."]
         L += ["", f"Compare with the validation report (`docs/{name.replace('FORWARD', 'MODEL')}`): the backtest can be tuned, this cannot."]
     L += ["", "## Forward gates", "",
-          f"Brier skill against the base rate above 0, and the lower end of the AUC interval (resampling theatre-months) above 0.5, read once {FORWARD_DAYS} days have matured. "
-          "The first of the three targets (any event in 30 days, armed force in 30 days, a strike wave in 7 days) to pass is the one to promote.", "",
-          (f"**{'PASS' if g['pass'] else 'FAIL'}**: Brier skill {g['bss']:+.3f}, AUC interval lower end {g['auc_lo']:.3f}, on {g['days']} matured days."
-           if g["ready"] else f"Not read yet: {g['days']} of {FORWARD_DAYS} matured days.")]
+          f"Read once, when {READ_DAYS} days have matured: Brier skill against the base rate above 0, the lower end of the AUC interval (resampling theatre-months) "
+          f"above 0.5, and the AUC beating a shuffled-timing control (each theatre's probabilities shifted in time against its outcomes, {SHIFTS:,} shifts) at "
+          f"p < 0.05 / {TARGETS} = {0.05 / TARGETS:.4f}, one share for each of the three targets (any event in 30 days, armed force in 30 days, a strike wave in 7 days). "
+          f"The first two alone pass as often for a forecast with its timing scrambled as for the real one, so the third is what tests timing. "
+          f"From {FORWARD_DAYS} matured days the same numbers are shown as an interim description; only the read at {READ_DAYS} days can promote a target.", ""]
+    if not g["ready"]:
+        L.append(f"Not read yet: {g['days']} of {FORWARD_DAYS} matured days for the first interim report, {READ_DAYS} for the read.")
+    else:
+        w = "n/a" if g["within"] is None else f"{g['within']:.3f}"
+        sp = "n/a" if g["shuffle_p"] is None else f"{g['shuffle_p']:.3f}"
+        head = (f"**{'PASS' if g['pass'] else 'FAIL'}**" if g["final"] else f"Interim ({g['days']} of {READ_DAYS} days, cannot promote): would {'pass' if g['would_pass'] else 'fail'}")
+        L.append(f"{head}: Brier skill {g['bss']:+.3f}, AUC interval lower end {g['auc_lo']:.3f}, shuffled-timing p {sp}, within-theatre AUC {w}, on {g['days']} matured days.")
     with open(os.path.join(DOCS, name), "w") as f:
         f.write("\n".join(L) + "\n")
     print("wrote docs/" + name + ";", "chain intact" if ok else f"CHAIN BROKEN at row {bad}")

@@ -1413,10 +1413,18 @@ class ArmedShadow(unittest.TestCase):
         day = lambda k: (dt.date(2026, 1, 1) + dt.timedelta(days=k)).isoformat()
         good = [(0.3 if k % 10 == 0 else 0.05, 0.08, k % 10 == 0, {"date": day(k), "theatre": th}) for k in range(120) for th in ("israel", "iran")]
         g = forward_score.gates(good)
-        self.assertTrue(g["ready"] and g["pass"])
+        self.assertTrue(g["ready"] and g["would_pass"])
+        self.assertFalse(g["pass"])                               # 120 days is an interim report: only the read at READ_DAYS promotes
+        self.assertTrue(forward_score.gates(good, read_days=100)["pass"])
         self.assertGreater(g["bss"], 0)
         flat = [(0.08, 0.08, y, r) for _, _, y, r in good]
-        self.assertFalse(forward_score.gates(flat)["pass"])     # the base rate itself has no skill
+        self.assertFalse(forward_score.gates(flat, read_days=100)["pass"])     # the base rate itself has no skill
+        # right theatres, wrong days: Iran runs hot (high p, more events) but its probabilities miss the event days
+        hot = [((0.25 if k % 10 == 5 else 0.2) if th == "iran" else 0.02, 0.1 if th == "iran" else 0.03, th == "iran" and k % 10 == 0,
+                {"date": day(k), "theatre": th}) for k in range(120) for th in ("israel", "iran")]
+        h = forward_score.gates(hot, read_days=100)
+        self.assertGreater(h["auc_lo"], 0.5)                      # the old gates' AUC test is fooled by knowing which theatre is hot
+        self.assertFalse(h["pass"])                               # the shuffled-timing control is not
         card = forward_score.scorecard()
         self.assertEqual([c["k"] for c in card], ["main", "armed", "wave"])
         self.assertIsNone(dashboard.build_data(run.evaluate(demo.scenario("calm")), "now", True, None, None)["forward"])
