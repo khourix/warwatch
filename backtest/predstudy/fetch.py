@@ -206,24 +206,43 @@ ACTION = (r"invade|invasion|strike|strikes|attack|bomb|missile|drone|war\b|milit
 def polymarket():
     place, action = re.compile(PLACE, re.I), re.compile(ACTION, re.I)
     markets = {}
-    for closed in ("true", "false"):
-        off = 0
-        while True:
-            t = get(f"https://gamma-api.polymarket.com/markets?limit=500&offset={off}&closed={closed}&order=id&ascending=true", timeout=120)
+
+    def keep(m, title=""):
+        q = (m.get("question") or "") + " " + title
+        if place.search(q) and action.search(q) and m.get("id"):
+            markets[str(m["id"])] = m
+
+    def pages(url_fmt, step, cap):
+        off, n = 0, 0
+        while off < cap:
+            t = get(url_fmt.format(off=off), timeout=120)
             try:
                 page = json.loads(t) if t else []
             except ValueError:
                 page = []
+            if isinstance(page, dict):
+                page = page.get("data") or page.get("events") or page.get("markets") or []
             if not page:
                 break
-            for m in page:
-                q = m.get("question") or ""
-                if place.search(q) and action.search(q):
-                    markets[m["id"]] = m
-            off += len(page)
-            if off % 20000 == 0:
-                print("markets scanned", closed, off, "kept", len(markets), flush=True)
+            yield page
+            n += len(page)
+            off += step
             time.sleep(0.15)
+        print("scanned", url_fmt[:90], n, flush=True)
+
+    # 1. events by tag (each event carries its markets); 2. every market, closed and open
+    for tag in ("geopolitics", "world", "middle-east", "ukraine", "russia", "israel", "iran", "china", "taiwan", "war", "military", "politics"):
+        for closed in ("true", "false"):
+            for page in pages("https://gamma-api.polymarket.com/events?tag_slug=" + tag + "&closed=" + closed + "&limit=100&offset={off}", 100, 30000):
+                for e in page:
+                    for m in e.get("markets") or []:
+                        keep(m, e.get("title") or "")
+        print("after tag", tag, len(markets), flush=True)
+    for closed in ("true", "false"):
+        for page in pages("https://gamma-api.polymarket.com/markets?limit=500&closed=" + closed + "&offset={off}", 500, 400000):
+            for m in page:
+                keep(m)
+        print("after markets closed=" + closed, len(markets), flush=True)
     print("matching markets", len(markets), flush=True)
     meta, rows = [], []
     for mid, m in markets.items():
@@ -240,7 +259,7 @@ def polymarket():
                      m.get("closedTime", ""), m.get("closed"), ";".join(outs), ";".join(map(str, final)), m.get("volume", "")])
         hist = []
         for q in (f"https://clob.polymarket.com/prices-history?market={yes}&interval=max&fidelity=1440",
-                  f"https://clob.polymarket.com/prices-history?market={yes}&startTs=1577836800&fidelity=1440"):
+                  f"https://clob.polymarket.com/prices-history?market={yes}&startTs=1577836800&endTs={int(time.time())}&fidelity=1440"):
             t = get(q, tries=2, timeout=60)
             try:
                 hist = (json.loads(t) or {}).get("history", []) if t else []
