@@ -214,7 +214,17 @@ def run_cw():
     import re
     import osint
     cw = pd.read_csv(os.path.join(CWDIR, "crisiswatch_wayback.csv.gz"), keep_default_na=False)
-    cw = cw[cw["month"].str.match(r"^\d{4}-\d{2}-01$")]
+    # Page snapshots whose issue month wasn't printed are filed by snapshot date: a snapshot from the 5th on shows that month's issue
+    # (published at the start of the month), an earlier one still shows the previous month's.
+    def _issue(m):
+        if not m.startswith("snap-"):
+            return m
+        d = dt.date(int(m[5:9]), int(m[9:11]), int(m[11:13]))
+        if d.day < 5:
+            d = (d.replace(day=1) - dt.timedelta(days=1))
+        return f"{d.year:04d}-{d.month:02d}-01"
+    cw["month"] = cw["month"].map(_issue)
+    cw = cw[cw["month"].str.match(r"^\d{4}-\d{2}-01$")].drop_duplicates()
     months = sorted(cw["month"].unique())
     res = {"months_recovered": len(months), "first": months[0] if months else None, "last": months[-1] if months else None,
            "rows": int(len(cw)), "by_list": cw.groupby("list").size().to_dict()}
