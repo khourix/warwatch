@@ -40,3 +40,7 @@ None passes. C1 is not a fair test yet: the monthly scorer needs about 40 issues
 | History only | 0.11 | 0.00 | 0.97 |
 
 The old gates passed a forecast with scrambled timing as often as the real one. The new gates almost never pass it (3%, close to the 1.7% the alpha allows).
+
+## Shadow record (added 2026-11-05)
+
+S1 is fitted by `python3 warwatch/validate.py fit-nohist` (monthly, in the refit workflow) to `warwatch/data/model_weights_nohist.json`, logged by every build to `forward/log_nohist.csv` and scored in `docs/FORWARD_NOHIST.md`. It never drives the page. Because it is a fourth forecast read under the forward gates, the shuffled-timing threshold is now 0.05 / 4 = 0.0125 for every target, not 0.05 / 3 as written above. The unweighted composite is not logged: its evidence would need a record of its own, and it is a description, not a candidate. The forward report also describes, without gating, the log score and, on days a liquid market was priced, the calibrated market and the 30% blend the page would publish if the blend were switched on.

@@ -49,6 +49,10 @@ WAVE_MIN = 365
 WAVE_HORIZON = 7
 WAVE_MODEL = os.path.join(DATA, "model_weights_wave.json")
 FORWARD_WAVE = os.path.join(ROOT, "forward", "log_wave.csv")
+# Candidate S1 of docs/PREDSTUDY_NEXT_PLAN.md: the page's target, refitted without the three conflict-history terms (they point the wrong way
+# within a theatre). A hidden shadow model, logged so its forward record can be compared with the page's under the same gates.
+NOHIST_MODEL = os.path.join(DATA, "model_weights_nohist.json")
+FORWARD_NOHIST = os.path.join(ROOT, "forward", "log_nohist.csv")
 
 
 def wave_points(sid, series=None):
@@ -270,6 +274,19 @@ def shadow(res, today=None, model_path=None, log_path=None):
     per = {t: predict(m, res["series"], t, events, today) for t in TH if t in res["theatres"]}
     fake = {"model": {"theatres": per, "global": global_view(m, per), "active": False, "version": m["version"] + "-armed"}, "theatres": res["theatres"]}
     return forward_append(fake, path=log_path or FORWARD_ARMED)
+
+
+def shadow_nohist(res, today=None, model_path=None, log_path=None):
+    """Hidden model S1 (no conflict-history terms): predicts every theatre on the page's target and appends to its own forward record
+    (forward/log_nohist.csv). Like the other shadow models it never touches the page, the levels or the main record. Returns rows appended."""
+    m = load(model_path or NOHIST_MODEL)
+    if not m or "model" not in res:
+        return 0
+    today = today or dt.date.today()
+    events = load_events()
+    per = {t: predict(m, res["series"], t, events, today) for t in TH if t in res["theatres"]}
+    fake = {"model": {"theatres": per, "global": global_view(m, per), "active": False, "version": m["version"] + "-nohist"}, "theatres": res["theatres"]}
+    return forward_append(fake, path=log_path or FORWARD_NOHIST)
 
 
 def shadow_wave(res, today=None, model_path=None, log_path=None):

@@ -7,7 +7,8 @@ A forecast matures 30 days after it was made, once the events file is complete t
 events moves it). Days within 30 days after an event are left out, as in validation. Run quarterly by .github/workflows/forward-score.yml.
 
 The two hidden models are scored the same way on their own records: the armed-force model (forward/log_armed.csv) on armed-force events, and
-the 7-day strike-wave model (forward/log_wave.csv) on the strike waves its feeds show, 7 days ahead. Each report ends with the forward gates;
+the 7-day strike-wave model (forward/log_wave.csv) on the strike waves its feeds show, 7 days ahead, and the model without the conflict-history
+terms (forward/log_nohist.csv, candidate S1 of docs/PREDSTUDY_NEXT_PLAN.md) on the page's events. Each report ends with the forward gates;
 the first target to pass them on 90 or more matured days is the one to promote (docs/METHODOLOGY.md, Phase C).
 """
 import datetime as dt
@@ -43,7 +44,7 @@ def auc(pairs):
 
 FORWARD_DAYS = 90     # matured forecast days before the first interim report
 READ_DAYS = 365       # the one read that can promote a target, fixed in advance (docs/PREDSTUDY_PLAN.md and the prediction study)
-TARGETS = 3           # targets read (main, armed, wave): the shuffled-timing p must beat 0.05 / TARGETS
+TARGETS = 4           # forecasts read (main, armed, wave, and the no-history candidate): the shuffled-timing p must beat 0.05 / TARGETS
 SHIFTS = 1000
 
 
@@ -142,6 +143,7 @@ def gates(scored, B=500, seed=1, read_days=READ_DAYS, targets=TARGETS):
 KINDS = {   # record, model file, report, title, events, horizon
     "main": (model.FORWARD, None, "FORWARD.md", "", lambda: model.load_events(), 30),
     "armed": (model.FORWARD_ARMED, model.ARMED_MODEL, "FORWARD_ARMED.md", ", armed-force shadow model (hidden from the page)", lambda: model.load_events(types=model.ARMED_TYPES), 30),
+    "nohist": (model.FORWARD_NOHIST, model.NOHIST_MODEL, "FORWARD_NOHIST.md", ", model without conflict-history terms (candidate S1, hidden from the page)", lambda: model.load_events(), 30),
     "wave": (model.FORWARD_WAVE, model.WAVE_MODEL, "FORWARD_WAVE.md", ", 7-day strike-wave shadow model (hidden from the page)", lambda: model.wave_events(), model.WAVE_HORIZON),
 }
 
@@ -153,6 +155,32 @@ def _through(kind, m, series=None):
         return min(dt.date.fromisoformat(model.wave_points(model.WAVE_FEEDS[t], series)[-1][0][:10]) for t in ths)
     with open(os.path.join(HERE, "data", "events_through.txt")) as f:
         return dt.date.fromisoformat(f.read().strip())
+
+
+def _log_loss(pairs):
+    return sum(-math.log(min(max(p if y else 1 - p, 1e-6), 1.0)) for p, y in pairs) / len(pairs)
+
+
+def describe(scored):
+    """Descriptions, never gates: the log score next to the Brier score, and, on the days a liquid market was priced, the market and the
+    blend the page would publish if the blend were switched on (model.blend; MKT_WEIGHT, MKT_CAL), each against the same days' base rate."""
+    L = ["", "Descriptions (not gates):", "", "| Forecast | Days | Events | Brier | Log score | Brier skill vs base |", "|---|---|---|---|---|---|"]
+
+    def line(name, trip):
+        n = len(trip)
+        if not n:
+            return
+        bs = sum((p - y) ** 2 for p, _, y in trip) / n
+        bb = sum((b - y) ** 2 for _, b, y in trip) / n
+        L.append(f"| {name} | {n:,} | {sum(y for _, _, y in trip):,} | {bs:.4f} | {_log_loss([(p, y) for p, _, y in trip]):.4f} | "
+                 f"{'n/a' if not bb else f'{1 - bs / bb:+.3f}'} |")
+    line("Published probability, all days", [(p, b, y) for p, b, y, _ in scored])
+    line("Base rate, all days", [(b, b, y) for _, b, y, _ in scored])
+    mk = [(p, b, y, float(r["p_market"])) for p, b, y, r in scored if r.get("p_market") not in (None, "")]
+    line("Published probability, days with a market", [(p, b, y) for p, b, y, _ in mk])
+    line("Market, calibrated", [(q, b, y) for _, b, y, q in mk])
+    line(f"Blend ({model.MKT_WEIGHT:.0%} market in log-odds)", [(model.blend(p, q), b, y) for p, b, y, q in mk])
+    return L
 
 
 def evaluate(kind, series=None):
@@ -220,11 +248,12 @@ def main(kind="main"):
             mp = sum(p for p, _ in anyrows.values()) / len(anyrows)
             fr = sum(h for _, h in anyrows.values()) / len(anyrows)
             L += ["", f"Chance of {what} in any theatre within {horizon} days: mean forecast {mp:.0%}, followed by one {fr:.0%} of days (an upper bound is expected, as theatres move together)."]
+        L += describe(scored)
         L += ["", f"Compare with the validation report (`docs/{name.replace('FORWARD', 'MODEL')}`): the backtest can be tuned, this cannot."]
     L += ["", "## Forward gates", "",
           f"Read once, when {READ_DAYS} days have matured: Brier skill against the base rate above 0, the lower end of the AUC interval (resampling theatre-months) "
           f"above 0.5, and the AUC beating a shuffled-timing control (each theatre's probabilities shifted in time against its outcomes, {SHIFTS:,} shifts) at "
-          f"p < 0.05 / {TARGETS} = {0.05 / TARGETS:.4f}, one share for each of the three targets (any event in 30 days, armed force in 30 days, a strike wave in 7 days). "
+          f"p < 0.05 / {TARGETS} = {0.05 / TARGETS:.4f}, one share for each forecast read (any event in 30 days, armed force in 30 days, a strike wave in 7 days, and any event in 30 days without the conflict-history terms). "
           f"The first two alone pass as often for a forecast with its timing scrambled as for the real one, so the third is what tests timing. "
           f"From {FORWARD_DAYS} matured days the same numbers are shown as an interim description; only the read at {READ_DAYS} days can promote a target.", ""]
     if not g["ready"]:
@@ -242,7 +271,7 @@ def main(kind="main"):
 
 if __name__ == "__main__":
     rc = main()
-    for k in ("armed", "wave"):
+    for k in ("armed", "wave", "nohist"):
         if os.path.exists(KINDS[k][0]):
             rc = main(k) or rc
     sys.exit(rc)

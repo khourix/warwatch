@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Folds the CrisisWatch issues recovered from the Wayback Machine (backtest/predstudy/data/crisiswatch) into the live archive
+"""Folds the CrisisWatch issues recovered from the Wayback Machine and the issue pages (backtest/predstudy/data/crisiswatch) into the live archive
 history/cache/crisiswatch.csv (month, list, slug), which the RSS feed alone fills only from October 2026. Keeps the four lists and drops
 anchor text that isn't a country (podcast, op-ed and the like never match a theatre anyway). Idempotent.
 
@@ -20,8 +20,12 @@ JUNK = {"podcast", "q&a", "op-ed", "commentary", "report", "briefing", "statemen
 
 
 def main():
-    with gzip.open(os.path.join(PS.CWDIR, "crisiswatch_wayback.csv.gz"), "rt", newline="") as f:
-        rows = list(csv.DictReader(f))
+    rows = []
+    for name in ("crisiswatch_wayback.csv.gz", "crisiswatch_issues.csv.gz"):     # main-page snapshots, then each issue's own page (fetch.py cwissues)
+        path = os.path.join(PS.CWDIR, name)
+        if os.path.exists(path):
+            with gzip.open(path, "rt", newline="") as f:
+                rows += list(csv.DictReader(f))
     new = set()
     for r in rows:
         m = PS.cw_issue_month(r["month"])

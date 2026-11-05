@@ -3,6 +3,7 @@
 
     python3 backtest/predstudy/fetch.py gpr          # Caldara-Iacoviello GPR and AI-GPR files -> backtest/predstudy/data/gpr/*.csv.gz
     python3 backtest/predstudy/fetch.py crisiswatch  # CrisisWatch issues from Wayback snapshots of the Crisis Group RSS feed and page
+    python3 backtest/predstudy/fetch.py cwissues     # each monthly CrisisWatch issue's own page, live or from the Wayback Machine
     python3 backtest/predstudy/fetch.py polymarket   # daily prices of resolved and open Polymarket markets on military action in the theatres
 
 Public data only. Nothing here touches the live build, the model or the event list.
@@ -195,6 +196,61 @@ def crisiswatch():
         json.dump(raw, f)
 
 
+def cw_month_of(slug):
+    """The alert month an issue's URL names: 'september-trends-and-october-alerts-2024' -> '2024-10-01'; None if it names none."""
+    m = re.search(r"(?:^|-)([a-z]+)-(?:(\d{4})-)?alerts?(?:-|$)", slug)
+    yrs = re.findall(r"(?<!\d)(20\d\d)(?!\d)", slug)
+    if not m or m.group(1) not in MONTHS or not yrs:
+        return None
+    return f"{int(m.group(2) or yrs[-1]):04d}-{MONTHS[m.group(1)]:02d}-01"
+
+
+def cwissues(frm="201711", to="202611"):
+    """Each monthly CrisisWatch issue's own page (crisisgroup.org/crisiswatch/<trends-and-alerts slug>), from its newest Wayback snapshot,
+    for the months the main-page snapshots (crisiswatch()) did not recover; the live site is tried once and dropped if it does not answer.
+    Saves after every month, so a run cut short keeps what it got. -> data/crisiswatch/crisiswatch_issues.csv.gz (month, list, entry) and
+    issues.json.gz (what each URL gave)."""
+    have = set()
+    try:
+        with gzip.open(os.path.join(OUT, "crisiswatch", "crisiswatch_wayback.csv.gz"), "rt", newline="") as f:
+            have = {r["month"] for r in csv.DictReader(f) if re.fullmatch(r"\d{4}-\d{2}-01", r["month"])}
+    except OSError:
+        pass
+    seen = {}
+    for u in ("crisisgroup.org/crisiswatch/*", "www.crisisgroup.org/crisiswatch/*"):
+        snaps = cdx(u, frm=frm, to=to, collapse="urlkey")
+        print(u, len(snaps), "archived sub-pages", flush=True)
+        for s in snaps:
+            path = urllib.parse.urlsplit(s["original"]).path.rstrip("/")
+            mon = cw_month_of(path.rsplit("/", 1)[-1].lower())
+            if mon and "trends" in path.lower() and mon not in have:
+                seen.setdefault(mon, set()).add(path)
+    print("issue months to read:", len(seen), sorted(seen), flush=True)
+    rows, raw, live = set(), [], True
+    for mon in sorted(seen):
+        for path in sorted(seen[mon]):
+            got = []
+            srcs = ([("live", "https://www.crisisgroup.org" + path)] if live else []) + \
+                [("wayback", f"https://web.archive.org/web/{to}id_/https://www.crisisgroup.org{path}")]
+            for src, url in srcs:
+                t = get(url, tries=2, timeout=45)
+                time.sleep(1.0)
+                if src == "live" and not t:
+                    live = False            # one failure: the site blocks the runner, use the archive only
+                if t:
+                    got = cw_lists(html.unescape(t), mon)
+                    raw.append({"month": mon, "path": path, "src": src, "n": len(got), "bytes": len(t)})
+                    if got:
+                        break
+            rows |= set(got)
+            if got:
+                break
+        print(mon, "rows so far", len(rows), flush=True)
+        save_csv(os.path.join(OUT, "crisiswatch", "crisiswatch_issues.csv.gz"), ["month", "list", "entry"], sorted(rows))
+        with gzip.open(os.path.join(OUT, "crisiswatch", "issues.json.gz"), "wt") as f:
+            json.dump(raw, f)
+    print("months with an issue:", len({r[0] for r in rows}), flush=True)
+
 # ------------------------------------------------------------------ Polymarket
 PLACE = (r"ukrain|russia|kyiv|crimea|nato|poland|baltic|lithuania|latvia|estonia|finland|moldova|iran|tehran|israel|gaza|hamas|hezbollah|lebanon|"
          r"syria|yemen|houthi|red sea|hormuz|saudi|qatar|uae|emirates|iraq|taiwan|china|chinese|pla\b|south china sea|philippin|scarborough|"
@@ -275,4 +331,4 @@ def polymarket():
 
 if __name__ == "__main__":
     for job in sys.argv[1:] or ["gpr", "crisiswatch", "polymarket"]:
-        {"gpr": gpr, "crisiswatch": crisiswatch, "polymarket": polymarket}[job]()
+        {"gpr": gpr, "crisiswatch": crisiswatch, "cwissues": cwissues, "polymarket": polymarket}[job]()
