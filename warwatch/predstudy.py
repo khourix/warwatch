@@ -5,6 +5,7 @@ LLM-scored AI-GPR) time events? Reuses timingstudy.Study, so the baseline and th
     python3 warwatch/predstudy.py gpr            # G1..G5 -> backtest/predstudy/gpr_results.json
     python3 warwatch/predstudy.py gpr --quick    # one ridge strength and 300 shifts, for checking the code
     python3 warwatch/predstudy.py cw             # CrisisWatch alerts against events by theatre-month -> backtest/predstudy/cw_results.json
+    python3 warwatch/predstudy.py next           # S1, C1, S1+C1 (docs/PREDSTUDY_NEXT_PLAN.md) -> backtest/predstudy/next_results.json
     python3 warwatch/predstudy.py poly           # Polymarket 7-day log-odds change before events -> backtest/predstudy/poly_results.json
 
 Reads backtest/predstudy/data/gpr (pulled by backtest/predstudy/fetch.py). Needs numpy, pandas and scipy. Writes nothing the live build reads.
@@ -210,20 +211,22 @@ def _cmh(rows):
     return orr, float(1 - norm.cdf(z)) if z == z else float("nan")
 
 
+def cw_issue_month(m):
+    """Page snapshots whose issue month wasn't printed are filed by snapshot date ('snap-YYYYMMDD'): from the 5th on a snapshot shows that
+    month's issue (published at the start of the month), before the 5th still the previous month's."""
+    if not m.startswith("snap-"):
+        return m
+    d = dt.date(int(m[5:9]), int(m[9:11]), int(m[11:13]))
+    if d.day < 5:
+        d = d.replace(day=1) - dt.timedelta(days=1)
+    return f"{d.year:04d}-{d.month:02d}-01"
+
+
 def run_cw():
     import re
     import osint
     cw = pd.read_csv(os.path.join(CWDIR, "crisiswatch_wayback.csv.gz"), keep_default_na=False)
-    # Page snapshots whose issue month wasn't printed are filed by snapshot date: a snapshot from the 5th on shows that month's issue
-    # (published at the start of the month), an earlier one still shows the previous month's.
-    def _issue(m):
-        if not m.startswith("snap-"):
-            return m
-        d = dt.date(int(m[5:9]), int(m[9:11]), int(m[11:13]))
-        if d.day < 5:
-            d = (d.replace(day=1) - dt.timedelta(days=1))
-        return f"{d.year:04d}-{d.month:02d}-01"
-    cw["month"] = cw["month"].map(_issue)
+    cw["month"] = cw["month"].map(cw_issue_month)
     cw = cw[cw["month"].str.match(r"^\d{4}-\d{2}-01$")].drop_duplicates()
     months = sorted(cw["month"].unique())
     res = {"months_recovered": len(months), "first": months[0] if months else None, "last": months[-1] if months else None,
@@ -352,6 +355,51 @@ def run_poly():
     return res
 
 
+# ------------------------------------------------------------------ Next timing test (docs/PREDSTUDY_NEXT_PLAN.md)
+def fam_C1():
+    """CrisisWatch per theatre as the live build reads it (osint.crisiswatch_series), only on issues the archive holds; public on the 5th."""
+    import osint
+    osint._CW.pop("rows", None)
+    osint._CW["rows"] = osint.crisiswatch_archive([])
+    out = {"crisiswatch": {}}
+    for t in TH:
+        pts = [(m[:7], v + 1.0) for m, v in osint.crisiswatch_series(t)]
+        avail = [dt.date(int(m[:4]), int(m[5:7]), 1 + MONTH_LAG_DAYS).toordinal() for m, _ in pts]
+        out["crisiswatch"][t] = TS._evidence(f"crisiswatch_{t}", t, "monthly", pts, avail)
+    return out
+
+
+class NextStudy(TS.Study):
+    """The timing study's runner; candidate S1 zeroes the three conflict-history columns of the design."""
+    def setup(self, cands):
+        S_ = super().setup([c for c in cands if c != "S1"])
+        if "S1" in cands:
+            X = S_["X"].copy()
+            X[:, 1 + S_["nT"]:1 + S_["nT"] + 3] = 0.0
+            S_["X"] = X
+        return S_
+
+
+def run_next(quick):
+    TS.FAMS.update({"C1": fam_C1})
+    TS.N_TRIED = 3
+    TS.ALPHA = 0.05 / 3
+    st = NextStudy(quick=quick)
+    res = {}
+    for c in (["base"], ["S1"], ["C1"], ["S1", "C1"]):
+        name = "+".join(c)
+        r = st.run([] if c == ["base"] else c)
+        row = {k: (float(v) if isinstance(v, (np.floating, float)) else v) for k, v in r.items()
+               if k in ("bss", "auc", "auc_lo", "auc_hi", "wauc", "shuffle_p", "shuf95", "flagged", "events", "lam", "nfam")}
+        row["validated"] = bool(r["bss"] > 0 and r["auc_lo"] > 0.5 and r["shuffle_p"] < TS.ALPHA)
+        row["years"] = {int(k): float(v) for k, v in r["years"].items()}
+        res[name] = row
+        print(name, json.dumps({k: v for k, v in row.items() if k != "years"}), flush=True)
+    with open(os.path.join(OUT, "next_results.json"), "w") as f:
+        json.dump(res, f, indent=1)
+    return res
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "gpr"
     if cmd == "gpr":
@@ -360,5 +408,7 @@ if __name__ == "__main__":
         run_cw()
     elif cmd == "poly":
         run_poly()
+    elif cmd == "next":
+        run_next("--quick" in sys.argv)
     else:
         sys.exit(__doc__)
