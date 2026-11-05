@@ -1364,6 +1364,63 @@ class AlertSmoothing(unittest.TestCase):
             os.unlink(f.name)
 
 
+class LlmForecaster(unittest.TestCase):
+    """warwatch/llmcast.py: the free LLM shadow forecaster (no network: the API call is replaced)."""
+
+    def test_parse_reads_the_last_probability_line(self):
+        import llmcast
+        self.assertAlmostEqual(llmcast.parse("PROBABILITY: 0.9\nOn reflection...\nPROBABILITY: 0.12"), 0.12)
+        self.assertAlmostEqual(llmcast.parse("**PROBABILITY:** 15%"), 0.15)
+        self.assertAlmostEqual(llmcast.parse("PROBABILITY: 0"), llmcast.P_MIN)
+        self.assertIsNone(llmcast.parse("I cannot say."))
+        self.assertIsNone(llmcast.parse("PROBABILITY: 250"))
+
+    def test_prompt_never_shows_the_model_probability(self):
+        import llmcast
+        txt = llmcast.prompt("iran", dt.date(2026, 11, 5), 0.22189, [(dt.date(2026, 6, 13), "strike: test")])
+        self.assertIn("22%", txt)
+        self.assertIn("2026-12-04", txt)            # 30 days, inclusive
+        self.assertNotIn("model", txt.lower().replace("most 30-day", ""))
+
+    def test_forecast_logs_one_chained_row_per_theatre_once_a_day(self):
+        import llmcast
+        calls = []
+
+        def post(url, body, key):
+            calls.append(url)
+            return {"modelVersion": "gemini-test-001", "candidates": [{"content": {"parts": [{"text": "Calm.\nPROBABILITY: 0.07"}]},
+                                                                      "groundingMetadata": {"groundingChunks": [{"web": {"uri": "https://example.org/a"}}]}}]}
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "log_llm.csv")
+            n = llmcast.forecast(today=dt.date(2026, 11, 5), key="k", post=post, pause=0, log_path=log, notes=os.path.join(d, "notes"), sleep=lambda s: None)
+            self.assertEqual(n, len(model.TH) + 1)               # every theatre plus the any-theatre row
+            self.assertEqual(len(calls), len(model.TH))
+            ok, bad, rows = model.forward_verify(log)
+            self.assertTrue(ok)
+            self.assertEqual(rows[0]["model"], "llm-gemini-test-001+search")
+            self.assertEqual(rows[0]["p"], "0.07000")
+            self.assertIsNone(llmcast.forecast(today=dt.date(2026, 11, 5), key="k", post=post, pause=0, log_path=log, notes=None, sleep=lambda s: None))
+            self.assertEqual(len(calls), len(model.TH))           # no second call the same day
+            self.assertTrue(os.path.exists(os.path.join(d, "notes", "2026-11.jsonl")))
+
+    def test_falls_back_to_the_next_model_and_keeps_it(self):
+        import urllib.error
+        import llmcast
+        seen = []
+
+        def post(url, body, key):
+            seen.append(url)
+            if llmcast.MODELS[0] in url:
+                raise urllib.error.HTTPError(url, 404, "not found", {}, None)
+            return {"candidates": [{"content": {"parts": [{"text": "PROBABILITY: 0.2"}]}}]}
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "log_llm.csv")
+            llmcast.forecast(today=dt.date(2026, 11, 5), key="k", post=post, pause=0, log_path=log, notes=None, sleep=lambda s: None)
+            self.assertEqual(sum(llmcast.MODELS[0] in u for u in seen), 1)     # tried once, then the fallback for every theatre
+            _, _, rows = model.forward_verify(log)
+            self.assertEqual(rows[0]["model"], "llm-" + llmcast.MODELS[1])
+
+
 class ArmedShadow(unittest.TestCase):
     def test_shadow_logs_to_its_own_record_and_leaves_the_page_alone(self):
         import demo

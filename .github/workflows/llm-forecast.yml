@@ -1,0 +1,36 @@
+name: llm-forecast
+# Daily: one free LLM forecast per theatre (Gemini API free tier, about 17 calls) appended to the hash-chained shadow record
+# forward/log_llm.csv. Never touches the page. Needs the repository secret GEMINI_API_KEY (a free key from Google AI Studio);
+# without it the job logs a notice and does nothing. Optional repository variable GEMINI_MODEL (comma-separated) overrides the model list.
+on:
+  schedule:
+    - cron: "20 6 * * *"
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: warwatch-llm-forecast
+  cancel-in-progress: false
+jobs:
+  forecast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - name: Forecast
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: python3 warwatch/llmcast.py
+      - name: Commit the record
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          git add forward/log_llm.csv forward/llm_notes 2>/dev/null || true
+          git diff --cached --quiet && exit 0
+          git commit -qm "llm forecast: $(date -u +%F)"
+          for i in 1 2 3; do
+            git pull --rebase -q -X theirs origin main && git push -q && exit 0
+            sleep 5
+          done
+          echo "push failed"; exit 1
