@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        job: [gpr, crisiswatch, polymarket]
+        job: [gpr, crisiswatch, cwissues, polymarket]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
