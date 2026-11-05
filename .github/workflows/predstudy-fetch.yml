@@ -4,6 +4,7 @@ name: predstudy-fetch
 # file; it commits small CSVs to backtest/predstudy/data on that branch and never touches the live build or the model.
 on:
   push:
+    branches-ignore: [main]     # study branches only: a merge that carries fetch.txt must not re-run the pulls on main
     paths: ["backtest/predstudy/fetch.txt"]
 permissions:
   contents: write

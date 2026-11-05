@@ -5,6 +5,7 @@
     python3 warwatch/validate.py report   # rolling-origin test, gates, shuffled-timing control -> docs/MODEL.md
     python3 warwatch/validate.py fit      # report, then fit on all history and write warwatch/data/model_weights.json
     python3 warwatch/validate.py fit-armed  # the same on armed-force events only -> model_weights_armed.json, docs/MODEL_ARMED.md (hidden shadow model)
+    python3 warwatch/validate.py fit-nohist # the page's target without the conflict-history terms -> model_weights_nohist.json, docs/MODEL_NOHIST.md (hidden shadow model)
     python3 warwatch/validate.py fit-wave   # a new strike wave within 7 days, wars under way -> model_weights_wave.json, docs/MODEL_WAVE.md (hidden shadow model)
 
 Unlike the live build this needs numpy, pandas and scipy. It reads only committed data: backtest/history (prices, transits, advisories,
@@ -63,6 +64,7 @@ KEEP = 450                    # points of history a point-in-time score may see 
 BOOT = 40
 EVENT_TYPES = None            # set by `fit-armed`: train and label on these event types only (the hidden armed-force model)
 REPORT = "MODEL.md"
+NOHIST = False                # set by `fit-nohist`: the conflict-history terms are zero (candidate S1, docs/PREDSTUDY_NEXT_PLAN.md)
 WAVE = None                   # set by `fit-wave`: the theatres whose strike-wave onsets (model.wave_events) are the labels, 7 days ahead
 
 
@@ -501,7 +503,8 @@ def prepare(refresh=False, subs=False):
     y, excl, unk, eid = labels(P, ev, through)
     core = P["theatre"].isin(TH).values
     fams = [c for c in P.columns if c in meta and P.loc[core, c].notna().sum() > 200]
-    X = design(P, fams, history_features(P, ev))
+    hist = history_features(P, ev)
+    X = design(P, fams, hist * 0.0 if NOHIST else hist)
     lab = ~excl & ~unk
     return P, meta, fams, X, y, lab, eid, ev, through
 
@@ -739,6 +742,11 @@ if __name__ == "__main__":
         WAVE = [t for t, sid in model.WAVE_FEEDS.items() if len(model.wave_points(sid)) >= model.WAVE_MIN]
         MODEL_PATH = model.WAVE_MODEL
         REPORT = "MODEL_WAVE.md"
+        run(write=True)
+    elif cmd == "fit-nohist":    # hidden shadow model S1: the page's target without the conflict-history terms; never drives the page
+        NOHIST = True
+        MODEL_PATH = model.NOHIST_MODEL
+        REPORT = "MODEL_NOHIST.md"
         run(write=True)
     elif cmd == "fit-armed":     # hidden shadow model: armed-force events only (onset, strike, maritime); never drives the page
         EVENT_TYPES = ("onset", "strike", "maritime")

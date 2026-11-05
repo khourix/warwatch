@@ -1383,6 +1383,34 @@ class ArmedShadow(unittest.TestCase):
         self.assertEqual(model.load_events(types=model.ARMED_TYPES) != [], True)
 
 
+    def test_nohist_shadow_logs_every_theatre_with_no_history_terms(self):
+        import demo
+        import model
+        res = run.evaluate(demo.scenario("buildup"))
+        res = model.apply(res, today=dt.date(2026, 10, 8), forward_path=os.devnull)
+        levels = {t: v["level"] for t, v in res["theatres"].items()}
+        m = model.load(model.NOHIST_MODEL)
+        self.assertTrue(all(abs(h) < 1e-9 for h in m["theta"]["hist"]))     # fitted with the history terms at zero
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "log_nohist.csv")
+            n = model.shadow_nohist(res, today=dt.date(2026, 10, 8), log_path=log)
+            self.assertEqual(n, len(res["model"]["theatres"]) + 1)
+            ok, _, rows = model.forward_verify(log)
+            self.assertTrue(ok)
+            self.assertEqual(rows[0]["model"], m["version"] + "-nohist")
+            self.assertEqual(model.shadow_nohist(res, today=dt.date(2026, 10, 8), log_path=log), 0)   # once per day
+        self.assertEqual(levels, {t: v["level"] for t, v in res["theatres"].items()})
+
+    def test_forward_descriptions_score_the_market_blend_on_market_days_only(self):
+        import forward_score
+        import model
+        rows = [(0.1, 0.05, k % 5 == 0, {"p_market": "0.3" if k < 10 else ""}) for k in range(40)]
+        L = "\n".join(forward_score.describe(rows))
+        self.assertIn("| Published probability, all days | 40 | 8 |", L)
+        self.assertIn("| Market, calibrated | 10 | 2 |", L)
+        self.assertIn("Blend", L)
+        self.assertAlmostEqual(model.blend(0.1, 0.3), model.sigmoid(0.7 * model.logit(0.1) + 0.3 * model.logit(0.3)))
+
     def test_wave_shadow_logs_only_its_theatres_and_forward_gates_wait(self):
         import demo
         import forward_score
@@ -1411,7 +1439,9 @@ class ArmedShadow(unittest.TestCase):
     def test_track_record_reads_gates_after_90_days(self):
         import forward_score
         day = lambda k: (dt.date(2026, 1, 1) + dt.timedelta(days=k)).isoformat()
-        good = [(0.3 if k % 10 == 0 else 0.05, 0.08, k % 10 == 0, {"date": day(k), "theatre": th}) for k in range(120) for th in ("israel", "iran")]
+        import random
+        hits = {th: set(random.Random(i).sample(range(120), 12)) for i, th in enumerate(("israel", "iran"))}   # not periodic, so no shift lines up again
+        good = [(0.3 if k in hits[th] else 0.05, 0.08, k in hits[th], {"date": day(k), "theatre": th}) for k in range(120) for th in ("israel", "iran")]
         g = forward_score.gates(good)
         self.assertTrue(g["ready"] and g["would_pass"])
         self.assertFalse(g["pass"])                               # 120 days is an interim report: only the read at READ_DAYS promotes
@@ -1504,8 +1534,8 @@ class ModelRan(unittest.TestCase):
     """audit.json says whether the probability model ran, so a model that fails behind a green build shows."""
 
     def _patched(self, apply):
-        saved = {k: getattr(model, k) for k in ("apply", "forward_append", "shadow", "shadow_wave")}
-        model.apply, model.forward_append, model.shadow, model.shadow_wave = apply, lambda res: 0, lambda res: 0, lambda res: 0
+        saved = {k: getattr(model, k) for k in ("apply", "forward_append", "shadow", "shadow_wave", "shadow_nohist")}
+        model.apply, model.forward_append, model.shadow, model.shadow_wave, model.shadow_nohist = apply, lambda res: 0, lambda res: 0, lambda res: 0, lambda res: 0
         self.addCleanup(lambda: [setattr(model, k, v) for k, v in saved.items()])
 
     def test_true_when_the_model_sets_its_probabilities(self):

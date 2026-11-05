@@ -140,6 +140,10 @@ def run_model(res, ex):
             print("armed-force shadow record: appended", model.shadow(res), "rows")
         except Exception as e:
             print("shadow model skipped:", str(e)[:200])
+        try:   # hidden model without the conflict-history terms (candidate S1), own record, never shown
+            print("no-history shadow record: appended", model.shadow_nohist(res), "rows")
+        except Exception as e:
+            print("no-history model skipped:", str(e)[:200])
         try:   # hidden 7-day strike-wave model, own record, never shown
             print("strike-wave shadow record: appended", model.shadow_wave(res), "rows")
         except Exception as e:
