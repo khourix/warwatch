@@ -4,6 +4,8 @@ LLM-scored AI-GPR) time events? Reuses timingstudy.Study, so the baseline and th
 
     python3 warwatch/predstudy.py gpr            # G1..G5 -> backtest/predstudy/gpr_results.json
     python3 warwatch/predstudy.py gpr --quick    # one ridge strength and 300 shifts, for checking the code
+    python3 warwatch/predstudy.py cw             # CrisisWatch alerts against events by theatre-month -> backtest/predstudy/cw_results.json
+    python3 warwatch/predstudy.py poly           # Polymarket 7-day log-odds change before events -> backtest/predstudy/poly_results.json
 
 Reads backtest/predstudy/data/gpr (pulled by backtest/predstudy/fetch.py). Needs numpy, pandas and scipy. Writes nothing the live build reads.
 """
@@ -175,9 +177,178 @@ def run_gpr(quick):
     return res
 
 
+# ------------------------------------------------------------------ Part 5: CrisisWatch alerts (plan question 5)
+CWDIR = os.path.join(ROOT, "backtest", "predstudy", "data", "crisiswatch")
+
+
+def _events():
+    ev = pd.read_csv(os.path.join(V.DATA, "events.csv"), parse_dates=["date"], keep_default_na=False)
+    return ev[ev["theatre"].isin(TH)]
+
+
+def _binom_greater(k, n, p0):
+    from scipy.stats import binomtest
+    return float(binomtest(int(k), int(n), float(p0), alternative="greater").pvalue) if n else float("nan")
+
+
+def _cmh(rows):
+    """Cochran-Mantel-Haenszel test across theatres (flag x event 2x2 per theatre): is a flagged month likelier to hold an event than an
+    unflagged month of the same theatre? -> (common odds ratio, one-sided p)."""
+    from scipy.stats import norm
+    num = den = a_sum = e_sum = v_sum = 0.0
+    for a, b, c, d in rows:                       # a flagged+event, b flagged+calm, c unflagged+event, d unflagged+calm
+        n = a + b + c + d
+        if n < 2 or (a + c) == 0 or (b + d) == 0 or (a + b) == 0 or (c + d) == 0:
+            continue
+        num += a * d / n
+        den += b * c / n
+        a_sum += a
+        e_sum += (a + b) * (a + c) / n
+        v_sum += (a + b) * (c + d) * (a + c) * (b + d) / (n * n * (n - 1))
+    orr = num / den if den else float("inf")
+    z = (a_sum - e_sum) / np.sqrt(v_sum) if v_sum else float("nan")
+    return orr, float(1 - norm.cdf(z)) if z == z else float("nan")
+
+
+def run_cw():
+    import re
+    import osint
+    cw = pd.read_csv(os.path.join(CWDIR, "crisiswatch_wayback.csv.gz"), keep_default_na=False)
+    cw = cw[cw["month"].str.match(r"^\d{4}-\d{2}-01$")]
+    months = sorted(cw["month"].unique())
+    res = {"months_recovered": len(months), "first": months[0] if months else None, "last": months[-1] if months else None,
+           "rows": int(len(cw)), "by_list": cw.groupby("list").size().to_dict()}
+    ev = _events()
+    evm = {(t, d.strftime("%Y-%m-01")) for t, d in zip(ev["theatre"], ev["date"])}
+    allm = pd.period_range("2018-01", "2026-10", freq="M").strftime("%Y-%m-01")
+    rows = []
+    for t in TH:
+        pat = re.compile(osint.CW_THEATRE[t])
+        sub = cw[cw["entry"].str.contains(pat)]
+        al = set(sub.loc[sub["list"] == "alert", "month"])
+        de = set(sub.loc[sub["list"] == "deteriorated", "month"])
+        for i, m in enumerate(allm):
+            prev = [allm[j] for j in range(max(0, i - 3), i)]
+            rows.append({"theatre": t, "month": m, "covered": m in set(months), "alert": m in al, "deteriorated": m in de,
+                         "event": (t, m) in evm, "event_prev3": any((t, p) in evm for p in prev)})
+    R = pd.DataFrame(rows)
+    R["any"] = R["alert"] | R["deteriorated"]
+    R["year"] = R["month"].str[:4].astype(int)
+    res["coverage_by_year"] = R[R["theatre"] == TH[0]].groupby("year")["covered"].sum().astype(int).to_dict()
+    C = R[R["covered"]]
+    for flag in ("alert", "deteriorated", "any", "event_prev3"):
+        for since in (2018, 2021):
+            D = C[C["year"] >= since]
+            ev_m, calm = D[D["event"]], D[~D["event"]]
+            n, k = len(ev_m), int(ev_m[flag].sum())
+            p0 = float(calm[flag].mean()) if len(calm) else float("nan")
+            tabs = [(int((g[flag] & g["event"]).sum()), int((g[flag] & ~g["event"]).sum()), int((~g[flag] & g["event"]).sum()),
+                     int((~g[flag] & ~g["event"]).sum())) for _, g in D.groupby("theatre")]
+            orr, p_cmh = _cmh(tabs)
+            res[f"{flag}_{since}"] = {"event_months": n, "flagged_event_months": k, "hit_rate": k / n if n else float("nan"),
+                                      "calm_months": int(len(calm)), "calm_flag_rate": p0, "binom_p": _binom_greater(k, n, p0),
+                                      "within_theatre_odds_ratio": orr, "within_theatre_cmh_p": p_cmh,
+                                      "precision": float(D.loc[D[flag], "event"].mean()) if D[flag].any() else float("nan")}
+    d21 = res.get("any_2021", {})
+    res["passes_plan_rule"] = bool(d21 and d21["hit_rate"] > d21["calm_flag_rate"] and d21["binom_p"] < 0.05)
+    with open(os.path.join(OUT, "cw_results.json"), "w") as f:
+        json.dump(res, f, indent=1, default=str)
+    R.to_csv(os.path.join(OUT, "cw_theatre_months.csv.gz"), index=False)
+    print(json.dumps(res, indent=1, default=str))
+    return res
+
+
+# ------------------------------------------------------------------ Part 4: Polymarket (plan question 4), description only
+PMDIR = os.path.join(ROOT, "backtest", "predstudy", "data", "polymarket")
+PM_THEATRE = {   # question text -> theatre (a market can name more than one)
+    "ukraine": r"ukrain|kyiv|crimea|donbas|donetsk|zaporizh|kharkiv|odesa|kursk|putin.*zelensk|zelensk",
+    "europe_east": r"poland|polish|baltic|lithuania|latvia|estonia|finland|moldova|nato (?:country|member|territory)|article 5",
+    "iran": r"\biran|tehran|hormuz|irgc|khamenei|fordow|natanz",
+    "yemen": r"yemen|houthi|red sea",
+    "israel": r"israel|gaza|hamas|hezbollah|lebanon|syria|west bank|idf|netanyahu",
+    "taiwan": r"taiwan",
+    "scs": r"south china sea|philippin|scarborough|second thomas",
+    "korea": r"north korea|kim jong|pyongyang|south korea",
+    "southasia": r"\bindia\b|\bindian\b|pakistan|kashmir",
+    "libya": r"libya", "sudan": r"sudan|\brsf\b|el fasher|khartoum", "drc": r"congo|\bdrc\b|rwanda|\bm23\b|goma",
+    "venezuela": r"venezuela|maduro|caracas|guyana|essequibo",
+}
+
+
+def _logit(p):
+    p = np.clip(p, 0.005, 0.995)
+    return np.log(p / (1 - p))
+
+
+def run_poly():
+    import re
+    mk = pd.read_csv(os.path.join(PMDIR, "markets.csv.gz"), keep_default_na=False, dtype={"id": str})
+    px = pd.read_csv(os.path.join(PMDIR, "prices_daily.csv.gz"), dtype={"id": str})
+    px["date"] = pd.to_datetime(px["date"])
+    px = px.sort_values(["id", "date"]).drop_duplicates(["id", "date"], keep="last")
+    th_of = {}
+    for mid, q in zip(mk["id"], mk["question"]):
+        ts = [t for t, r in PM_THEATRE.items() if re.search(r, q, re.I)]
+        if ts:
+            th_of[mid] = ts
+    res = {"markets": int(len(mk)), "markets_with_prices": int(px["id"].nunique()), "mapped": len(th_of),
+           "price_rows": int(len(px)), "first_price": str(px["date"].min().date()) if len(px) else None}
+    res["mapped_by_theatre"] = {t: sum(t in v for v in th_of.values()) for t in TH}
+    # daily log-odds per market on a full calendar, then 7-day change ending the day before
+    chg = []
+    for mid, g in px[px["id"].isin(th_of)].groupby("id"):
+        s = g.set_index("date")["p_yes"].astype(float)
+        s = s.reindex(pd.date_range(s.index.min(), s.index.max(), freq="D")).ffill(limit=3)
+        L = pd.Series(_logit(s.values), index=s.index)
+        d7 = (L.shift(1) - L.shift(8)).dropna()
+        lvl = L.shift(1).dropna()
+        for t in th_of[mid]:
+            chg.append(pd.DataFrame({"theatre": t, "id": mid, "date": d7.index, "d7": d7.values, "lvl": lvl.reindex(d7.index).values}))
+    if not chg:
+        res["note"] = "no mapped market has a price history"
+    else:
+        Cg = pd.concat(chg)
+        TD = Cg.groupby(["theatre", "date"]).agg(d7=("d7", "mean"), d7max=("d7", "max"), lvl=("lvl", "mean"), n=("id", "nunique")).reset_index()
+        ev = _events()
+        ev = ev[ev["date"] >= "2024-01-01"]
+        near = set()
+        for t, d in zip(ev["theatre"], ev["date"]):
+            for k in range(-30, 8):
+                near.add((t, d + pd.Timedelta(days=k)))
+        evs = set(zip(ev["theatre"], ev["date"]))
+        TD["event"] = [(t, d) in evs for t, d in zip(TD["theatre"], TD["date"])]
+        TD["calm"] = [(t, d) not in near for t, d in zip(TD["theatre"], TD["date"])]
+        TD = TD[TD["date"] >= "2024-01-01"]
+        E, Cm = TD[TD["event"]], TD[TD["calm"]]
+        res["events_2024_on"] = int(len(ev))
+        res["events_with_open_market"] = int(len(E))
+        res["events_by_theatre_with_market"] = E.groupby("theatre").size().to_dict()
+        out = {}
+        for col in ("d7", "d7max", "lvl"):
+            num = den = 0.0
+            for t, g in pd.concat([E, Cm]).groupby("theatre"):
+                n1 = int(g["event"].sum())
+                if n1 and n1 < len(g):
+                    num += n1 * V.auc(g["event"].values.astype(int), g[col].values)
+                    den += n1
+            out[col] = {"event_mean": float(E[col].mean()) if len(E) else float("nan"), "calm_mean": float(Cm[col].mean()) if len(Cm) else float("nan"),
+                        "event_median": float(E[col].median()) if len(E) else float("nan"), "calm_median": float(Cm[col].median()) if len(Cm) else float("nan"),
+                        "within_theatre_auc": num / den if den else float("nan")}
+        res["compare"] = out
+        res["event_rows"] = E.assign(date=E["date"].dt.strftime("%Y-%m-%d")).to_dict("records")
+    with open(os.path.join(OUT, "poly_results.json"), "w") as f:
+        json.dump(res, f, indent=1, default=str)
+    print(json.dumps({k: v for k, v in res.items() if k != "event_rows"}, indent=1, default=str))
+    return res
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "gpr"
     if cmd == "gpr":
         run_gpr("--quick" in sys.argv)
+    elif cmd == "cw":
+        run_cw()
+    elif cmd == "poly":
+        run_poly()
     else:
         sys.exit(__doc__)
