@@ -206,9 +206,16 @@ def cw_month_of(slug):
 
 
 def cwissues(frm="201711", to="202611"):
-    """Each monthly CrisisWatch issue's own page (crisisgroup.org/crisiswatch/<trends-and-alerts slug>), live or from its newest Wayback
-    snapshot. The main page only shows the newest issue, so months with no monthly snapshot of it are missing from crisiswatch(); the issue
-    pages fill them. -> data/crisiswatch/crisiswatch_issues.csv.gz (month, list, entry) and issues.json.gz (what each URL gave)."""
+    """Each monthly CrisisWatch issue's own page (crisisgroup.org/crisiswatch/<trends-and-alerts slug>), from its newest Wayback snapshot,
+    for the months the main-page snapshots (crisiswatch()) did not recover; the live site is tried once and dropped if it does not answer.
+    Saves after every month, so a run cut short keeps what it got. -> data/crisiswatch/crisiswatch_issues.csv.gz (month, list, entry) and
+    issues.json.gz (what each URL gave)."""
+    have = set()
+    try:
+        with gzip.open(os.path.join(OUT, "crisiswatch", "crisiswatch_wayback.csv.gz"), "rt", newline="") as f:
+            have = {r["month"] for r in csv.DictReader(f) if re.fullmatch(r"\d{4}-\d{2}-01", r["month"])}
+    except OSError:
+        pass
     seen = {}
     for u in ("crisisgroup.org/crisiswatch/*", "www.crisisgroup.org/crisiswatch/*"):
         snaps = cdx(u, frm=frm, to=to, collapse="urlkey")
@@ -216,15 +223,20 @@ def cwissues(frm="201711", to="202611"):
         for s in snaps:
             path = urllib.parse.urlsplit(s["original"]).path.rstrip("/")
             mon = cw_month_of(path.rsplit("/", 1)[-1].lower())
-            if mon and "trends" in path.lower():
+            if mon and "trends" in path.lower() and mon not in have:
                 seen.setdefault(mon, set()).add(path)
-    rows, raw = set(), []
+    print("issue months to read:", len(seen), sorted(seen), flush=True)
+    rows, raw, live = set(), [], True
     for mon in sorted(seen):
         for path in sorted(seen[mon]):
             got = []
-            for src, url in (("live", "https://www.crisisgroup.org" + path), ("wayback", f"https://web.archive.org/web/{to}id_/https://www.crisisgroup.org{path}")):
-                t = get(url, tries=2, timeout=120)
+            srcs = ([("live", "https://www.crisisgroup.org" + path)] if live else []) + \
+                [("wayback", f"https://web.archive.org/web/{to}id_/https://www.crisisgroup.org{path}")]
+            for src, url in srcs:
+                t = get(url, tries=2, timeout=45)
                 time.sleep(1.0)
+                if src == "live" and not t:
+                    live = False            # one failure: the site blocks the runner, use the archive only
                 if t:
                     got = cw_lists(html.unescape(t), mon)
                     raw.append({"month": mon, "path": path, "src": src, "n": len(got), "bytes": len(t)})
@@ -233,11 +245,11 @@ def cwissues(frm="201711", to="202611"):
             rows |= set(got)
             if got:
                 break
+        print(mon, "rows so far", len(rows), flush=True)
+        save_csv(os.path.join(OUT, "crisiswatch", "crisiswatch_issues.csv.gz"), ["month", "list", "entry"], sorted(rows))
+        with gzip.open(os.path.join(OUT, "crisiswatch", "issues.json.gz"), "wt") as f:
+            json.dump(raw, f)
     print("months with an issue:", len({r[0] for r in rows}), flush=True)
-    save_csv(os.path.join(OUT, "crisiswatch", "crisiswatch_issues.csv.gz"), ["month", "list", "entry"], sorted(rows))
-    with gzip.open(os.path.join(OUT, "crisiswatch", "issues.json.gz"), "wt") as f:
-        json.dump(raw, f)
-
 
 # ------------------------------------------------------------------ Polymarket
 PLACE = (r"ukrain|russia|kyiv|crimea|nato|poland|baltic|lithuania|latvia|estonia|finland|moldova|iran|tehran|israel|gaza|hamas|hezbollah|lebanon|"
