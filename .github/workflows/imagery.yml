@@ -33,7 +33,7 @@ jobs:
       ONLY: ${{ github.event.inputs.only || 'all' }}
       WARWATCH_CHIPS: ${{ github.workspace }}/chips
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install image libraries
         run: python3 -m pip install --quiet --break-system-packages numpy scipy rasterio pillow
       - name: Restore the current chips

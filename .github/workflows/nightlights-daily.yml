@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install the HDF5 reader
         run: python3 -m pip install -q h5py numpy
       - name: Read the latest nights

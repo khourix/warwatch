@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install radar libraries
         run: python3 -m pip install --quiet --break-system-packages numpy scipy rasterio
       - name: Count vessels
