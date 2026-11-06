@@ -8,7 +8,8 @@ events moves it). Days within 30 days after an event are left out, as in validat
 
 The two hidden models are scored the same way on their own records: the armed-force model (forward/log_armed.csv) on armed-force events, and
 the 7-day strike-wave model (forward/log_wave.csv) on the strike waves its feeds show, 7 days ahead, and the model without the conflict-history
-terms (forward/log_nohist.csv, candidate S1 of docs/PREDSTUDY_NEXT_PLAN.md) on the page's events. Each report ends with the forward gates;
+terms (forward/log_nohist.csv, candidate S1 of docs/PREDSTUDY_NEXT_PLAN.md) on the page's events, as is the free LLM forecaster
+(forward/log_llm.csv, warwatch/llmcast.py). Each report ends with the forward gates;
 the first target to pass them on 90 or more matured days is the one to promote (docs/METHODOLOGY.md, Phase C).
 """
 import datetime as dt
@@ -44,7 +45,7 @@ def auc(pairs):
 
 FORWARD_DAYS = 90     # matured forecast days before the first interim report
 READ_DAYS = 365       # the one read that can promote a target, fixed in advance (docs/PREDSTUDY_PLAN.md and the prediction study)
-TARGETS = 4           # forecasts read (main, armed, wave, and the no-history candidate): the shuffled-timing p must beat 0.05 / TARGETS
+TARGETS = 5           # forecasts read (main, armed, wave, the no-history candidate, and the LLM forecaster): the shuffled-timing p must beat 0.05 / TARGETS
 SHIFTS = 1000
 
 
@@ -144,6 +145,7 @@ KINDS = {   # record, model file, report, title, events, horizon
     "main": (model.FORWARD, None, "FORWARD.md", "", lambda: model.load_events(), 30),
     "armed": (model.FORWARD_ARMED, model.ARMED_MODEL, "FORWARD_ARMED.md", ", armed-force shadow model (hidden from the page)", lambda: model.load_events(types=model.ARMED_TYPES), 30),
     "nohist": (model.FORWARD_NOHIST, model.NOHIST_MODEL, "FORWARD_NOHIST.md", ", model without conflict-history terms (candidate S1, hidden from the page)", lambda: model.load_events(), 30),
+    "llm": (os.path.join(model.ROOT, "forward", "log_llm.csv"), None, "FORWARD_LLM.md", ", free LLM forecaster (Gemini, hidden from the page)", lambda: model.load_events(), 30),
     "wave": (model.FORWARD_WAVE, model.WAVE_MODEL, "FORWARD_WAVE.md", ", 7-day strike-wave shadow model (hidden from the page)", lambda: model.wave_events(), model.WAVE_HORIZON),
 }
 
@@ -253,7 +255,7 @@ def main(kind="main"):
     L += ["", "## Forward gates", "",
           f"Read once, when {READ_DAYS} days have matured: Brier skill against the base rate above 0, the lower end of the AUC interval (resampling theatre-months) "
           f"above 0.5, and the AUC beating a shuffled-timing control (each theatre's probabilities shifted in time against its outcomes, {SHIFTS:,} shifts) at "
-          f"p < 0.05 / {TARGETS} = {0.05 / TARGETS:.4f}, one share for each forecast read (any event in 30 days, armed force in 30 days, a strike wave in 7 days, and any event in 30 days without the conflict-history terms). "
+          f"p < 0.05 / {TARGETS} = {0.05 / TARGETS:.4f}, one share for each forecast read (any event in 30 days, armed force in 30 days, a strike wave in 7 days, any event in 30 days without the conflict-history terms, and the LLM forecaster's any event in 30 days). "
           f"The first two alone pass as often for a forecast with its timing scrambled as for the real one, so the third is what tests timing. "
           f"From {FORWARD_DAYS} matured days the same numbers are shown as an interim description; only the read at {READ_DAYS} days can promote a target.", ""]
     if not g["ready"]:
@@ -271,7 +273,7 @@ def main(kind="main"):
 
 if __name__ == "__main__":
     rc = main()
-    for k in ("armed", "wave", "nohist"):
+    for k in ("armed", "wave", "nohist", "llm"):
         if os.path.exists(KINDS[k][0]):
             rc = main(k) or rc
     sys.exit(rc)
