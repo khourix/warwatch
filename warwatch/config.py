@@ -55,9 +55,14 @@ THEATRES = {
 # PR when a line should change; never by the model or the scores. It says what is already happening, so a war under way does
 # not read like a calm theatre whose signals happen to sit near their usual range. Theatres without a line show none.
 CONTEXT = {
-    "ukraine": ("War under way", "2026-10"),
-    "sudan": ("War under way", "2026-10"),
-    "israel": ("Conflict under way", "2026-10"),
+    "ukraine": ("War under way", "2026-11"),
+    "iran": ("Strikes at sea", "2026-11"),
+    "gulf": ("Houthi strikes on Saudi Arabia", "2026-11"),
+    "lebanon": ("Israeli strikes under way", "2026-11"),
+    "yemen": ("Conflict under way", "2026-11"),
+    "israel": ("Conflict under way", "2026-11"),
+    "sudan": ("War under way", "2026-11"),
+    "drc": ("Conflict under way", "2026-11"),
 }
 REGIONS = [
     ("mideast", "Middle East", ["iran", "israel", "yemen", "iraq", "gulf", "lebanon", "syria"]),
