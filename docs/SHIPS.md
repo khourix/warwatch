@@ -4,6 +4,8 @@ WarWatch reads ships from two free sources. Free live AIS covers European waters
 
 Paid AIS (MarineTraffic, Spire, Kpler) is ruled out. Scraping MarineTraffic is ruled out too.
 
+A proposal to widen coverage with a free source, Open Waters AIS, is in `docs/AIS_PLAN.md`, with the measurements and the one open licence question. It is not built yet.
+
 Code: `warwatch/aiswatch.py` (live AIS), `warwatch/gfw.py` (Global Fishing Watch). Workflows: `.github/workflows/ais.yml`, `.github/workflows/slow.yml`.
 
 ## Live AIS (aisstream.io)
@@ -32,7 +34,9 @@ The `aisday_*` and `strait_*` series are not in the catalog yet. They need a few
 
 ### Coverage
 
-aisstream relays volunteer receivers. In a four-minute test in October 2026 it heard many ships in the Baltic, the Black Sea and the Mediterranean, one ship at Hormuz, and none in the Red Sea. So live AIS is for the Eastern flank, Ukraine and Israel. The Gulf and the Red Sea rely on Global Fishing Watch.
+aisstream relays volunteer receivers. In a four-minute test in October 2026 it heard many ships in the Baltic, the Black Sea and the Mediterranean, one ship at Hormuz, and none in the Red Sea. A full day of the collector on 24 October 2026 kept 4,372 ships, one of them in the Gulf and none in the Red Sea. So live AIS is for the Eastern flank, Ukraine and Israel. The Gulf and the Red Sea rely on Global Fishing Watch.
+
+Open Waters AIS, a free network that re-serves AISHub, has one volunteer station near Dubai. On 24 October 2026 it returned 1,034 ships in the Gulf box, 129 of them under way, and none in the Red Sea. `docs/AIS_PLAN.md` has the boxes and the counts.
 
 ## Global Fishing Watch
 
