@@ -1565,10 +1565,6 @@ class ModelRan(unittest.TestCase):
                 self.assertIs(json.load(f)["model_ran"], False)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TestEngine(unittest.TestCase):
     def test_modified_z_matches_formula_and_winsorizes(self):
         import stats
@@ -1930,3 +1926,17 @@ class Pages(unittest.TestCase):
             pages.build(site, dist)
         self.assertEqual(self._read(site, "index.html"), self.old)
         self.assertFalse(os.path.exists(os.path.join(site, "iran")))
+
+
+class MainGuardIsLast(unittest.TestCase):
+    """CI runs this file as a script; a class below the guard would silently never run."""
+
+    def test_no_test_class_after_main_guard(self):
+        with open(__file__) as f:
+            src = f.read()
+        guard = src.rindex('if __name__ == "__main__":')
+        self.assertNotIn("\nclass ", src[guard:])
+
+
+if __name__ == "__main__":
+    unittest.main()
