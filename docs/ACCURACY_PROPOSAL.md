@@ -91,3 +91,11 @@ Cost: $0. Keys go in Actions secrets (`GEMINI_API_KEY`, `GROQ_API_KEY`); each ro
 | 5 | P5 tells, P6 refit | Monthly refit and tells record as usual |
 
 What success looks like, stated now so it cannot move: the primary forecast passes the forward gates at its 365-day read with a within-theatre AUC of 0.60 or more. Anything less is reported as it is.
+
+## Decisions
+
+| Date | Decision |
+|---|---|
+| 2026-11-09 | Owner approved P1 (event desk) as the first build. Plan: [EVENTDESK_PLAN.md](EVENTDESK_PLAN.md). |
+| 2026-11-09 | Owner approved P3 (one primary forecast read under the forward gates). It is pre-registered in its own plan file before the primary forecast logs its first day; until then the forward gates are read as now. |
+| 2026-11-09 | The `llm-forecast` workflow (#61) is switched off until P2 rebuilds it, so adding a Gemini key cannot start a forecast without news. |
