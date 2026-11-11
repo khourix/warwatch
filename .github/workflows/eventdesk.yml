@@ -1,0 +1,59 @@
+name: eventdesk
+# Event desk (docs/EVENTDESK_PLAN.md). Daily: the pre-registered blind test, a day's free quota at a time (Groq, then Gemini), then the
+# report. Mondays: live candidates since events_through.txt, only once the blind test has passed (backtest/eventdesk/verdict.json).
+# Never writes warwatch/data/events.csv. Keys: GROQ_API_KEY and GEMINI_API_KEY (free); a missing key skips that provider.
+# No push trigger on purpose: a push must not start LLM calls or commits on a branch.
+on:
+  schedule:
+    - cron: "40 3 * * *"
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "blindtest, report or propose"
+        required: false
+        default: "blindtest"
+permissions:
+  contents: write
+concurrency:
+  group: warwatch-eventdesk
+  cancel-in-progress: false
+jobs:
+  desk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    steps:
+      - uses: actions/checkout@v6
+      - name: Blind test (Groq, then Gemini) and report
+        if: github.event.schedule == '40 3 * * *' || inputs.mode == 'blindtest' || inputs.mode == 'report'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_MODEL: ${{ vars.GROQ_MODEL }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: |
+          if [ "${{ inputs.mode }}" != "report" ]; then
+            python3 warwatch/eventdesk.py blindtest --provider groq --budget 40
+            python3 warwatch/eventdesk.py blindtest --provider gemini --budget 200
+          fi
+          python3 warwatch/eventdesk.py report
+      - name: Live candidates
+        if: github.event.schedule == '0 5 * * 1' || inputs.mode == 'propose'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python3 warwatch/eventdesk.py propose
+      - name: Commit
+        run: |
+          git config user.name "warwatch-bot"
+          git config user.email "warwatch-bot@users.noreply.github.com"
+          for p in backtest/eventdesk docs/EVENTDESK_TEST.md warwatch/data/event_candidates.csv docs/EVENT_CANDIDATES.md; do
+            if [ -e "$p" ]; then git add "$p"; fi
+          done
+          git diff --cached --quiet && exit 0
+          git commit -qm "eventdesk: $(date -u +%FT%H:%MZ)"
+          for i in 1 2 3; do
+            git pull --rebase -q -X theirs origin main && git push -q && exit 0
+            sleep 5
+          done
+          echo "push failed"; exit 1
