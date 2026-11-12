@@ -1106,6 +1106,10 @@ class TestModel(unittest.TestCase):
         finally:
             os.environ.pop("WARWATCH_LIVE", None)
         self.assertLess(store.ok_age_hours("job_series"), 1)
+        store.cache_save("job_series", pts[:-12], stamp=False)       # the job ran and stamped, but its source gave nothing new for 12 days
+        out = self._collect([mk()])
+        self.assertEqual(out["job_series"]["status"], "error")
+        self.assertIn("newest data", out["job_series"]["error"])
 
     def test_a_successful_fetch_is_stamped(self):
         import store

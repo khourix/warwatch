@@ -67,12 +67,18 @@ def stale_limit(s):
 
 
 def data_age(s, pts, now):
-    """(hours, limit, what the hours count from) for a series whose newest data is pts."""
+    """(hours, limit, what the hours count from) for a series whose newest data is pts. A series read from a cache is held to
+    both clocks, because the job that fills it can succeed while its source has stopped (a fetch that keeps the old cache on
+    an error still stamps): whichever is further past its limit is returned."""
     seen = None if s.get("local") else store.ok_last(s["id"])
-    if seen:
-        return store.hours_since(seen, now), stale_limit(s), f"last fetched {seen}"
+    stamp = (store.hours_since(seen, now), stale_limit(s), f"last fetched {seen}") if seen else None
+    if stamp and not s.get("cached"):
+        return stamp
     limit = LOCAL_STALE_H if s.get("local") else max(stale_limit(s), POINT_STALE_H.get(s["kind"], 7 * 24))
-    return (store.hours_since(pts[-1][0], now) if pts else None), limit, f"newest data {pts[-1][0] if pts else 'none'}"
+    point = ((store.hours_since(pts[-1][0], now) if pts else None), limit, f"newest data {pts[-1][0] if pts else 'none'}")
+    if not stamp or point[0] is None:
+        return stamp or point
+    return max(stamp, point, key=lambda c: (c[0] or 0) / c[1])
 
 
 def _host(url):
