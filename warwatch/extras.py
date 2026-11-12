@@ -498,7 +498,8 @@ _HUB_LAST = [0.0]
 
 
 def fetch_hub(lat, lon, radius=250):
-    """One adsb.lol point query, spaced HUB_GAP from the previous one, with three tries 15 and 30 s apart."""
+    """One adsb.lol point query, spaced HUB_GAP from the previous one: three tries, with 15, 30 and 45 s waits after each
+    failed one (sources.get also waits after the last), so a hub that times out every time costs up to about 4.5 minutes."""
     gap = _HUB_LAST[0] + HUB_GAP - time.monotonic()
     if gap > 0:
         time.sleep(gap)

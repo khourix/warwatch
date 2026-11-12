@@ -181,7 +181,8 @@ jobs:
           for spec in ais.yml:25 news.yml:355 imagery.yml:355; do
             wf=${spec%%:*}; every=${spec##*:}
             last=$(gh run list -R "$R" -w "$wf" -L 5 --json createdAt,status \
-              --jq 'if any(.[]; .status != "completed") then "busy" else (.[0].createdAt // "") end')
+              --jq 'if any(.[]; .status != "completed") then "busy" else (.[0].createdAt // "") end') \
+              || { echo "$wf: could not read its runs, skipped this cycle"; continue; }
             if [ "$last" = "busy" ]; then echo "$wf: a run is queued or running"; continue; fi
             age=$(( (now - $(date -d "${last:-1970-01-01T00:00:00Z}" +%s)) / 60 ))
             if [ "$age" -ge "$every" ]; then echo "$wf: last run $age min ago, starting one"; gh workflow run "$wf" -R "$R" --ref main

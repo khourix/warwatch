@@ -392,7 +392,12 @@ def adsb_classes(p, box):
 def fetch_adsb():
     """One call per run: every ADS-B series reads the same snapshot."""
     if "mil" not in _ADSB:
-        _ADSB["mil"] = get("https://api.adsb.lol/v2/mil")
+        try:
+            _ADSB["mil"] = get("https://api.adsb.lol/v2/mil")
+        except Exception as e:   # kept: the 75 adsb_ series and the map must not each wait out the same outage
+            _ADSB["mil"] = e
+    if isinstance(_ADSB["mil"], Exception):
+        raise _ADSB["mil"]
     return _ADSB["mil"]
 
 

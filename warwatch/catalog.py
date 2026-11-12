@@ -49,6 +49,14 @@ def add(id, label, domain, theatre, kind, lag, why, fetch, direction="up", needs
                        scale=scale_for(id) if kind == "daily" else None))
 
 
+def _cached(go):
+    """Marks a fetch that, in the dashboard build, reads what another job wrote (history/cache, GDELT files, the radar and
+    imagery jobs) instead of asking the source. run.collect judges such a series by when that job last fetched it, not by
+    this read succeeding."""
+    go.cached = True
+    return go
+
+
 def _slow(sid, fn):
     """Rate-limited sources run in slow.yml and cache; the build reads the cache."""
     def go():
@@ -58,7 +66,7 @@ def _slow(sid, fn):
         if not pts:
             raise C.Pending("first refresh pending (rate-limited source; slow job fills it)")
         return pts
-    return go
+    return _cached(go)
 
 
 def _snap(sid, fn):
@@ -358,7 +366,7 @@ def _gpsjam(th):
         if not pts:
             raise C.Pending("first refresh pending (GPSJam history fills a few weeks per run)")
         return pts
-    return go
+    return _cached(go)
 
 
 def _notam(th):
@@ -369,7 +377,7 @@ def _notam(th):
         if not pts:
             raise C.Pending("first refresh pending (FAA NOTAM snapshots start now)")
         return pts
-    return go
+    return _cached(go)
 
 
 for th in C.FIRS:
@@ -463,7 +471,7 @@ def _news(th):
         if not pts:
             raise C.Pending("first refresh pending (news history fills from the news job)")
         return store.seed(sid, pts)   # the back-filled days before the live cache starts, when there are any
-    return go
+    return _cached(go)
 
 
 def _gdelt(th, roots, share=False):
@@ -474,7 +482,7 @@ def _gdelt(th, roots, share=False):
         if not pts:
             raise C.Pending("first refresh pending (GDELT history fills from the news job)")
         return pts
-    return go
+    return _cached(go)
 
 
 GD = "https://www.gdeltproject.org/"
@@ -549,7 +557,7 @@ def _fires_anom(th):
         if not pts:
             raise C.Pending("first refresh pending (the map run fills it; the archive replay seeds the history)")
         return pts
-    return go
+    return _cached(go)
 
 
 for th in C.FIRMS_BOX:
@@ -574,7 +582,7 @@ def _newsq(sid, query):
         if not pts:
             raise C.Pending("first refresh pending (news history fills from the news job)")
         return pts
-    return go
+    return _cached(go)
 
 
 for th, q in SEA.items():
@@ -631,7 +639,7 @@ def _sar(box):
         if not pts:
             raise C.Pending("first refresh pending (the radar job fills this; history backfills in slices)")
         return pts
-    return go
+    return _cached(go)
 
 
 for box, th, nm in (("hormuz", "iran", "the Strait of Hormuz"), ("bab_el_mandeb", "yemen", "Bab el-Mandeb"), ("gulf_of_aden", "yemen", "the Gulf of Aden")):
@@ -647,7 +655,7 @@ def _bases(sid):
         if not pts:
             raise C.Pending("waiting for the imagery job to write the base counts")
         return pts
-    return go
+    return _cached(go)
 
 
 def _base_theatres():
@@ -760,7 +768,7 @@ def _preforce(th):
         if not pts:
             raise C.Pending("first refresh pending (GDELT history fills from the news job)")
         return pts
-    return go
+    return _cached(go)
 
 
 for th in C.GNEWS:
@@ -893,6 +901,7 @@ for _s in SERIES:
 LOCAL = ("flights_", "bizjet_", "package_", "adsb_")
 for _s in SERIES:
     _s["local"] = _s["id"].startswith(LOCAL)
+    _s["cached"] = _s["local"] or bool(getattr(_s["fetch"], "cached", False))
 
 NOT_TESTED = ("flights_", "bizjet_", "darkships_", "darkshare_", "loiter_", "portcalls_", "choke_", "navwarn_")
 for _s in SERIES:
