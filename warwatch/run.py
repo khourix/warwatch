@@ -50,20 +50,79 @@ def _fetch(s, rec):
 
 DOWN_AFTER = 3          # a source whose series fail this many times in a row is skipped for the rest of the run
 FETCH_BUDGET = 30 * 60  # seconds; once collecting has taken this long, failed series go straight to their last good copy
+# Old data only counts toward a score while it is young: a frozen 30-day count from a feed that had been down for two weeks
+# (NGA, October to November 2026) was scored as if it were today's. Age is the hours since the series was last fetched from
+# its source (store.ok_stamp, written by this build or by the job that fills its cache), up to these limits:
+MAX_STALE_H = {"daily": 72, "monthly": 35 * 24}
+# With no fetch on record (a series filled by a job that does not stamp, a repo archive, or the first run after stamps began),
+# the newest data point is the clock, and it trails the fetch by the source's own lag, so the limits are wider:
+POINT_STALE_H = {"daily": 7 * 24, "monthly": 92 * 24}     # monthly trade and contract data run up to three months late
+LOCAL_STALE_H = 4 * 24      # the adsb.lol daily archives run one or two days behind
+LONG_DOWN_H = 7 * 24        # a source down this long is flagged on the health page and as a build warning
+
+
+def stale_limit(s):
+    """Hours a series' data may be scored for after its last fetch: its kind's limit, or three refresh intervals if longer."""
+    return max(MAX_STALE_H.get(s["kind"], 72), 3 * (s.get("every") or 0))
+
+
+def data_age(s, pts, now):
+    """(hours, limit, what the hours count from) for a series whose newest data is pts. A series read from a cache is held to
+    both clocks, because the job that fills it can succeed while its source has stopped (a fetch that keeps the old cache on
+    an error still stamps): whichever is further past its limit is returned."""
+    seen = None if s.get("local") else store.ok_last(s["id"])
+    stamp = (store.hours_since(seen, now), stale_limit(s), f"last fetched {seen}") if seen else None
+    if stamp and not s.get("cached"):
+        return stamp
+    limit = LOCAL_STALE_H if s.get("local") else max(stale_limit(s), POINT_STALE_H.get(s["kind"], 7 * 24))
+    point = ((store.hours_since(pts[-1][0], now) if pts else None), limit, f"newest data {pts[-1][0] if pts else 'none'}")
+    if not stamp or point[0] is None:
+        return stamp or point
+    return max(stamp, point, key=lambda c: (c[0] or 0) / c[1])
+
+
+def _host(url):
+    return url.split("/")[2] if url.count("/") >= 2 else url
 
 
 def collect(only=None):
     """Fetch every series. A failed fetch is retried once at the end of the
     run (rate limits clear), then falls back to the last good copy, shown as
     stale. No copy and no data means the series is an error, never a guess.
+    Data older than its limit (data_age) is still shown, but the series is an error and is kept out of the score: a stale
+    copy, and equally a cache that the job filling it has stopped refreshing.
 
     A source that is down (NGA's feed answering 503, PortWatch timing out) fails slowly, once per series, and a dozen
     of those used to push the build past its 55-minute limit, so no page was published at all. Two guards keep the
     build inside it: after DOWN_AFTER failures in a row from one source (the series' url), its remaining series are
-    not fetched this run; and the retry pass is skipped for a source that is down, and stops once FETCH_BUDGET is spent."""
+    not fetched this run; and the retry pass is skipped for a source that is down, and stops once FETCH_BUDGET is spent.
+    Series that only read files in the repository (catalog.LOCAL) are never skipped and never count toward a source being down."""
     out, failed = [], []
     t0 = time.monotonic()
     fails = {}      # source url -> failures in a row this run
+    now = dt.datetime.now(dt.timezone.utc)
+    live = bool(os.environ.get("WARWATCH_LIVE"))     # the news and slow jobs: cached series are really fetched
+    gated = lambda s: bool(s.get("url")) and not s.get("local")
+    down = {}       # source -> [hours down, series ids], for the ones down longer than LONG_DOWN_H
+
+    def fetched(s):
+        if live or not s.get("cached"):
+            store.ok_stamp(s["id"], now)
+
+    def expire(s, rec, pts, why_old, show=None):
+        """Too old to score: shown (show, or pts), counted as failed, kept out of the score. Returns True when it expired."""
+        age, limit, basis = data_age(s, pts, now)
+        if age is None or age <= limit:
+            return False
+        rec.update(status="error", stale=pts[-1][0] if pts else "", points=pts if show is None else show,
+                   error=f"{why_old} {age / 24:.0f} days ({basis}); shown but not scored. {rec['error']}".strip()[:200])
+        print(f"expired       {s['id']:28} n={len(pts)} {basis}, {age / 24:.1f} days", flush=True)
+        if age > LONG_DOWN_H:
+            d = down.setdefault(_host(s.get("url") or s["id"]), [0.0, []])
+            d[0] = max(d[0], age)
+            d[1].append(s["id"])
+        return True
+
     for s in catalog.SERIES:
         if only and s["id"] not in only:
             continue
@@ -73,24 +132,30 @@ def collect(only=None):
         missing = [k for k in s["needs"] if not os.environ.get(k)]
         if missing:
             rec.update(status="awaiting_key", error="needs " + ", ".join(missing))
-        elif src and fails.get(src, 0) >= DOWN_AFTER:
+        elif gated(s) and fails.get(src, 0) >= DOWN_AFTER:
             rec.update(status="error", error=f"not fetched: {src} failed {DOWN_AFTER} times in a row this run")
             failed.append((s, rec))
         else:
             try:
                 _fetch(s, rec)
-                fails[src] = 0
+                fetched(s)
+                if gated(s):
+                    fails[src] = 0
+                if s.get("cached") and not live:     # read from a cache: as fresh as the job that fills it
+                    expire(s, rec, rec["points"], "not refreshed for")
             except C.Pending as e:    # working, history still filling: shown as collecting, not as a failure
                 rec.update(status="collecting", error=str(e)[:200])
             except Exception as e:
                 rec.update(status="error", error=str(e)[:200])
                 failed.append((s, rec))
-                fails[src] = fails.get(src, 0) + 1
+                if gated(s):
+                    fails[src] = fails.get(src, 0) + 1
         out.append(rec)
         print(f"{rec['status']:13} {s['id']:28} n={len(rec['points'])} {rec['error'][:80]}", flush=True)
-    retry = [(s, rec) for s, rec in failed if not (s.get("url") and fails.get(s["url"], 0) >= DOWN_AFTER)]
+    retry = [(s, rec) for s, rec in failed if not (gated(s) and fails.get(s["url"], 0) >= DOWN_AFTER)]
     print(f"collect: {len(failed)} failed, {len(retry)} to retry, {time.monotonic() - t0:.0f}s spent", flush=True)
     if retry and not os.environ.get("WARWATCH_NO_RETRY"):
+        extras.forget_failures()
         time.sleep(60)
         for s, rec in retry:
             if time.monotonic() - t0 > FETCH_BUDGET:
@@ -99,18 +164,29 @@ def collect(only=None):
             try:
                 _fetch(s, rec)
                 rec.update(status="ok", error="")
+                fetched(s)
                 print(f"retry ok      {s['id']:28} n={len(rec['points'])}", flush=True)
             except Exception as e:
                 rec["error"] = str(e)[:200]
                 time.sleep(20)
     for s, rec in failed:
-        if rec["status"] == "error":
-            old = store.cache_load(s["id"])
-            if old:
-                rec.update(status="ok", stale=old[-1][0],
-                           points=old[:-s["drop"]] if s["drop"] else old)
-                print(f"stale         {s['id']:28} n={len(rec['points'])} last good {old[-1][0]}", flush=True)
+        if rec["status"] != "error":
+            continue
+        old = store.cache_load(s["id"])
+        if not old:
+            continue
+        pts = old[:-s["drop"]] if s["drop"] else old
+        if not expire(s, rec, old, "down", show=pts):
+            rec.update(status="ok", stale=old[-1][0], points=pts)
+            print(f"stale         {s['id']:28} n={len(pts)} last good {old[-1][0]}", flush=True)
+    collect.long_down = [f"{h}: no fresh data for {v[0] / 24:.0f} days. {len(v[1])} series ({', '.join(v[1][:4])}{'...' if len(v[1]) > 4 else ''}) "
+                         "are shown from their last copy and kept out of the score" for h, v in sorted(down.items())]
+    for msg in collect.long_down:
+        print(f"::warning title=Source down::{msg}", flush=True)
     return out
+
+
+collect.long_down = []
 
 
 def score(series):
@@ -169,6 +245,8 @@ def main():
             return
     res = evaluate(series)
     ex = demo.extras(a.demo) if a.demo else extras.collect()
+    if not a.demo:
+        ex.setdefault("errors", []).extend(collect.long_down)
     model_ran = False if a.demo else run_model(res, ex)
     try:   # the timing tells never set a level; like the model they must never break the build
         res["tells"] = tells.evaluate(res["series"])

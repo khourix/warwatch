@@ -101,6 +101,55 @@ def cache_rows_save(name, rows):
         csv.writer(f).writerows(rows)
 
 
+OK_EVERY_H = 6   # a fresh stamp is rewritten at most this often, so the history commits do not touch every stamp on every build
+
+
+def ok_stamp(series_id, now=None):
+    """Record that the series was just fetched from its source (cache/<id>.ok, UTC). One small file per series, so the build and
+    the jobs that fill caches (news, slow) never write the same file."""
+    now = now or dt.datetime.now(dt.timezone.utc)
+    age = ok_age_hours(series_id, now)
+    if age is not None and age < OK_EVERY_H:
+        return
+    d = os.path.dirname(cache_path(series_id))
+    os.makedirs(d, exist_ok=True)
+    with open(os.path.join(d, f"{series_id}.ok"), "w") as f:
+        f.write(now.strftime("%Y-%m-%dT%H:%M"))
+
+
+def ok_last(series_id):
+    try:
+        with open(os.path.join(os.path.dirname(cache_path(series_id)), f"{series_id}.ok")) as f:
+            return f.read().strip()
+    except OSError:
+        return None
+
+
+def ok_age_hours(series_id, now=None):
+    """Hours since the series was last fetched from its source, or None if no fetch is on record."""
+    t = ok_last(series_id)
+    return hours_since(t, now) if t else None
+
+
+def hours_since(stamp, now=None):
+    """Hours from a stamp ("YYYY-mm-dd" or "YYYY-mm-ddTHH:MM", UTC) to now, or None if it does not parse."""
+    now = now or dt.datetime.now(dt.timezone.utc)
+    if isinstance(stamp, str) and len(stamp) == 7:   # a monthly label: the month is complete at the start of the next one
+        try:
+            y, m = int(stamp[:4]), int(stamp[5:7])
+            t = dt.datetime(y + m // 12, m % 12 + 1, 1, tzinfo=dt.timezone.utc)
+            return (now - t).total_seconds() / 3600
+        except ValueError:
+            return None
+    for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d"):
+        try:
+            t = dt.datetime.strptime(stamp[:16] if "T" in stamp else stamp[:10], fmt).replace(tzinfo=dt.timezone.utc)
+            return (now - t).total_seconds() / 3600
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
 def cache_age_hours(series_id):
     """Hours since the series was last fetched in full, or None if never (a checkout's file times are meaningless, so a stamp file is kept)."""
     try:

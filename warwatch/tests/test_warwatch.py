@@ -1034,6 +1034,172 @@ class TestModel(unittest.TestCase):
         self.assertIn("not fetched", out["d5"]["error"])
         self.assertEqual(out["other"]["status"], "ok")               # another source is unaffected
 
+    def _collect(self, series):
+        saved = list(catalog.SERIES)
+        try:
+            catalog.SERIES[:] = series
+            os.environ["WARWATCH_NO_RETRY"] = "1"
+            return {r["id"]: r for r in run.collect()}
+        finally:
+            catalog.SERIES[:] = saved
+            os.environ.pop("WARWATCH_NO_RETRY", None)
+
+    @staticmethod
+    def _mk(sid, fn, url="", kind="daily", local=False):
+        return dict(id=sid, label=sid, domain="geospatial", theatre="iraq", kind=kind, lag=False, why="", fetch=fn, direction="up", needs=[],
+                    drop=0, url=url, sub="", every=None, scored=True, scale=None, local=local)
+
+    @staticmethod
+    def _stamp(sid, hours_ago):
+        import store
+        with open(os.path.join(os.path.dirname(store.cache_path(sid)), f"{sid}.ok"), "w") as f:
+            f.write((dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=hours_ago)).strftime("%Y-%m-%dT%H:%M"))
+
+    def test_a_stale_copy_is_scored_only_while_it_is_young(self):
+        import store
+
+        def broken():
+            raise RuntimeError("HTTP Error 503")
+        now = dt.datetime.now(dt.timezone.utc)
+        day = lambda n: (now - dt.timedelta(days=n)).strftime("%Y-%m-%d")
+        pts = [(day(40 - i), float(i % 5)) for i in range(39)]
+        for sid in ("young", "old", "nostamp"):
+            store.cache_save(sid, pts, stamp=False)
+        store.cache_save("nostamp_old", pts[:-14], stamp=False)
+        store.cache_save("monthly_old", [("2026-01", 1.0), ("2026-02", 2.0)], stamp=False)
+        self._stamp("young", 30)
+        self._stamp("old", 14 * 24)
+        out = self._collect([self._mk(sid, broken, "https://x%d.example/" % i) for i, sid in enumerate(("young", "old", "nostamp", "nostamp_old"))]
+                            + [self._mk("monthly_old", broken, "https://m.example/", kind="monthly")])
+        self.assertEqual(out["young"]["status"], "ok")                  # down 30 hours: the last good copy still counts
+        self.assertTrue(out["young"]["stale"])
+        self.assertEqual(out["nostamp"]["status"], "ok")                # no fetch on record, newest point 2 days old
+        for sid in ("old", "nostamp_old", "monthly_old"):               # down two weeks (or a monthly series stuck in February): shown, not scored
+            self.assertEqual(out[sid]["status"], "error", sid)
+            self.assertIn("not scored", out[sid]["error"])
+            self.assertTrue(out[sid]["points"])
+            self.assertTrue(out[sid]["stale"])
+        scored = run.score([dict(out["old"]), dict(out["young"])])
+        self.assertIsNone(scored[0]["score"])
+        self.assertTrue(any("for 14 days" in m for m in run.collect.long_down))
+
+    def test_a_cache_its_job_stopped_refreshing_is_not_scored(self):
+        import store
+        now = dt.datetime.now(dt.timezone.utc)
+        pts = [((now - dt.timedelta(days=40 - i)).strftime("%Y-%m-%d"), 1.0) for i in range(39)]
+        reader = lambda: store.cache_load("job_series")
+        mk = lambda: dict(self._mk("job_series", reader, "https://job.example/"), cached=True)
+        store.cache_save("job_series", pts, stamp=False)
+        self._stamp("job_series", 5 * 24)                              # the job's last real fetch was 5 days ago
+        out = self._collect([mk()])
+        self.assertEqual(out["job_series"]["status"], "error")
+        self.assertIn("not refreshed", out["job_series"]["error"])
+        self._stamp("job_series", 2)
+        out = self._collect([mk()])
+        self.assertEqual(out["job_series"]["status"], "ok")
+        self._stamp("job_series", 5 * 24)
+        self._collect([mk()])                                          # the build reading the cache does not stamp it
+        self.assertGreater(store.ok_age_hours("job_series"), 100)
+        os.environ["WARWATCH_LIVE"] = "1"
+        try:
+            self._collect([mk()])                                      # the job that fetches it does
+        finally:
+            os.environ.pop("WARWATCH_LIVE", None)
+        self.assertLess(store.ok_age_hours("job_series"), 1)
+        store.cache_save("job_series", pts[:-12], stamp=False)       # the job ran and stamped, but its source gave nothing new for 12 days
+        out = self._collect([mk()])
+        self.assertEqual(out["job_series"]["status"], "error")
+        self.assertIn("newest data", out["job_series"]["error"])
+
+    def test_a_successful_fetch_is_stamped(self):
+        import store
+        self._collect([self._mk("fresh", lambda: [("2026-11-01", 1.0)], "https://up.example/")])
+        self.assertLess(store.ok_age_hours("fresh"), 1)
+
+    def test_monthly_labels_have_an_age(self):
+        import store
+        now = dt.datetime(2026, 11, 12, tzinfo=dt.timezone.utc)
+        self.assertEqual(store.hours_since("2026-10", now), 11 * 24)     # October is complete on 1 November
+        self.assertEqual(store.hours_since("2026-11-10", now), 48)
+
+    def test_an_adsb_outage_is_asked_once_for_all_75_series(self):
+        import sources
+        calls = []
+
+        def boom(*a, **k):
+            calls.append(1)
+            raise RuntimeError("HTTP Error 503")
+        saved, sources.get = sources.get, boom
+        sources._ADSB.pop("mil", None)
+        try:
+            for s in [s for s in catalog.SERIES if s["id"].startswith("adsb_")]:
+                try:
+                    s["fetch"]()
+                except Exception:
+                    pass
+        finally:
+            sources.get = saved
+            sources._ADSB.pop("mil", None)
+        self.assertEqual(len(calls), 1)
+
+    def test_series_reading_repo_files_are_not_skipped_when_their_source_is_down(self):
+        calls = []
+
+        def down():
+            calls.append(1)
+            raise RuntimeError("HTTP Error 503")
+        local = [self._mk(f"l{i}", lambda: [("2026-11-01", 1.0)], "https://down.example/", local=True) for i in range(2)]
+        broken_local = [self._mk("bl", down, "https://down.example/", local=True)]
+        out = self._collect([self._mk(f"d{i}", down, "https://down.example/") for i in range(2)] + broken_local
+                            + [self._mk("d2", down, "https://down.example/")] + local + [self._mk("d3", down, "https://down.example/")])
+        self.assertEqual(out["l0"]["status"], "ok")                    # read from the repo even after the source tripped
+        self.assertEqual(out["l1"]["status"], "ok")
+        self.assertIn("not fetched", out["d3"]["error"])                # the network series are still skipped
+        self.assertEqual(len(calls), 4)                                 # d0, d1, bl (does not count), d2; d3 not fetched
+
+    def test_adsb_archive_series_survive_a_failed_live_snapshot(self):
+        import store
+        import sources
+        store_dir = store.BACKFILL
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "adsb_gulf_mil.csv"), "w") as f:
+            f.write("2026-11-01,3\n2026-11-02,4\n")
+        saved = sources.fetch_adsb
+        store.BACKFILL = d
+        sources.fetch_adsb = lambda: (_ for _ in ()).throw(RuntimeError("TLS handshake timed out"))
+        try:
+            pts = catalog._adsb("gulf", "mil")()
+        finally:
+            sources.fetch_adsb = saved
+            store.BACKFILL = store_dir
+        self.assertEqual(pts, [("2026-11-01", 3.0), ("2026-11-02", 4.0)])
+        self.assertTrue(next(s for s in catalog.SERIES if s["id"] == "adsb_gulf_mil")["local"])
+        self.assertTrue(next(s for s in catalog.SERIES if s["id"] == "flights_dep_gulf")["local"])
+
+    def test_a_failed_hub_is_fetched_once_until_the_retry_pass(self):
+        import extras
+        calls = []
+
+        def boom(lat, lon, r):
+            calls.append(1)
+            raise RuntimeError("TLS handshake timed out")
+        saved = extras.fetch_hub
+        extras.fetch_hub = boom
+        for lat, lon, _r in C.HUBS["korea"]:
+            extras._CACHE.pop(("hub", lat, lon), None)
+        try:
+            for _ in range(2):
+                with self.assertRaises(RuntimeError):
+                    extras.hub_stats("korea")
+            self.assertEqual(len(calls), 1)
+            extras.forget_failures()
+            with self.assertRaises(RuntimeError):
+                extras.hub_stats("korea")
+            self.assertEqual(len(calls), 2)
+        finally:
+            extras.fetch_hub = saved
+            extras.forget_failures()
+
     def test_nga_feed_failure_is_fetched_once_per_run(self):
         import extras
         calls = []

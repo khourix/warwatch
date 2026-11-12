@@ -90,7 +90,12 @@ def hub_stats(theatre):
     for lat, lon, r in C.HUBS[theatre]:
         key = ("hub", lat, lon)
         if key not in _CACHE:
-            _CACHE[key] = fetch_hub(lat, lon, r)
+            try:
+                _CACHE[key] = fetch_hub(lat, lon, r)
+            except Exception as e:   # kept, so the theatre's second series (gnss_ and civil_ share a hub) does not wait out the same failure
+                _CACHE[key] = e
+        if isinstance(_CACHE[key], Exception):
+            raise _CACHE[key]
         a, b = parse_nav(_CACHE[key])
         n += a
         bad += b
@@ -482,8 +487,26 @@ def parse_nav(payload):
     return n, bad
 
 
+def forget_failures():
+    """Drop the failed hub fetches kept this run, so the end-of-run retry pass really asks adsb.lol again."""
+    for k in [k for k, v in _CACHE.items() if isinstance(k, tuple) and k[:1] == ("hub",) and isinstance(v, Exception)]:
+        del _CACHE[k]
+
+
+HUB_GAP = 2.0       # seconds between adsb.lol point calls: about 20 back to back drew TLS handshake timeouts on the last hubs
+_HUB_LAST = [0.0]
+
+
 def fetch_hub(lat, lon, radius=250):
-    return S.get(f"https://api.adsb.lol/v2/point/{lat}/{lon}/{radius}", retries=2, wait=5)
+    """One adsb.lol point query, spaced HUB_GAP from the previous one: three tries, with 15, 30 and 45 s waits after each
+    failed one (sources.get also waits after the last), so a hub that times out every time costs up to about 4.5 minutes."""
+    gap = _HUB_LAST[0] + HUB_GAP - time.monotonic()
+    if gap > 0:
+        time.sleep(gap)
+    try:
+        return S.get(f"https://api.adsb.lol/v2/point/{lat}/{lon}/{radius}", retries=3, wait=15)
+    finally:
+        _HUB_LAST[0] = time.monotonic()
 
 
 # ---- EASA conflict-zone information bulletins (airline airspace risk notices) -------------

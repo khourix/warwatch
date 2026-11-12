@@ -5,7 +5,7 @@ name: ais
 # the state for the map instead of listening itself.
 on:
   schedule:
-    - cron: "7,37 * * * *"
+    - cron: "7,37 * * * *"   # GitHub runs this only a few times a day; the warwatch build chain starts a run when one is due (warwatch.yml, next job)
   workflow_dispatch:
     inputs:
       seconds:
