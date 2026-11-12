@@ -101,6 +101,34 @@ def cache_rows_save(name, rows):
         csv.writer(f).writerows(rows)
 
 
+LAST_OK = "last_ok"   # cache/last_ok.csv: series id, UTC time of its last successful fetch
+
+
+def last_ok_load():
+    """{series id: "YYYY-mm-ddTHH:MM"} of each series' last successful fetch (the latest row wins if a merge doubled one)."""
+    out = {}
+    for r in cache_rows(LAST_OK):
+        if len(r) == 2 and r[1] > out.get(r[0], ""):
+            out[r[0]] = r[1]
+    return out
+
+
+def last_ok_save(d):
+    cache_rows_save(LAST_OK, sorted(d.items()))
+
+
+def hours_since(stamp, now=None):
+    """Hours from a stamp ("YYYY-mm-dd" or "YYYY-mm-ddTHH:MM", UTC) to now, or None if it does not parse."""
+    now = now or dt.datetime.now(dt.timezone.utc)
+    for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d"):
+        try:
+            t = dt.datetime.strptime(stamp[:16] if "T" in stamp else stamp[:10], fmt).replace(tzinfo=dt.timezone.utc)
+            return (now - t).total_seconds() / 3600
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
 def cache_age_hours(series_id):
     """Hours since the series was last fetched in full, or None if never (a checkout's file times are meaningless, so a stamp file is kept)."""
     try:

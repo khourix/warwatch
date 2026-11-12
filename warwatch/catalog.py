@@ -227,9 +227,12 @@ ADS = "https://adsb.lol/"
 
 def _adsb(th, cls):
     def go():
-        v = S.adsb_classes(S.fetch_adsb(), C.BOXES[th])[cls]
         sid = f"adsb_{th}_{cls}"
-        store.append(sid, v)   # the instant snapshots keep accumulating in history/, but the score reads the archive series
+        try:   # the instant snapshots keep accumulating in history/, but the score reads the archive series, so a live
+            # adsb.lol failure loses one snapshot and must not take the archive series (already in the repo) down with it
+            store.append(sid, S.adsb_classes(S.fetch_adsb(), C.BOXES[th])[cls])
+        except Exception as e:
+            print(f"snapshot skipped {sid}: {str(e)[:120]}", flush=True)
         pts = store.backfill(sid)
         if not pts:
             raise C.Pending("no archive history yet (the adsb-daily job fills it)")
@@ -884,6 +887,13 @@ for _s in SERIES:
 # ============ Not tested yet: new families added in October 2026 (docs/FLIGHTS.md, docs/SHIPS.md) ============
 # Shown on the page and the map and read by the timing tells, but outside the composite and the model until a test written
 # down before it is run, on the labelled event list, shows they lead events (docs/METHODOLOGY.md). Remove a prefix to give it weight.
+# Series that only read files already in the repository (the adsb.lol daily archives, and indices derived from them). They make
+# no network call, so a source being down this run says nothing about them: run.collect never skips them for it, and their
+# failures never count toward a source being down.
+LOCAL = ("flights_", "bizjet_", "package_", "adsb_")
+for _s in SERIES:
+    _s["local"] = _s["id"].startswith(LOCAL)
+
 NOT_TESTED = ("flights_", "bizjet_", "darkships_", "darkshare_", "loiter_", "portcalls_", "choke_", "navwarn_")
 for _s in SERIES:
     if _s["id"].startswith(NOT_TESTED):

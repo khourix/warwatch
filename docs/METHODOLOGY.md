@@ -35,6 +35,10 @@ Fewer than two domains with a score gives **insufficient data**. Elevated or Cri
 
 `confidence = domain weight covered x share of the theatre's signals that have a score x (1 - mean share of the 97-day window that was missing)`. The label is Low when more than 20% of the theatre's signals have no score, Medium above 10%, otherwise High.
 
+### When a feed fails
+
+A failed fetch is retried once at the end of the build. If it still fails, the page shows the series' last good copy, marked stale, and it keeps its score while the copy is young: 3 days since the series last fetched for a daily series, 35 for a monthly one, or three of its refresh intervals if that is longer (`run.stale_limit`; the time of each series' last successful fetch is kept in `history/cache/last_ok.csv`). After that the copy is still shown, but the series counts as failed and is left out of the score, so the theatre's confidence falls instead of resting on frozen numbers. A source down for more than 7 days is listed on the health page and raised as a build warning. Series that only read files in the repository (the adsb.lol daily archives and the indices built from them, `catalog.LOCAL`) never count toward a source being down.
+
 ## Pseudocode
 
 ```
