@@ -2286,6 +2286,7 @@ day,theatre,place,lat,lon,rad,good,tile
 2026-11-02,drc,Kolwezi,-10.72,25.47,,0.0,h20v10
 2026-11-02,drc,Lubumbashi,-11.66,27.48,,0.0,h20v10
 2026-11-02,europe_east,Bucharest,44.43,26.1,,0.0,h20v04
+2026-11-02,europe_east,Helsinki,60.17,24.94,,0.0,h20v02
 2026-11-02,europe_east,Kaliningrad,54.71,20.51,35.79,0.982,h20v03
 2026-11-02,europe_east,Riga,56.95,24.1,34.4,0.662,h20v03
 2026-11-02,europe_east,Suwalki gap,54.1,23.0,,0.0,h20v03
@@ -2311,7 +2312,9 @@ day,theatre,place,lat,lon,rad,good,tile
 2026-11-02,lebanon,"Tripoli, Lebanon",34.44,35.85,12.49,0.765,h21v05
 2026-11-02,lebanon,Tyre,33.27,35.2,,0.0,h21v05
 2026-11-02,libya,Benghazi,32.12,20.09,121.5,0.976,h20v05
+2026-11-02,libya,Es Sider,30.63,18.35,2.75,1.0,h19v05
 2026-11-02,libya,Sharara field,26.6,12.3,,0.0,h19v06
+2026-11-02,libya,Tripoli,32.89,13.19,120.75,0.629,h19v05
 2026-11-02,sudan,El Fasher,13.63,25.35,0.28,0.682,h20v07
 2026-11-02,sudan,Khartoum,15.5,32.56,,0.0,h21v07
 2026-11-02,sudan,Port Sudan,19.62,37.22,,0.0,h21v07
@@ -2329,3 +2332,4 @@ day,theatre,place,lat,lon,rad,good,tile
 2026-11-02,ukraine,Moscow,55.75,37.62,113.78,0.263,h21v03
 2026-11-02,ukraine,Odesa,46.48,30.72,3.13,0.09,h21v04
 2026-11-02,ukraine,Sevastopol,44.6,33.5,5.33,0.97,h21v04
+2026-11-02,yemen,Jeddah,21.5,39.2,,0.0,h21v06
