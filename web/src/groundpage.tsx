@@ -59,12 +59,15 @@ export function GroundView({ brief, live, go }: { brief: Brief; live?: LiveMap; 
   )
 }
 
+/* the tag on a narrow card: the two long states in fewer words, so they are not cut off; the full words are on the base's page */
+const CARD_WORD: Record<string, string> = { out: 'Far fewer objects', in: 'Far more objects' }
+
 /* a base: its latest radar picture (or a quiet stand-in), its state as a tag (ink, with a mark), name, kind and side */
 function BaseCard({ b, go }: { b: MapBase; go: Go }) {
   const [bad, setBad] = useState(false)
   const mark = baseMark(b.state)
   const tag = (cls: string) => <span className={`${cls} items-center gap-1.5 rounded-full border border-line2 px-2 py-[2px] text-[11px] text-fg`}>
-    {mark && <i aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: mark }} />}<span className="truncate">{baseWord(b.state, b.part)}</span></span>
+    {mark && <i aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: mark }} />}<span className="truncate" title={baseWord(b.state, b.part)}>{CARD_WORD[b.state] || baseWord(b.state, b.part)}</span></span>
   /* a card on wider screens; on a phone, one row per base (picture left), so the gallery stays a single column */
   return (
     <Lnk to={{ v: 'base', id: b.id }} go={go} className="group block overflow-hidden rounded-r3 border border-line bg-s1 transition-colors duration-[120ms] hover:border-line2 max-[699px]:flex">
