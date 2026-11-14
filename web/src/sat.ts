@@ -42,6 +42,6 @@ export function baseImages(b: BaseFile): SatImage[] {
   return out
 }
 
-/* Lists outside the map ask it to show something: a fire row in a theatre's "On the ground" tab */
-export type Focus = { kind: 'fire'; x: MapFire }
+/* Lists outside the map ask it to show something: a fire row in a theatre's "On the ground" tab, a place (a chokepoint on the Ground page) */
+export type Focus = { kind: 'fire'; x: MapFire } | { kind: 'place'; ll: LonLat; zoom: number }
 export const focusOnMap = (f: Focus) => dispatchEvent(new CustomEvent<Focus>('ww-focus', { detail: f }))

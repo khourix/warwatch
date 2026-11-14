@@ -4,7 +4,9 @@
     data/v1/theatres/<id>.json         one theatre in full
     data/v1/signals/index.json         every signal, with a 40-point spark line
     data/v1/signals/series/<id>.json   one signal's full history, loaded on demand
-    data/v1/map/live.json              aircraft, ships, fires, bases, warnings, places
+    data/v1/signals/buildup.json       every theatre's five group histories over the last 60 days, for the Signals page (about 25 KB)
+    data/v1/map/live.json              aircraft, ships, fires, bases, warnings, places; each chokepoint says whether the dark-ship
+                                       and loitering data cover it ("gfw", added November 2026)
     data/v1/bases/<id>.json            one base in full, with its radar history and image chips
     data/v1/record.json                the forward record, the model's gates, siren tempo, data health
     data/v1/events.json                the labelled event list
@@ -34,6 +36,7 @@ SHAPES = {
                 "history[]": list, "items[]": list, "events[]": list, "center": (list, type(None)), "countries": list},
     "signals": {"generated": str, "groups": dict, "signals[]": list},
     "series": {"id": str, "points": list, "zHistory": list},
+    "buildup": {"dates": list, "theatres[]": list},
     "map": {"theatres": dict, "aircraft[]": list, "ships[]": list, "fires[]": list, "bases[]": list, "warnings[]": list, "cities[]": list,
             "chokepoints[]": list},
     "base": {"id": str, "name": str, "state": str, "ll": list, "radar": list, "why": str, "images": dict, "parts[]": list},
@@ -51,6 +54,7 @@ ITEMS = {
     "theatre.items": {"date": str, "kind": str, "text": str},
     "theatre.events": {"date": str, "kind": str, "text": str},
     "signals.signals": {"id": str, "label": str, "group": str, "theatre": str, "z": OPT_NUM, "status": str, "spark": list},
+    "buildup.theatres": {"id": str, "name": str, "groups": dict},
     "map.aircraft": {"ll": list, "call": str, "class": str},
     "map.ships": {"ll": list, "name": str},
     "map.fires": {"ll": list, "mw": NUM, "date": str, "class": str},
@@ -58,7 +62,7 @@ ITEMS = {
     "map.warnings": {"ll": list, "text": str},
     "base.parts": {"part": str, "state": str, "history": list, "images": dict},
     "map.cities": {"ll": list, "name": str, "theatre": str},
-    "map.chokepoints": {"ll": list, "name": str},
+    "map.chokepoints": {"ll": list, "name": str, "gfw": bool},
     "events.events": {"date": str, "theatre": str, "kind": str, "text": str},
 }
 
@@ -154,11 +158,27 @@ def _groups(data, t, top=0):
     return out
 
 
+LINES = ("watch", "elevated", "critical")
+
+
+def lines(v):
+    """Where the Watch, Elevated and Critical lines sit on the 0 to 100 reading (engine.logistic_score of each threshold): Watch at
+    50 and Critical at 90 by construction, Elevated in between, per theatre. None when the theatre has no reading (no thresholds).
+    They come from the unrounded thresholds the score and the level use (the engine's "lines", the page data's "ln"), rounded only
+    here, to 2 places; data from before that falls back to the thresholds as stored (rounded to 3 places).
+    Added November 2026, optional: an app without it draws Watch at 50 and Critical at 90 and no Elevated line."""
+    ln = v.get("ln")
+    if ln and len(ln) == 3:
+        return {k: round(x, 2) for k, x in zip(LINES, ln)}
+    th = v.get("th")
+    if not th or len(th) != 3:
+        return None
+    import engine
+    return {k: round(engine.logistic_score(z, th), 2) for k, z in zip(LINES, th)}
+
+
 def _ctx(t):
     return (C.CONTEXT.get(t) or (None, None)) if hasattr(C, "CONTEXT") else (None, None)
-
-
-PART_THINGS = {"apron": "aircraft", "harbour": "ships", "ground": "vehicles"}
 
 
 FEED_DAYS = 30    # the strip under the map shows 30 days; the bell, the last 7
@@ -218,8 +238,8 @@ def feed(data):
         for x in v.get("tells") or []:
             if x.get("on") and x.get("date"):
                 rec = x.get("rec") or {}
-                detail = (f"Timing tell. Fired before {rec['caught']} of {rec['events']} past events" if rec.get("events")
-                          else "Timing tell. New, no history to test yet")
+                detail = (f"Tripwire. Fired before {rec['caught']} of {rec['events']} past events" if rec.get("events")
+                          else "Tripwire. New, no history to test yet")
                 add({"date": x["date"], "kind": "tell", "theatre": t, "title": x["n"], "detail": detail, "to": {"view": "theatre", "id": t}})
     for t, h in (data.get("hist") or {}).items():
         if t not in data["theatres"] or t == "global":
@@ -228,7 +248,7 @@ def feed(data):
             d, k, text = i[0] + ("-01" if len(i[0]) == 7 else ""), i[1], i[2]
             to = {"view": "theatre", "id": t}
             if k == "tell":
-                add({"date": d, "kind": "tell", "theatre": t, "title": text, "detail": "Timing tell", "to": to})
+                add({"date": d, "kind": "tell", "theatre": t, "title": text, "detail": "Tripwire", "to": to})
             elif k == "wave":
                 add({"date": d, "kind": "tell", "theatre": t, "title": "Strike wave", "detail": text.split(": ", 1)[-1].capitalize(), "to": to})
             elif k == "advisory":
@@ -239,18 +259,18 @@ def feed(data):
             elif k == "rating" and d[:7] >= since[:7]:
                 add({"date": d, "kind": "official", "theatre": t, "title": text, "detail": "Crisis Group, monthly", "to": to})
     m = data.get("map") or {}
-    words = {"out": "fewer {} than usual", "in": "more {} than usual", "changed": "one pass differed"}
+    # basewatch's own words (STATE_WHY): radar counts bright objects; whether they are aircraft, ships or vehicles is a guess
+    words = {"out": "far fewer bright objects than usual", "in": "far more bright objects than usual", "changed": "one pass differed"}
     for b in m.get("bases") or []:
-        what = PART_THINGS.get(b.get("mp") or "", "objects")
         name = b["n"].split(",")[0]
         to = {"view": "base", "id": b["id"]}
         last = b.get("last") or ""
         if b.get("st") in words:
-            add({"date": last, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[b['st']].format(what)}", "detail": "Satellite radar, two passes", "to": to})
+            add({"date": last, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[b['st']]}", "detail": "Satellite radar, two passes", "to": to})
         for d, st in b.get("ev") or []:
             near = last and b.get("st") in words and abs((dt.date.fromisoformat(d) - dt.date.fromisoformat(last[:10])).days) <= 1
             if st in words and not near:
-                add({"date": d, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[st].format(what)}",
+                add({"date": d, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[st]}",
                      "detail": "Satellite radar, one pass" if st == "changed" else "Satellite radar, two passes", "to": to})
     for f in _fire_items(data, since):
         add(f)
@@ -276,7 +296,7 @@ def brief(data):
                     "standingRisk": v.get("xu"), "tellsOn": sum(1 for x in v.get("tells") or [] if x.get("on")), "tellsTotal": len(v.get("tells") or []),
                     "strong": sum(1 for s in sc if abs(s["z"]) >= 3), "context": ctx, "contextChecked": ctxd,
                     "spillover": t in (data.get("spill") or {}), "parents": (data.get("spill") or {}).get(t, []), "center": _box_center(t),
-                    "groups": {k: g["z"] for k, g in _groups(data, t).items()}})
+                    "groups": {k: g["z"] for k, g in _groups(data, t).items()}, "lines": lines(v)})
     mo = data.get("model") or {}
     g = data.get("global") or {}
     return _head("brief", data["generated"], demo=bool(data.get("demo")), eventsThrough=(data.get("events") or {}).get("through", ""),
@@ -295,7 +315,7 @@ def theatre(data, t):
     sc = _scored(data["series"], t)
     return _head("theatre", data["generated"], id=t, name=v["name"], region=reg[t]["name"] if t in reg else "", level=v["level"], score=v.get("score"),
                  signals={"scored": len(sc), "total": sum(1 for s in data["series"] if s["t"] == t), "strong": sum(1 for s in sc if abs(s["z"]) >= 3)},
-                 standingRisk=v.get("xu"), chance={"p": v.get("p"), "lo": v.get("plo"), "hi": v.get("phi"), "usual": v.get("pb"), "change": v.get("pd")},
+                 lines=lines(v), standingRisk=v.get("xu"), chance={"p": v.get("p"), "lo": v.get("plo"), "hi": v.get("phi"), "usual": v.get("pb"), "change": v.get("pd")},
                  confidence=v.get("confl"), context=ctx, contextChecked=ctxd, spillover=t in (data.get("spill") or {}),
                  parents=(data.get("spill") or {}).get(t, []), center=_box_center(t), view=_view(t), countries=C.THEATRES.get(t, {}).get("countries", []),
                  tells=[{"id": x.get("id", ""), "name": x["n"], "on": bool(x.get("on")), "date": x.get("date"), "says": x.get("says", ""),
@@ -319,6 +339,28 @@ def signals(data):
                     "spark": [_r(p[1]) if isinstance(p[1], (int, float)) else None for p in pts[-40:]]})
     return _head("signals", data["generated"], groups={GROUPS[k]: C.GROUP_HELP.get(k, "") for k in GROUPS},
                  signals=out)
+
+
+def buildup(data):
+    """The build-up wall on the Signals page: the dates of the last STRIP_DAYS days (oldest first) and, per theatre, the five
+    group histories theatres/<id>.json carries in groups.<group>.history (dashboard.dom_strips, display only), each aligned to
+    those dates: a history shorter than the dates is padded with null at the start, a day with no reading stays null.
+    Added November 2026, optional: the app goes without the wall when this file is missing."""
+    import dashboard
+    end = dt.date.fromisoformat(data["strip_end"]) if data.get("strip_end") else dashboard._day(data["generated"])
+    n = dashboard.STRIP_DAYS
+    dates = [(end - dt.timedelta(days=n - 1 - k)).isoformat() for k in range(n)]
+    reg = _region_of(data)
+    order = [t for t in data.get("order", data["theatres"]) if t in data["theatres"] and t != "global"]
+    rows = []
+    for t in order:
+        th = data["theatres"][t]
+        groups = {}
+        for d, name in GROUPS.items():
+            h = list(((th.get("doms") or {}).get(d) or {}).get("h") or [])[-n:]
+            groups[name] = [None] * (n - len(h)) + h
+        rows.append({"id": t, "name": th["name"], "region": reg[t]["id"] if t in reg else "", "groups": groups})
+    return _head("buildup", data["generated"], dates=dates, theatres=rows)
 
 
 def series(data, s):
@@ -357,9 +399,20 @@ def live_map(data):
         warnings=[{"ll": ll(w["xy"]), "id": w.get("id", ""), "text": w.get("tx", ""), "issued": w.get("iss", ""), "theatre": w.get("th", "")} for w in m.get("nga") or []],
         conflictZones=[{"ll": ll(z["xy"]), "name": z.get("n", ""), "updated": z.get("u", ""), "theatre": z.get("th", "")} for z in m.get("czib") or []],
         cities=[{"ll": ll(c["xy"]), "name": c["n"], "theatre": c["t"]} for c in m.get("cities") or []],
-        chokepoints=[{"ll": ll(c["xy"]), "name": c["n"], "theatre": c["t"], "id": c.get("k", "")} for c in m.get("choke") or []],
+        # gfw: whether the strait lies inside one of Global Fishing Watch's waters boxes, the only places the dark-ship and
+        # loitering data cover (added November 2026; an app reading data without it treats the strait as not covered)
+        chokepoints=[{"ll": ll(c["xy"]), "name": c["n"], "theatre": c["t"], "id": c.get("k", ""), "gfw": gfw_covers(c.get("k", ""), ll(c["xy"]))}
+                     for c in m.get("choke") or []],
         hubs=[{"ll": ll(h["xy"]), "theatre": h["t"], "radiusNm": h.get("nm")} for h in m.get("hubs") or []],
         seas=[{"ll": ll(s["xy"]), "name": s["n"]} for s in m.get("seas") or []])
+
+
+def gfw_covers(key, lonlat):
+    """True when a chokepoint (config.CHOKE_XY[key], else its [lon, lat]) lies inside a Global Fishing Watch waters box (gfw.BOX):
+    only there does the map carry dark ships and loitering, so elsewhere a count of 0 means not covered, not calm."""
+    import gfw
+    lat, lon = C.CHOKE_XY[key][:2] if key in C.CHOKE_XY else (lonlat[1], lonlat[0])
+    return any(la0 <= lat <= la1 and lo0 <= lon <= lo1 for la0, la1, lo0, lo1 in gfw.BOX.values())
 
 
 def _pic(img, k):
@@ -405,8 +458,8 @@ def events(data):
 
 def files(data):
     """-> {relative path: object} for the whole contract."""
-    out = {"brief.json": brief(data), "signals/index.json": signals(data), "map/live.json": live_map(data), "record.json": record(data),
-           "events.json": events(data)}
+    out = {"brief.json": brief(data), "signals/index.json": signals(data), "signals/buildup.json": buildup(data), "map/live.json": live_map(data),
+           "record.json": record(data), "events.json": events(data)}
     for t in data["theatres"]:
         if t != "global":
             out[f"theatres/{t}.json"] = theatre(data, t)

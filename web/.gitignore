@@ -1,2 +1,7 @@
 node_modules/
 dist/
+# Switzer and Sentient are downloaded before each build (scripts/fetch-fonts.mjs), never committed
+src/fonts/switzer-*.woff2
+src/fonts/sentient-*.woff2
+src/fonts/fontshare.css
+src/fonts/*.part

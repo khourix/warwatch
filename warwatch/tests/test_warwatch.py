@@ -462,6 +462,7 @@ class TestGeoAndPage(unittest.TestCase):
         root = ET.fromstring(dashboard.feed_xml(d))
         self.assertEqual(root.tag, "rss")
         self.assertEqual(len(root.findall("./channel/item")), len(dashboard.feed_items(d)))
+        self.assertIn("Tripwires, official steps", root.find("./channel/description").text)
 
     def test_region_map_has_countries(self):
         topo = geo.load()
@@ -1880,7 +1881,7 @@ class ShareCard(unittest.TestCase):
 
     def test_headline_words_the_levels_and_tells(self):
         import share
-        self.assertEqual(share.summary(self._data())[0], "Every theatre reads quiet. No timing tells fired this week.")
+        self.assertEqual(share.summary(self._data())[0], "Every theatre reads quiet. No tripwires fired this week.")
         head, f = share.summary(self._data({"yemen": "Elevated"}))
         self.assertTrue(head.startswith("Yemen is the only theatre above quiet."))
         head, _ = share.summary(self._data({"iran": "Watch", "israel": "Critical", "sudan": "Elevated", "libya": "Watch"}))
@@ -1898,6 +1899,75 @@ class ShareCard(unittest.TestCase):
         self.assertNotRegex(page, r"__(ABOUT|SHARE|OGALT|OGV)__")
         self.assertIn('og.jpg?v=202610240117"', page)
         self.assertIn('<meta property="og:description" content="Yemen is the only theatre above quiet.', page)
+
+    def _quiet(self, scores, active=False):
+        """Every theatre quiet, with these readings (others None), and the forecast model on or off."""
+        d = self._data()
+        for t, v in d["theatres"].items():
+            v["score"] = scores.get(t)
+        d["model"] = dict(d.get("model") or {}, active=active)
+        return d
+
+    def test_quiet_day_names_the_theatre_closest_to_watch(self):
+        """As the app's dispatch words it (watch.tsx): only while the model is off and the reading is under the line of 50."""
+        import share
+        head = share.summary(self._quiet({"yemen": 45.2, "iraq": 6.5, "southasia": 30}))[0]
+        self.assertEqual(head, "Every theatre reads quiet. Yemen comes closest to Watch, at 45 against a line of 50. No tripwires fired this week.")
+        d = self._quiet({"yemen": 45.2})   # the tripwires that fired stay in the sentence, after the closest theatre, as in the app
+        d["theatres"]["iran"]["tells"] = [{"on": True}] * 3
+        d["theatres"]["yemen"]["tells"] = [{"on": True}] * 9 + [{"on": False}]
+        self.assertEqual(share.summary(d)[0], "Every theatre reads quiet. Yemen comes closest to Watch, at 45 against a line of 50. Twelve tripwires fired this week.")
+        d["theatres"]["iran"]["tells"] = [{"on": True}] * 4
+        self.assertTrue(share.summary(d)[0].endswith("against a line of 50. 13 tripwires fired this week."))
+        self.assertIn("South Asia comes closest to Watch, at 31 against", share.summary(self._quiet({"southasia": 30.5}))[0])   # short name, half up
+        self.assertIn("at 49 against a line of 50.", share.summary(self._quiet({"yemen": 49.7}))[0])    # under 50 never reads 50
+        self.assertEqual(share.summary(self._quiet({"yemen": 50.2}))[0], "Every theatre reads quiet. No tripwires fired this week.")
+        self.assertEqual(share.summary(self._quiet({"yemen": 45.2}, active=True))[0], "Every theatre reads quiet. No tripwires fired this week.")
+        self.assertEqual(share.summary(self._quiet({}))[0], "Every theatre reads quiet. No tripwires fired this week.")
+        d = self._quiet({"yemen": 45.2})
+        d["theatres"]["iran"]["level"] = "Watch"
+        self.assertEqual(share.summary(d)[0], "Iran is the only theatre above quiet. No tripwires fired this week.")
+
+    def test_whole_matches_the_app(self):
+        import share
+        self.assertEqual([share.whole(x) for x in (0.4, 44.5, 45.2, 49.5, 49.99, 50, 50.4, 99.6)], [0, 45, 45, 49, 49, 50, 50, 100])
+
+    def test_brief_and_card_carry_the_same_headline_and_counts(self):
+        import contract
+        import share
+        d = self._quiet({"yemen": 45.2})
+        head, f = share.summary(d)
+        b = contract.brief(d)
+        self.assertEqual(b["headline"], head)
+        self.assertEqual(b["counts"]["strong"], f["strong"])
+        card = share.card_html(d, None)
+        self.assertIn(head, card)
+        self.assertIn(f"{f['theatres']} theatres · {f['signals']} public signals", card)
+        self.assertIn("Dispatch · 24 Oct 2026 · 01:17 UTC", card)
+
+    def test_card_uses_the_midnight_colours_and_keeps_numbers_in_ink(self):
+        import share
+        card = share.card_html(self._data({"yemen": "Elevated"}, tells_on=("iran",)), geo.load())
+        self.assertIn("background:#080b11", card)
+        for old in ("#090b0f", "#e9b44c", "#f28a3e", "IBM Plex", "Source Serif"):
+            self.assertNotIn(old, card)
+        self.assertNotIn("<b style", card)                                  # the three counts are never amber or orange
+        self.assertIn("border-color:#ff7438", card)                         # Yemen's label takes its level's colour
+        self.assertIn("Sentient,Georgia,serif", card)                       # system fonts when the fetched ones are missing
+        self.assertIn("src:url(og-fonts/switzer-normal.woff2)", card)
+
+    def test_write_cards_copies_the_fonts_it_finds_and_draws_without_them(self):
+        import share
+        fonts, out, bare = tempfile.mkdtemp(), tempfile.mkdtemp(), tempfile.mkdtemp()
+        with open(os.path.join(fonts, "switzer-normal.woff2"), "wb") as f:
+            f.write(b"wOF2 a font")
+        with open(os.path.join(fonts, "sentient-normal.woff2"), "wb") as f:
+            f.write(b"<html>an error page</html>")                         # not a font: left out
+        self.assertEqual(share.write_cards(out, self._data(), None, font_dir=fonts), len(C.THEATRES))
+        self.assertEqual(os.listdir(os.path.join(out, "og-fonts")), ["switzer-normal.woff2"])
+        self.assertEqual(share.write_cards(bare, self._data(), None, font_dir=os.path.join(bare, "none")), len(C.THEATRES))
+        self.assertFalse(os.path.exists(os.path.join(bare, "og-fonts")))
+        self.assertTrue(os.path.getsize(os.path.join(bare, "og-card.html")) > 1000)
 
 
 class ContextLine(unittest.TestCase):
@@ -2008,7 +2078,7 @@ class DataContract(unittest.TestCase):
             ("2026-10-14", "official", "iran", "US travel advisories raised"),
             ("2026-10-01", "official", "iran", "CrisisWatch: conflict-risk alert"),
             ("2026-10-20", "official", "yemen", "UK travel advice updated on 3 days that week"),
-            ("2026-10-22", "base", "iran", "X Air Base: fewer aircraft than usual"),
+            ("2026-10-22", "base", "iran", "X Air Base: far fewer bright objects than usual"),
             ("2026-10-05", "base", "iran", "X Air Base: one pass differed"),           # 21 Oct is the current reading, not a second item
             ("2026-10-23", "fire", "iran", "Heat near Isfahan air base"),
             ("2026-10-08", "fire", "iran", "2 unusual fires"),                        # one item per theatre and day; 9 Oct was a burnt field
@@ -2016,6 +2086,7 @@ class DataContract(unittest.TestCase):
         self.assertEqual([x["date"] for x in f], sorted((x["date"] for x in f), reverse=True))
         adv = next(x for x in f if x["title"] == "US travel advisories raised")
         self.assertEqual(adv["detail"], "Level sum 7.8 to 8. US State Department")
+        self.assertTrue(next(x for x in f if x["kind"] == "tell")["detail"].startswith("Tripwire"))
         self.assertEqual(next(x for x in f if x["kind"] == "fire" and x["date"] == "2026-10-08")["detail"], "Strongest 40 MW, NASA VIIRS")
 
     def test_base_changes_replay_each_pass(self):
@@ -2036,6 +2107,109 @@ class DataContract(unittest.TestCase):
         live = contract.live_map(dict(self.data, map=dict(self.data["map"], bases=[dict(self.data["map"]["bases"][0], bb=[51.29, 25.08, 51.33, 25.14])])))
         self.assertEqual(live["bases"][0]["bounds"], [51.29, 25.08, 51.33, 25.14])
 
+    def test_lines_sit_where_the_reading_crosses_each_threshold(self):
+        """Added November 2026: where Watch, Elevated and Critical sit on the 0 to 100 reading, per theatre, in the theatre file and
+        the brief. Watch is 50 and Critical 90 by construction (engine.logistic_score); Elevated is the reading at its own threshold."""
+        import contract
+        import engine
+        b = {t["id"]: t for t in self.files["brief.json"]["theatres"]}
+        seen = 0
+        for t, v in self.data["theatres"].items():
+            if t == "global":
+                continue
+            ln = self.files[f"theatres/{t}.json"]["lines"]
+            self.assertEqual(b[t]["lines"], ln, t)
+            if not v.get("th"):
+                self.assertIsNone(ln, t)
+                continue
+            seen += 1
+            self.assertEqual((ln["watch"], ln["critical"]), (50.0, 90.0), t)
+            self.assertLess(50.0, ln["elevated"], t)
+            self.assertLess(ln["elevated"], 90.0, t)
+            self.assertAlmostEqual(ln["elevated"], v["ln"][1], places=2)                                  # from the unrounded thresholds
+            self.assertAlmostEqual(ln["elevated"], engine.logistic_score(v["th"][1], v["th"]), delta=0.1)   # near the stored ones
+            if v.get("zc") is not None and v["level"] in engine.LEVELS:   # the level the thresholds set agrees with the reading against the lines
+                lv = engine.LEVELS[sum(v["zc"] >= x for x in v["th"])]
+                sc = engine.logistic_score(v["zc"], v["th"])
+                self.assertEqual(lv, engine.LEVELS[sum(sc >= x - 1e-6 for x in (ln["watch"], ln["elevated"], ln["critical"]))], t)
+        self.assertGreater(seen, 0)
+        self.assertIsNone(contract.lines({"th": None}))
+        self.assertEqual(contract.lines({"th": [1.0, 1.5, 2.0]})["watch"], 50.0)
+
+    def test_lines_come_from_the_unrounded_thresholds(self):
+        """The level is set from the unrounded reading against the unrounded thresholds and the score is rounded to 0.1, so the lines
+        must come from the same unrounded thresholds: a theatre set Elevated with a score of 66.4 can have its line at 66.43, never
+        further than the score's rounding above it (the gauge reads a score within 0.1 of a line its level has reached as at it)."""
+        import contract
+        import engine
+        import math
+        th = [1.00049, None, 2.00049]
+        tau = (th[2] - th[0]) / math.log(9)
+
+        def at(s):                                           # the reading that scores s
+            return th[0] - tau * math.log(100 / s - 1)
+        th[1] = at(66.4302)                                  # the Elevated threshold sits at 66.4302
+        zc = at(66.44)                                       # a reading just past it, which rounds to 66.4
+        self.assertEqual(engine.LEVELS[sum(zc >= x for x in th)], "Elevated")
+        score = round(engine.logistic_score(zc, th), 1)
+        ln = contract.lines({"th": [round(x, 3) for x in th], "ln": [engine.logistic_score(x, th) for x in th]})
+        self.assertEqual((score, ln["elevated"]), (66.4, 66.43))
+        self.assertLessEqual(ln["elevated"] - score, 0.1)
+        self.assertEqual((ln["watch"], ln["critical"]), (50.0, 90.0))
+        # older page data carries no "ln": the lines fall back to the stored thresholds
+        self.assertAlmostEqual(contract.lines({"th": [round(x, 3) for x in th]})["elevated"], 66.43, delta=0.05)
+        # every theatre of the run whose level the reading set: a level that has reached a line has a score no further than 0.1 below it
+        for t, v in self.data["theatres"].items():
+            ln = self.files[f"theatres/{t}.json"]["lines"] if t != "global" else None
+            if not ln or v.get("score") is None or v.get("zc") is None or v["level"] != engine.LEVELS[sum(v["zc"] >= x for x in v["th"])]:
+                continue
+            for need, k in ((1, "watch"), (2, "elevated"), (3, "critical")):
+                if engine.LEVELS.index(v["level"]) >= need:
+                    self.assertGreaterEqual(v["score"], ln[k] - 0.1, (t, k))
+
+    def test_chokepoints_say_whether_dark_ships_cover_them(self):
+        """Added November 2026: each chokepoint says whether it lies in a Global Fishing Watch waters box (gfw.BOX), the only places
+        the dark-ship and loitering data cover; elsewhere the app says they are not covered instead of showing 0."""
+        import contract
+        import gfw
+        cp = self.files["map/live.json"]["chokepoints"]
+        self.assertTrue(cp)
+        for c in cp:
+            self.assertIsInstance(c["gfw"], bool, c["name"])
+        by = {c["id"]: c["gfw"] for c in cp}
+        for k, (la, lo, _) in C.CHOKE_XY.items():
+            inside = any(a <= la <= b and c <= lo <= d for a, b, c, d in gfw.BOX.values())
+            self.assertEqual(contract.gfw_covers(k, [lo, la]), inside, k)
+            if k in by:
+                self.assertEqual(by[k], inside, k)
+        self.assertTrue(contract.gfw_covers("Hormuz", [0, 0]))         # the Gulf is in iran's box
+        self.assertFalse(contract.gfw_covers("Panama", [0, 0]))        # no box in the Americas' canals
+        self.assertTrue(contract.gfw_covers("", [42.0, 15.0]))         # an unknown key: its position, here the Red Sea
+        self.assertFalse(contract.gfw_covers("", [-79.7, 9.1]))
+
+    def test_buildup_carries_each_theatres_group_histories(self):
+        """Added November 2026: signals/buildup.json, the Signals page's wall. Its numbers are the theatre files' group histories,
+        aligned to the last 60 dates (a short history is padded with null at the start)."""
+        import contract
+        f = self.files["signals/buildup.json"]
+        self.assertEqual(contract.validate(f), [])
+        self.assertEqual(len(f["dates"]), 60)
+        self.assertEqual(f["dates"][-1], self.data["strip_end"])
+        self.assertEqual([r["id"] for r in f["theatres"]], [t["id"] for t in self.files["brief.json"]["theatres"]])
+        for r in f["theatres"]:
+            th = self.files[f"theatres/{r['id']}.json"]
+            self.assertEqual(sorted(r["groups"]), sorted(contract.GROUPS.values()))
+            for g, h in r["groups"].items():
+                self.assertEqual(len(h), 60, (r["id"], g))
+                self.assertEqual(h, th["groups"][g]["history"], (r["id"], g))
+        self.assertLess(len(json.dumps(f, separators=(",", ":"))), 40_000)
+        d = json.loads(json.dumps(self.data))       # an older run: one group short, one with no history at all
+        d["theatres"]["iran"]["doms"]["logistics"]["h"] = [1.5, None, 2.5]
+        d["theatres"]["iran"]["doms"]["financial"].pop("h", None)
+        row = next(r for r in contract.buildup(d)["theatres"] if r["id"] == "iran")
+        self.assertEqual(row["groups"]["Logistics"], [None] * 57 + [1.5, None, 2.5])
+        self.assertEqual(row["groups"]["Markets"], [None] * 60)
+
     def test_write_lays_out_the_tree(self):
         import contract
         out = tempfile.mkdtemp()
@@ -2054,9 +2228,11 @@ class TheatreCards(unittest.TestCase):
 
     def test_headline_words_level_and_tells(self):
         import share
-        self.assertEqual(share.theatre_headline("Iran", "Normal", 0), "Iran reads quiet. No timing tells fired this week.")
-        self.assertEqual(share.theatre_headline("Yemen", "Elevated", 1), "Yemen reads elevated. One timing tell fired this week.")
-        self.assertEqual(share.theatre_headline("Korea", "Odd", 12), "Korea reads quiet. 12 timing tells fired this week.")
+        self.assertEqual(share.theatre_headline("Iran", "Normal", 0), "Iran reads quiet. No tripwires fired this week.")
+        self.assertEqual(share.theatre_headline("Yemen", "Elevated", 1), "Yemen reads elevated. One tripwire fired this week.")
+        self.assertEqual(share.theatre_headline("Korea", "Odd", 12), "Korea reads quiet. Twelve tripwires fired this week.")
+        self.assertEqual(share.theatre_headline("Korea", "Odd", 13), "Korea reads quiet. 13 tripwires fired this week.")
+        self.assertEqual(share.theatre_headline("South Asia (India-Pakistan)", "Watch", 2), "South Asia reads watch. Two tripwires fired this week.")   # the short name, as on the card's name row
 
     def test_cards_render_for_every_theatre(self):
         import share
@@ -2068,6 +2244,20 @@ class TheatreCards(unittest.TestCase):
         self.assertIn("khourix.github.io/warwatch/ukraine", card)
         self.assertIn(C.CONTEXT["ukraine"][0], card)
         self.assertIn("24 Oct 2026 · 01:17 UTC", card)
+
+    def test_card_words_the_level_and_counts_as_the_app_does(self):
+        import copy
+        import share
+        d = copy.deepcopy(self.data)
+        d["theatres"]["southasia"]["level"] = "Elevated"
+        card = share.theatre_card_html(d, None, "southasia")
+        _, f = share.theatre_summary(d, "southasia")
+        self.assertIn('<div class="name">South Asia<span class="lv" style="color:#ff7438">Elevated</span>', card)
+        self.assertIn(f"of {f['scored']} scored", card)
+        self.assertIn("tripwires fired<br>this week" if f["tells"] != 1 else "tripwire fired<br>this week", card)
+        self.assertNotIn("<b style", card)
+        quiet = share.theatre_card_html(self.data, None, "iran")
+        self.assertIn('>Quiet</span>', quiet)
 
 
 class Pages(unittest.TestCase):
@@ -2117,8 +2307,14 @@ class Pages(unittest.TestCase):
         self.assertIn('<link rel="canonical" href="https://khourix.github.io/warwatch/yemen/">', yemen)
         self.assertIn('content="https://khourix.github.io/warwatch/og.jpg?v=202610240117"', self._read(site, "iran", "index.html"))
         self.assertIn(C.CONTEXT["ukraine"][0] + ". Ukraine reads", self._read(site, "ukraine", "index.html"))
-        for path in ("signals", "record", "map"):
+        for path in ("signals", "ground", "record", "map"):
             self.assertIn('<base href="/warwatch/">', self._read(site, path, "index.html"))
+        ground = self._read(site, "ground", "index.html")     # added November 2026: the Ground page, with the site's share image
+        self.assertIn("<title>Ground · WarWatch</title>", ground)
+        self.assertIn('<link rel="canonical" href="https://khourix.github.io/warwatch/ground/">', ground)
+        self.assertIn('<meta property="og:image" content="https://khourix.github.io/warwatch/og.jpg?v=202610240117">', ground)
+        nb = len(self.files["map/live.json"]["bases"])
+        self.assertIn((f"{nb} {'base is' if nb == 1 else 'bases are'}" if nb else "Bases are") + " watched on satellite images; most are passed by Sentinel-1 radar every two to three days.", ground)
         bases = [b for b in self.files["map/live.json"]["bases"]]
         if bases:
             self.assertIn("· WarWatch</title>", self._read(site, "base", bases[0]["id"], "index.html"))
@@ -2129,7 +2325,7 @@ class Pages(unittest.TestCase):
         self.assertIn('<base href="../">', old)
         self.assertIn("It stays here until 7 Dec 2026", old)
         self.assertEqual(old.count("__DATA__"), 0)
-        self.assertEqual(n, len(C.THEATRES) - 1 + len(bases) + 4 + 3)
+        self.assertEqual(n, len(C.THEATRES) - 1 + len(bases) + 5 + 3)
         with self.assertRaises(ValueError):     # a second run on the same site/ would move the app to classic/
             pages.build(site, dist)
 
