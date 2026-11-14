@@ -27,7 +27,7 @@ LEVEL_FILL = {"Watch": "#f0b03c", "Elevated": "#ff7438", "Critical": "#ff4a45"} 
 LAND_MIX = {"Watch": .42, "Elevated": .5, "Critical": .55}   # how strongly a theatre's country takes its level colour (MapView.tsx)
 BASE_FILL = {"out": LEVEL_FILL["Elevated"], "in": LEVEL_FILL["Elevated"], "changed": LEVEL_FILL["Watch"]}   # as the app's base diamonds
 LEVEL_WORD = {"Normal": "Quiet", "Watch": "Watch", "Elevated": "Elevated", "Critical": "Critical"}
-WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"]
+WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"]   # as word() in web/src/data.ts
 SITE = "khourix.github.io/warwatch"
 FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "src", "fonts")
 FONTS = (("Switzer", "switzer-normal.woff2", "100 900"), ("Sentient", "sentient-normal.woff2", "200 700"),
@@ -68,7 +68,7 @@ def summary(data):
     """-> (headline, facts) for the card, brief.json and the share text. Theatres are in config order, the 'global' row is left out.
 
     On a quiet day, while the forecast model is off (so the line of 50 sets the level), the headline names the quiet theatre
-    closest to that line in place of the tripwire count, worded as the app's dispatch words it (watch.tsx)."""
+    closest to that line before the tripwire count, worded as the app's dispatch words it (watch.tsx)."""
     ths = [(t, data["theatres"][t]) for t in data.get("order", data["theatres"]) if t in data["theatres"] and t != "global"]
     up = sorted([(t, v) for t, v in ths if _level(v) != "Normal"], key=lambda tv: -list(LEVEL_FILL).index(_level(tv[1])))
     tells = sum(_tells_on(v) for _, v in ths)
@@ -79,14 +79,13 @@ def summary(data):
     if not up:
         a = "Every theatre reads quiet."
     elif len(up) == 1:
-        a = f"{up[0][1]['name']} is the only theatre above quiet."
+        a = f"{short(up[0][1]['name'])} is the only theatre above quiet."
     else:
-        a = f"{_join([v['name'] for _, v in up])} are above quiet." if len(up) <= 3 else f"{WORDS[len(up)] if len(up) < len(WORDS) else len(up)} theatres are above quiet, led by {up[0][1]['name']}."
+        a = f"{_join([short(v['name']) for _, v in up])} are above quiet." if len(up) <= 3 else f"{WORDS[len(up)] if len(up) < len(WORDS) else len(up)} theatres are above quiet, led by {short(up[0][1]['name'])}."
+    word = WORDS[tells] if tells < len(WORDS) else str(tells)
+    b = f" {word} tripwire{'' if tells == 1 else 's'} fired this week."
     if not up and near is not None and not (data.get("model") or {}).get("active") and near["score"] < 50:
-        b = f" {short(near['name'])} comes closest to Watch, at {whole(near['score'])} against a line of 50."
-    else:
-        word = WORDS[tells] if tells < len(WORDS) else str(tells)
-        b = f" {word} tripwire{'' if tells == 1 else 's'} fired this week."
+        b = f" {short(near['name'])} comes closest to Watch, at {whole(near['score'])} against a line of 50." + b
     bases = sum(1 for b_ in ((data.get("map") or {}).get("bases") or []) if b_.get("st") in ("out", "in", "changed"))
     signals = sum(1 for s in data.get("series") or [] if not s.get("tf"))
     strong = sum(_strong(data.get("series") or [], t)[0] for t, _ in ths)
@@ -315,6 +314,7 @@ def theatre_headline(name, level, tells):
     """'Iran reads quiet. No tripwires fired this week.' Also the share text on the theatre's page (pages.py)."""
     lv = level if level in LEVEL_FILL else "Normal"
     word = WORDS[tells] if tells < len(WORDS) else str(tells)
+    name = short(name)
     return (f"{name} reads quiet." if lv == "Normal" else f"{name} reads {lv.lower()}.") + f" {word} tripwire{'' if tells == 1 else 's'} fired this week."
 
 

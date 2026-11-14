@@ -75,7 +75,10 @@ jobs:
         continue-on-error: true
         with:
           name: warwatch-dashboard
-          path: site/
+          # the share cards' fonts are served from the site but not handed out as files (Fontshare licence)
+          path: |
+            site/
+            !site/og-fonts/
           retention-days: 30
       - name: Commit history (public data only)
         if: github.event.inputs.only == ''

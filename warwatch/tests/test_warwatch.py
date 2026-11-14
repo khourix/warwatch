@@ -1912,7 +1912,13 @@ class ShareCard(unittest.TestCase):
         """As the app's dispatch words it (watch.tsx): only while the model is off and the reading is under the line of 50."""
         import share
         head = share.summary(self._quiet({"yemen": 45.2, "iraq": 6.5, "southasia": 30}))[0]
-        self.assertEqual(head, "Every theatre reads quiet. Yemen comes closest to Watch, at 45 against a line of 50.")
+        self.assertEqual(head, "Every theatre reads quiet. Yemen comes closest to Watch, at 45 against a line of 50. No tripwires fired this week.")
+        d = self._quiet({"yemen": 45.2})   # the tripwires that fired stay in the sentence, after the closest theatre, as in the app
+        d["theatres"]["iran"]["tells"] = [{"on": True}] * 3
+        d["theatres"]["yemen"]["tells"] = [{"on": True}] * 9 + [{"on": False}]
+        self.assertEqual(share.summary(d)[0], "Every theatre reads quiet. Yemen comes closest to Watch, at 45 against a line of 50. Twelve tripwires fired this week.")
+        d["theatres"]["iran"]["tells"] = [{"on": True}] * 4
+        self.assertTrue(share.summary(d)[0].endswith("against a line of 50. 13 tripwires fired this week."))
         self.assertIn("South Asia comes closest to Watch, at 31 against", share.summary(self._quiet({"southasia": 30.5}))[0])   # short name, half up
         self.assertIn("at 49 against a line of 50.", share.summary(self._quiet({"yemen": 49.7}))[0])    # under 50 never reads 50
         self.assertEqual(share.summary(self._quiet({"yemen": 50.2}))[0], "Every theatre reads quiet. No tripwires fired this week.")
@@ -2121,7 +2127,9 @@ class TheatreCards(unittest.TestCase):
         import share
         self.assertEqual(share.theatre_headline("Iran", "Normal", 0), "Iran reads quiet. No tripwires fired this week.")
         self.assertEqual(share.theatre_headline("Yemen", "Elevated", 1), "Yemen reads elevated. One tripwire fired this week.")
-        self.assertEqual(share.theatre_headline("Korea", "Odd", 12), "Korea reads quiet. 12 tripwires fired this week.")
+        self.assertEqual(share.theatre_headline("Korea", "Odd", 12), "Korea reads quiet. Twelve tripwires fired this week.")
+        self.assertEqual(share.theatre_headline("Korea", "Odd", 13), "Korea reads quiet. 13 tripwires fired this week.")
+        self.assertEqual(share.theatre_headline("South Asia (India-Pakistan)", "Watch", 2), "South Asia reads watch. Two tripwires fired this week.")   # the short name, as on the card's name row
 
     def test_cards_render_for_every_theatre(self):
         import share

@@ -45,8 +45,8 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
         </div>
         <p className="mt-3 font-[family-name:var(--font-serif)] text-[17px] leading-[1.42] text-fg [text-wrap:pretty]">{summary(t)}</p>
         <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-line bg-[var(--line)]">
-          {([['Tripwires', <><NumberFlow value={t.tells.filter(x => x.on).length} /><span className="text-fg3">/{t.tells.length}</span></>, 'this week', t.tells.some(x => x.on) ? 'var(--z2-text)' : undefined],
-            ['Strong readings', <NumberFlow value={t.signals.strong} />, `of ${t.signals.scored} scored`, t.signals.strong >= 5 ? 'var(--z3-text)' : undefined],
+          {([['Tripwires', <><NumberFlow value={t.tells.filter(x => x.on).length} /><span className="text-fg3">/{t.tells.length}</span></>, 'this week', undefined],
+            ['Strong readings', <NumberFlow value={t.signals.strong} />, `of ${t.signals.scored} scored`, undefined],
             ['Standing risk', t.standingRisk == null ? <span className="text-fg3">n/a</span> : <><NumberFlow value={t.standingRisk} format={{ maximumFractionDigits: 2, minimumFractionDigits: 2 }} />×</>, 'usual · in shadow', undefined]] as const).map(([a, b, c, col], i) => (
             <div key={i} className="bg-panel px-3 py-2.5">
               <dt className="text-[11.5px] text-fg3">{a}</dt>
