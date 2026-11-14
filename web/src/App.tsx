@@ -9,18 +9,19 @@ import { TheatreView } from './views'
 import { SignalsView, SignalView } from './signals'
 import { RecordView } from './record'
 import { BaseView } from './ground'
-import { Status, Dispatch, Board, Feed, Timeline, TIME_H } from './watch'
+import { Status, Dispatch, Board, Feed, Timeline, TIME_H, type Order, type Kind } from './watch'
 import { NotificationBell } from './bell'
 import { Wordmark, Mark, Skeleton, Failed } from './ui'
 import { useBrief, useLiveMap, useSignals, currentRoute, legacyHash, routeHref, parseGen, levelVar, fmtZ, short, type Brief, type LiveMap, type Route } from './data'
 
-/* The width at which the phone's sheet gives way to columns, and the one from which "What changed" gets its own column */
-const useWidth = () => {
-  const [w, setW] = useState(innerWidth)
-  useEffect(() => { const f = () => setW(innerWidth); addEventListener('resize', f); return () => removeEventListener('resize', f) }, [])
-  return w
+/* 0 phone, 1 wide (900 px: the sheet gives way to columns), 2 roomy (1200 px: "What changed" gets its own column).
+   Only crossing a breakpoint re-renders; column widths follow the window in CSS. */
+const breakpoint = () => innerWidth >= 1200 ? 2 : innerWidth >= 900 ? 1 : 0
+const useBreakpoint = () => {
+  const [b, setB] = useState(breakpoint)
+  useEffect(() => { const f = () => setB(breakpoint()); addEventListener('resize', f); return () => removeEventListener('resize', f) }, [])
+  return b
 }
-const clamp = (v: number, a: number, b: number) => Math.round(Math.max(a, Math.min(b, v)))
 const EASE = [.2, .8, .2, 1] as const
 type Nav = [Route['v'], string, typeof Globe][]
 const NAV: Nav = [['brief', 'Watch', Globe], ['signals', 'Signals', Activity], ['record', 'Record', ClipboardCheck]]
@@ -33,7 +34,7 @@ export default function App() {
 }
 
 function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
-  const width = useWidth(), wide = width >= 900, roomy = width >= 1200
+  const bp = useBreakpoint(), wide = bp >= 1, roomy = bp >= 2
   /* where the address points; a link from before the switch-over (#iran, #/theatre/iran) moves to its path, an unknown theatre to Watch */
   const fromLocation = useCallback((): Route => {
     const old = legacyHash(location.hash)
@@ -48,6 +49,9 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   const [settings, setSettings] = useState(false)
   const [cmd, setCmd] = useState(false)
   const [day, setDay] = useState<string | null>(null)
+  /* the board's order and the feed's kind outlive the columns that show them (the feed moves between columns at 1200 px) */
+  const [order, setOrder] = useState<Order>('closest')
+  const [kind, setKind] = useState<Kind>('all')
   const panelRef = useRef<HTMLDivElement>(null)
 
   /* replace: change the address without a new history entry (a theatre's tabs, an unknown theatre) */
@@ -90,14 +94,15 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
     </AnimatePresence>
   )
   const map = (padBottom: number) => <Suspense fallback={null}><MapView brief={brief} live={live} route={route} onPick={go} theme={theme} day={day} flat={prefs.map === 'flat'} onFlat={f => set({ map: f ? 'flat' : 'globe' })} labels={prefs.labels} wide={wide} padBottom={padBottom} /></Suspense>
-  const home = <><Dispatch brief={brief} /><Board brief={brief} sel={sel} go={go} /></>
+  const home = <><Dispatch brief={brief} heading={!dossier} /><Board brief={brief} sel={sel} go={go} order={order} setOrder={setOrder} /></>
+  const feed = <Feed brief={brief} day={day} setDay={setDay} kind={kind} setKind={setKind} go={go} />
 
   if (!wide) return (
     <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}>
       <div className="relative h-full overflow-hidden bg-bg text-fg">
         <div className="absolute inset-0">{map(route.v === 'map' ? 200 : Math.round(innerHeight * .55))}</div>
         <PhoneShell route={route} go={go} navActive={navActive} openCmd={() => setCmd(true)} openSettings={() => setSettings(true)} panelRef={panelRef} brief={brief} live={live}>
-          {dossier || page ? view : <>{home}<Feed brief={brief} day={day} setDay={setDay} go={go} /></>}
+          {dossier || page ? view : <>{home}{feed}</>}
         </PhoneShell>
         <CommandMenu open={cmd} setOpen={setCmd} go={go} toggleTheme={toggleTheme} openSettings={() => setSettings(true)} brief={brief} live={live} />
         <SettingsSheet open={settings} onClose={() => setSettings(false)} />
@@ -107,8 +112,8 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
 
   /* Columns: the board on the left, the map, and on the right "What changed" or the open theatre or base. Below 1200 px the feed
      moves under the board, and an open dossier takes the board's place. Every track stays in the grid so widths can ease. */
-  const L = dossier && !roomy ? 0 : roomy ? clamp(width * .275, 320, 396) : clamp(width * .35, 340, 396)
-  const R = dossier ? clamp(width * .33, 400, 472) : roomy ? clamp(width * .26, 320, 372) : 0
+  const L = dossier && !roomy ? '0px' : roomy ? 'clamp(320px, 27.5vw, 396px)' : 'clamp(340px, 35vw, 396px)'
+  const R = dossier ? 'clamp(400px, 33vw, 472px)' : roomy ? 'clamp(320px, 26vw, 372px)' : '0px'
   return (
     <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}>
     <div className="ww-wide grid h-full grid-cols-[64px_minmax(0,1fr)] overflow-hidden bg-bg text-fg">
@@ -135,17 +140,17 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
         <div className="relative min-h-0 min-w-0">
           {/* Watch stays mounted under a page, hidden, so the map is built once and keeps its place */}
           <div inert={page} aria-hidden={page || undefined} className={`absolute inset-0 isolate grid ${page ? 'invisible' : ''}`}
-            style={{ gridTemplateColumns: `${L}px minmax(0,1fr) ${R}px`, transition: 'grid-template-columns .34s cubic-bezier(.2,.8,.2,1)' }}>
+            style={{ gridTemplateColumns: `${L} minmax(0,1fr) ${R}`, transition: 'grid-template-columns .34s cubic-bezier(.2,.8,.2,1)' }}>
             <aside aria-label="Dispatch and theatres" className="scroll-thin min-h-0 min-w-0 overflow-y-auto overflow-x-hidden border-r border-line bg-s1">
-              {L > 0 && <>{home}{!roomy && <div className="border-t border-line"><Feed brief={brief} day={day} setDay={setDay} go={go} /></div>}</>}
+              {(roomy || !dossier) && <>{home}{!roomy && <div className="border-t border-line">{feed}</div>}</>}
             </aside>
             <div className="relative min-h-0 min-w-0 overflow-hidden" style={{ ['--time-h' as string]: `${TIME_H + 4}px` }}>
               {map(TIME_H)}
               <Timeline brief={brief} day={day} setDay={setDay} />
             </div>
-            <aside aria-label={dossier ? 'Details' : 'What changed'} className={`min-h-0 min-w-0 overflow-hidden bg-s1 ${R ? 'border-l border-line' : ''}`}>
-              {R > 0 && <div ref={dossier ? panelRef : undefined} data-scroll className="scroll-thin h-full overflow-y-auto overflow-x-hidden">
-                {dossier ? view : <Feed brief={brief} day={day} setDay={setDay} go={go} />}
+            <aside aria-label={dossier ? 'Details' : 'What changed'} className={`min-h-0 min-w-0 overflow-hidden bg-s1 ${dossier || roomy ? 'border-l border-line' : ''}`}>
+              {(dossier || roomy) && <div ref={dossier ? panelRef : undefined} data-scroll className="scroll-thin h-full overflow-y-auto overflow-x-hidden">
+                {dossier ? view : feed}
               </div>}
             </aside>
           </div>

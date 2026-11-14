@@ -3,11 +3,11 @@ import { levelVar, levelWord, zColor, type Level } from './data'
 import type { ReactNode } from 'react'
 
 export function Mark({ size = 22, live = true }: { size?: number; live?: boolean }) {
-  // The trace-W: a reading that dips, rises and dips again, ending in the live dot.
+  // The trace-W: a reading that dips, rises and dips again, ending in the live dot (a CSS pulse, so reduced motion stops it).
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden>
       <path d="M3 9.5 9.6 24 16 13.6 22.4 24 26.2 15.4" stroke="currentColor" strokeWidth="3.1" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="28" cy="10.4" r="3.1" fill="currentColor">{live && <animate attributeName="opacity" values="1;.45;1" dur="2.4s" repeatCount="indefinite" />}</circle>
+      <circle cx="28" cy="10.4" r="3.1" fill="currentColor" className={live ? 'mark-pulse' : undefined} />
     </svg>
   )
 }

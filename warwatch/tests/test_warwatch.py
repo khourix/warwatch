@@ -462,6 +462,7 @@ class TestGeoAndPage(unittest.TestCase):
         root = ET.fromstring(dashboard.feed_xml(d))
         self.assertEqual(root.tag, "rss")
         self.assertEqual(len(root.findall("./channel/item")), len(dashboard.feed_items(d)))
+        self.assertIn("Tripwires, official steps", root.find("./channel/description").text)
 
     def test_region_map_has_countries(self):
         topo = geo.load()
@@ -2016,6 +2017,7 @@ class DataContract(unittest.TestCase):
         self.assertEqual([x["date"] for x in f], sorted((x["date"] for x in f), reverse=True))
         adv = next(x for x in f if x["title"] == "US travel advisories raised")
         self.assertEqual(adv["detail"], "Level sum 7.8 to 8. US State Department")
+        self.assertTrue(next(x for x in f if x["kind"] == "tell")["detail"].startswith("Tripwire"))
         self.assertEqual(next(x for x in f if x["kind"] == "fire" and x["date"] == "2026-10-08")["detail"], "Strongest 40 MW, NASA VIIRS")
 
     def test_base_changes_replay_each_pass(self):

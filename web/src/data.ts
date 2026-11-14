@@ -94,14 +94,20 @@ export const asset = (src: string) => new URL(src, ROOT).href
 
 /* Base states as basewatch.py writes them */
 export const BASE_STATE: Record<string, [string, string]> = {
-  out: ['Fewer than usual', 'var(--z3)'], in: ['More than usual', 'var(--z3)'], changed: ['One pass differed', 'var(--z2)'],
+  out: ['Fewer than usual', 'var(--z3-text)'], in: ['More than usual', 'var(--z3-text)'], changed: ['One pass differed', 'var(--z2-text)'],
   normal: ['Usual on the latest pass', 'var(--fg3)'], optical: ['Optical images only', 'var(--fg3)'], nodata: ['No recent pass', 'var(--fg3)'],
 }
 export const baseState = (s: string) => BASE_STATE[s] || [s, 'var(--fg3)']
 
-/* Words and colours */
+/* an aircraft in an emergency: flagged so by the source, or squawking hijack (7500), radio failure (7600) or emergency (7700) */
+export const emergency = (a: MapAircraft) => a.emergency || ['7500', '7600', '7700'].includes(a.sq || '')
+/* heat follows the fire score everywhere (map, lists, cards): orange from 70, faint orange from 40, grey below */
+export const HEAT = { faint: 40, strong: 70 }
+export const heatColour = (score: number) => score >= HEAT.strong ? 'var(--z3)' : score >= HEAT.faint ? 'color-mix(in oklab, var(--z3) 45%, var(--fg3))' : 'var(--fg3)'
+
+/* Words and colours (text colours: the level word and base state are read as text) */
 export const LEVELS: Level[] = ['Normal', 'Watch', 'Elevated', 'Critical']
-export const levelVar = (l: string) => l === 'Critical' ? 'var(--crit)' : l === 'Elevated' ? 'var(--z3)' : l === 'Watch' ? 'var(--z2)' : 'var(--fg3)'
+export const levelVar = (l: string) => l === 'Critical' ? 'var(--crit)' : l === 'Elevated' ? 'var(--z3-text)' : l === 'Watch' ? 'var(--z2-text)' : 'var(--fg3)'
 export const levelWord = (l: string) => l === 'Normal' ? 'Quiet' : l
 /* "South Asia (India-Pakistan)" reads "South Asia" on the board, the map and in sentences */
 export const short = (name: string) => name.replace(/\s*\(.*\)/, '')

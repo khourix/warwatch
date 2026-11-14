@@ -21,3 +21,7 @@ npm run build                                                        # type-chec
 ```
 
 Versions in `package.json` are exact; update them on purpose, with the lock file.
+
+`npm run dev` and `npm run build` first download two fonts, Switzer and Sentient, from Fontshare (`scripts/fetch-fonts.mjs`). Their
+licence allows the site to serve them but not the repository to hold them, so they are git-ignored. If the download fails the app
+still builds and uses system fonts. See `src/fonts/README.md`.

@@ -11,7 +11,7 @@ import { toRoute } from './views'
 type Kind = FeedItem['kind'] | 'air' | 'sea'
 type Note = { id: string; kind: Kind; date: string; theatre: string; title: string; detail: string; to: Route; live?: boolean }
 const KIND: Record<Kind, [typeof Bell, string, string]> = {
-  tell: [ShieldAlert, 'var(--z2)', 'Tripwires'], base: [Satellite, 'var(--z3)', 'Bases'], fire: [Flame, 'var(--z3)', 'Fires'], official: [FileText, 'var(--fg3)', 'Official'],
+  tell: [ShieldAlert, 'var(--z2)', 'Tripwires'], base: [Satellite, 'var(--z3)', 'Bases'], fire: [Flame, 'var(--z3)', 'Heat'], official: [FileText, 'var(--fg3)', 'Official'],
   air: [Plane, 'var(--crit)', 'Live'], sea: [Anchor, 'var(--z3)', 'Live'],
 }
 const TABS = ['All', 'Live', 'Tripwires', 'Bases', 'Fires', 'Official'] as const

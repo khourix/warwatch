@@ -503,7 +503,7 @@ def feed_items(data, days=8):
     for t, v in data["theatres"].items():
         for x in v.get("tells") or []:
             if x.get("on"):
-                out.append({"d": x.get("date") or gen, "t": t, "title": f"{name[t]}: {x['n']}", "sub": "Timing tell. " + x["says"], "hot": 1})
+                out.append({"d": x.get("date") or gen, "t": t, "title": f"{name[t]}: {x['n']}", "sub": "Tripwire. " + x["says"], "hot": 1})
     for t, h in (data.get("hist") or {}).items():
         for d, kind, text, sid in h["items"]:
             if kind in ("advisory", "rating", "wave") and d >= cut[:len(d)]:
@@ -531,7 +531,7 @@ def feed_xml(data, site="https://khourix.github.io/warwatch/"):
         f"<guid isPermaLink=\"false\">{escape(f['t'] + '|' + f['d'] + '|' + f['title'])}</guid><pubDate>{when(f['d'])}</pubDate></item>"
         for f in feed_items(data))
     return ('<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>WarWatch: this week</title>'
-            f"<link>{escape(site)}</link><description>Timing tells, official steps and strong readings for 17 theatres in 6 regions. "
+            f"<link>{escape(site)}</link><description>Tripwires, official steps and strong readings for 17 theatres in 6 regions. "
             f"Built {escape(data['generated'])}.</description>{items}</channel></rss>\n")
 
 

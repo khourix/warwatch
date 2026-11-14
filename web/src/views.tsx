@@ -45,8 +45,8 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
         </div>
         <p className="mt-3 font-[family-name:var(--font-serif)] text-[17px] leading-[1.42] text-fg [text-wrap:pretty]">{summary(t)}</p>
         <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-line bg-[var(--line)]">
-          {([['Tripwires', <><NumberFlow value={t.tells.filter(x => x.on).length} /><span className="text-fg3">/{t.tells.length}</span></>, 'this week', t.tells.some(x => x.on) ? 'var(--z2)' : undefined],
-            ['Strong readings', <NumberFlow value={t.signals.strong} />, `of ${t.signals.scored} scored`, t.signals.strong >= 5 ? 'var(--z3)' : undefined],
+          {([['Tripwires', <><NumberFlow value={t.tells.filter(x => x.on).length} /><span className="text-fg3">/{t.tells.length}</span></>, 'this week', t.tells.some(x => x.on) ? 'var(--z2-text)' : undefined],
+            ['Strong readings', <NumberFlow value={t.signals.strong} />, `of ${t.signals.scored} scored`, t.signals.strong >= 5 ? 'var(--z3-text)' : undefined],
             ['Standing risk', t.standingRisk == null ? <span className="text-fg3">n/a</span> : <><NumberFlow value={t.standingRisk} format={{ maximumFractionDigits: 2, minimumFractionDigits: 2 }} />×</>, 'usual · in shadow', undefined]] as const).map(([a, b, c, col], i) => (
             <div key={i} className="bg-panel px-3 py-2.5">
               <dt className="text-[11.5px] text-fg3">{a}</dt>
@@ -67,12 +67,12 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
                     <button onClick={() => setOpen(open === g ? null : g)} aria-expanded={open === g} className="-mx-2 grid w-[calc(100%+16px)] grid-cols-[84px_1fr_44px] items-center gap-3 rounded-md px-2 py-1.5 text-left hover:bg-hover" title={GROUP_HINT[g]}>
                       <span className="flex items-center gap-1.5 text-[13px]"><ChevronRight size={12} className={`text-fg3 transition-transform ${open === g ? 'rotate-90' : ''}`} />{g}</span>
                       <Strip h={d?.history || []} />
-                      <span className="num text-right text-[12.5px]" style={{ color: (d?.z ?? 0) >= 2 ? 'var(--z3)' : 'var(--fg2)' }}>{fmtZ(d?.z)}</span>
+                      <span className="num text-right text-[12.5px]" style={{ color: (d?.z ?? 0) >= 2 ? 'var(--z3-text)' : 'var(--fg2)' }}>{fmtZ(d?.z)}</span>
                     </button>
                     <AnimatePresence>{open === g && (
                       <motion.ul initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: .24, ease: [.22, 1, .36, 1] }} className="overflow-hidden pl-6">
                         <li className="py-1 text-[12px] text-fg3">{GROUP_HINT[g]}</li>
-                        {(d?.top || []).map(s => <li key={s.id} className="flex justify-between gap-3 py-1 text-[12.5px] text-fg2"><span className="truncate">{s.label}</span><span className="num" style={{ color: Math.abs(s.z) >= 2 ? 'var(--z2)' : undefined }}>{fmtZ(s.z)}</span></li>)}
+                        {(d?.top || []).map(s => <li key={s.id} className="flex justify-between gap-3 py-1 text-[12.5px] text-fg2"><span className="truncate">{s.label}</span><span className="num" style={{ color: Math.abs(s.z) >= 2 ? 'var(--z2-text)' : undefined }}>{fmtZ(s.z)}</span></li>)}
                       </motion.ul>)}</AnimatePresence>
                   </div>) })}
               </div>
@@ -84,7 +84,7 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
                   <motion.li key={i} {...listAnim(i)} className="flex gap-3" title={x.says}>
                     <span className="mt-[3px] grid h-4 w-4 shrink-0 place-items-center rounded-full border" style={{ borderColor: x.on ? 'var(--z2)' : 'var(--line2)', background: x.on ? 'var(--z2)' : 'transparent' }}>{x.on && <Check size={10} strokeWidth={3} className="text-[var(--bg)]" />}</span>
                     <span className="min-w-0 flex-1"><span className={`block text-[13px] ${x.on ? 'text-fg' : 'text-fg2'}`}>{x.name}</span><span className="block text-[11.5px] text-fg3">{x.record?.events ? `Fired before ${x.record.caught} of ${x.record.events} past events` : 'No history to test it on yet'}</span></span>
-                    <span className="num shrink-0 text-[11.5px]" style={{ color: x.on ? 'var(--z2)' : 'var(--fg3)' }}>{x.on && x.date ? shortDate(x.date) : 'not seen'}</span>
+                    <span className="num shrink-0 text-[11.5px]" style={{ color: x.on ? 'var(--z2-text)' : 'var(--fg3)' }}>{x.on && x.date ? shortDate(x.date) : 'not seen'}</span>
                   </motion.li>
                 ))}
               </ul>
@@ -126,7 +126,7 @@ function SignalRow({ s, i, go }: { s: Signal; i: number; go: Go }) {
     <motion.button {...listAnim(i)} onClick={() => go({ v: 'signal', id: s.id })} className="-mx-2 grid w-[calc(100%+16px)] grid-cols-[1fr_auto_52px] items-center gap-3 rounded-md border-b border-line px-2 py-2 text-left last:border-0 hover:bg-hover">
       <div className="min-w-0"><div className="truncate text-[13px] text-fg" title={s.label}>{s.label}</div><div className="truncate text-[11.5px] text-fg3">{s.group} · {s.sub} · {s.lagging ? 'confirms' : 'leads'}{s.stale ? ' · last good copy' : ''}</div></div>
       <Spark v={s.spark} w={76} h={22} stroke={Math.abs(z) >= 2 ? 'var(--z2)' : 'var(--fg3)'} fill={false} />
-      <span className="num text-right text-[12.5px]" style={{ color: Math.abs(z) >= 3 ? 'var(--z3)' : Math.abs(z) >= 2 ? 'var(--z2)' : 'var(--fg2)' }}>{fmtZ(s.z)}</span>
+      <span className="num text-right text-[12.5px]" style={{ color: Math.abs(z) >= 3 ? 'var(--z3-text)' : Math.abs(z) >= 2 ? 'var(--z2-text)' : 'var(--fg2)' }}>{fmtZ(s.z)}</span>
     </motion.button>
   )
 }

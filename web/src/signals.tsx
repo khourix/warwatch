@@ -9,9 +9,9 @@ import { Spark, Section, Skeleton, Failed } from './ui'
 
 type Go = (r: Route) => void
 const STATUS: Record<string, [string, string]> = {
-  ok: ['Scored', 'var(--fg3)'], collecting: ['Collecting history', 'var(--fg3)'], awaiting_key: ['Needs a free key', 'var(--z2)'], error: ['Failed this run', 'var(--crit)'],
+  ok: ['Scored', 'var(--fg3)'], collecting: ['Collecting history', 'var(--fg3)'], awaiting_key: ['Needs a free key', 'var(--fg3)'], error: ['Failed this run', 'var(--crit)'],
 }
-const zTone = (z: number | null) => z == null ? 'var(--fg3)' : Math.abs(z) >= 3 ? 'var(--z3)' : Math.abs(z) >= 2 ? 'var(--z2)' : 'var(--fg2)'
+const zTone = (z: number | null) => z == null ? 'var(--fg3)' : Math.abs(z) >= 3 ? 'var(--z3-text)' : Math.abs(z) >= 2 ? 'var(--z2-text)' : 'var(--fg2)'
 type Sort = 'unusual' | 'name' | 'fresh'
 
 export function SignalsView({ th, brief, go }: { th?: string; brief: Brief; go: Go }) {
@@ -101,7 +101,7 @@ export function SignalView({ id, brief, go }: { id: string; brief: Brief; go: Go
       {head}
       <div className="px-5 pb-2 pt-3">
         <h1 className="text-[21px] font-semibold leading-snug tracking-[-0.015em]">{s.label}</h1>
-        <div className="mt-1.5 flex flex-wrap gap-x-3 text-[12.5px] text-fg3"><span>{s.group} · {s.sub}</span><span>{s.kind === 'monthly' ? 'Monthly' : 'Daily'}</span><span>{s.lagging ? 'Confirms (published late)' : 'Leads'}</span>{s.untested && <span style={{ color: 'var(--z2)' }} title="New in October 2026. Shown and used in the tripwires, but kept out of the score until a test on past events passes.">Not tested yet, not in the score</span>}</div>
+        <div className="mt-1.5 flex flex-wrap gap-x-3 text-[12.5px] text-fg3"><span>{s.group} · {s.sub}</span><span>{s.kind === 'monthly' ? 'Monthly' : 'Daily'}</span><span>{s.lagging ? 'Confirms (published late)' : 'Leads'}</span>{s.untested && <span title="New in October 2026. Shown and used in the tripwires, but kept out of the score until a test on past events passes.">Not tested yet, not in the score</span>}</div>
         <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-line bg-[var(--line)]">
           {([['From its normal', <span style={{ color: zTone(s.z) }}>{s.z == null ? 'n/a' : `${fmtZ(s.z)} SD`}</span>, Math.abs(s.z ?? 0) >= 3 ? 'strong' : Math.abs(s.z ?? 0) >= 2 ? 'unusual' : 'usual range'],
             ['Latest value', s.last ? shortDate(s.last.slice(0, 10)) : 'none', s.stale ? `stale, copy of ${s.stale}` : 'fresh'],

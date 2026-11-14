@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { Satellite, Flame, Plane, Ship, TriangleAlert, ExternalLink, Radar, ArrowLeft, ChevronRight, ImageIcon } from 'lucide-react'
 import { focusOnMap } from './sat'
-import { useBase, asset, baseState, shortDate, ago, parseGen, type Brief, type LiveMap, type Route, type BasePart, type Pic, type MapBase } from './data'
+import { useBase, asset, baseState, shortDate, ago, parseGen, emergency, heatColour, type Brief, type LiveMap, type Route, type BasePart, type Pic, type MapBase } from './data'
 import { Spark, Section, Skeleton, Failed, listAnim } from './ui'
 
 /* PR 4: what is physically happening in a theatre (bases on satellite radar, aircraft, ships, fires, navigational warnings),
@@ -16,7 +16,6 @@ export const baseWord = (state: string, part?: string) =>
   state === 'out' || state === 'in' ? `${state === 'out' ? 'Fewer' : 'More'} ${THINGS[part || ''] || 'objects'} than usual` : baseState(state)[0]
 const FIRE_WORD: Record<string, string> = { anom: 'Unusual heat', hot: 'Much more heat than usual', unex: 'Heat with no known source', ind: 'Industry or gas flare', seas: 'Farm or grass burning', volc: 'Volcano', off: 'Offshore platform' }
 export const fireWord = (c: string) => FIRE_WORD[c] || 'Heat'
-export const fireColour = (c: string) => c === 'anom' || c === 'hot' ? 'var(--z3)' : c === 'unex' ? 'var(--z2)' : 'var(--fg3)'
 
 /* ---------------------------------------------------------------- the theatre's "On the ground" tab */
 export function GroundTab({ id, live, brief, go }: { id: string; live?: LiveMap; brief: Brief; go: Go }) {
@@ -42,7 +41,7 @@ export function GroundTab({ id, live, brief, go }: { id: string; live?: LiveMap;
       {fires.length === 0 && <p className="text-[13px] text-fg3">No fire detected in this theatre in the last 48 hours.</p>}
       {fires.slice(0, 12).map((f, i) => (
         <motion.button key={i} {...listAnim(i)} onClick={() => focusOnMap({ kind: 'fire', x: f })} title="Show it on the map, with the satellite pictures" className="-mx-2 flex w-[calc(100%+16px)] gap-3 rounded-lg px-2 py-1.5 text-left text-[12.5px] hover:bg-hover">
-          <Flame size={14} className="mt-0.5 shrink-0" style={{ color: fireColour(f.class) }} />
+          <Flame size={14} className="mt-0.5 shrink-0" style={{ color: heatColour(f.score) }} />
           <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 text-fg">{f.site ? `Near ${f.site}` : fireWord(f.class)}{f.images && <ImageIcon size={12} className="text-fg3" aria-label="Sentinel-2 close-up" />}</span><span className="block text-fg3">{f.why || fireWord(f.class)}</span></span>
           <span className="num shrink-0 text-right text-fg3">{Math.round(f.mw)} MW<span className="block text-[11px]">{ago(now, f.date)}{f.night ? ', night' : ''}</span></span>
         </motion.button>
@@ -53,7 +52,7 @@ export function GroundTab({ id, live, brief, go }: { id: string; live?: LiveMap;
       {air.length === 0 ? <p className="text-[13px] text-fg3">None broadcasting over this theatre at the last run. Most military aircraft fly with their transponder off, so none seen is not none there.</p>
         : air.slice(0, 12).map((a, i) => (
           <div key={i} className="flex items-center gap-3 py-1.5 text-[12.5px]">
-            <Plane size={14} className="shrink-0" style={{ color: a.emergency || a.sq ? 'var(--z3)' : 'var(--fg2)', transform: `rotate(${(a.trk ?? 45) - 45}deg)` }} />
+            <Plane size={14} className="shrink-0" style={{ color: emergency(a) ? 'var(--crit)' : 'var(--fg2)', transform: `rotate(${(a.trk ?? 45) - 45}deg)` }} />
             <span className="min-w-0 flex-1 truncate"><span className="text-fg">{a.call || a.hex || 'Unknown'}</span><span className="text-fg3"> · {[a.t, a.o || a.ct].filter(Boolean).join(' · ')}</span></span>
             <span className="num shrink-0 text-fg3">{a.sq ? `squawk ${a.sq}` : a.alt != null ? `${Math.round(a.alt / 100) * 100} ft` : ''}</span>
           </div>))}

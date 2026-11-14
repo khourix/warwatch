@@ -1,18 +1,19 @@
 @import "tailwindcss";
 
-/* Fonts, self-hosted (fonts/README.md): Switzer for the interface, Sentient for the voice, JetBrains Mono for ids and dates */
-@font-face { font-family: Switzer; src: url("./fonts/switzer-normal.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
-@font-face { font-family: Sentient; src: url("./fonts/sentient-normal.woff2") format("woff2"); font-weight: 200 700; font-display: swap; }
-@font-face { font-family: Sentient; src: url("./fonts/sentient-italic.woff2") format("woff2"); font-weight: 200 700; font-style: italic; font-display: swap; }
+/* Fonts, served from this site (fonts/README.md): Switzer for the interface, Sentient for the voice, JetBrains Mono for ids and dates.
+   Switzer and Sentient are downloaded before each build into fontshare.css (scripts/fetch-fonts.mjs); their licence keeps them out of the repository. */
+@import "./fonts/fontshare.css";
 @font-face { font-family: "JetBrains Mono"; src: url("./fonts/jet-brains-mono-normal.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
 
 /* WarWatch "Dispatch" tokens. If it has colour, it is data: amber and orange (z2, z3, crit) only for unusual readings, cool slate
-   only for aircraft and ships, ivory (happened) for things that happened. Selection and focus are ivory on dark, ink on light. */
+   only for aircraft and ships, ivory (happened) for things that happened. Selection and focus are ivory on dark, ink on light.
+   z2 and z3 are for marks and fills; as text they take z2-text and z3-text, which hold 4.5:1 on every light surface. */
 :root {
   --bg: #0a0a0b; --s1: #101011; --s2: #161617; --s3: #1f1f21; --line: rgba(255,255,255,.075); --line2: rgba(255,255,255,.15);
   --fg: #edebe6; --fg2: #a9a69f; --fg3: #7f7c76;
   --paper: #1b1a17; --ink: #edebe6; --ink2: #a9a69f; --ink-line: rgba(255,244,220,.11);
   --z0: rgba(255,255,255,.07); --z1: #5d4b20; --z2: #e3a63a; --z3: #f46b2c; --crit: #ff4336;
+  --z2-text: #e3a63a; --z3-text: #f46b2c;
   --happened: #f3ead9; --cool: #a7b6c6; --ok: #5bc391;
   --ocean: #070708; --land: #151516; --land2: #222224; --border: #333336; --grat: rgba(255,255,255,.035);
   --sel: #edebe6; --sel-ink: #0a0a0b;
@@ -22,9 +23,10 @@
 }
 :root[data-theme="light"] {
   --bg: #f2efe7; --s1: #f8f6f0; --s2: #fffefb; --s3: #e9e5da; --line: rgba(30,28,20,.11); --line2: rgba(30,28,20,.24);
-  --fg: #1a1913; --fg2: #56534a; --fg3: #77746a;
+  --fg: #1a1913; --fg2: #56534a; --fg3: #6e6b62;
   --paper: #e9e4d6; --ink: #1a1913; --ink2: #56534a; --ink-line: rgba(30,28,20,.15);
-  --z0: rgba(30,28,20,.07); --z1: #e6d3a0; --z2: #c2861a; --z3: #c5451a; --crit: #b0201a;
+  --z0: rgba(30,28,20,.07); --z1: #d8b867; --z2: #c2861a; --z3: #c5451a; --crit: #b0201a;
+  --z2-text: #855b0f; --z3-text: #a33a12;
   --happened: #3a3526; --cool: #51657a; --ok: #1f7a4f;
   --ocean: #dde3e1; --land: #f8f6f0; --land2: #ece6d6; --border: #bdb7a6; --grat: rgba(30,28,20,.05);
   --sel: #1a1913; --sel-ink: #f4f1e9;
@@ -42,10 +44,10 @@
   --color-fg: var(--fg); --color-fg2: var(--fg2); --color-fg3: var(--fg3);
   --color-paper: var(--paper); --color-ink: var(--ink); --color-ink2: var(--ink2); --color-inkline: var(--ink-line);
   --color-z0: var(--z0); --color-z1: var(--z1); --color-z2: var(--z2); --color-z3: var(--z3); --color-crit: var(--crit);
+  --color-z2t: var(--z2-text); --color-z3t: var(--z3-text);
   --color-happened: var(--happened); --color-cool: var(--cool); --color-ok: var(--ok);
   --color-sel: var(--sel); --color-selink: var(--sel-ink);
   --radius-r1: 4px; --radius-r2: 8px; --radius-r3: 12px;
-  --ease-ww: cubic-bezier(.2,.8,.2,1);
 }
 
 html, body, #root { height: 100%; }
@@ -66,6 +68,8 @@ button { cursor: pointer; }
 .live-dot::after { content: ""; position: absolute; inset: -3px; border-radius: 999px; background: currentColor; opacity: .3; animation: breathe 2.6s ease-in-out infinite; }
 @keyframes ping { 0% { transform: scale(.6); opacity: .7; } 100% { transform: scale(2.4); opacity: 0; } }
 .ping::before { content: ""; position: absolute; inset: 0; border-radius: 999px; border: 1.5px solid currentColor; animation: ping 2.2s var(--ease) infinite; }
+@keyframes pulse { 50% { opacity: .45; } }
+.mark-pulse { animation: pulse 2.4s ease-in-out infinite; }
 @keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
 /* board rows rise in, 22 ms apart, on first paint only */
 @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }

@@ -78,7 +78,7 @@ function Health({ rec, go }: { rec: import('./data').RecordFile; go: Go }) {
   const tiles: [string, string, number, string, string?][] = [
     ['ok', 'Have a score', st.ok || 0, `of ${total} signals`],
     ['collecting', 'Collecting history', st.collecting || 0, 'they get a score later'],
-    ['awaiting_key', 'Need a key', st.awaiting_key || 0, 'a free key is missing', 'var(--z2)'],
+    ['awaiting_key', 'Need a key', st.awaiting_key || 0, 'a free key is missing', 'var(--fg3)'],
     ['error', 'Failed this run', (st.error || 0) + rec.health.errors.length, 'the next run tries again', 'var(--crit)'],
   ]
   return <>

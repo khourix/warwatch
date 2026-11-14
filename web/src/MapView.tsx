@@ -6,14 +6,14 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import { feature } from 'topojson-client'
 import type { FeatureCollection } from 'geojson'
 import coarse from 'world-atlas/countries-110m.json'
-import { levelVar, levelWord, short, asset, baseState, shortDate, useBase, type Brief, type LiveMap, type LonLat, type Route, type MapBase, type MapFire, type MapAircraft, type MapShip, type MapWarning, type MapAirport, type MapDiversion, type MapDark, type MapLoiter, type MapIncident } from './data'
+import { levelVar, levelWord, short, asset, baseState, shortDate, useBase, emergency, heatColour, HEAT, type Brief, type LiveMap, type LonLat, type Route, type MapBase, type MapFire, type MapAircraft, type MapShip, type MapWarning, type MapAirport, type MapDiversion, type MapDark, type MapLoiter, type MapIncident } from './data'
 import { fireImages, baseImages, copernicusUrl, worldviewUrl, type SatImage, type Focus } from './sat'
-import { baseWord, fireWord, fireColour } from './ground'
+import { baseWord, fireWord } from './ground'
 import { reducedMotion as reduced } from './settings'
 
 /* The globe: MapLibre with the Natural Earth countries as a GeoJSON source, so it needs no tile server. Theatres are
    coloured by level through feature state; labels are HTML laid over the map with a collision pass (highest level wins).
-   Every mark follows one grammar, named in the legend chips: bases are hollow diamonds, heat is a dot, aircraft are
+   Every mark follows one grammar, named in the legend chips: bases are diamonds (filled when they changed), heat is a dot, aircraft are
    arrowheads and warships short bars (cool slate), reports are ivory rings, dark-ship cells grey squares. */
 
 maplibregl.setWorkerUrl(workerUrl)   // MapLibre 6 ships its worker as a separate module; Vite copies it next to the app
@@ -66,22 +66,23 @@ const dist = (a: LonLat, b: LonLat) => {   // great-circle angle in degrees
   return Math.acos(Math.min(1, Math.sin(p1) * Math.sin(p2) + Math.cos(p1) * Math.cos(p2) * Math.cos(l1 - l2))) / r
 }
 
-/* The legend chips double as layer switches. Each names its mark; airports carry the diversions drawn beside them, and
+/* The legend chips double as layer switches. Each names its mark; aircraft carry the diverted and turned-back flights, and
    dark ships the loitering ships (both from Global Fishing Watch). Airports and sea warnings start hidden, as approved. */
 type Layer = 'bases' | 'fires' | 'aircraft' | 'ships' | 'incidents' | 'dark' | 'airports' | 'warnings'
 const LAYERS: [Layer, string, string[], string][] = [
   ['bases', 'Bases', ['bases', 'bases-halo'], 'Bases watched on satellite radar'],
   ['fires', 'Heat', ['fires'], 'Fires and heat from NASA VIIRS: orange when unusual, faint when somewhat unusual, grey otherwise'],
-  ['aircraft', 'Aircraft', ['aircraft', 'aircraft-cluster'], 'Military aircraft broadcasting their position, pointing along their track'],
+  ['aircraft', 'Aircraft', ['aircraft', 'aircraft-cluster', 'diversions'], 'Military aircraft broadcasting their position, pointing along their track, and flights diverted or turned back'],
   ['ships', 'Warships', ['ships', 'ship-trails'], 'Warships, from the weekly fleet tracker'],
   ['incidents', 'Reports', ['incidents'], 'Incidents reported in the news, unverified'],
   ['dark', 'Dark ships', ['dark', 'loitering'], 'Ships seen on radar with no AIS, and ships loitering at sea'],
-  ['airports', 'Airports', ['airports', 'diversions'], 'Theatre airports, with flights diverted or turned back'],
+  ['airports', 'Airports', ['airports'], 'Theatre airports, ringed when departures fell or flights were diverted away'],
   ['warnings', 'Sea warnings', ['warnings'], 'Navigational warnings at sea'],
 ]
 const LAYER_KEY = 'ww-layers'
+const ALL: Record<Layer, boolean> = { bases: true, fires: true, aircraft: true, ships: true, incidents: true, dark: true, airports: true, warnings: true }
 const loadLayers = (): Record<Layer, boolean> => {
-  const d = { bases: true, fires: true, aircraft: true, ships: true, incidents: true, dark: true, airports: false, warnings: false }
+  const d = { ...ALL, airports: false, warnings: false }
   try { return { ...d, ...JSON.parse(localStorage.getItem(LAYER_KEY) || '{}') } } catch { return d }
 }
 
@@ -120,7 +121,10 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
   const pick = useRef(onPick); pick.current = onPick
   const [peek, setPeek] = useState<Peek | null>(null)
   const [basemap, setBasemap] = useState(false)
-  const [layers, setLayers] = useState(loadLayers)
+  /* the phone has no legend chips to switch layers back on, so it ignores the saved choice and shows every layer */
+  const [saved, setSaved] = useState(loadLayers)
+  const layers = wide ? saved : ALL
+  const toggle = (k: Layer) => setSaved(l => { const n = { ...l, [k]: !l[k] }; try { localStorage.setItem(LAYER_KEY, JSON.stringify(n)) } catch { /* private mode: the choice lasts this visit */ } return n })
   const selBase = route.v === 'base' ? route.id : null
   const primaryRef = useRef(primary); primaryRef.current = primary
   const peekRef = useRef(peek); peekRef.current = peek
@@ -134,7 +138,10 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
     const o = new ResizeObserver(() => setDockH(el.offsetHeight)); o.observe(el)
     return () => o.disconnect()
   }, [wide, live])
-  const top = wide ? dockH + 28 : 0
+  /* what the camera keeps clear at the top: the chips on wide screens, the header on a phone. Read through a ref, so a chip
+     switched on or off (and the chips rewrapping) never moves the camera. */
+  const top = wide ? dockH + 28 : 60
+  const topRef = useRef(top); topRef.current = top
 
   /* satellite pictures laid on the map: the open fire's (Sentinel-2 close-ups, that day's VIIRS pass) or the open base's */
   const baseQ = useBase(selBase || '', !!selBase)
@@ -270,7 +277,6 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
   useEffect(() => {
     const m = map.current; if (!m || !ready) return
     for (const [k, , ids] of LAYERS) for (const id of ids) if (m.getLayer(id)) m.setLayoutProperty(id, 'visibility', layers[k] ? 'visible' : 'none')
-    try { localStorage.setItem(LAYER_KEY, JSON.stringify(layers)) } catch { /* private mode: the choice lasts this visit */ }
   }, [layers, ready])
 
   /* live layers. A day picked on the timeline shows that day's fires, base passes, diversions and reports only. */
@@ -281,7 +287,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
     const set = (id: string, d: any) => (m.getSource(id) as maplibregl.GeoJSONSource | undefined)?.setData(d)
     set('fires', fc(live.fires.filter(f => !day || f.date === day).map(f => pt(f.ll, f, { mw: f.mw, s: f.score }))))
     set('bases', fc(live.bases.filter(b => !day || b.last === day).map(b => pt(b.ll, b, { id: b.id, st: b.state, hi: ['out', 'in', 'changed'].includes(b.state) ? 1 : 0 }))))
-    set('aircraft', fc(day ? [] : [...live.aircraft, ...live.squawks].map(a => pt(a.ll, a, { trk: a.trk ?? 0, em: a.emergency || !!a.sq ? 1 : 0, key: ['tanker', 'isr', 'lift'].includes(a.class) ? 1 : 0 }))))
+    set('aircraft', fc(day ? [] : [...live.aircraft, ...live.squawks].map(a => pt(a.ll, a, { trk: a.trk ?? 0, em: emergency(a) ? 1 : 0, key: ['tanker', 'isr', 'lift'].includes(a.class) ? 1 : 0 }))))
     set('ships', fc(day ? [] : live.ships.map(x => pt(x.ll, x, { big: x.k && x.k !== 'navy' ? 1 : 0 }))))
     set('ship-trails', fc(day ? [] : live.ships.filter(x => (x.trail?.length || 0) > 1).map(x => ({ type: 'Feature', geometry: { type: 'LineString', coordinates: x.trail }, properties: {} }))))
     set('warnings', fc(day ? [] : live.warnings.map(x => pt(x.ll, x))))
@@ -323,7 +329,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
   useEffect(() => {
     const m = map.current; if (!m || !ready || !fire) return
     const b = fireImages(fire)[0].bounds
-    const padding = wide ? { top: top + 52, bottom: padBottom + 20, left: 400, right: 60 } : { top: 116, bottom: cardBottom + (card.current?.offsetHeight || 260) + 12, left: 24, right: 24 }
+    const padding = wide ? { top: topRef.current + 52, bottom: padBottom + 20, left: 400, right: 60 } : { top: 116, bottom: cardBottom + (card.current?.offsetHeight || 260) + 12, left: 24, right: 24 }
     m.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding, maxZoom: 15, duration: reduced() ? 0 : 1200, essential: true })
   }, [focusKey, ready])
 
@@ -354,11 +360,11 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
   const home = () => {
     const m = map.current; if (!m) return
     const w = m.getContainer().clientWidth, h = m.getContainer().clientHeight - padBottom
-    m.flyTo({ center: HOME, zoom: worldZoom(w, h), padding: { top, left: 0, bottom: padBottom, right: 0 }, duration: reduced() ? 0 : 1200, essential: true })
+    m.flyTo({ center: HOME, zoom: worldZoom(w, h), padding: { top: topRef.current, left: 0, bottom: padBottom, right: 0 }, duration: reduced() ? 0 : 1200, essential: true })
   }
   useEffect(() => {
     const m = map.current; if (!m || !ready) return
-    const padding = { top: top + 40, bottom: padBottom + 40, left: 40, right: 40 }
+    const padding = { top: topRef.current + 40, bottom: padBottom + 40, left: 40, right: 40 }
     const duration = reduced() ? 0 : undefined
     const focus = route.v === 'theatre' ? route.id : route.v === 'signals' ? route.th : undefined   // Signals filtered to a theatre shows that theatre
     const b = route.v === 'base' ? live?.bases.find(x => x.id === route.id) : undefined
@@ -369,7 +375,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
       if (v) m.fitBounds([v[0], v[1]], { padding, maxZoom: 6, duration: duration ?? 1100, essential: true })
       else if (c) m.flyTo({ center: c, zoom: 4, padding, duration, essential: true })
     } else if (route.v !== 'base') home()
-  }, [route, ready, padBottom, top, live, route.v === 'base' && basemap])
+  }, [route, ready, padBottom, live, route.v === 'base' && basemap])
 
   /* labels: positioned every frame the camera moves */
   useEffect(() => {
@@ -382,13 +388,15 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
         const ll: LonLat = [+el.dataset.lon!, +el.dataset.lat!], kind = el.dataset.kind!
         const minZ = kind === 'city' ? 4.2 : kind === 'choke' ? 3.2 : 0
         const show = (!globe || dist(ll, center) < 78) && z >= minZ && (kind !== 'theatre' || z < 6.5 || el.dataset.id === sel)
-        if (!show) { el.style.opacity = '0'; el.style.pointerEvents = 'none'; return }
+        /* a hidden label leaves the tab order too */
+        const hide = () => { el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.inert = true }
+        if (!show) return hide()
         const p = m.project(ll)
         const w = el.offsetWidth || 60, h = el.offsetHeight || 18
         const x0 = kind === 'city' ? p.x : p.x - w / 2, y0 = p.y - h / 2, r = [x0 - 3, y0 - 2, x0 + w + 3, y0 + h + 2]
         const cut = (r[0] < 0 || r[2] > W || r[1] < Ht || r[3] > Hb) && el.dataset.id !== sel      // a label running off the edge or under the chips reads as broken; the board lists it anyway
-        if (cut || placed.some(q => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1])) { el.style.opacity = '0'; el.style.pointerEvents = 'none'; return }
-        placed.push(r)
+        if (cut || placed.some(q => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1])) return hide()
+        placed.push(r); el.inert = false
         el.style.opacity = kind === 'theatre' && sel && el.dataset.id !== sel ? '.55' : '1'
         el.style.pointerEvents = kind === 'theatre' ? 'auto' : 'none'   // city and strait names never take a click meant for the dot under them
         el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`
@@ -400,14 +408,15 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
   }, [ready, sel, brief, live, flat, padBottom, dockH, wide, labels])
 
   const zoom = (d: number) => map.current?.easeTo({ zoom: map.current.getZoom() + d, duration: reduced() ? 0 : 320 })
-  const count: Record<Layer, number> = { bases: live?.bases.length || 0, fires: live?.fires.length || 0, aircraft: (live?.aircraft.length || 0) + (live?.squawks.length || 0), ships: live?.ships.length || 0,
+  const count: Record<Layer, number> = { bases: live?.bases.length || 0, fires: live?.fires.length || 0, aircraft: (live?.aircraft.length || 0) + (live?.squawks.length || 0) + (live?.diversions || []).length, ships: live?.ships.length || 0,
     incidents: live?.incidents.length || 0, dark: (live?.darkShips || []).length, airports: (live?.airports || []).length, warnings: live?.warnings.length || 0 }
   const ctl = 'grid h-[30px] w-[30px] place-items-center text-fg2 transition-colors duration-[120ms] hover:bg-s2 hover:text-fg'
 
   return (
     <div className="absolute inset-0 select-none overflow-hidden bg-bg">
       <div ref={box} style={{ position: 'absolute', inset: 0 }} role="region" aria-label="Map of the watched theatres. Every theatre on it is also listed on the board." />
-      <div ref={ov} className="pointer-events-none absolute inset-0" style={{ ['--lbl' as string]: labels }}>
+      {/* on a phone the labels never draw under the header, even mid-flight while the collision pass catches up */}
+      <div ref={ov} className="pointer-events-none absolute inset-0" style={{ ['--lbl' as string]: labels, clipPath: wide ? undefined : 'inset(60px 0 0 0)' }}>
         {brief.theatres.filter(t => t.center).map(t => { const on = sel === t.id; return (
           <button key={t.id} data-kind="theatre" data-id={t.id} data-prio={100 + (RANK[t.level] || 0) * 20 + t.tellsOn * 4 + (t.spillover ? 0 : 2)} data-lon={t.center![0]} data-lat={t.center![1]}
             onClick={() => onPick({ v: 'theatre', id: t.id })} aria-current={on ? 'true' : undefined}
@@ -430,14 +439,14 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
         ))}
       </div>
       {tip && <div className="pointer-events-none absolute z-10 max-w-[280px] truncate rounded-r1 border border-line2 bg-[color-mix(in_oklab,var(--s1)_95%,transparent)] px-2 py-1 text-[12px] text-fg shadow-[var(--shadow)]" style={{ left: tip.x + 14, top: tip.y + 14 }}>{tip.text}</div>}
-      {wide && live && <div ref={dock} role="group" aria-label="Map layers and legend" className="absolute left-3.5 right-14 top-3.5 z-10 flex flex-wrap content-start gap-1">
+      {wide && live && <div ref={dock} role="group" aria-label="Map layers and legend" className="absolute inset-x-3.5 top-3.5 z-10 flex flex-wrap content-start gap-1">
         {LAYERS.filter(([k]) => count[k] > 0).map(([k, name, , hint]) => (
-          <button key={k} aria-pressed={layers[k]} onClick={() => setLayers(l => ({ ...l, [k]: !l[k] }))} title={`${layers[k] ? 'Hide' : 'Show'}: ${hint}`}
-            className={`inline-flex h-[26px] items-center gap-1.5 rounded-full pl-[7px] pr-[9px] text-[11.5px] transition-colors duration-[120ms] hover:border-line2 hover:text-fg ${glass} ${layers[k] ? 'text-fg2' : 'text-fg3'}`}>
-            <Swatch k={k} off={!layers[k]} />{name}<span className="num font-mono text-[10px] text-fg3">{count[k].toLocaleString('en')}</span>
+          <button key={k} aria-pressed={layers[k]} onClick={() => toggle(k)} aria-label={`${name}, ${count[k].toLocaleString('en')} on the map`} title={`${layers[k] ? 'Hide' : 'Show'}: ${hint} (${count[k].toLocaleString('en')})`}
+            className={`inline-flex h-[26px] items-center gap-1 rounded-full pl-1.5 pr-2 text-[11.5px] transition-colors duration-[120ms] hover:border-line2 hover:text-fg ${glass} ${layers[k] ? 'text-fg2' : 'text-fg3'}`}>
+            <Swatch k={k} off={!layers[k]} />{name}
           </button>))}
-        {layers.bases && count.bases > 0 && <span className={`inline-flex h-[26px] items-center gap-1.5 rounded-full border-dashed px-[9px] text-[11.5px] text-fg3 ${glass}`}>
-          <i className="h-[7px] w-[7px] rotate-45 border-[1.5px] border-z2" aria-hidden />one pass differed<i className="ml-1 h-[7px] w-[7px] rotate-45 border-[1.5px] border-z3" aria-hidden />emptier or fuller
+        {layers.bases && count.bases > 0 && <span className={`inline-flex h-[26px] items-center gap-1.5 rounded-full border-dashed px-2 text-[11.5px] text-fg3 ${glass}`}>
+          <i className="h-[7px] w-[7px] rotate-45 bg-z2 ring-1 ring-black/70" aria-hidden />one pass differed<i className="ml-1 h-[7px] w-[7px] rotate-45 bg-z3 ring-1 ring-black/70" aria-hidden />emptier or fuller
         </span>}
       </div>}
       {imgs.length > 0 && <div role="group" aria-label="Satellite picture on the map" className={`absolute z-10 flex items-center gap-0.5 overflow-x-auto rounded-r2 p-1 text-[12px] shadow-[var(--shadow)] ${glass}`} style={{ left: wide ? 14 : 16, top: wide ? dockH + 22 : 66, maxWidth: 'calc(100% - 72px)' }}>
@@ -449,7 +458,8 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
       {peek && <PeekCard p={peek} cardRef={card} onClose={() => setPeek(null)} onPick={r => { setPeek(null); onPick(r) }} brief={brief} shown={shown} onShow={setImgKey} onEnlarge={setBig}
         style={{ left: wide ? 14 : 8, bottom: cardBottom, maxWidth: wide ? 'min(360px, calc(100% - 72px))' : 'calc(100% - 16px)', maxHeight: `calc(100% - ${cardBottom + (wide ? top + 12 : 116)}px)` }} />}
       {big && <Lightbox img={big} onClose={() => setBig(null)} />}
-      <div className={`absolute z-10 flex flex-col overflow-hidden rounded-r2 ${glass}`} style={wide ? { right: 14, top: 14 } : { right: 16, bottom: padBottom + 16 }}>
+      {/* bottom right, above the timeline, so the legend chips can take the map's full width */}
+      <div className={`absolute z-10 flex flex-col overflow-hidden rounded-r2 ${glass}`} style={{ right: wide ? 14 : 16, bottom: padBottom + (wide ? 12 : 16) }}>
         <button aria-label="Zoom in" title="Zoom in" onClick={() => zoom(1)} className={ctl}><Plus size={14} /></button>
         <button aria-label="Zoom out" title="Zoom out" onClick={() => zoom(-1)} className={`${ctl} border-t border-line`}><Minus size={14} /></button>
         {wide && <button aria-label="Whole world" title="Whole world" onClick={home} className={`${ctl} border-t border-line`}><Scan size={14} /></button>}
@@ -462,7 +472,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
 /* the legend swatch: the same mark the layer draws */
 function Swatch({ k, off }: { k: Layer; off: boolean }) {
   const mark: Record<Layer, React.ReactNode> = {
-    bases: <i className="h-[7px] w-[7px] rotate-45 border-[1.5px] border-fg2" />,
+    bases: <i className="h-[7px] w-[7px] rotate-45 border-[1.5px] border-fg3" />,
     fires: <i className="h-1.5 w-1.5 rounded-full bg-z3" />,
     aircraft: <i className="h-0 w-0 -translate-y-0.5 border-x-4 border-b-8 border-x-transparent border-b-cool" />,
     ships: <i className="h-1 w-[9px] rounded-[1px_3px_3px_1px] bg-cool" />,
@@ -483,6 +493,7 @@ function addIcons(m: maplibregl.Map) {
     m.addImage(name, c.getImageData(0, 0, size, size), { sdf: true, pixelRatio: 2 })
   }
   make('diamond', 32, (c, s) => { c.lineWidth = 3.5; c.beginPath(); c.moveTo(s / 2, 5); c.lineTo(s - 5, s / 2); c.lineTo(s / 2, s - 5); c.lineTo(5, s / 2); c.closePath(); c.stroke() })
+  make('diamond-fill', 32, (c, s) => { c.beginPath(); c.moveTo(s / 2, 5); c.lineTo(s - 5, s / 2); c.lineTo(s / 2, s - 5); c.lineTo(5, s / 2); c.closePath(); c.fill() })
   make('arrow', 32, (c, s) => { c.beginPath(); c.moveTo(s / 2, 4); c.lineTo(s - 8, s - 5); c.lineTo(s / 2, s - 11); c.lineTo(8, s - 5); c.closePath(); c.fill() })
   make('bar', 32, (c, s) => { c.beginPath(); c.roundRect(5, s / 2 - 4, s - 10, 8, [2, 4, 4, 2]); c.fill() })
   make('square', 32, (c, s) => { c.fillRect(9, 9, s - 18, s - 18) })
@@ -516,18 +527,22 @@ function addLiveLayers(m: maplibregl.Map) {
   m.addLayer({ id: 'incidents', type: 'circle', source: 'incidents', paint: {} })
   // a base that changed carries a soft halo under its diamond
   m.addLayer({ id: 'bases-halo', type: 'circle', source: 'bases', filter: ['==', ['get', 'hi'], 1], paint: {} })
-  // changed bases show from the world view; the other 150 from zoom 3.5, so the globe is not a field of diamonds
+  // changed bases show from the world view, filled; the other 150 from zoom 3.5, hollow, so the globe is not a field of diamonds
   m.addLayer({ id: 'bases', type: 'symbol', source: 'bases', filter: ['any', ['==', ['get', 'hi'], 1], ['>=', ['zoom'], 3.5]],
-    layout: { 'icon-image': 'diamond', 'icon-size': ['case', ['==', ['get', 'hi'], 1], 1, .8], 'icon-allow-overlap': true, 'symbol-sort-key': ['-', 0, ['get', 'hi']] }, paint: {} })
+    layout: { 'icon-image': ['case', ['==', ['get', 'hi'], 1], 'diamond-fill', 'diamond'], 'icon-size': ['case', ['==', ['get', 'hi'], 1], 1, .8], 'icon-allow-overlap': true, 'symbol-sort-key': ['-', 0, ['get', 'hi']] }, paint: {} })
   paintLive(m)
 }
 function paintLive(m: maplibregl.Map) {
-  const z2 = css('--z2'), z3 = css('--z3'), crit = css('--crit'), fg2 = css('--fg2'), fg3 = css('--fg3'), cool = css('--cool'), happened = css('--happened'), sel = css('--sel'), bg = css('--bg')
-  // heat: orange only when the fire score is 70 or more, faint from 40, grey below
-  m.setPaintProperty('fires', 'circle-radius', zoomed(['case', ['>=', ['get', 's'], 70], ['interpolate', ['linear'], ['sqrt', ['get', 'mw']], 1, 1.8, 10, 2.8, 30, 4], ['>=', ['get', 's'], 40], 1.4, 1.1]))
-  m.setPaintProperty('fires', 'circle-color', ['case', ['>=', ['get', 's'], 40], z3, fg3])
-  m.setPaintProperty('fires', 'circle-opacity', ['case', ['>=', ['get', 's'], 70], .95, ['>=', ['get', 's'], 40], .35, .3])
-  m.setPaintProperty('bases', 'icon-color', ['match', ['get', 'st'], ['out', 'in'], z3, 'changed', z2, 'nodata', fg3, fg2])
+  const z2 = css('--z2'), z3 = css('--z3'), crit = css('--crit'), fg3 = css('--fg3'), cool = css('--cool'), happened = css('--happened'), sel = css('--sel'), bg = css('--bg')
+  // heat: orange only when the fire score is strong, faint when it is faint, grey below (HEAT in data.ts)
+  const strong: any = ['>=', ['get', 's'], HEAT.strong], faint: any = ['>=', ['get', 's'], HEAT.faint]
+  m.setPaintProperty('fires', 'circle-radius', zoomed(['case', strong, ['interpolate', ['linear'], ['sqrt', ['get', 'mw']], 1, 1.8, 10, 2.8, 30, 4], faint, 1.4, 1.1]))
+  m.setPaintProperty('fires', 'circle-color', ['case', faint, z3, fg3])
+  m.setPaintProperty('fires', 'circle-opacity', ['case', strong, .95, faint, .35, .3])
+  // a changed base: amber or orange, filled, with a dark rim that keeps it off the land; a quiet one: a grey outline
+  m.setPaintProperty('bases', 'icon-color', ['match', ['get', 'st'], ['out', 'in'], z3, 'changed', z2, fg3])
+  m.setPaintProperty('bases', 'icon-halo-color', 'rgba(10,10,11,.8)')
+  m.setPaintProperty('bases', 'icon-halo-width', ['case', ['==', ['get', 'hi'], 1], 1.2, 0])
   m.setPaintProperty('bases-halo', 'circle-radius', zoomed(8))
   m.setPaintProperty('bases-halo', 'circle-color', ['match', ['get', 'st'], ['out', 'in'], z3, z2])
   m.setPaintProperty('bases-halo', 'circle-opacity', .18)
@@ -599,7 +614,7 @@ function PeekCard({ p, cardRef, onClose, onPick, brief, style, shown, onShow, on
     action = ['Open base', { v: 'base', id: b.id }]
   } else if (p.kind === 'fire') {
     const f = p.x, imgs = fireImages(f), v = f.images?.v
-    icon = <Flame size={15} style={{ color: fireColour(f.class) }} />; title = f.site ? `Heat near ${f.site}` : fireWord(f.class); sub = `${Math.round(f.mw)} MW · ${shortDate(f.date)}${f.time ? ' ' + f.time.slice(11, 16) + ' UTC' : ''}${f.night ? ', night' : ''} · NASA VIIRS`
+    icon = <Flame size={15} style={{ color: heatColour(f.score) }} />; title = f.site ? `Heat near ${f.site}` : fireWord(f.class); sub = `${Math.round(f.mw)} MW · ${shortDate(f.date)}${f.time ? ' ' + f.time.slice(11, 16) + ' UTC' : ''}${f.night ? ', night' : ''} · NASA VIIRS`
     const link = 'inline-flex items-center gap-1 rounded-r1 border border-line px-2 py-1 text-[11.5px] text-fg2 hover:bg-s2 hover:text-fg'
     body = <>
       <p className={`${row} line-clamp-3`}>{f.why || fireWord(f.class)}</p>
@@ -621,7 +636,7 @@ function PeekCard({ p, cardRef, onClose, onPick, brief, style, shown, onShow, on
     const alt = typeof a.alt === 'number' ? `${(Math.round(a.alt / 100) * 100).toLocaleString('en')} ft` : ''
     const facts: [string, string][] = ([['Role', role[0]], ['Type', [model, a.t && `(${a.t})`].filter(Boolean).join(' ')], ['Operator', a.o || ''], ['Registered in', a.ct || ''],
       ['Tail number', a.r || ''], ['Flying', [alt, a.gs != null && `${Math.round(a.gs)} kt`, a.trk != null && `track ${Math.round(a.trk)}°`].filter(Boolean).join(', ')],
-      ['Squawk', a.sq ? a.sq + (a.emergency ? ' (emergency)' : '') : '']] as [string, string][]).filter(f => f[1])
+      ['Squawk', a.sq ? a.sq + (emergency(a) ? ' (emergency)' : '') : '']] as [string, string][]).filter(f => f[1])
     const link = 'inline-flex items-center gap-1 rounded-r1 border border-line px-2 py-1 text-[11.5px] text-fg2 hover:bg-s2 hover:text-fg'
     body = <>
       <p className={row}>{role[1]}</p>
@@ -645,7 +660,7 @@ function PeekCard({ p, cardRef, onClose, onPick, brief, style, shown, onShow, on
     const week = [a.divertedAway && `${a.divertedAway} diverted away`, a.divertedIn && `${a.divertedIn} diverted in`, a.turnbacks && `${a.turnbacks} turned back`,
       a.holds && `${a.holds} held before landing`, a.bizjets && `${a.bizjets} business-jet departures${a.bizjetsOut ? `, ${a.bizjetsOut} abroad` : ''}`].filter(Boolean)
     body = <>
-      <p className={row}><span className="num font-medium" style={{ color: low ? 'var(--z3)' : undefined }}>{a.departures}</span> departures, against a usual {Math.round(a.usual)} a day over the four weeks before.</p>
+      <p className={row}><span className="num font-medium" style={{ color: low ? 'var(--z3-text)' : undefined }}>{a.departures}</span> departures, against a usual {Math.round(a.usual)} a day over the four weeks before.</p>
       <p className={row}>Last 7 days: {week.length ? week.join(', ') : 'no diversions, turnbacks or holds'}.</p>
       <p className="mt-1.5 text-[10.5px] leading-snug text-fg3">Not tested yet: shown on the map and in the tripwires, kept out of the score until a test on past events passes.</p>
     </>
