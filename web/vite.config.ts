@@ -24,8 +24,27 @@ function siteData(): Plugin {
   }
 }
 
+// The fonts the first screen sets its text in (Switzer for the interface, Sentient upright and italic for the dispatch) are asked for
+// from index.html with the page, not when the CSS is read, so the dispatch does not reflow when they arrive on a slow connection.
+// A font that fetch-fonts.mjs could not download is not in the build and is simply not preloaded.
+const PRELOAD = /^assets\/(switzer-normal|sentient-normal|sentient-italic)-[\w-]+\.woff2$/
+function preloadFonts(): Plugin {
+  return {
+    name: 'ww-preload-fonts',
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx) {
+        if (!ctx.bundle) return
+        return Object.keys(ctx.bundle).filter(f => PRELOAD.test(f)).sort().map(f => ({
+          tag: 'link', injectTo: 'head-prepend' as const, attrs: { rel: 'preload', as: 'font', type: 'font/woff2', crossorigin: '', href: './' + f },
+        }))
+      },
+    },
+  }
+}
+
 export default defineConfig({
   base: './',
-  plugins: [react(), tailwind(), siteData()],
+  plugins: [react(), tailwind(), siteData(), preloadFonts()],
   build: { outDir: 'dist', assetsDir: 'assets', chunkSizeWarningLimit: 1200, sourcemap: !!process.env.WW_SOURCEMAP },
 })

@@ -3,12 +3,15 @@ import { useQuery } from '@tanstack/react-query'
 /* The data contract (warwatch/contract.py, schema warwatch/v1). Positions are [lon, lat]. */
 export type Level = 'Normal' | 'Watch' | 'Elevated' | 'Critical'
 export type LonLat = [number, number]
-export type Route = { v: 'brief' } | { v: 'theatre'; id: string; tab?: string } | { v: 'base'; id: string } | { v: 'signal'; id: string } | { v: 'signals'; th?: string } | { v: 'record' } | { v: 'map' } | { v: 'ground' } | { v: 'glossary' }
+export type Route = { v: 'brief' } | { v: 'theatre'; id: string; tab?: string } | { v: 'base'; id: string } | { v: 'signal'; id: string } | { v: 'signals'; th?: string } | { v: 'record' } | { v: 'map' } | { v: 'ground' } | { v: 'glossary'; term?: string } | { v: 'wall' }
 export type FeedItem = { date: string; kind: 'tell' | 'base' | 'fire' | 'official'; theatre: string; title: string; detail: string; to: { view: string; id: string; tab?: string } }
 export type BriefTheatre = {
   id: string; name: string; region: string; level: Level; score: number | null; standingRisk: number | null; tellsOn: number; tellsTotal: number; strong: number
   context: string | null; contextChecked: string | null; spillover: boolean; parents: string[]; center: LonLat | null; groups: Record<Group, number | null>
   lines?: Lines | null
+  /* Added November 2026 (contract.day_levels): [day, level] for the last 30 days, the level the page showed at each day's first run,
+     only for days the model was off. A day that is missing was not kept. Older data has none: the replay then shows no level. */
+  levels?: [string, Level][]
 }
 export type Brief = {
   generated: string; demo: boolean; eventsThrough: string; headline: string
@@ -74,7 +77,7 @@ export type LiveMap = {
   airports?: MapAirport[]; diversions?: MapDiversion[]; darkShips?: MapDark[]; loitering?: MapLoiter[]
 }
 /* forward_score.scorecard: one target's forward record. days: matured forecast days scored so far; need: days before the first
-   interim report (FORWARD_DAYS); read: days before the one read that can promote it (READ_DAYS); final: that read is in */
+   interim report (FORWARD_DAYS); read: days before the full read (READ_DAYS; the planned harder test, which does not switch the model on today); final: that read is in */
 export type Forward = { k: string; name: string; h?: number; chain?: boolean; first: string | null; logged: number; days: number; need: number; read?: number; through: string; ready: boolean; pass: boolean
   final?: boolean; bss?: number | null; auc?: number | null; auc_lo?: number | null; shuffle_p?: number | null; err?: string }
 /* contract.past_events (added November 2026): a past event, the tripwires watched there on its date and the ones that started in the
@@ -102,16 +105,16 @@ async function get<T>(rel: string): Promise<T> {
   if (!r.ok) throw new Error(`${rel}: HTTP ${r.status}`)
   return r.json()
 }
-export const useBrief = () => useQuery({ queryKey: ['brief'], queryFn: () => get<Brief>('brief.json'), refetchInterval: 10 * 60_000 })
+export const useBrief = () => useQuery({ queryKey: ['brief'], queryFn: () => get<Brief>('brief.json'), refetchInterval: 10 * 60_000, refetchIntervalInBackground: true })
 export const useTheatre = (id: string) => useQuery({ queryKey: ['theatre', id], queryFn: () => get<Theatre>(`theatres/${id}.json`) })
 export const useSignals = (on = true) => useQuery({ queryKey: ['signals'], queryFn: () => get<Signals>('signals/index.json'), enabled: on })
-export const useLiveMap = () => useQuery({ queryKey: ['map'], queryFn: () => get<LiveMap>('map/live.json') })
+export const useLiveMap = (on = true) => useQuery({ queryKey: ['map'], queryFn: () => get<LiveMap>('map/live.json'), refetchInterval: 30 * 60_000, enabled: on })
 export const useBase = (id: string, on = true) => useQuery({ queryKey: ['base', id], queryFn: () => get<BaseFile>(`bases/${id}.json`), enabled: on && !!id })
 export type SeriesFile = { generated: string; id: string; points: [string, number | null][]; zHistory: [string, number | null][] }
 export const useSeries = (id: string, on = true) => useQuery({ queryKey: ['series', id], queryFn: () => get<SeriesFile>(`signals/series/${id}.json`), enabled: on && !!id, retry: 1 })
 /* Added November 2026: the build-up wall's file, every theatre's five group histories over the last 60 days (contract.buildup) */
 export type Buildup = { generated: string; dates: string[]; theatres: { id: string; name: string; region?: string; groups: Partial<Record<Group, (number | null)[]>> }[] }
-export const useBuildup = () => useQuery({ queryKey: ['buildup'], queryFn: () => get<Buildup>('signals/buildup.json'), retry: 1 })
+export const useBuildup = (on = true) => useQuery({ queryKey: ['buildup'], queryFn: () => get<Buildup>('signals/buildup.json'), retry: 1, enabled: on })
 export const useRecord = (on = true) => useQuery({ queryKey: ['record'], queryFn: () => get<RecordFile>('record.json'), enabled: on })
 
 /* Images and tiles sit at the site root: img/bases/…, basemap.pmtiles */
@@ -183,8 +186,8 @@ export function summary(t: Theatre, modelActive: boolean): string {
 }
 
 /* Routes are real paths under the root, so each theatre can carry its own share card: /warwatch/iran/, /warwatch/iran/ground/,
-   /warwatch/base/<id>/, /warwatch/signal/<id>/, /warwatch/signals/, /warwatch/ground/, /warwatch/record/, /warwatch/map/, /warwatch/glossary/. */
-const VIEWS = ['base', 'signal', 'signals', 'record', 'map', 'ground', 'glossary']
+   /warwatch/base/<id>/, /warwatch/signal/<id>/, /warwatch/signals/, /warwatch/ground/, /warwatch/record/, /warwatch/map/, /warwatch/glossary/, /warwatch/wall/. */
+const VIEWS = ['base', 'signal', 'signals', 'record', 'map', 'ground', 'glossary', 'wall']
 export function parsePath(rel: string): Route {
   const p = rel.split(/[?#]/)[0].split('/').filter(x => x && x !== 'index.html').map(decodeURIComponent)
   if (p[0] === 'base' && p[1]) return { v: 'base', id: p[1] }
@@ -194,15 +197,25 @@ export function parsePath(rel: string): Route {
   if (p[0] === 'map') return { v: 'map' }
   if (p[0] === 'ground') return { v: 'ground' }
   if (p[0] === 'glossary') return { v: 'glossary' }
+  if (p[0] === 'wall') return { v: 'wall' }
   if (p[0] && !VIEWS.includes(p[0])) return { v: 'theatre', id: p[0], tab: p[1] }
   return { v: 'brief' }
 }
 export const routePath = (r: Route) => r.v === 'brief' ? '' : r.v === 'theatre' ? `${r.id}/${r.tab && r.tab !== 'now' ? r.tab + '/' : ''}`
-  : r.v === 'base' || r.v === 'signal' ? `${r.v}/${encodeURIComponent(r.id)}/` : r.v === 'signals' ? `signals/${r.th ? r.th + '/' : ''}` : `${r.v}/`
+  : r.v === 'base' || r.v === 'signal' ? `${r.v}/${encodeURIComponent(r.id)}/` : r.v === 'signals' ? `signals/${r.th ? r.th + '/' : ''}`
+  : r.v === 'glossary' && r.term ? `glossary/#${r.term}` : `${r.v}/`
 export const routeHref = (r: Route) => new URL(routePath(r), ROOT).href
 export function currentRoute(): Route {
   const root = new URL(ROOT).pathname, path = location.pathname
-  return parsePath(path.startsWith(root) ? path.slice(root.length) : '')
+  const r = parsePath(path.startsWith(root) ? path.slice(root.length) : '')
+  /* a glossary term is the page's anchor: /warwatch/glossary/#sd */
+  if (r.v === 'glossary' && /^#[A-Za-z]+$/.test(location.hash)) return { v: 'glossary', term: location.hash.slice(1) }
+  return r
+}
+/* old hash links are read only where they lived: the root (the old page) and /next/ (the preview); elsewhere a hash is an anchor */
+export const hashIsLegacy = () => {
+  const root = new URL(ROOT).pathname, rel = location.pathname.startsWith(root) ? location.pathname.slice(root.length) : ''
+  return /^(index\.html)?$/.test(rel) || /^next\/?(index\.html)?$/.test(rel)
 }
 
 /* Links from before the switch-over still work: the preview's #/theatre/iran/now and the old page's #iran/signals, #signals?q=…, #record */
@@ -222,13 +235,18 @@ export function legacyHash(h: string): Route | null {
   return null
 }
 
-export const gatesPassed = (g: Gates) => [g.auc_lo_above_half, g.bss_positive, g.beats_shuffled].filter(Boolean).length
+export const gatesPassed = (g: Gates) => [g.auc_lo_above_half, g.bss_positive, g.beats_shuffled].filter(x => x === true).length
 /* The model's three checks (record.tsx lists them) in one plain sentence, from brief.model.gates: which it has passed and which not */
 export function gatesSentence(g: Gates | null, active: boolean): string {
   if (!g) return active ? 'It sets the level.' : 'Its checks have not been run yet, so it does not set the level.'
-  const checks: [boolean, string][] = [[g.auc_lo_above_half, 'ranks past theatre-months better than a coin flip'], [g.bss_positive, "beats each theatre's usual rate"], [g.beats_shuffled, 'beats the same signals with their timing shuffled']]
-  const yes = checks.filter(c => c[0]).map(c => c[1]), no = checks.filter(c => !c[0]).map(c => c[1])
+  /* a check whose result is not a true or false in this data has not been run: said as such, never counted as passed or failed */
+  const checks: [boolean | undefined, string][] = [[g.auc_lo_above_half, 'ranks past theatre-days better than a coin flip'], [g.bss_positive, "beats each theatre's usual rate"], [g.beats_shuffled, 'beats the same signals with their timing shuffled']]
+  const known = checks.filter(c => typeof c[0] === 'boolean'), notRun = checks.length - known.length
+  const yes = known.filter(c => c[0]).map(c => c[1]), no = known.filter(c => !c[0]).map(c => c[1])
   const list = (a: string[]) => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]
-  const passed = !no.length ? `It passes all three of its checks: it ${list(yes)}` : !yes.length ? `It has passed none of its three checks: it has not shown that it ${list(no)}` : `It ${list(yes)}, but it has not shown that it ${list(no)}`
-  return active ? `${passed}. It sets the level.` : `${passed}, so it stays here and does not set the level.`
+  const passed = !known.length ? 'None of its three checks has been run in this data'
+    : !no.length ? (notRun ? `It ${list(yes)}` : `It passes all three of its checks: it ${list(yes)}`)
+    : !yes.length ? `It has not shown that it ${list(no)}` : `It ${list(yes)}, but it has not shown that it ${list(no)}`
+  const rest = notRun ? `; ${notRun === 1 ? 'one check has' : `${notRun} checks have`} not been run` : ''
+  return active ? `${passed}${rest}. It sets the level.` : `${passed}${rest}, so it stays here and does not set the level.`
 }

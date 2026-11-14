@@ -69,27 +69,32 @@ function GateLine({ lo, hi, v, band, at, label, fmt, name }: { lo: number; hi: n
 }
 
 const signed = (x: number, n = 3) => `${x >= 0 ? '+' : '−'}${Math.abs(x).toFixed(n)}`
-const in100 = (p: number) => Math.round(p * 100)
+/* one decimal, so 0.047 reads "4.7 in 100" and never rounds up to the limit it is judged against */
+const in100 = (p: number) => (p * 100).toFixed(1)
+const isNum = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x)
+const NOT_RUN = 'This check has not been run in this data.'
 
 function ModelTest({ brief, rec, pending, failed }: { brief: Brief; rec?: RecordFile; pending: boolean; failed: boolean }) {
   const g = brief.model.gates, active = brief.model.active
   const n = g ? gatesPassed(g) : 0
-  const checks: { ok: boolean; title: string; text: string; line: ReactNode }[] = g ? [
-    { ok: g.auc_lo_above_half, title: 'Ranks past theatre-months better than a coin flip',
-      text: `In testing on past theatre-months it scores an AUC of ${g.auc.toFixed(3)}, with a 95% range of ${g.auc_lo.toFixed(3)} to ${g.auc_hi.toFixed(3)}. The whole range must sit above 0.5, a coin toss.`,
-      line: <GateLine name={`AUC ${g.auc.toFixed(3)}, range ${g.auc_lo.toFixed(3)} to ${g.auc_hi.toFixed(3)}, against a coin toss at 0.5`} lo={.4} hi={.8} v={g.auc} band={[g.auc_lo, g.auc_hi]} at={.5} label="coin toss 0.5" fmt={x => x.toFixed(1)} /> },
-    { ok: g.bss_positive, title: "Beats each theatre's usual rate",
-      text: `Brier skill ${signed(g.bss)}. Above zero means its chances came closer to what happened than always quoting each theatre's long-run rate.`,
-      line: <GateLine name={`Brier skill ${signed(g.bss)}, against zero`} lo={Math.min(-.02, g.bss - .005)} hi={Math.max(.02, g.bss + .005)} v={g.bss} at={0} label="usual rate 0" fmt={x => signed(x, 2)} /> },
-    { ok: g.beats_shuffled, title: 'Beats the same signals with their timing shuffled',
-      text: `With each theatre's chances shifted in time, an AUC this good or better turned up ${in100(g.shuffle_p_auc)} times in 100. It must be under 5 in 100.${g.shuffle_p_bss != null ? ` For Brier skill it was ${in100(g.shuffle_p_bss)} in 100; the check reads the AUC.` : ''}`,
-      line: <GateLine name={`${in100(g.shuffle_p_auc)} in 100, against a limit of 5 in 100`} lo={0} hi={Math.max(.5, g.shuffle_p_auc + .05)} v={g.shuffle_p_auc} at={.05} label="must be under 0.05" fmt={x => x.toFixed(1)} /> },
+  /* each check reads its own fields; a data run that carries only some of them says "has not been run" for the others */
+  const auc = g && isNum(g.auc) && isNum(g.auc_lo) && isNum(g.auc_hi), bss = g && isNum(g.bss), sh = g && isNum(g.shuffle_p_auc)
+  const checks: { ok: boolean | null; title: string; text: string; line: ReactNode }[] = g ? [
+    { ok: auc ? g.auc_lo_above_half === true : null, title: 'Ranks past theatre-days better than a coin flip',
+      text: auc ? `In testing on past theatre-days it scores an AUC of ${g.auc.toFixed(3)}, with a 95% range of ${g.auc_lo.toFixed(3)} to ${g.auc_hi.toFixed(3)} (found by resampling whole theatre-years). The whole range must sit above 0.5, a coin toss.` : NOT_RUN,
+      line: auc && <GateLine name={`AUC ${g.auc.toFixed(3)}, range ${g.auc_lo.toFixed(3)} to ${g.auc_hi.toFixed(3)}, against a coin toss at 0.5`} lo={.4} hi={.8} v={g.auc} band={[g.auc_lo, g.auc_hi]} at={.5} label="coin toss 0.5" fmt={x => x.toFixed(1)} /> },
+    { ok: bss ? g.bss_positive === true : null, title: "Beats each theatre's usual rate",
+      text: bss ? `Brier skill ${signed(g.bss)}. Above zero means its chances came closer to what happened than always quoting each theatre's long-run rate.` : NOT_RUN,
+      line: bss && <GateLine name={`Brier skill ${signed(g.bss)}, against zero`} lo={Math.min(-.02, g.bss - .005)} hi={Math.max(.02, g.bss + .005)} v={g.bss} at={0} label="usual rate 0" fmt={x => signed(x, 2)} /> },
+    { ok: sh ? g.beats_shuffled === true : null, title: 'Beats the same signals with their timing shuffled',
+      text: sh ? `With each theatre's chances shifted in time, an AUC this good or better turned up ${in100(g.shuffle_p_auc)} times in 100. It must be under 5 in 100.${isNum(g.shuffle_p_bss) ? ` For Brier skill it was ${in100(g.shuffle_p_bss)} in 100; the check reads the AUC.` : ''}` : NOT_RUN,
+      line: sh && <GateLine name={`${in100(g.shuffle_p_auc)} in 100, against a limit of 5 in 100`} lo={0} hi={Math.max(.5, g.shuffle_p_auc + .05)} v={g.shuffle_p_auc} at={.05} label="must be under 0.05" fmt={x => x.toFixed(1)} /> },
   ] : []
   const fw = (rec?.forward || []).filter(f => !f.err)
   return (
     <Part id="rec-model" title={active ? 'The 30-day chance, in use and still scored' : 'The 30-day chance, a test in progress'}
-      lede={active ? 'The 30-day model passed its three checks at its last refit, so it sets the levels. Its forecasts are also written down before anything happens and scored as they mature.'
-        : `WarWatch has a model that gives each theatre a chance of a qualifying event in the next 30 days. ${g ? 'It has not passed its own checks' : 'Its checks have not been run yet'}, so the app does not use it: no level, colour or headline comes from it. Here is where the test stands.`}>
+      lede={active ? 'The 30-day model passed its three checks at its last monthly refit, so it sets the levels. Its forecasts are also written to the forward log before anything happens, the harder test still to come.'
+        : `WarWatch has a model that gives each theatre a chance of a qualifying event in the next 30 days. It is switched on only if it passes its three checks at a monthly refit. ${g ? 'It has not passed them' : 'Its checks have not been run yet'}, so the app does not use it: no level, colour or headline comes from it. Here is where the test stands.`}>
       {!g ? <p className={`${card} px-4 py-3 text-[13px] text-fg2`}>{gatesSentence(null, active)} No check results are in this data run.</p> : <>
         <div className={`${card} flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3`}>
           <span className="inline-flex shrink-0 items-center rounded-full border border-line2 px-2.5 py-[3px] text-[12px] font-medium text-fg">{active ? 'In use' : 'Not in use'}</span>
@@ -101,7 +106,7 @@ function ModelTest({ brief, rec, pending, failed }: { brief: Brief; rec?: Record
             <motion.li key={i} {...listAnim(i)} className={`${card} px-4 pb-3 pt-3.5`}>
               <div className="flex items-center gap-2 text-[12px] font-medium text-fg">
                 <span className="grid h-5 w-5 place-items-center rounded-full border border-line2" aria-hidden>{c.ok ? <Check size={12} strokeWidth={2.6} /> : <CircleDashed size={12} strokeWidth={2} />}</span>
-                {c.ok ? 'Passed' : 'Not yet'}
+                {c.ok ? 'Passed' : c.ok === false ? 'Not passed' : 'Not run'}
               </div>
               <h3 className="mt-2 text-[14px] font-medium leading-[1.3] text-fg">{c.title}</h3>
               <p className="mt-1 text-[12.5px] leading-[1.45] text-fg2">{c.text}</p>
@@ -111,7 +116,7 @@ function ModelTest({ brief, rec, pending, failed }: { brief: Brief; rec?: Record
       </>}
       <div className={`${card} mt-3 px-4 py-3.5`}>
         <h3 className="text-[14px] font-medium text-fg"><Explain k="forward">The forward log</Explain></h3>
-        <p className="mt-1 max-w-[680px] text-[12.5px] leading-[1.45] text-fg2">Every day each forecast is written to a log before its outcome is known, and each line carries a fingerprint of the one before, so it cannot be changed afterwards. A forecast counts once 30 days have passed and the event list has caught up{fw[0] ? `, so a target gets its first scored report after ${fw[0].need} counted days${fw[0].read ? ` and the one read that can switch it on, fixed in advance, after ${fw[0].read}` : ''}` : ''}.</p>
+        <p className="mt-1 max-w-[680px] text-[12.5px] leading-[1.45] text-fg2">Every day each forecast is written to a log before its outcome is known, and each line carries a fingerprint of the one before, so it cannot be changed afterwards. A forecast counts once its own horizon has passed{horizons(fw)} and the event list has caught up{fw[0] ? `, so a target gets its first scored report after ${fw[0].need} counted days${fw[0].read ? ` and its full read after ${fw[0].read}` : ''}` : ''}. This is the planned harder test, on forecasts nobody could tune after the fact. It does not switch the model on today: the monthly refit's three checks do.</p>
         {pending ? <Skeleton lines={3} /> : !fw.length ? <p className="mt-2 text-[12.5px] text-fg2">{failed ? 'The forward log could not be loaded; the error is below.' : 'The forward log is not in this data run.'}</p>
           : <ul className="mt-1">{fw.map(f => <ForwardRow key={f.k} f={f} />)}</ul>}
       </div>
@@ -120,25 +125,34 @@ function ModelTest({ brief, rec, pending, failed }: { brief: Brief; rec?: Record
 }
 
 const targetName = (f: Forward) => f.name.replace(" (the page's model)", '').replace(' (hidden)', '')
+/* each target's horizon, from its own row: "(30 days, or 7 for the strike wave)" */
+const horizon = (f: Forward) => f.h ?? 30
+function horizons(fw: Forward[]) {
+  const hs = [...new Set(fw.map(horizon))]
+  if (hs.length < 2) return hs.length ? ` (${hs[0]} days)` : ''
+  const odd = fw.filter(f => horizon(f) !== horizon(fw[0]))
+  return ` (${horizon(fw[0])} days, or ${odd.map(f => `${horizon(f)} for ${targetName(f).replace(/ within \d+ days.*$/, '').replace(/^A /, 'a ').toLowerCase()}`).join(', ')})`
+}
+const ROLE: Record<string, string> = { main: "the app's model", armed: 'the armed-force model, kept off the page', wave: 'the strike-wave model, kept off the page' }
 function ForwardRow({ f }: { f: Forward }) {
   const read = f.read || f.need, pct = (x: number) => Math.min(100, x / read * 100)
-  const role = f.k === 'main' ? "the app's model" : 'a second model, kept off the page'
+  const role = ROLE[f.k] || `the ${f.k} model, kept off the page`
   return (
     <li className="border-t border-line py-3 first:border-0">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
         <span className="text-[13px] text-fg">{targetName(f)}<span className="text-fg2">, {role}</span></span>
         <span className="num text-[12.5px] text-fg">{f.days} of {f.need} days</span>
       </div>
-      <div className="relative mt-2 h-1.5 rounded-full bg-z0" role="img" aria-label={`${f.days} counted days. The first report comes at ${f.need}${f.read ? `, the deciding read at ${f.read}` : ''}.`}>
+      <div className="relative mt-2 h-1.5 rounded-full bg-z0" role="img" aria-label={`${f.days} counted days. The first report comes at ${f.need}${f.read ? `, the full read at ${f.read}` : ''}.`}>
         <motion.i className="absolute inset-y-0 left-0 rounded-full bg-fg2" initial={{ width: 0 }} animate={{ width: `${f.days ? Math.max(1, pct(f.days)) : 0}%` }} transition={{ duration: .22, ease: [.2, .8, .2, 1] }} />
         {f.read && f.read > f.need && <i className="absolute -inset-y-1 w-px bg-fg3" style={{ left: `${pct(f.need)}%` }} />}
       </div>
       {f.read && f.read > f.need && <div className="relative mt-1 h-3 font-mono text-[10px] text-fg2" aria-hidden><span className="absolute -translate-x-1/2" style={{ left: `${pct(f.need)}%` }}>{f.need}</span><span className="absolute right-0">{f.read}</span></div>}
       <p className="mt-1.5 text-[11.5px] leading-[1.45] text-fg2">
         {f.logged} {f.logged === 1 ? 'day' : 'days'} of forecasts logged{f.first ? ` since ${shortDate(f.first)}` : ''}; outcomes known to {shortDate(f.through)}.{' '}
-        {f.days === 0 ? 'None has been counted yet, because the outcomes are not known 30 days past any of them.' : ''}
+        {f.days === 0 ? `None has been counted yet, because the outcomes are not known ${horizon(f)} days past any of them.` : ''}
         {f.chain === false ? ' The log\'s chain is broken, so its record cannot be trusted until it is checked.' : ''}
-        {f.ready && f.pass ? ' It has passed the deciding read.' : f.ready ? (f.final ? ' It has not passed the deciding read.' : ' The interim numbers are in the report; they cannot switch it on.') : ''}
+        {f.ready && f.pass ? ' It has passed the forward read.' : f.ready ? (f.final ? ' It has not passed the forward read.' : ` The interim numbers are in the report; the full read comes at ${read} days.`) : ''}
       </p>
     </li>
   )
@@ -155,13 +169,13 @@ function Past({ brief, past, go }: { brief: Brief; past?: PastEvent[]; go: Go })
       lede={<>The newest events WarWatch is tested on, and what came before each in that theatre: the <Explain k="tripwire">tripwires</Explain> that started firing in the 7 days before, and each <Explain k="group">signal group</Explain>'s highest reading that week.</>}>
       {!past ? <p className={`${card} px-4 py-3 text-[13px] text-fg2`}>This list is not in this data run.</p>
         : !list.length ? <p className={`${card} px-4 py-3 text-[13px] text-fg2`}>No labelled event is in this data run.</p>
-        : <ol className={`${card} px-4`}>{shown.map((e, i) => <PastRow key={i} e={e} name={name(e.theatre)} go={go} />)}</ol>}
+        : <ol className={`${card} px-4`}>{shown.map((e, i) => <PastRow key={i} e={e} name={name(e.theatre)} site={(e.site || '').split(';').filter(x => x && x !== e.theatre).map(name)} go={go} />)}</ol>}
       {list.length > 8 && <button onClick={() => setAll(!all)} className="lnk mt-2.5 text-[12.5px]">{all ? 'Show the newest 8' : `Show all ${list.length}`}</button>}
-      {list.length > 0 && <p className="mt-2.5 max-w-[680px] text-[11.5px] leading-[1.45] text-fg2">Group readings are rebuilt from each signal's own score history, with today's grouping, and are kept for 60 days, so older events show the tripwires alone. A tripwire counts when its replay on the stored history covers that date.</p>}
+      {list.length > 0 && <p className="mt-2.5 max-w-[680px] text-[11.5px] leading-[1.45] text-fg2">Group readings are rebuilt from each signal's own score history, with today's grouping, and are kept for 60 days, so older events show the tripwires alone. They use the data as it stands today, including figures published or revised after the event. A tripwire counts when its replay on the stored history covers that date. An event that struck another theatre's ground is listed under the theatre that acted, with where it struck; the tripwire record counts it in both.</p>}
     </Part>
   )
 }
-function PastRow({ e, name, go }: { e: PastEvent; name: string; go: Go }) {
+function PastRow({ e, name, site, go }: { e: PastEvent; name: string; site: string[]; go: Go }) {
   const w = e.tripwires, st = w.started.map(x => wireName(x).toLowerCase())
   const wires = !w.watched ? 'No tripwire record covers this date here.'
     : !st.length ? `None of the ${w.watched} tripwires watched here started in the ${e.window} days before.`
@@ -172,7 +186,7 @@ function PastRow({ e, name, go }: { e: PastEvent; name: string; go: Go }) {
     <li className="grid grid-cols-[56px_minmax(0,1fr)] gap-3 border-t border-line py-3 first:border-0 max-[420px]:grid-cols-1 max-[420px]:gap-1">
       <span className="num font-mono text-[11.5px] leading-[1.6] text-fg2">{shortDate(e.date)}{e.date.slice(0, 4) !== String(new Date().getUTCFullYear()) ? ` ${e.date.slice(0, 4)}` : ''}</span>
       <div className="min-w-0">
-        <p className="text-[13px] leading-[1.4] text-fg"><Lnk to={{ v: 'theatre', id: e.theatre }} go={go} className="font-medium hover:underline hover:decoration-line2 hover:underline-offset-[3px]">{name}</Lnk> · {e.text}</p>
+        <p className="text-[13px] leading-[1.4] text-fg"><Lnk to={{ v: 'theatre', id: e.theatre }} go={go} className="font-medium hover:underline hover:decoration-line2 hover:underline-offset-[3px]">{name}</Lnk>{site.length > 0 && <span className="text-fg2">, in {site.join(' and ')}</span>} · {e.text}</p>
         <p className="mt-1 text-[12px] leading-[1.45] text-fg2">{wires}</p>
         {top ? <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="grid w-[86px] grid-cols-5 gap-0.5" aria-hidden title={GROUPS.map(g => `${g} ${e.groups[g] == null ? 'no reading' : stepFixed(e.groups[g]!)}`).join(' · ')}>
@@ -207,14 +221,28 @@ function TripwireRecord({ brief }: { brief: Brief }) {
 }
 
 /* ---------------------------------------------------------------- data health */
-/* a source problem as the pipeline wrote it ("source: why"); contract.failing_sources does the same for the brief */
-export const splitError = (e: unknown) => { const s = typeof e === 'string' ? e : JSON.stringify(e); const i = s.indexOf(': '); return i < 0 ? { source: '', why: s } : { source: s.slice(0, i), why: s.slice(i + 2).replace(/\s*<[^(]*/, ' ').trim() } }
+/* a source problem as the pipeline wrote it ("source: why"), for data without brief.health; the same cleaning as
+   contract.failing_sources: <urlopen error X> unwrapped, a server's HTML page and any " @ address" dropped, a sentence with a capital */
+export function splitError(e: unknown): { source: string; why: string } | null {
+  if (e == null) return null
+  const s = typeof e === 'string' ? e : JSON.stringify(e), i = s.indexOf(': ')
+  let why = (i < 0 ? s : s.slice(i + 2)).replace(/<urlopen error (.*?)>/g, '$1')
+  const h = why.search(/\s*<(?:!|html|head|body)/i)
+  if (h >= 0) { const rest = why.slice(h), at = rest.indexOf(' @ '), note = rest.match(/\s\([^()<>]*\)\s*$/); why = why.slice(0, h) + (at >= 0 ? rest.slice(at) : note ? note[0] : '') }
+  why = why.replace(/\s*@\s*\S+/g, '').replace(/\s+/g, ' ').replace(/^[\s:;,-]+|[\s:;,-]+$/g, '')
+  if (!why) return null
+  why = why[0].toUpperCase() + why.slice(1); if (!/[.!?)]$/.test(why)) why += '.'
+  return { source: i < 0 ? '' : s.slice(0, i).trim(), why }
+}
 
 function Health({ brief, rec, go }: { brief: Brief; rec: RecordFile; go: Go }) {
   const st = rec.health.statuses, total = Object.values(st).reduce((a, b) => a + b, 0), { prefs } = usePrefs()
-  const sources = brief.health?.sources ?? rec.health.errors.map(splitError)
+  const sources = brief.health?.sources ?? rec.health.errors.map(splitError).filter(x => x != null)
   const sq = useSignals()
+  /* run.py: a signal whose source failed shows its last good copy and still scores while that copy is recent; past its age limit it
+     is counted as failed (status error) and kept out of the score */
   const stale = useMemo(() => (sq.data?.signals || []).filter(s => s.stale), [sq.data])
+  const expired = stale.filter(s => s.status === 'error').length, held = stale.length - expired
   return (
     <Part id="rec-health" title="Data health" aside={<>As of the run at <span className="num">{fmtTime(parseGen(brief.generated), prefs.tz)}</span></>}>
       <div className="grid gap-3 lg:grid-cols-2">
@@ -222,7 +250,7 @@ function Health({ brief, rec, go }: { brief: Brief; rec: RecordFile; go: Go }) {
           <h3 className="text-[14px] font-medium text-fg"><span className="num">{st.ok || 0}</span> of <span className="num">{total}</span> signals are scoring</h3>
           <div className="mt-3"><StatusBar st={st} /></div>
           <dl className="mt-2">{statusRows(st).map(([k, label, n]) => <div key={k} className="flex justify-between gap-3 border-t border-line py-1.5 text-[12.5px] first:border-0"><dt className="text-fg2">{label}</dt><dd className="num text-fg">{n}</dd></div>)}</dl>
-          {stale.length > 0 && <p className="mt-1.5 text-[11.5px] leading-[1.45] text-fg2">{stale.length} {stale.length === 1 ? 'signal shows' : 'signals show'} the last good copy and {stale.length === 1 ? 'is' : 'are'} kept out of the score. <Lnk to={{ v: 'signals' }} go={go} className="lnk">Open Signals</Lnk></p>}
+          {stale.length > 0 && <p className="mt-1.5 text-[11.5px] leading-[1.45] text-fg2">{stale.length} {stale.length === 1 ? 'signal shows' : 'signals show'} the last good copy.{held > 0 && ` ${held} of them ${held === 1 ? 'is' : 'are'} recent enough to count.`}{expired > 0 && ` ${expired} ${expired === 1 ? 'is' : 'are'} too old, counted as failed and kept out of the score.`} <Lnk to={{ v: 'signals' }} go={go} className="lnk">Open Signals</Lnk></p>}
         </div>
         <div className={`${card} px-4 py-3.5`}>
           <h3 className="text-[14px] font-medium text-fg">{sources.length ? `${sources.length} ${sources.length === 1 ? 'source' : 'sources'} reported a problem this run` : 'No source reported a problem this run'}</h3>

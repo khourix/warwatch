@@ -36,10 +36,11 @@ export const TERMS = {
   /* gfw.py: Sentinel-1 detections with no matching AIS, inside its waters boxes */
   dark: { term: 'Dark ships', says: 'Vessels seen on satellite radar that sent no matching AIS position signal, counted by Global Fishing Watch in 10 km squares.',
     from: 'Covered only inside its waters boxes: the Gulf, the Red Sea, the East Mediterranean, the Black Sea, the Taiwan Strait, the South China Sea, Korea and the Caribbean. The data runs a few days late.' },
-  loiter: { term: 'Loitering', says: 'A ship that slowed or drifted at sea for hours, as Global Fishing Watch records it.',
+  /* gfw.py: Global Fishing Watch's loitering events, which cover carrier vessels only */
+  loiter: { term: 'Loitering', says: 'A carrier vessel, the kind of cargo ship that takes on catch from fishing boats at sea, that slowed or drifted for hours, as Global Fishing Watch records it. Other ships are not counted.',
     from: 'Covered only inside the same waters boxes as dark ships, a few days late. It can mean waiting for a berth as easily as anything else.' },
   forward: { term: 'Forward record', says: "Every day WarWatch writes the model's chance for every theatre to a log before anything happens. Each line carries a fingerprint of the one before, so the log cannot be changed afterwards without it showing.",
-    from: 'A forecast is scored once 30 days have passed and the event list has caught up with it.' },
+    from: "A forecast is scored once its horizon has passed (30 days; 7 for the strike-wave target) and the event list has caught up with it. It is the planned harder test, read in full after 365 counted days; today the model is switched on only if it passes its three checks at a monthly refit." },
 } satisfies Record<string, Term>
 
 export type TermKey = keyof typeof TERMS

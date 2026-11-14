@@ -335,6 +335,7 @@ EVENTS = os.path.join(HERE, "data", "events.csv")
 EVENTS_THROUGH = os.path.join(HERE, "data", "events_through.txt")
 FORWARD_DIR = os.path.join(os.path.dirname(HERE), "forward")
 HIST_DAYS = 90
+SHOWN_LEVELS = ("Normal", "Watch", "Elevated", "Critical")
 TEMPO = {"israel": ("tzeva_israel", "Siren waves (Tzeva Adom)"), "ukraine": ("uaair_ukraine", "Air-raid alert waves (alerts.in.ua)")}
 CW_WORDS = ["no alert", "deteriorated", "conflict-risk alert", "conflict-risk alert, deteriorated"]
 
@@ -410,20 +411,24 @@ def _n(v):
 
 
 def hist_json(res, by_id, days=HIST_DAYS, fwd=FORWARD_DIR):
-    """Per theatre, the last `days` days: the standing risk from the forward record ([[day, times usual, chance, level]])
-    and a timeline ([[day, kind, text, series id]]) of tells fired, advisory steps, UK advice updates, CrisisWatch ratings
+    """Per theatre, the last `days` days: the standing risk from the forward record ([[day, times usual, chance, level]]),
+    the level the page showed at each day's first run ("levels", [[day, level]]: the forward record's composite_level on the days
+    the model was off, when that level is the one on the page; a day the model was on is left out, as its logged level is not
+    always the one shown) and a timeline ([[day, kind, text, series id]]) of tells fired, advisory steps, UK advice updates, CrisisWatch ratings
     and strike waves. Built from the hash-chained records and the stored series, so it is the same on every run."""
     import tells
     last = max((s["points"][-1][0] for s in res["series"] if s.get("points") and s["kind"] == "daily"), default=None)
     if not last:
         return {}
     since = (dt.date.fromisoformat(last[:10]) - dt.timedelta(days=days)).isoformat()
-    out = {t: {"risk": [], "items": []} for t in res["theatres"]}
+    out = {t: {"risk": [], "items": [], "levels": []} for t in res["theatres"]}
     for r in _csv(os.path.join(fwd, "log.csv")):
         t = r.get("theatre")
         if t in out and r.get("date", "") >= since and r.get("p"):
             p, b = float(r["p"]), float(r["base"]) if r.get("base") else None
             out[t]["risk"].append([r["date"], round(p / b, 2) if b else None, round(p, 4), r.get("level") or ""])
+        if t in out and r.get("date", "") >= since and r.get("active") == "0" and r.get("composite_level") in SHOWN_LEVELS:
+            out[t]["levels"].append([r["date"], r["composite_level"]])
     names = {x["id"]: x["name"] for x in tells.TELLS}
     seen = {}
     for r in _csv(os.path.join(fwd, "tells.csv")):

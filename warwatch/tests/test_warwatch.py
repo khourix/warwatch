@@ -440,6 +440,26 @@ class TestGeoAndPage(unittest.TestCase):
         self.assertEqual([i[:2] for i in h["items"]], [["2026-10-10", "tell"], ["2026-10-07", "advice"]])
         self.assertIn("2 days", h["items"][1][2])
 
+    def test_history_keeps_the_level_shown_each_day_only_while_the_model_was_off(self):
+        """Added November 2026, for the replay on Watch: the forward record's composite_level is the page's level on the days the
+        model was off; a day it was on is left out, and the brief carries the last 30 days of it per theatre."""
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "log.csv"), "w") as f:
+            f.write("date,theatre,p,lo,hi,raw,base,level,composite_level,p_market,active\n"
+                    "2026-10-09,iran,0.2,0.1,0.3,0.2,0.1,Watch,Critical,,1\n"
+                    "2026-10-10,iran,0.2,0.1,0.3,0.2,0.1,Elevated,Watch,,0\n"
+                    "2026-10-11,iran,0.2,0.1,0.3,0.2,0.1,Elevated,Normal,,0\n"
+                    "2026-10-11,_any,0.2,,,,0.1,Watch,,,0\n")
+        open(os.path.join(d, "tells.csv"), "w").write("date,theatre,tell,on,fired,src\n")
+        res = {"theatres": {"iran": {}}, "series": [{"id": "x", "kind": "daily", "points": [("2026-10-11", 1.0)]}]}
+        h = dashboard.hist_json(res, {}, fwd=d)["iran"]
+        self.assertEqual(h["levels"], [["2026-10-10", "Watch"], ["2026-10-11", "Normal"]])
+        self.assertEqual(len(h["risk"]), 3)          # the standing risk still reads every day
+        import contract
+        data = {"generated": "2026-11-09 06:00 UTC", "hist": {"iran": h}}
+        self.assertEqual(contract.day_levels(data, "iran"), [["2026-10-11", "Normal"]])     # 30 days back from 9 Nov is 11 Oct
+        self.assertEqual(contract.day_levels(data, "israel"), [])
+
     def test_series_history_splits_into_series_json(self):
         res = run.evaluate(demo.scenario("buildup"))
         d = dashboard.build_data(res, "2026-10-11 03:51 UTC", True, None, None)
@@ -2210,6 +2230,17 @@ class DataContract(unittest.TestCase):
         self.assertEqual(row["groups"]["Logistics"], [None] * 57 + [1.5, None, 2.5])
         self.assertEqual(row["groups"]["Markets"], [None] * 60)
 
+    def test_brief_theatres_carry_their_daily_levels_for_the_replay(self):
+        """Added November 2026: every theatre row of brief.json has "levels", [[day, level]] within the feed's 30 days, oldest first."""
+        import contract
+        for t in self.files["brief.json"]["theatres"]:
+            self.assertIsInstance(t["levels"], list)
+            days = [d for d, _ in t["levels"]]
+            self.assertEqual(days, sorted(days))
+            for d, lv in t["levels"]:
+                self.assertIn(lv, ("Normal", "Watch", "Elevated", "Critical"))
+                self.assertGreaterEqual(d, (dt.date.fromisoformat(self.data["generated"][:10]) - dt.timedelta(days=contract.FEED_DAYS - 1)).isoformat())
+
     def test_brief_carries_data_health_for_the_top_bar(self):
         """Added November 2026: the top bar's readout. Signal statuses as record.json counts them, each source problem of the run
         with its reason (any page text a server sent back cut off), and the cadence the app judges the data's age by."""
@@ -2219,15 +2250,78 @@ class DataContract(unittest.TestCase):
         h = b["health"]
         self.assertEqual(h["statuses"], self.files["record.json"]["health"]["statuses"])
         self.assertEqual(sum(h["statuses"].values()), len(self.data["series"]))
-        self.assertEqual(len(h["sources"]), len(self.data.get("errors") or []))
+        self.assertEqual(h["sources"], contract.failing_sources(self.data.get("errors")))
+        self.assertLessEqual(len(h["sources"]), len(self.data.get("errors") or []))     # two names for one source are one entry
         self.assertEqual((h["everyMinutes"], h["lateAfterMinutes"]), (30, 90))
         got = contract.failing_sources(["nga: NGA feed failed earlier this run: HTTP Error 503: Service Unavailable <!DOCTYPE html><html>  (map shows NAVAREA warnings via SeaLagom)",
                                         "msi.nga.mil: no fresh data for 16 days.", "a plain message", "usni: HTTP Error 500 <html><body>oops</body></html>"])
-        self.assertEqual(got, [{"source": "nga", "why": "NGA feed failed earlier this run: HTTP Error 503: Service Unavailable (map shows NAVAREA warnings via SeaLagom)"},
-                               {"source": "msi.nga.mil", "why": "no fresh data for 16 days."}, {"source": "", "why": "a plain message"},
-                               {"source": "usni", "why": "HTTP Error 500"}])
+        self.assertEqual(got, [{"source": "nga", "why": "NGA feed failed earlier this run: HTTP Error 503: Service Unavailable (map shows NAVAREA warnings via SeaLagom) "
+                                                        "No fresh data for 16 days."},
+                               {"source": "", "why": "A plain message."}, {"source": "usni", "why": "HTTP Error 500."}])
         with open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".github", "workflows", "warwatch.yml")) as f:
             self.assertIn("+ 1800 -", f.read())     # the "next" job's 30 minutes, which RUN_EVERY_MIN states
+
+    def test_source_problems_read_as_sentences_without_addresses(self):
+        """Review of November 2026: each reason a sentence with a capital, <urlopen error X> unwrapped, a server's HTML page and the
+        " @ address" tail gone (an address can carry a key), nothing left as "null" or empty, and one source named twice merged."""
+        import contract
+        got = contract.failing_sources([
+            "x: <urlopen error timed out>",
+            "nga: HTTP Error 403: Forbidden <!DOCTYPE html><title>403 (Forbidden)</title> @ https://msi.nga.mil/api/x?key=SECRET",
+            "msi.nga.mil: no fresh data for 3 days.",
+            "gdelt: HTTP Error 429 @ https://api.gdeltproject.org/q?apikey=SECRET",
+            "acled: HTTP Error 500 <HTML><BODY>oops</BODY></HTML>",
+            "empty: ", "", None, 5, "fred: ok so far, then <head>junk",
+        ])
+        self.assertEqual(got, [{"source": "x", "why": "Timed out."},
+                               {"source": "nga", "why": "HTTP Error 403: Forbidden. No fresh data for 3 days."},
+                               {"source": "gdelt", "why": "HTTP Error 429."},
+                               {"source": "acled", "why": "HTTP Error 500."},
+                               {"source": "", "why": "5."},
+                               {"source": "fred", "why": "Ok so far, then."}])
+        for x in got:
+            self.assertNotIn("SECRET", x["why"])
+            self.assertNotIn("http", x["why"])
+            self.assertNotIn("<", x["why"])
+
+    def test_a_bad_event_row_or_tripwire_row_does_not_stop_the_files(self):
+        """Review of November 2026: an events.csv row dated "2026-10", a tripwire record row without "last" or with a start that is
+        not a date are skipped one by one; a part that still fails (here the run's errors are not a list) is null, logged, and every
+        other file is written."""
+        import contract
+        d = json.loads(json.dumps(self.data))
+        end = dt.date.fromisoformat(d["strip_end"])
+        e1 = (end - dt.timedelta(days=10)).isoformat()
+        d["events"] = {"through": e1, "list": [["2026-10", "iran", "", "x", "month only", False], [e1, "iran", "", "strike", "A recent strike", False]]}
+        rec = {"window": 7, "per_theatre": {"airlines": {"iran": {"first": "2024-01-01", "starts": []}},
+                                            "tankers": {"iran": {"first": "2024-01-01", "last": end.isoformat(), "starts": ["2026-1", (end - dt.timedelta(days=12)).isoformat()]}}}}
+        past = contract.past_events(d, rec)
+        self.assertEqual([p["text"] for p in past], ["A recent strike"])
+        self.assertEqual(past[0]["tripwires"], {"watched": 1, "started": [{"id": "tankers", "name": next(t["name"] for t in __import__("tells").TELLS if t["id"] == "tankers")}]})
+        files = contract.files(d)
+        self.assertEqual(contract.validate(files["record.json"]), [])
+        d["errors"] = 5
+        with tempfile.TemporaryDirectory() as tmp:
+            n = contract.write(tmp, d)
+            self.assertEqual(n, len(contract.files(d)))
+            with open(os.path.join(tmp, "data", "v1", "brief.json")) as f:
+                b = json.load(f)
+        self.assertIsNone(b["health"])
+        self.assertEqual(contract.validate(b), [])
+
+    def test_validate_checks_health_and_past_events(self):
+        """Review of November 2026: brief.health and record.past are in the contract's shapes, so a malformed one is caught."""
+        import contract
+        b = json.loads(json.dumps(self.files["brief.json"]))
+        b["health"]["sources"] = ["just a string"]
+        b["health"].pop("everyMinutes")
+        probs = contract.validate(b)
+        self.assertTrue(any("everyMinutes" in p for p in probs) and any("sources[0]" in p for p in probs), probs)
+        r = json.loads(json.dumps(self.files["record.json"]))
+        r["past"] = [{"date": "2026-10-01"}]
+        self.assertTrue(any(p.startswith("record.past[0]: missing") for p in contract.validate(r)))
+        r["past"] = None
+        self.assertEqual(contract.validate(r), [])
 
     def test_record_says_what_came_before_past_events(self):
         """Added November 2026: record.json "past", the newest labelled events with the tripwires whose replay covers the date, the
@@ -2380,7 +2474,7 @@ class Pages(unittest.TestCase):
         self.assertIn('<base href="../">', old)
         self.assertIn("It stays here until 7 Dec 2026", old)
         self.assertEqual(old.count("__DATA__"), 0)
-        self.assertEqual(n, len(C.THEATRES) - 1 + len(bases) + 6 + 3)
+        self.assertEqual(n, len(C.THEATRES) - 1 + len(bases) + 7 + 3)
         with self.assertRaises(ValueError):     # a second run on the same site/ would move the app to classic/
             pages.build(site, dist)
 
@@ -2398,6 +2492,17 @@ class Pages(unittest.TestCase):
         self.assertIn(f'<meta property="og:description" content="{html.escape(pages.GLOSSARY, quote=True)}">', g)
         self.assertIn('<base href="/warwatch/">', g)
         self.assertNotIn("noindex", g)
+
+    def test_wall_page_has_its_own_title_and_description(self):
+        """Added November 2026: /warwatch/wall/, Watch for a spare screen, with its own title and link preview text."""
+        import pages, html
+        site, dist = self._site()
+        pages.build(site, dist, today=dt.date(2026, 11, 1))
+        w = self._read(site, "wall", "index.html")
+        self.assertIn("<title>Wall · WarWatch</title>", w)
+        self.assertIn('<link rel="canonical" href="https://khourix.github.io/warwatch/wall/">', w)
+        self.assertIn(f'<meta name="description" content="{html.escape(pages.WALL, quote=True)}">', w)
+        self.assertIn('<base href="/warwatch/">', w)
 
     def test_app_can_be_added_to_the_home_screen(self):
         """The manifest the pages link to: standalone, its start and scope at the site root (/warwatch/ on GitHub Pages), and icons
@@ -2421,12 +2526,26 @@ class Pages(unittest.TestCase):
         with open(os.path.join(here, ".github", "workflows", "warwatch.yml")) as f:
             wf = f.read()
         cache = wf[wf.index("- name: Cached fonts"):wf.index("- name: Fonts for the share cards")]
-        self.assertIn("uses: actions/cache@", cache)
+        self.assertIn("uses: actions/cache/restore@", cache)
+        self.assertIn("id: fonts-cache", cache)
         self.assertIn("continue-on-error: true", cache)
         self.assertIn("key: fonts-${{ hashFiles('web/scripts/fetch-fonts.mjs') }}", cache)
         self.assertIn("web/src/fonts/switzer-*.woff2", cache)
         fetch = wf[wf.index("- name: Fonts for the share cards"):wf.index("run: node web/scripts/fetch-fonts.mjs")]
         self.assertIn("continue-on-error: true", fetch)
+        self.assertIn("id: fonts", fetch)
+        # review of November 2026: saved only when the script says every file is whole, never a partial first save
+        save = wf[wf.index("- name: Keep the fonts for the next run"):wf.index("- name: Fetch, score, render")]
+        self.assertIn("uses: actions/cache/save@", save)
+        self.assertIn("if: steps.fonts.outputs.complete == 'true'", save)
+        self.assertIn("continue-on-error: true", save)
+        self.assertIn("key: fonts-${{ hashFiles('web/scripts/fetch-fonts.mjs') }}", save)
+        self.assertIn("web/src/fonts/sentient-*.woff2", save)
+        self.assertLess(wf.index("run: node web/scripts/fetch-fonts.mjs"), wf.index("- name: Keep the fonts for the next run"))
+        with open(os.path.join(here, "web", "scripts", "fetch-fonts.mjs")) as f:
+            js = f.read()
+        self.assertIn("complete=${got.every(Boolean)}", js)
+        self.assertIn("buf.readUInt32BE(8) === buf.length", js)
         self.assertIn("!site/og-fonts/", wf)
 
     def test_old_page_is_dropped_after_its_date(self):

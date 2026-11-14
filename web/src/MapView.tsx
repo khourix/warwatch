@@ -70,7 +70,9 @@ const dist = (a: LonLat, b: LonLat) => {   // great-circle angle in degrees
   return Math.acos(Math.min(1, Math.sin(p1) * Math.sin(p2) + Math.cos(p1) * Math.cos(p2) * Math.cos(l1 - l2))) / r
 }
 
-type Props = { brief: Brief; live?: LiveMap; route: Route; theme: string; wide: boolean; padBottom: number; onPick: (r: Route) => void; flat?: boolean; onFlat?: (flat: boolean) => void; day?: string | null; labels?: number; layers: Layers; onToggle: (k: Layer) => void }
+type Props = { brief: Brief; live?: LiveMap; route: Route; theme: string; wide: boolean; padBottom: number; onPick: (r: Route) => void; flat?: boolean; onFlat?: (flat: boolean) => void; day?: string | null; labels?: number; layers: Layers; onToggle: (k: Layer) => void
+  /* wall: the wall screen's map, with no controls, moving slowly between theatres (a long camera flight; a cut under reduced motion) */
+  wall?: boolean }
 type Peek = { kind: 'base'; x: MapBase } | { kind: 'fire'; x: MapFire } | { kind: 'air'; x: MapAircraft } | { kind: 'ship'; x: MapShip } | { kind: 'warn'; x: MapWarning }
   | { kind: 'airport'; x: MapAirport } | { kind: 'divert'; x: MapDiversion } | { kind: 'dark'; x: MapDark } | { kind: 'loiter'; x: MapLoiter } | { kind: 'news'; x: MapIncident }
 const PICKABLE = ['aircraft-cluster', 'bases', 'fires', 'aircraft', 'ships', 'warnings', 'incidents', 'diversions', 'airports', 'loitering', 'dark'] as const
@@ -94,7 +96,7 @@ const utcTime = (t: number) => new Date(t * 1000).toISOString().slice(11, 16) + 
 const coarsePointer = () => matchMedia('(pointer: coarse)').matches
 const glass = 'border border-line bg-[color-mix(in_oklab,var(--bg)_86%,transparent)] backdrop-blur-[10px]'
 
-export function MapView({ brief, live, route, theme, wide, padBottom, onPick, flat = false, onFlat, day = null, labels = 1, layers, onToggle: toggle }: Props) {
+export function MapView({ brief, live, route, theme, wide, padBottom, onPick, flat = false, onFlat, day = null, labels = 1, layers, onToggle: toggle, wall = false }: Props) {
   const box = useRef<HTMLDivElement>(null), ov = useRef<HTMLDivElement>(null), dock = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
   const [ready, setReady] = useState(false)
@@ -218,7 +220,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
           else { const x = JSON.parse(f.properties!.json); text = id === 'bases' ? `${x.name.split(',')[0]} · ${baseWord(x.state, x.part)}` : id === 'fires' ? `${x.site ? 'Heat near ' + x.site : fireWord(x.class)} · ${Math.round(x.mw)} MW · ${shortDate(x.date)}`
             : id === 'aircraft' ? [x.call || x.hex || 'Military aircraft', (x.d || '').replace(/\s*\(.*\)$/, '') || x.t].filter(Boolean).join(' · ') : id === 'ships' ? x.name
             : id === 'airports' ? `${x.name} · ${x.departures} departures, usually ${Math.round(x.usual)}` : id === 'diversions' ? `${x.call} ${x.kind === 'turnback' ? 'turned back' : 'diverted to ' + x.landed} · ${shortDate(x.date)}`
-            : id === 'dark' ? `${x.count} ${x.count === 1 ? 'ship' : 'ships'} with no AIS on radar · ${shortDate(x.date)}` : id === 'loitering' ? `${x.name || 'A ship'} loitering · ${x.hours} h`
+            : id === 'dark' ? `${x.count} ${x.count === 1 ? 'ship' : 'ships'} with no AIS on radar · ${shortDate(x.date)}` : id === 'loitering' ? `${x.name || 'A carrier vessel'} loitering · ${x.hours} h`
             : id === 'incidents' ? `Reported · ${x.loc || x.src || ''}`.replace(/ · $/, '')
             : `Navigational warning ${x.id}` }
         } else if (!peekRef.current) {
@@ -352,7 +354,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
   useEffect(() => {
     const m = map.current; if (!m || !ready) return
     const padding = { top: topRef.current + 40, bottom: padBottom + 40, left: 40, right: 40 }
-    const duration = reduced() ? 0 : undefined
+    const duration = reduced() ? 0 : wall ? 7000 : undefined
     const focus = route.v === 'theatre' ? route.id : route.v === 'signals' ? route.th : undefined   // Signals filtered to a theatre shows that theatre
     const b = route.v === 'base' ? live?.bases.find(x => x.id === route.id) : undefined
     if (b?.bounds && b.thumb) m.fitBounds([[b.bounds[0], b.bounds[1]], [b.bounds[2], b.bounds[3]]], { padding, maxZoom: 15, duration: duration ?? 1400, essential: true })   // its satellite picture fills the view
@@ -426,7 +428,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
         ))}
       </div>
       {tip && <div className="pointer-events-none absolute z-10 max-w-[280px] truncate rounded-r1 border border-line2 bg-[color-mix(in_oklab,var(--s1)_95%,transparent)] px-2 py-1 text-[12px] text-fg shadow-[var(--shadow)]" style={{ left: tip.x + 14, top: tip.y + 14 }}>{tip.text}</div>}
-      {wide && live && <div ref={dock} role="group" aria-label="Map layers and legend" className="absolute inset-x-3.5 top-3.5 z-10 flex flex-wrap content-start gap-1">
+      {wide && live && !wall && <div ref={dock} role="group" aria-label="Map layers and legend" className="absolute inset-x-3.5 top-3.5 z-10 flex flex-wrap content-start gap-1">
         {LAYERS.filter(([k]) => count[k] > 0).map(([k, name, , hint]) => (
           <button key={k} aria-pressed={layers[k]} onClick={() => toggle(k)} aria-label={`${name}, ${count[k].toLocaleString('en')} on the map`} title={`${layers[k] ? 'Hide' : 'Show'}: ${hint} (${count[k].toLocaleString('en')})`}
             className={`inline-flex h-[26px] items-center gap-1 rounded-full pl-1.5 pr-2 text-[11.5px] transition-colors duration-[120ms] hover:border-line2 hover:text-fg ${glass} ${layers[k] ? 'text-fg2' : 'text-fg3'}`}>
@@ -436,7 +438,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
           <i className="h-[7px] w-[7px] rotate-45 bg-z2 ring-1 ring-black/70" aria-hidden />one pass differed<i className="ml-1 h-[7px] w-[7px] rotate-45 bg-z3 ring-1 ring-black/70" aria-hidden />emptier or fuller
         </span>}
       </div>}
-      {!wide && live && <button onClick={() => setSheet(true)} aria-label={`Map layers, ${LAYERS.filter(([k]) => layers[k] && count[k] > 0).length} of ${LAYERS.filter(([k]) => count[k] > 0).length} shown`} aria-haspopup="dialog"
+      {!wide && live && !wall && <button onClick={() => setSheet(true)} aria-label={`Map layers, ${LAYERS.filter(([k]) => layers[k] && count[k] > 0).length} of ${LAYERS.filter(([k]) => count[k] > 0).length} shown`} aria-haspopup="dialog"
         className={`absolute right-4 top-[66px] z-10 grid h-11 w-11 place-items-center rounded-full text-fg2 shadow-[var(--shadow)] ${glass}`}><LayersIcon size={18} /></button>}
       {!wide && <LayerSheet open={sheet} onClose={() => setSheet(false)} layers={layers} toggle={toggle} count={count} />}
       {imgs.length > 0 && <div role="group" aria-label="Satellite picture on the map" className={`absolute z-10 flex items-center gap-0.5 overflow-x-auto rounded-r2 p-1 text-[12px] shadow-[var(--shadow)] ${glass}`} style={{ left: wide ? 14 : 16, top: wide ? dockH + 22 : 66, maxWidth: 'calc(100% - 72px)' }}>
@@ -449,7 +451,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
         style={{ left: wide ? 14 : 8, bottom: cardBottom, maxWidth: wide ? 'min(360px, calc(100% - 72px))' : 'calc(100% - 16px)', maxHeight: `calc(100% - ${cardBottom + (wide ? top + 12 : 116)}px)` }} />}
       {big && <Lightbox img={big} onClose={() => setBig(null)} />}
       {/* bottom right, above the timeline, so the legend chips can take the map's full width */}
-      {(wide || !peek) && <div className={`absolute z-10 flex flex-col overflow-hidden rounded-r2 ${glass}`} style={{ right: wide ? 14 : 16, bottom: padBottom + (wide ? 12 : 16) }}>
+      {(wide || !peek) && !wall && <div className={`absolute z-10 flex flex-col overflow-hidden rounded-r2 ${glass}`} style={{ right: wide ? 14 : 16, bottom: padBottom + (wide ? 12 : 16) }}>
         <button aria-label="Zoom in" title="Zoom in" onClick={() => zoom(1)} className={ctl}><Plus size={14} /></button>
         <button aria-label="Zoom out" title="Zoom out" onClick={() => zoom(-1)} className={`${ctl} border-t border-line`}><Minus size={14} /></button>
         {wide && <button aria-label="Whole world" title="Whole world" onClick={home} className={`${ctl} border-t border-line`}><Scan size={14} /></button>}
@@ -702,7 +704,7 @@ function PeekCard({ p, cardRef, onClose, onPick, brief, style, shown, onShow, on
     if (c.theatre && name(c.theatre)) action = [`Open ${name(c.theatre)}`, { v: 'theatre', id: c.theatre, tab: 'ground' }]
   } else if (p.kind === 'loiter') {
     const x = p.x
-    icon = <Anchor size={15} className="text-fg2" />; title = x.name || 'A ship loitering'; sub = [x.type.replace(/_/g, ' '), x.flag, `from ${shortDate(x.start.slice(0, 10))}`].filter(Boolean).join(' · ')
+    icon = <Anchor size={15} className="text-fg2" />; title = x.name || 'A carrier vessel loitering'; sub = [x.type.replace(/_/g, ' '), x.flag, `from ${shortDate(x.start.slice(0, 10))}`].filter(Boolean).join(' · ')
     body = <p className={row}>Slowed or drifted at sea for {x.hours} {x.hours === 1 ? 'hour' : 'hours'}: how ship-to-ship transfers, and waiting out a threat, look on AIS. Global Fishing Watch, about five days behind.</p>
     if (x.theatre && name(x.theatre)) action = [`Open ${name(x.theatre)}`, { v: 'theatre', id: x.theatre, tab: 'ground' }]
   } else if (p.kind === 'news') {

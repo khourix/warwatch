@@ -4,12 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './styles.css'
 import App from './App'
 import { PrefsProvider } from './settings'
+import { Boundary } from './ui'
 
 // The data is rebuilt every 30 minutes; refetch on focus after 5 so a tab left open catches the next run.
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 5 * 60_000, refetchOnWindowFocus: true, retry: 1 } } })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={qc}><PrefsProvider><App /></PrefsProvider></QueryClientProvider>
+    <QueryClientProvider client={qc}><PrefsProvider><Boundary what="WarWatch"><App /></Boundary></PrefsProvider></QueryClientProvider>
   </StrictMode>,
 )

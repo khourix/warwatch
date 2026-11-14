@@ -4,7 +4,7 @@ React, Vite and MapLibre. It reads only the data contract (`site/data/v1/`, writ
 It is the page at `/warwatch/`. The workflow builds it after the Python run, and `warwatch/pages.py` writes `dist/` into `site/`:
 
 - one copy of `index.html` per address, each with its own title and link preview: the root, `/warwatch/<theatre>/` (with the theatre's
-  card, `og/<theatre>.jpg`), `/warwatch/base/<id>/`, `/warwatch/signals/`, `/warwatch/ground/`, `/warwatch/record/`, `/warwatch/glossary/` and `/warwatch/map/`;
+  card, `og/<theatre>.jpg`), `/warwatch/base/<id>/`, `/warwatch/signals/`, `/warwatch/ground/`, `/warwatch/record/`, `/warwatch/glossary/`, `/warwatch/map/` and `/warwatch/wall/`;
 - `404.html`, the same page, which GitHub Pages serves for any other address (a theatre's tab, a signal);
 - the old page at `/warwatch/classic/` until 7 Dec 2026, and `/warwatch/next/`, which sends the preview's links on.
 
@@ -13,6 +13,22 @@ switch-over (`#iran/signals`, `#/theatre/iran`) move to their address when the a
 address (`/warwatch/signals/iran/`) and the open signal is `?s=<id>`, so a reload or a shared link keeps them. On Watch (the home, a
 theatre, a base, the map) the picked day is `?d=2026-11-10` and the map layers, when they differ from the usual set, `?l=bases.fires`.
 These change in place and add no steps to Back. Copy link always names the layers.
+
+The app fetches `brief.json` again every 10 minutes, also in a background tab, and `map/live.json` every 30, so a page left open
+picks up new runs and shows the late line when they stop.
+
+- **Replay.** A day picked on the timeline (`?d=`) replays the board, the dispatch, the tripwires and the feed for that day, from what
+  the data keeps per day: each theatre's level at the day's first run, the group readings from `signals/buildup.json`, and the dated
+  feed. The 0 to 100 reading and the map's marks are not kept per day, so they stay today's, and a banner says so. Escape or
+  "Back to now" returns to live. Since-you-last-looked and notifications ignore a replay (`src/replay.tsx`).
+- **Follow.** A pin on each board row and on a theatre's page puts the theatre at the top of the board. The list stays in this browser
+  only (`ww-follow`); settings' Clear removes it. "Notify me" asks the browser's permission only from that switch. While a tab is open
+  (or the app is open from a phone's home screen), each new run is compared with the data the tab saw before, and a followed theatre
+  that rises to Watch or above, or where a tripwire newly fires, gets one notification. There is no push: a closed page cannot
+  notify (`src/follow.ts`).
+- **Wall.** `/warwatch/wall/` is Watch for a spare screen: large type, no controls, the theatres closest to Watch, the week's
+  tripwires and a globe that moves slowly between them (a cut once a minute under reduced motion). Esc leaves, F switches full
+  screen, and the screen is kept awake where the browser allows. It is in the command menu and settings, not the rail.
 
 The words the explainers show (a dotted term) and the glossary page both come from `src/glossary.ts`, and nowhere else.
 
@@ -25,6 +41,8 @@ Fields the app reads only when they are there (added November 2026; older data s
   show its dark-ship and loitering counts; without the flag, or when it is false, it says they are not covered there.
 - `brief.json`: `health` (signal statuses, the sources that reported a problem, how often a run is due and when the data counts as
   late, 90 minutes). Without it the top bar shows the data's age alone, and the late line still appears after 90 minutes.
+- the brief's theatre rows: `levels`, `[date, level]` for each of the last 30 days whose first run had the model switched off (the
+  level the page showed). The replay reads it; a day without it says "not kept".
 - `record.json`: `past`, the newest labelled events with the tripwires and group readings of the week before each. Without it the
   Record page says the list is not in this data run.
 

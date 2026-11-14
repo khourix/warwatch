@@ -4,14 +4,14 @@
 
 export type Layer = 'bases' | 'fires' | 'aircraft' | 'ships' | 'incidents' | 'dark' | 'airports' | 'warnings'
 /* key, name, the map layers it switches, what it shows. Aircraft carry the diverted and turned-back flights, and dark ships the
-   loitering ships (both from Global Fishing Watch). Airports and sea warnings start hidden, as approved. */
+   loitering carrier vessels (both from Global Fishing Watch). Airports and sea warnings start hidden, as approved. */
 export const LAYERS: [Layer, string, string[], string][] = [
   ['bases', 'Bases', ['bases', 'bases-halo'], 'Bases watched on satellite radar'],
   ['fires', 'Heat', ['fires'], 'Fires and heat from NASA VIIRS: orange when unusual, faint when somewhat unusual, grey otherwise'],
   ['aircraft', 'Aircraft', ['aircraft', 'aircraft-cluster', 'diversions'], 'Military aircraft broadcasting their position, pointing along their track, and flights diverted or turned back'],
   ['ships', 'Warships', ['ships', 'ship-trails'], 'Warships, from the weekly fleet tracker'],
   ['incidents', 'Reports', ['incidents'], 'Incidents reported in the news, unverified'],
-  ['dark', 'Dark ships', ['dark', 'loitering'], 'Ships seen on radar with no AIS, and ships loitering at sea'],
+  ['dark', 'Dark ships', ['dark', 'loitering'], 'Ships seen on radar with no AIS, and carrier vessels loitering at sea'],
   ['airports', 'Airports', ['airports'], 'Theatre airports, ringed when departures fell or flights were diverted away'],
   ['warnings', 'Sea warnings', ['warnings'], 'Navigational warnings at sea'],
 ]

@@ -7,18 +7,22 @@ import { fmtAsOf } from './ui'
 /* Data health in view: the top bar's readout says how old the data is and how many sources reported a problem; opening it lists
    the signals scoring, collecting and failed, each source's problem and how often each source updates. Read from brief.health
    (contract.health, added November 2026); older data has none, and then the readout shows the age alone.
-   The data is late when it is older than lateAfterMinutes (90: three missed half-hourly runs, the live freshness check's limit). */
+   The data is late when it is older than lateAfterMinutes (90, the live freshness check's limit: by then the two half-hourly runs due
+   after it have not come through, and a third is due). "Reported a problem" is the honest count: some of those sources fell back to
+   another feed that worked, and some are WarWatch's own caches. No warning colour here: a problem is an ink ring, all well the ok dot. */
 
 const LATE = 90, EVERY = 30
 export const lateAfter = (b: Brief) => b.health?.lateAfterMinutes ?? LATE
-/* minutes since the run, kept current while the page stays open */
+/* minutes since the run, kept current while the page stays open; below zero when the run's time is ahead of this device's clock */
 export function useAge(b: Brief) {
   const at = parseGen(b.generated).getTime(), [now, setNow] = useState(Date.now)
   useEffect(() => { setNow(Date.now()); const i = setInterval(() => setNow(Date.now()), 60_000); return () => clearInterval(i) }, [at])
-  return Math.max(0, Math.round((now - at) / 6e4))
+  return Math.round((now - at) / 6e4)
 }
-export const ageWords = (m: number) => m < 2 ? 'just now' : m < 60 ? `${m} minutes ago` : m < 120 ? 'an hour ago' : m < 48 * 60 ? `${Math.round(m / 60)} hours ago` : `${Math.round(m / 1440)} days ago`
-const ageShort = (m: number) => m < 60 ? `${Math.max(1, m)} min` : m < 48 * 60 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`
+/* a run timed more than 5 minutes ahead says so, rather than "just now": this device's clock, or the run's, is off */
+export const AHEAD = -5
+export const ageWords = (m: number) => m < AHEAD ? "timed ahead of this device's clock" : m < 2 ? 'just now' : m < 60 ? `${m} minutes ago` : m < 120 ? 'an hour ago' : m < 48 * 60 ? `${Math.round(m / 60)} hours ago` : `${Math.round(m / 1440)} days ago`
+const ageShort = (m: number) => m < AHEAD ? 'ahead' : m < 60 ? `${Math.max(1, m)} min` : m < 48 * 60 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`
 
 export function HealthReadout({ brief, go, phone = false }: { brief: Brief; go: (r: Route) => void; phone?: boolean }) {
   const { prefs } = usePrefs()
@@ -31,21 +35,24 @@ export function HealthReadout({ brief, go, phone = false }: { brief: Brief; go: 
     if (!open) return
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); setOpen(false); btn.current?.focus() } }
     const c = (e: PointerEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false) }
-    addEventListener('keydown', k, true); addEventListener('pointerdown', c)
+    /* a non-modal panel: it closes when the focus moves out of it (Tab past its last link), as on a tap elsewhere */
+    const out = (e: FocusEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false) }
+    addEventListener('keydown', k, true); addEventListener('pointerdown', c); document.addEventListener('focusin', out)
     requestAnimationFrame(() => panel.current?.focus())
-    return () => { removeEventListener('keydown', k, true); removeEventListener('pointerdown', c) }
+    return () => { removeEventListener('keydown', k, true); removeEventListener('pointerdown', c); document.removeEventListener('focusin', out) }
   }, [open])
   const at = parseGen(brief.generated)
-  const say = `Data updated ${fmtTime(at, prefs.tz)}, ${ageWords(age)}${late ? ', later than expected' : ''}.${sources.length ? ` ${sources.length} ${sources.length === 1 ? 'source' : 'sources'} with a problem.` : ''} Show data health.`
+  const say = `Data updated ${fmtTime(at, prefs.tz)}, ${ageWords(age)}${late ? ', later than expected' : ''}.${sources.length ? ` ${sources.length} ${sources.length === 1 ? 'source' : 'sources'} reported a problem.` : ''} Show data health.`
+  const trouble = late || sources.length > 0
   const st = brief.health?.statuses
   return (
     <div ref={box} className="relative">
       <button ref={btn} onClick={() => setOpen(o => !o)} aria-expanded={open} aria-label={say}
         className={phone ? 'relative flex h-9 items-center gap-1.5 rounded-full after:absolute after:-inset-[5px] after:content-[\'\'] border border-line bg-[color-mix(in_oklab,var(--s1)_85%,transparent)] px-2.5 text-[11.5px] text-fg2 backdrop-blur'
           : 'flex h-8 shrink-0 items-center gap-[7px] whitespace-nowrap rounded-r2 px-2 text-[12px] text-fg2 transition-colors duration-[120ms] hover:bg-s2 hover:text-fg'}>
-        <span className={`relative h-1.5 w-1.5 shrink-0 rounded-full ${late ? 'bg-fg3' : 'bg-ok'}`} aria-hidden />
+        <span className={`relative h-[7px] w-[7px] shrink-0 rounded-full ${trouble ? 'border-[1.5px] border-fg' : 'bg-ok'}`} aria-hidden />
         {phone ? <span className="num">{ageShort(age)}</span>
-          : <span className="num">Updated {fmtTime(at, prefs.tz)}{sources.length ? <span className="text-fg2"> · {sources.length} {sources.length === 1 ? 'source' : 'sources'} down</span> : null}</span>}
+          : <span className="num">Updated {fmtTime(at, prefs.tz)}{sources.length ? <span className="text-fg2"> · {sources.length} <span className="max-[1279px]:hidden">{sources.length === 1 ? 'source' : 'sources'} reported a problem</span><span className="min-[1280px]:hidden">{sources.length === 1 ? 'problem' : 'problems'}</span></span> : null}</span>}
       </button>
       <AnimatePresence>
         {open && (
@@ -62,7 +69,8 @@ export function HealthReadout({ brief, go, phone = false }: { brief: Brief; go: 
                 <dl className="mt-1.5">{statusRows(st).map(([k, label, n]) => <div key={k} className="flex justify-between gap-3 py-1 text-[12.5px]"><dt className="text-fg2">{label}</dt><dd className="num text-fg">{n}</dd></div>)}</dl>
               </section> : <p className="pt-3 text-[12.5px] text-fg2">This data run does not say how its sources did.</p>}
               {brief.health && <section className="mt-2 border-t border-line pt-3">
-                <h3 className="eyebrow mb-1.5 !text-fg2">{sources.length ? `Sources with a problem, ${sources.length}` : 'Sources'}</h3>
+                {sources.length > 0 && <p className="mb-1 text-[12px] leading-[1.45] text-fg2">Not all of these lost data: some fell back to another feed, and some are WarWatch's own caches.</p>}
+                <h3 className="eyebrow mb-1.5 !text-fg2">{sources.length ? `Sources that reported a problem, ${sources.length}` : 'Sources'}</h3>
                 {sources.length ? <ul>{sources.map((s, i) => <li key={i} className="py-1.5 text-[12.5px] leading-[1.45]"><b className="font-medium text-fg">{s.source || 'Unnamed source'}</b><span className="block text-fg2">{s.why}</span></li>)}</ul>
                   : <p className="text-[12.5px] text-fg2">No source reported a problem this run.</p>}
               </section>}
@@ -81,10 +89,10 @@ export function HealthReadout({ brief, go, phone = false }: { brief: Brief; go: 
 }
 
 /* signal statuses as a bar (scoring, collecting, waiting for a key, failed) and as rows */
-const STATUS: [string, string, string][] = [['ok', 'Scoring', 'var(--ok)'], ['collecting', 'Collecting history, not scored yet', 'var(--fg3)'], ['awaiting_key', 'Waiting for a free key', 'var(--fg3)'], ['error', 'Failed this run', 'var(--crit)']]
+const STATUS: [string, string, string][] = [['ok', 'Scoring', 'var(--ok)'], ['collecting', 'Collecting history, not scored yet', 'var(--fg3)'], ['awaiting_key', 'Waiting for a free key', 'var(--fg3)'], ['error', 'Failed this run', 'ring']]
 export function StatusBar({ st }: { st: Record<string, number> }) {
   const total = Object.values(st).reduce((a, b) => a + b, 0) || 1
-  return <span className="flex h-2 gap-px overflow-hidden rounded-full bg-z0" aria-hidden>{STATUS.map(([k, , c]) => st[k] ? <i key={k} style={{ width: `${st[k] / total * 100}%`, background: c, opacity: k === 'error' ? .85 : 1 }} /> : null)}</span>
+  return <span className="flex h-2 gap-px overflow-hidden rounded-full bg-z0" aria-hidden>{STATUS.map(([k, , c]) => st[k] ? <i key={k} style={c === 'ring' ? { width: `${st[k] / total * 100}%`, boxShadow: 'inset 0 0 0 1px var(--fg)', borderRadius: 999 } : { width: `${st[k] / total * 100}%`, background: c }} /> : null)}</span>
 }
 export const statusRows = (st: Record<string, number>) => STATUS.filter(([k]) => st[k] || k === 'ok' || k === 'error').map(([k, label]) => [k, label, st[k] || 0] as const)
 

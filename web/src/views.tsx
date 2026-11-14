@@ -1,7 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { ArrowLeft, ChevronDown } from 'lucide-react'
-import { GROUPS, GROUP_HINT, useTheatre, useSignals, summary, gatesSentence, wireName, levelWord, wholeAt, lineWhole, groupTone, stepFixed, fmtZ, shortDate, parseGen,
+import { ArrowLeft, ChevronDown, Pin } from 'lucide-react'
+import { useFollow } from './follow'
+import { useReplay } from './replay'
+import { GROUPS, GROUP_HINT, useTheatre, useSignals, summary, countWord, gatesSentence, wireName, levelWord, wholeAt, lineWhole, groupTone, stepFixed, fmtZ, shortDate, parseGen,
   type Brief, type LiveMap, type Route, type Signal, type FeedItem, type Theatre, type Tell, type Group } from './data'
 import { GroundTab } from './ground'
 import { Spark, Tabs, tabPanel, Lnk, Tag, Facts, Block, Note, Skeleton, Failed, useWidth, CopyLink, Explain } from './ui'
@@ -40,6 +42,7 @@ const GLOSS: Record<Group, string> = { Logistics: 'supply', Markets: 'money', Pe
 
 export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: string; brief: Brief; live?: LiveMap; go: Go }) {
   const q = useTheatre(id)
+  const rp = useReplay(), day = rp?.theatres[id] ?? null
   const sub = tab && TABS.includes(tab) ? tab : 'now'
   const bt = brief.theatres.find(t => t.id === id)
   const crumbs = (region?: string): [string, Route?][] => [['Watch', { v: 'brief' }], [region || bt?.region || '']]
@@ -51,18 +54,24 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
   const nBases = live ? live.bases.filter(b => b.theatres.includes(id)).length : undefined
   const setTab = (s: string) => go({ v: 'theatre', id, tab: s }, true)
   const on = modelOn(brief, t)
+  const dayLit = day ? wiresOn(t, day.wires) : []
   return (
     <div>
       <Crumbs back={{ v: 'brief' }} items={[['Watch', { v: 'brief' }], [regionName]]} go={go} />
       <div className="px-5 pb-3.5 pt-2">
-        <h1 className="text-[27px] font-semibold leading-[1.1] tracking-[-0.028em] max-[899px]:text-[25px]">{t.name}</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-[27px] font-semibold leading-[1.1] tracking-[-0.028em] max-[899px]:text-[25px]">{t.name}</h1>
+          <FollowButton id={id} name={t.name} />
+        </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          <Tag mark={levelMark(t.level)}><span className="sr-only">Level: </span>{levelWord(t.level)}</Tag>
+          {rp && day ? <Tag mark={day.level ? levelMark(day.level) : undefined}><span className="sr-only">Level on {shortDate(rp.day)}: </span>{day.level ? `${levelWord(day.level)} on ${shortDate(rp.day)}` : `Level not kept for ${shortDate(rp.day)}`}</Tag>
+            : <Tag mark={levelMark(t.level)}><span className="sr-only">Level: </span>{levelWord(t.level)}</Tag>}
           {t.context && <Tag><span title={`Set by hand${t.contextChecked ? `, checked ${shortDate(t.contextChecked)}` : ''}. Context only: it does not change the level.`}>{t.context}</span></Tag>}
-          {lit > 0 && <Tag mark="var(--z2)">{lit} {lit === 1 ? 'tripwire' : 'tripwires'} lit</Tag>}
+          {(rp ? dayLit.length : lit) > 0 && <Tag mark="var(--z2)">{rp ? dayLit.length : lit} {(rp ? dayLit.length : lit) === 1 ? 'tripwire' : 'tripwires'} lit{rp ? ` on ${shortDate(rp.day)}` : ''}</Tag>}
           {t.spillover && t.parents.length > 0 && <Tag>Spillover from {t.parents.map(p => brief.theatres.find(x => x.id === p)?.name || p).join(', ')}</Tag>}
         </div>
-        <p className="mt-3 font-serif text-[16.5px] leading-[1.42] text-fg [text-wrap:pretty]">{summary(t, on)}</p>
+        <p className="mt-3 font-serif text-[16.5px] leading-[1.42] text-fg [text-wrap:pretty]">{rp && day ? daySummary(t.name, rp.day, day.level, dayLit.map(x => wireName(x[0]))) : summary(t, on)}</p>
+        {rp && <p className="mt-1.5 text-[11.5px] text-fg2">The reading and the tabs below are today's; the level and tripwires above replay {shortDate(rp.day)}.</p>}
       </div>
       <Gauge t={t} active={on} />
       <Tabs id="th" label={`${t.name} dossier`} value={sub} onChange={setTab} panel sticky
@@ -198,6 +207,24 @@ function Ladder({ t, brief, go }: { t: Theatre; brief: Brief; go: Go }) {
   )
 }
 
+/* the theatre's tripwires that the feed shows fired in a replayed week, each with its latest day (feed titles are the rules' names) */
+function wiresOn(t: Theatre, wires: FeedItem[]): [Tell, string][] {
+  return t.tells.flatMap(x => { const d = wires.filter(f => f.title === x.name || f.title === wireName(x)).map(f => f.date.slice(0, 10)).sort().pop(); return d ? [[x, d] as [Tell, string]] : [] })
+}
+function daySummary(name: string, day: string, level: string | null, wires: string[]): string {
+  const d = shortDate(day)
+  const a = level ? `At the first run of ${d}, ${name} was ${level === 'Normal' ? 'quiet' : `at ${level}`}.` : `${name}'s level was not kept for ${d}.`
+  const b = wires.length ? ` ${countWord(wires.length)} ${wires.length === 1 ? 'tripwire' : 'tripwires'} fired in the week to ${d}: ${wires.map(w => w.toLowerCase()).join(', ')}.` : ` No tripwire fired in the week to ${d}.`
+  return a + b
+}
+/* follow: keep this theatre at the top of the board, in this browser */
+function FollowButton({ id, name }: { id: string; name: string }) {
+  const { has, toggle } = useFollow(), on = has(id)
+  return <button onClick={() => toggle(id)} aria-pressed={on} aria-label={`Follow ${name}`} title={on ? 'Following: it sits at the top of the board in this browser' : 'Keep it at the top of the board in this browser'}
+    className={`tap mt-1 inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-r2 border px-2.5 text-[12px] transition-colors duration-[120ms] ${on ? 'border-line2 bg-s3 text-fg' : 'border-line text-fg2 hover:border-line2 hover:text-fg'}`}>
+    <Pin size={13} aria-hidden fill={on ? 'currentColor' : 'none'} />{on ? 'Following' : 'Follow'}</button>
+}
+
 /* Tripwires: fixed rules over the last 7 days. Lit ones first, with the day they fired; every one with its record, plainly:
    most firings were not followed by anything. Each opens to the rule it checks. */
 const year = (d?: string) => d ? d.slice(0, 4) : ''
@@ -210,13 +237,17 @@ export function recordLine(x: Tell): string {
   if (!r.episodes) return `Has not fired${where} since the record began${r.first ? ` in ${year(r.first)}` : ''}`
   return `Fired ${r.episodes} ${r.episodes === 1 ? 'time' : 'times'}${where} since ${year(r.first)}, ${r.hits ?? 0} followed by an event`
 }
-function Tripwires({ t }: { t: Theatre }) {
+function Tripwires({ t: today }: { t: Theatre }) {
   const [open, setOpen] = useState<string | null>(null)
+  /* replaying, a tripwire is lit when the feed shows it fired in the 7 days to that day */
+  const rp = useReplay(), day = rp?.theatres[today.id]
+  const t = useMemo(() => { if (!day) return today; const m = new Map(wiresOn(today, day.wires).map(([x, d]) => [x.id, d])); return { ...today, tells: today.tells.map(x => ({ ...x, on: m.has(x.id), date: m.get(x.id) ?? null })) } }, [today, day])
   const list = useMemo(() => [...t.tells.filter(x => x.on).sort((a, b) => (b.date || '').localeCompare(a.date || '')), ...t.tells.filter(x => !x.on)], [t])
   const lit = list.filter(x => x.on).length
   const eps = t.tells.reduce((n, x) => n + (x.record?.episodes || 0), 0), hits = t.tells.reduce((n, x) => n + (x.record?.hits || 0), 0)
   return (
-    <Block title={<Explain k="tripwire">Tripwires</Explain>} aside={`${lit} of ${t.tells.length} lit, fixed rules over 7 days`}>
+    <Block title={<Explain k="tripwire">Tripwires</Explain>} aside={rp ? `${lit} of ${t.tells.length} lit in the week to ${shortDate(rp.day)}` : `${lit} of ${t.tells.length} lit, fixed rules over 7 days`}>
+      {rp?.partial && <p className="-mt-1 mb-2 text-[11.5px] text-fg2">The data holds the last 30 days, from {shortDate(rp.feedFrom)}; a tripwire that fired before that is not shown.</p>}
       <ul className="grid gap-1.5">
         {list.map(x => { const on = open === x.id, r = x.record; return (
           <li key={x.id} className="rounded-r2 border" style={{ borderColor: x.on ? 'color-mix(in srgb, var(--z2) 55%, transparent)' : 'var(--line)', background: x.on ? 'color-mix(in srgb, var(--z2) 7%, var(--s2))' : 'var(--s2)' }}>

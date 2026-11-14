@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState, useCallback, lazy, Suspense } from 'react'
 import { motion, AnimatePresence, useDragControls, animate, useMotionValue, MotionConfig } from 'motion/react'
 import { Globe, Activity, ClipboardCheck, Sun, Moon, Search, SlidersHorizontal, Link2 } from 'lucide-react'
-import { usePrefs, resolvedTheme, SettingsSheet, reducedMotion } from './settings'
+import { usePrefs, SettingsSheet, reducedMotion } from './settings'
 import { TheatreView } from './views'
 import { BaseView } from './ground'
 import { Dispatch, Board, Feed, SinceBlock, Timeline, Status, TIME_H, type Order, type Kind } from './watch'
 import { NotificationBell } from './bell'
 import { HealthReadout, LateBanner } from './health'
+import { ReplayProvider, replayWords } from './replay'
+import { useNotifier } from './follow'
+import { FollowPrompt } from './settings'
 import { useSinceLastVisit } from './since'
-import { Wordmark, Mark, Skeleton, Failed, copyText } from './ui'
+import { Wordmark, Mark, Skeleton, Failed, copyText, Boundary } from './ui'
 import { loadLayers, saveLayers, parseLayers, layersParam, isDefault, type Layer, type Layers } from './layers'
-import { useBrief, useLiveMap, currentRoute, legacyHash, routeHref, parseGen, type Brief, type LiveMap, type Route } from './data'
+import { useBrief, useLiveMap, currentRoute, legacyHash, hashIsLegacy, routeHref, parseGen, shortDate, type Brief, type LiveMap, type Route } from './data'
 
 /* The board paints from brief.json first; the map library (most of the download) and the pages other than Watch load after. */
 const MapView = lazy(() => import('./MapView').then(m => ({ default: m.MapView })))
@@ -20,6 +23,7 @@ const RecordView = lazy(() => import('./record').then(m => ({ default: m.RecordV
 const GroundView = lazy(() => import('./groundpage').then(m => ({ default: m.GroundView })))
 const GlossaryView = lazy(() => import('./glossarypage').then(m => ({ default: m.GlossaryView })))
 const CommandMenu = lazy(() => import('./command'))
+const Wall = lazy(() => import('./wall'))
 
 /* 0 phone, 1 wide (900 px: the sheet gives way to columns), 2 roomy (1200 px: "What changed" gets its own column).
    Only crossing a breakpoint re-renders; column widths follow the window in CSS. */
@@ -45,29 +49,35 @@ const query = () => { try { return new URLSearchParams(location.search) } catch 
 function dayFromAddress(brief: Brief): string | null {
   const d = query().get('d'); if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return null
   const end = parseGen(brief.generated).getTime(), t = Date.parse(d + 'T12:00Z')
-  return t <= end + 864e5 && t > end - 30 * 864e5 ? d : null      // the timeline's 30 days
+  const today = new Date(end).toISOString().slice(0, 10)
+  return d !== today && t <= end && t > end - 30 * 864e5 ? d : null      // the timeline's 30 days; today is live
 }
 
 export default function App() {
-  const brief = useBrief(), live = useLiveMap()
+  const brief = useBrief()
   if (brief.isPending) return <div className="grid h-full place-items-center text-fg3"><Mark size={40} /></div>
   if (brief.isError) return <Failed what="the brief" error={brief.error} />
-  return <Shell brief={brief.data} live={live.data} />
+  return <Shell brief={brief.data} />
 }
 
-function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
+/* map/live.json (about 900 KB) is not needed for the board: it is asked for once the board has painted, or at once on a page that
+   draws from it (a base, Ground, the map address) */
+const needsLive = () => { const r = currentRoute(); return r.v === 'base' || r.v === 'ground' || r.v === 'map' }
+function Shell({ brief }: { brief: Brief }) {
+  const [liveOn, setLiveOn] = useState(needsLive)
+  useEffect(() => { const id = requestAnimationFrame(() => setTimeout(() => setLiveOn(true), 0)); return () => cancelAnimationFrame(id) }, [])
+  const live = useLiveMap(liveOn).data
   const bp = useBreakpoint(), wide = bp >= 1, roomy = bp >= 2
   /* where the address points; a link from before the switch-over (#iran, #/theatre/iran) moves to its path, an unknown theatre to Watch */
   const fromLocation = useCallback((): Route => {
-    const old = legacyHash(location.hash)
+    const old = hashIsLegacy() ? legacyHash(location.hash) : null
     let r = old || currentRoute()
     if (r.v === 'theatre' && !brief.theatres.some(t => t.id === (r as { id: string }).id)) r = { v: 'brief' }
-    if (old || new URL(routeHref(r)).pathname !== location.pathname) history.replaceState(null, '', routeHref(r) + location.search)
+    if (old || new URL(routeHref(r)).pathname !== location.pathname) history.replaceState(null, '', new URL(routeHref(r)).pathname + location.search + new URL(routeHref(r)).hash)
     return r
   }, [brief])
   const [route, setRoute] = useState<Route>(fromLocation)
-  const { prefs, set } = usePrefs()
-  const theme = resolvedTheme(prefs)
+  const { prefs, set, theme } = usePrefs()
   const [settings, setSettings] = useState(false)
   const [cmd, setCmd] = useState(false), [cmdSeen, setCmdSeen] = useState(false)
   useEffect(() => { if (cmd) setCmdSeen(true) }, [cmd])
@@ -84,16 +94,18 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   const dismiss = useCallback(() => { setNewOnly(false); dismissSince() }, [dismissSince])
   /* the map and the command menu's code load once the board has painted */
   const [mapOn, setMapOn] = useState(false)
-  useEffect(() => { const id = requestAnimationFrame(() => setTimeout(() => { setMapOn(true); import('./command') }, 0)); return () => cancelAnimationFrame(id) }, [])
+  useEffect(() => { const id = requestAnimationFrame(() => setTimeout(() => { setMapOn(true); import('./command').catch(() => { /* a failed fetch shows when the menu opens */ }) }, 0)); return () => cancelAnimationFrame(id) }, [])
 
   /* replace: change the address without a new history entry (a theatre's tabs, an unknown theatre) */
   const go = useCallback((r: Route, replace = false) => {
     /* ?s=<id> is the signal open on the Signals page: it stays while the page does, and goes when the page is left */
     const sp = new URLSearchParams(location.search); if (r.v !== 'signals') sp.delete('s')
-    const qs = sp.toString(), href = routeHref(r) + (qs ? '?' + qs : '')
+    const qs = sp.toString(), u = new URL(routeHref(r)); u.search = qs ? '?' + qs : ''; const href = u.href   // a glossary term stays the anchor, after the query
     if (location.href !== href) history[replace ? 'replaceState' : 'pushState'](null, '', href)
     setRoute(r); if (!replace) panelRef.current?.scrollTo({ top: 0 })
   }, [])
+  /* followed theatres: a notification when fresh data shows a level rise or a new tripwire there (follow.ts); never from a replay */
+  useNotifier(brief, go)
   /* keep the day and the layers in the address while Watch shows them */
   useEffect(() => {
     const sp = query(), w = onWatch(route)
@@ -107,8 +119,11 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   const copyLink = useCallback(async () => {
     const u = new URL(location.href); if (onWatch(route)) u.searchParams.set('l', layersParam(layers))
     const href = u.href.replace(/%2E/g, '.')
-    setToast(await copyText(href) ? 'Link copied. It opens this view, with the same map layers and day.' : `This browser did not allow copying. The link is ${href}`)
-  }, [route, layers])
+    /* what the link keeps, said for this page: the map layers and a replayed day on Watch, the open signal on Signals */
+    const keeps = onWatch(route) ? `, with the same map layers${day ? ` and ${shortDate(day)} replayed` : ''}`
+      : route.v === 'signals' && u.searchParams.get('s') ? ', with the same signal open' : route.v === 'glossary' && route.term ? ', at the same term' : ''
+    setToast(await copyText(href) ? `Link copied. It opens this ${onWatch(route) ? 'view' : 'page'}${keeps}.` : `This browser did not allow copying. The link is ${href}`)
+  }, [route, layers, day])
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), toast.startsWith('Link copied') ? 3000 : 9000); return () => clearTimeout(t) }, [toast])
   useEffect(() => { const f = () => copyLink(); addEventListener('ww-copy-link', f); return () => removeEventListener('ww-copy-link', f) }, [copyLink])
 
@@ -122,12 +137,14 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
       if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !(e.target as HTMLElement).closest('input,textarea,select'))) { e.preventDefault(); setCmd(c => !c) }
       if (e.key === 'Escape' && cmd) { e.preventDefault(); setCmd(false); return }   // the search closes first
       /* a page that used the Escape first (a panel, a filter, an explainer) prevents it; an open dialog keeps it */
-      if (e.key === 'Escape' && !e.defaultPrevented && !cmd && !document.querySelector('[aria-modal="true"]') && route.v !== 'brief') go({ v: 'brief' })
+      if (e.key !== 'Escape' || e.defaultPrevented || cmd || document.querySelector('[aria-modal="true"]')) return
+      if (day && onWatch(route)) { setDay(null); return }      // a replay goes back to now first
+      if (route.v !== 'brief') go({ v: 'brief' })
     }
     addEventListener('keydown', k); return () => removeEventListener('keydown', k)
-  }, [cmd, route, go])
+  }, [cmd, route, go, day])
   useEffect(() => { document.title = route.v === 'theatre' ? `${brief.theatres.find(t => t.id === route.id)?.name || route.id} · WarWatch` : route.v === 'base' ? `${live?.bases.find(b => b.id === route.id)?.name.split(',')[0] || 'Base'} · WarWatch`
-    : route.v === 'brief' ? 'WarWatch' : `${{ signal: 'Signal', signals: 'Signals', ground: 'Ground', record: 'Track record', map: 'Map', glossary: 'Glossary' }[route.v]} · WarWatch` }, [route, brief, live])
+    : route.v === 'brief' ? 'WarWatch' : `${{ signal: 'Signal', signals: 'Signals', ground: 'Ground', record: 'Track record', map: 'Map', glossary: 'Glossary', wall: 'Wall' }[route.v]} · WarWatch` }, [route, brief, live])
 
   const toggleTheme = () => set({ theme: theme === 'dark' ? 'light' : 'dark' })
   /* Watch is the home (brief), the map address and an open theatre or base; Signals, Ground, Record and the glossary are pages */
@@ -139,46 +156,65 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   const view = (
     <AnimatePresence mode="popLayout" initial={false}>
       <motion.div key={route.v === 'theatre' ? 'theatre/' + route.id : route.v === 'signals' ? 'signals' : JSON.stringify(route)} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: .2, ease: EASE }}>
-        <Suspense fallback={<Skeleton lines={6} />}>
+        <Boundary what={route.v === 'brief' || route.v === 'map' ? 'this view' : 'this page'}><Suspense fallback={<Skeleton lines={6} />}>
           {route.v === 'theatre' && <TheatreView key={route.id} id={route.id} tab={route.tab} brief={brief} live={live} go={go} />}
           {route.v === 'base' && <BaseView key={route.id} id={route.id} brief={brief} live={live} go={go} />}
           {route.v === 'signal' && <SignalView key={route.id} id={route.id} brief={brief} go={go} />}
           {route.v === 'signals' && <SignalsView th={route.th} brief={brief} go={go} />}
           {route.v === 'ground' && <GroundView brief={brief} live={live} go={go} />}
           {route.v === 'record' && <RecordView brief={brief} go={go} />}
-          {route.v === 'glossary' && <GlossaryView go={go} />}
-        </Suspense>
+          {route.v === 'glossary' && <GlossaryView go={go} term={route.term} />}
+        </Suspense></Boundary>
       </motion.div>
     </AnimatePresence>
   )
-  const map = (padBottom: number) => mapOn && <Suspense fallback={null}><MapView brief={brief} live={live} route={route} onPick={go} theme={theme} day={day} flat={prefs.map === 'flat'} onFlat={f => set({ map: f ? 'flat' : 'globe' })} labels={prefs.labels} wide={wide} padBottom={padBottom} layers={layers} onToggle={toggleLayer} /></Suspense>
+  const map = (padBottom: number) => mapOn && <Boundary what="the map" at={wide ? 'm-5' : 'mx-3 mt-[68px]'}><Suspense fallback={null}><MapView brief={brief} live={live} route={route} onPick={go} theme={theme} day={null} flat={prefs.map === 'flat'} onFlat={f => set({ map: f ? 'flat' : 'globe' })} labels={prefs.labels} wide={wide} padBottom={padBottom} layers={layers} onToggle={toggleLayer} /></Suspense></Boundary>
   /* the dispatch is the page's heading only on the Watch home; a dossier or a page (Signals, Record) has its own h1 */
   const dispatch = <Dispatch brief={brief} heading={!dossier && !page} />
   const board = <Board brief={brief} sel={sel} go={go} order={order} setOrder={setOrder} />
   const home = <>{dispatch}{board}</>
-  const feed = <Feed brief={brief} day={day} setDay={setDay} kind={kind} setKind={setKind} go={go} since={since} dismiss={dismiss} newOnly={newOnly} setNewOnly={setNewOnly} block={wide} />
+  const feed = <Feed brief={brief} day={day} setDay={setDay} kind={kind} setKind={setKind} go={go} since={day ? null : since} dismiss={dismiss} newOnly={newOnly} setNewOnly={setNewOnly} block={wide} />
   /* on phones "since you last looked" sits under the dispatch, above the board; a pick there jumps to the feed it filters */
-  const phoneSince = since && <SinceBlock since={since} dismiss={dismiss} go={go} className="mx-3.5 mb-1.5 mt-2"
+  const phoneSince = since && !day && <SinceBlock since={since} dismiss={dismiss} go={go} className="mx-3.5 mb-1.5 mt-2"
     picked={newOnly ? kind : null} pick={k => { setDay(null); setKind(k ?? 'all'); setNewOnly(k != null); if (k) requestAnimationFrame(() => document.getElementById('feed')?.scrollIntoView({ block: 'start' })) }} />
   const overlays = <>
-    {cmdSeen && <Suspense fallback={null}><CommandMenu open={cmd} setOpen={setCmd} go={go} toggleTheme={toggleTheme} openSettings={() => setSettings(true)} copyLink={copyLink} brief={brief} live={live} /></Suspense>}
-    <SettingsSheet open={settings} onClose={() => setSettings(false)} />
+    {cmdSeen && <Boundary what="the search" float><Suspense fallback={null}><CommandMenu open={cmd} setOpen={setCmd} go={go} toggleTheme={toggleTheme} openSettings={() => setSettings(true)} copyLink={copyLink} brief={brief} live={live} /></Suspense></Boundary>}
+    <Boundary what="the settings" float><SettingsSheet open={settings} onClose={() => setSettings(false)} go={go} /></Boundary>
+    <Boundary what="the follow prompt" quiet><FollowPrompt names={Object.fromEntries(brief.theatres.map(t => [t.id, t.name]))} /></Boundary>
     <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-[84px] z-[60] flex justify-center px-4 min-[900px]:bottom-6">
       <AnimatePresence>{toast && <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: .18, ease: EASE }}
         className="pointer-events-auto max-w-[min(560px,100%)] break-words rounded-r2 border border-line2 bg-s2 px-3.5 py-2 text-[12.5px] text-fg shadow-[var(--shadow)]">{toast}</motion.p>}</AnimatePresence>
     </div>
   </>
 
+  /* replaying a day: what replays and what does not, and the way back (the timeline has the same button) */
+  const replaying = !!day && onWatch(route)
+  const banner = replaying && <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-line bg-s2 px-4 py-2 text-[12.5px] leading-[1.4] text-fg">
+    <span className="min-w-0 flex-1">{replayWords(day!)}</span>
+    <button onClick={() => setDay(null)} className="tap min-h-8 shrink-0 rounded-r2 border border-line2 px-2.5 text-[12px] font-medium hover:border-fg3">Back to now</button>
+  </div>
+  const mc = prefs.motion === 'reduced' ? 'always' : 'user'
+
+  if (route.v === 'wall') return (
+    <MotionConfig reducedMotion={mc}>
+      <div className="h-full bg-bg"><Boundary what="the wall"><Suspense fallback={<div className="grid h-full place-items-center text-fg3"><Mark size={40} /></div>}><Wall brief={brief} live={live} /></Suspense></Boundary></div>
+      {overlays}
+    </MotionConfig>
+  )
+
   if (!wide) return (
-    <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}>
+    <MotionConfig reducedMotion={mc}>
+    <ReplayProvider brief={brief} day={replaying ? day : null}>
       <div className="relative h-full overflow-hidden bg-bg text-fg">
         <div className="absolute inset-0">{map(route.v === 'map' ? 200 : Math.round(innerHeight * .55))}</div>
         <PhoneShell route={route} go={go} navActive={navActive} openCmd={() => setCmd(true)} openSettings={() => setSettings(true)} panelRef={panelRef} brief={brief} live={live}>
           <LateBanner brief={brief} />
-          {dossier || page ? view : <>{dispatch}{phoneSince}{board}{feed}</>}
+          {banner}
+          {dossier || page ? view : <>{dispatch}{phoneSince}<Timeline brief={brief} day={day} setDay={setDay} inline />{board}{feed}</>}
         </PhoneShell>
         {overlays}
       </div>
+    </ReplayProvider>
     </MotionConfig>
   )
 
@@ -188,7 +224,8 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   const R = dossier ? 'clamp(400px, 33vw, 472px)' : roomy ? 'clamp(320px, 26vw, 372px)' : '0px'
   const icon = 'grid h-8 w-8 shrink-0 place-items-center rounded-r2 text-fg2 transition-colors duration-[120ms] hover:bg-s2 hover:text-fg'
   return (
-    <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}>
+    <MotionConfig reducedMotion={mc}>
+    <ReplayProvider brief={brief} day={replaying ? day : null}>
     <div className="ww-wide grid h-full grid-cols-[64px_minmax(0,1fr)] overflow-hidden bg-bg text-fg">
       <nav aria-label="Pages" className="z-20 flex flex-col items-center gap-1 border-r border-line bg-bg py-3">
         <button onClick={() => go({ v: 'brief' })} aria-label="WarWatch, back to Watch" className="mb-2.5 grid h-9 w-10 place-items-center rounded-r2 text-fg"><Mark size={24} /></button>
@@ -207,10 +244,11 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
           </button>
           <button onClick={copyLink} aria-label="Copy link to this view" title="Copy link to this view" className={icon}><Link2 size={15} /></button>
           <NotificationBell brief={brief} live={live} go={go} />
-          <HealthReadout brief={brief} go={go} />
+          <Boundary what="data health" float><HealthReadout brief={brief} go={go} /></Boundary>
         </header>
-        <LateBanner brief={brief} />
-        <div className="relative min-h-0 min-w-0">
+        {/* the late notice and the replay line take the auto row when shown; the content always sits in the last row */}
+        <div className="row-start-2"><LateBanner brief={brief} />{banner}</div>
+        <div className="relative row-start-3 min-h-0 min-w-0">
           {/* Watch stays mounted under a page, hidden, so the map is built once and keeps its place */}
           <div inert={page} aria-hidden={page || undefined} className={`absolute inset-0 isolate grid ${page ? 'invisible' : ''}`}
             style={{ gridTemplateColumns: `${L} minmax(0,1fr) ${R}`, transition: 'grid-template-columns .22s cubic-bezier(.2,.8,.2,1)' }}>
@@ -234,6 +272,7 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
       </div>
       {overlays}
     </div>
+    </ReplayProvider>
     </MotionConfig>
   )
 }
@@ -275,7 +314,7 @@ function PhoneShell({ route, go, navActive, openCmd, openSettings, children, pan
     <>
       <header className="absolute inset-x-0 top-0 z-30 flex h-[60px] items-center gap-2.5 px-3" style={{ background: 'linear-gradient(var(--bg), color-mix(in oklab, var(--bg) 0%, transparent))' }}>
         <Wordmark size={16} compact /><div className="flex-1" />
-        <HealthReadout brief={brief} go={go} phone />
+        <Boundary what="data health" float><HealthReadout brief={brief} go={go} phone /></Boundary>
         <NotificationBell brief={brief} live={live} go={go} phone />
         <button onClick={openCmd} aria-label="Search" className={round}><Search size={16} /></button>
         <button onClick={openSettings} aria-label="Settings" className={round}><SlidersHorizontal size={16} /></button>

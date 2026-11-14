@@ -2,7 +2,7 @@
 // keeping the files in a public repository, so they are downloaded here before `vite` and `vite build` (predev, prebuild)
 // and never committed. This always writes src/fonts/fontshare.css, with one @font-face per file that is present: if Fontshare
 // cannot be reached the build still succeeds and the page falls back to the system fonts named in styles.css until the next build.
-import { mkdir, writeFile, readFile, rename } from 'node:fs/promises'
+import { mkdir, writeFile, readFile, rename, appendFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
@@ -12,8 +12,10 @@ const FACES = [
   { family: 'Sentient', slug: 'sentient', axis: 1, style: 'normal', weight: '200 700', file: 'sentient-normal.woff2' },
   { family: 'Sentient', slug: 'sentient', axis: 2, style: 'italic', weight: '200 700', file: 'sentient-italic.woff2' },
 ]
-const isWoff2 = buf => buf.subarray(0, 4).toString('latin1') === 'wOF2'
-// a file already here is kept only if it is a real font, so a cut-off download is fetched again
+// a whole WOFF2 file: the signature, and the total length its header states (bytes 8 to 11) equal to the bytes there, so a file cut
+// off anywhere, not just at the start, is caught
+const isWoff2 = buf => buf.length >= 48 && buf.subarray(0, 4).toString('latin1') === 'wOF2' && buf.readUInt32BE(8) === buf.length
+// a file already here is kept only if it is a whole font, so a cut-off download is fetched again
 const present = f => readFile(f).then(isWoff2, () => false)
 const get = async url => {
   const r = await fetch(url, { signal: AbortSignal.timeout(20_000) })
@@ -47,4 +49,6 @@ const css = FACES.filter((_, i) => got[i]).map(f =>
   `@font-face { font-family: "${f.family}"; src: url("./${f.file}") format("woff2"); font-weight: ${f.weight}; font-style: ${f.style}; font-display: swap; }`).join('\n')
 await writeFile(path.join(dir, 'fontshare.css'), `/* Written by scripts/fetch-fonts.mjs. Not committed. */\n${css}\n`)
 console.log(`fonts: ${got.filter(Boolean).length} of ${FACES.length} Fontshare files in place`)
+// the workflow saves its font cache only when every file is here and whole (steps.fonts.outputs.complete)
+if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `complete=${got.every(Boolean)}\n`)
 process.exit(0)   // a proxy that never answers can keep the process alive after the timeout

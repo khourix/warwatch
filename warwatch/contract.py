@@ -1,7 +1,8 @@
 """Data contract v1: the JSON files the new app reads, written next to the page every run. Standard library only.
 
     data/v1/brief.json                 first paint: headline, levels, the feed of the last 30 days (about 45 KB), and the data's health
-                                       for the top bar ("health", added November 2026)
+                                       for the top bar ("health", added November 2026: {statuses, sources: [{source, why}],
+                                       everyMinutes, lateAfterMinutes}, or null when it could not be built)
     data/v1/theatres/<id>.json         one theatre in full
     data/v1/signals/index.json         every signal, with a 40-point spark line
     data/v1/signals/series/<id>.json   one signal's full history, loaded on demand
@@ -10,7 +11,8 @@
                                        and loitering data cover it ("gfw", added November 2026)
     data/v1/bases/<id>.json            one base in full, with its radar history and image chips
     data/v1/record.json                the forward record, the model's gates, siren tempo, data health, and what the tripwires and
-                                       readings did before the newest past events ("past", added November 2026)
+                                       readings did before the newest past events ("past", added November 2026; null when it could
+                                       not be built, so the run still writes every file)
     data/v1/events.json                the labelled event list
 
 Every file carries {"schema": "warwatch/v1", "kind": ..., "generated": ...}. Positions are [lon, lat], as in GeoJSON.
@@ -33,7 +35,8 @@ GROUPS = {"logistics": "Logistics", "financial": "Markets", "behavioral": "Peopl
 NUM = (int, float)
 OPT_NUM = (int, float, type(None))
 SHAPES = {
-    "brief": {"generated": str, "headline": str, "counts": dict, "global": dict, "regions[]": list, "theatres[]": list, "feed[]": list, "model": dict},
+    "brief": {"generated": str, "headline": str, "counts": dict, "global": dict, "regions[]": list, "theatres[]": list, "feed[]": list, "model": dict,
+              "health": (dict, type(None))},
     "theatre": {"id": str, "name": str, "region": str, "level": str, "score": OPT_NUM, "signals": dict, "tells[]": list, "groups": dict, "official[]": list,
                 "history[]": list, "items[]": list, "events[]": list, "center": (list, type(None)), "countries": list},
     "signals": {"generated": str, "groups": dict, "signals[]": list},
@@ -42,7 +45,7 @@ SHAPES = {
     "map": {"theatres": dict, "aircraft[]": list, "ships[]": list, "fires[]": list, "bases[]": list, "warnings[]": list, "cities[]": list,
             "chokepoints[]": list},
     "base": {"id": str, "name": str, "state": str, "ll": list, "radar": list, "why": str, "images": dict, "parts[]": list},
-    "record": {"forward": (list, type(None)), "model": (dict, type(None)), "tempo": dict, "health": dict},
+    "record": {"forward": (list, type(None)), "model": (dict, type(None)), "tempo": dict, "health": dict, "past[]": (list, type(None))},
     "events": {"through": str, "events[]": list},
 }
 ITEMS = {
@@ -66,6 +69,12 @@ ITEMS = {
     "map.cities": {"ll": list, "name": str, "theatre": str},
     "map.chokepoints": {"ll": list, "name": str, "gfw": bool},
     "events.events": {"date": str, "theatre": str, "kind": str, "text": str},
+    "record.past": {"date": str, "theatre": str, "site": str, "kind": str, "text": str, "tripwires": dict, "window": int, "groups": dict},
+}
+# kind.key -> {key: type} for an object (not a list) that must carry these keys when it is there
+FIELDS = {
+    "brief.health": {"statuses": dict, "sources": list, "everyMinutes": int, "lateAfterMinutes": int},
+    "record.health": {"errors": list, "statuses": dict},
 }
 
 
@@ -85,8 +94,17 @@ def validate(obj):
         if not isinstance(obj[name], typ):
             out.append(f"{kind}.{name}: {type(obj[name]).__name__}, expected {typ}")
             continue
+        sub = FIELDS.get(f"{kind}.{name}")
+        if sub and isinstance(obj[name], dict):
+            for k, t in sub.items():
+                if not isinstance(obj[name].get(k), t):
+                    out.append(f"{kind}.{name}.{k}: {type(obj[name].get(k)).__name__}, expected {t}")
+            if name == "health" and isinstance(obj[name].get("sources"), list):
+                for i, x in enumerate(obj[name]["sources"]):
+                    if not (isinstance(x, dict) and isinstance(x.get("source"), str) and isinstance(x.get("why"), str)):
+                        out.append(f"{kind}.health.sources[{i}]: expected {{source, why}} strings")
         item = ITEMS.get(f"{kind}.{name}")
-        if key.endswith("[]") and item:
+        if key.endswith("[]") and item and obj[name] is not None:
             for i, x in enumerate(obj[name]):
                 if isinstance(item, type):
                     if not isinstance(x, item):
@@ -285,6 +303,15 @@ def feed(data):
     return sorted(out, key=lambda f: f["date"], reverse=True)
 
 
+def day_levels(data, t):
+    """Added November 2026, for replaying the last FEED_DAYS days on Watch: [[day, level]] oldest first, the level the page showed at
+    each day's first run (dashboard.hist_json "levels", from the hash-chained forward record). Only days the model was off are
+    there, so a missing day is one whose level was not kept, never a quiet one."""
+    since = (dt.date.fromisoformat(data["generated"][:10]) - dt.timedelta(days=FEED_DAYS - 1)).isoformat()
+    rows = ((data.get("hist") or {}).get(t) or {}).get("levels") or []
+    return [[d, lv] for d, lv in rows if d >= since]
+
+
 def brief(data):
     head, counts = share.summary(data)
     reg = _region_of(data)
@@ -298,7 +325,7 @@ def brief(data):
                     "standingRisk": v.get("xu"), "tellsOn": sum(1 for x in v.get("tells") or [] if x.get("on")), "tellsTotal": len(v.get("tells") or []),
                     "strong": sum(1 for s in sc if abs(s["z"]) >= 3), "context": ctx, "contextChecked": ctxd,
                     "spillover": t in (data.get("spill") or {}), "parents": (data.get("spill") or {}).get(t, []), "center": _box_center(t),
-                    "groups": {k: g["z"] for k, g in _groups(data, t).items()}, "lines": lines(v)})
+                    "groups": {k: g["z"] for k, g in _groups(data, t).items()}, "lines": lines(v), "levels": day_levels(data, t)})
     mo = data.get("model") or {}
     g = data.get("global") or {}
     return _head("brief", data["generated"], demo=bool(data.get("demo")), eventsThrough=(data.get("events") or {}).get("through", ""),
@@ -306,7 +333,7 @@ def brief(data):
                  regions=[{"id": r["id"], "name": r["name"], "theatres": r["kids"], "level": r["level"], "lead": r.get("lead")} for r in data.get("regions") or []],
                  theatres=ths, feed=feed(data)[:400],
                  model={"version": mo.get("v"), "fitted": mo.get("fitted"), "active": bool(mo.get("active")), "gates": mo.get("gates")},
-                 health=health(data))
+                 health=_safe("health", health, data))
 
 
 def theatre(data, t):
@@ -443,10 +470,18 @@ def record(data, tell_record=None):
     return _head("record", data["generated"], forward=data.get("forward"), model=data.get("model"), tempo=data.get("tempo") or {},
                  health={"errors": data.get("errors") or [], "unavailable": data.get("unavailable") or [], "updates": data.get("updates") or [],
                          "statuses": _statuses(data["series"])},
-                 past=past_events(data, tell_record))
+                 past=_safe("past", past_events, data, tell_record))
 
 
 PAST_EVENTS = 24     # the newest labelled events the Record page shows
+
+
+def _days_before(day, start, win):
+    """True when an episode that started on `start` began 1 to win days before `day`; a start that is not a date counts as none."""
+    try:
+        return 0 < (day - dt.date.fromisoformat(str(start)[:10])).days <= win
+    except ValueError:
+        return False
 
 
 def past_events(data, tell_record=None):
@@ -467,16 +502,20 @@ def past_events(data, tell_record=None):
     for e in reversed((data.get("events") or {}).get("list") or []):
         if len(out) >= PAST_EVENTS:
             break
-        day, th, site = dt.date.fromisoformat(e[0][:10]), e[1], e[2] if len(e) > 2 else ""
+        try:            # a row that is not a whole date (events.csv "2026-10") is left out, not the list
+            day, th, site = dt.date.fromisoformat(str(e[0])[:10]), e[1], e[2] if len(e) > 2 else ""
+        except (ValueError, TypeError, IndexError):
+            print(f"::warning title=Past events::skipped an event row that is not dated: {str(e)[:120]}", flush=True)
+            continue
         if th not in data["theatres"]:
             continue
         watched, started = [], []
         for tid, rows in per.items():
-            r = rows.get(th)
-            if not r or not r.get("first") or not (r["first"] <= e[0][:10] <= r["last"]):
-                continue
+            r = (rows or {}).get(th)
+            if not r or not r.get("first") or not r.get("last") or not (r["first"] <= day.isoformat() <= r["last"]):
+                continue            # a tripwire whose replay has no span (no "first" or "last") does not watch the date
             watched.append(tid)
-            if any(0 < (day - dt.date.fromisoformat(s)).days <= win for s in r.get("starts") or []):
+            if any(_days_before(day, s, win) for s in r.get("starts") or []):
                 started.append(tid)
         doms = data["theatres"][th].get("doms") or {}
         groups = {}
@@ -488,28 +527,61 @@ def past_events(data, tell_record=None):
                 if 0 <= i < len(h) and h[i] is not None:
                     vals.append(h[i])
             groups[name] = round(max(vals), 2) if vals else None
-        out.append({"date": e[0][:10], "theatre": th, "site": site, "kind": e[3] if len(e) > 3 else "", "text": e[4] if len(e) > 4 else "",
+        out.append({"date": day.isoformat(), "theatre": th, "site": site, "kind": e[3] if len(e) > 3 else "", "text": e[4] if len(e) > 4 else "",
                     "tripwires": {"watched": len(watched), "started": [{"id": t, "name": names.get(t, t)} for t in started]}, "window": win, "groups": groups})
     return out
 
 
-# The top bar's data-health readout (added November 2026). The workflow's "next" job queues a run 30 minutes after one starts, and the
-# live freshness check (.agents/skills/verify-warwatch, live-fresh) fails a page more than 90 minutes old: three runs missed.
+# The top bar's data-health readout (added November 2026). The workflow's "next" job queues a run 30 minutes after one starts. The
+# app calls the data late after 90 minutes, the line the live freshness check (.agents/skills/verify-warwatch, live-fresh) also
+# uses: by then the two runs due after it (at 30 and 60 minutes) have not come through, and a third is due.
 RUN_EVERY_MIN = 30
 LATE_AFTER_MIN = 90
 
+# names in data["errors"] that are one source: run.py names a source that has been down for days by its host, extras.py by its key
+SAME_SOURCE = {"msi.nga.mil": "nga"}
+_PAGE_TEXT = re.compile(r"\s*<(?:!|html|head|body)", re.I)
+
+
+def _reason(why):
+    """One source problem as a sentence: <urlopen error X> unwrapped to X, any page text a server sent back (an HTML error page) cut
+    to the address or a closing note in brackets, the " @ address" tail dropped (an address can carry a key), a capital first."""
+    why = re.sub(r"<urlopen error (.*?)>", r"\1", why)
+    m = _PAGE_TEXT.search(why)
+    if m:
+        rest = why[m.start():]
+        at, note = rest.find(" @ "), re.search(r"\s\([^()<>]*\)\s*$", rest)
+        why = why[:m.start()] + (rest[at:] if at >= 0 else note.group(0) if note else "")
+    why = re.sub(r"\s*@\s*\S+", "", why)
+    why = re.sub(r"\s+", " ", why).strip(" :;,-")
+    if not why:
+        return ""
+    why = why[0].upper() + why[1:]
+    return why if why[-1] in ".!?)" else why + "."
+
 
 def failing_sources(errors):
-    """The run's source problems (data["errors"], each "source: what went wrong") as [{source, why}]: the why cut at any page text a
-    server sent back (an HTML error page), so the reason reads as a sentence."""
-    out = []
+    """The run's source problems (data["errors"], each "source: what went wrong") as [{source, why}], one entry per source (two
+    names for one source are merged, their reasons joined), each reason a plain sentence (_reason). Entries with no text are left
+    out. A problem here is not always lost data: some sources fell back to another feed, and some are WarWatch's own caches."""
+    out, at = [], {}
     for x in errors or []:
+        if x is None:
+            continue
         s = x if isinstance(x, str) else json.dumps(x)
-        src, _, why = s.partition(": ")
-        if not why:
+        src, sep, why = s.partition(": ")
+        if not sep:
             src, why = "", s
-        why = re.sub(r"\s*<.*?(\(|$)", lambda m: " (" if m.group(1) == "(" else "", why, count=1).strip()
-        out.append({"source": src.strip(), "why": why})
+        src, why = SAME_SOURCE.get(src.strip(), src.strip()), _reason(why)
+        if not why:
+            continue
+        if src and src in at:
+            if why not in at[src]["why"]:
+                at[src]["why"] += " " + why
+            continue
+        out.append({"source": src, "why": why})
+        if src:
+            at[src] = out[-1]
     return out
 
 
@@ -517,6 +589,16 @@ def health(data):
     """For the top bar: how many signals score, collect history or failed, the sources that reported a problem with the reason, and
     the run cadence the app judges the data's age by."""
     return {"statuses": _statuses(data["series"]), "sources": failing_sources(data.get("errors")), "everyMinutes": RUN_EVERY_MIN, "lateAfterMinutes": LATE_AFTER_MIN}
+
+
+def _safe(name, fn, *args):
+    """A part that is added on top of the run (health, past events): a failure there is logged and leaves it null, so the other
+    files are still written."""
+    try:
+        return fn(*args)
+    except Exception as e:      # noqa: BLE001, any failure here must not stop the run's files
+        print(f"::error title=contract {name}::{type(e).__name__}: {e}"[:300], flush=True)
+        return None
 
 
 def _statuses(series):

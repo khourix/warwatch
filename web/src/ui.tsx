@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type KeyboardEvent } from 'react'
+import { Component, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type KeyboardEvent, type ErrorInfo } from 'react'
 import { createPortal } from 'react-dom'
 import { Link2 } from 'lucide-react'
 import { levelVar, levelWord, zColor, routeHref, shortDate, parseGen, type Level, type Route } from './data'
@@ -191,7 +191,7 @@ export function Explain({ k, asOf, children, className = '' }: { k: TermKey; asO
     addEventListener('pointerdown', away); return () => removeEventListener('pointerdown', away)
   }, [pinned])
   return <>
-    <button ref={btn} type="button" aria-describedby={id} aria-expanded={open}
+    <button ref={btn} type="button" aria-describedby={id}
       onClick={() => { setPinned(p => !p); setHover(false) }}
       onFocus={e => { if (e.currentTarget.matches(':focus-visible')) setHover(true) }} onBlur={() => { setHover(false); setPinned(false) }}
       onPointerEnter={e => { if (e.pointerType === 'mouse') setHover(true) }} onPointerLeave={e => { if (e.pointerType === 'mouse') setHover(false) }}
@@ -209,6 +209,10 @@ export function Explain({ k, asOf, children, className = '' }: { k: TermKey; asO
         <span className="mt-0.5 block font-sans">{t.says}</span>
         <span className="mt-1 block font-sans">{t.from}</span>
         {when && <span className="num mt-1.5 block font-sans text-[11.5px] text-fg2">Updated {when}</span>}
+        {/* the term's place in the glossary; mousedown keeps the focus on the term, so the card stays open until the click lands */}
+        <a href={routeHref({ v: 'glossary', term: k })} tabIndex={-1} onMouseDown={e => e.preventDefault()}
+          onClick={e => { e.preventDefault(); setPinned(false); setHover(false); history.pushState(null, '', routeHref({ v: 'glossary', term: k })); dispatchEvent(new PopStateEvent('popstate')) }}
+          className="lnk mt-1.5 block font-sans text-[12px]">In the glossary</a>
       </motion.span>, document.body)}
   </>
 }
@@ -217,6 +221,30 @@ export function fmtAsOf(s: string, tz: 'utc' | 'local') {
   if (s.length <= 10) return shortDate(s)
   const d = parseGen(s)
   return `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: tz === 'utc' ? 'UTC' : undefined })}, ${fmtTime(d, tz)}`
+}
+
+/* A part of the app that failed to load or to draw shows a short plain message and a Reload, and the rest keeps working. A part of
+   the code that cannot be fetched is almost always a tab left open across an update: the old files are gone, so it says that. */
+const CHUNK = /dynamically imported module|Importing a module script failed|error loading dynamically imported module|ChunkLoadError|Unable to preload CSS/i
+export const updatedSince = (e: unknown) => CHUNK.test(e instanceof Error ? `${e.name} ${e.message}` : String(e))
+type BoundaryProps = { what: string; children: ReactNode; float?: boolean; quiet?: boolean; at?: string }
+export class Boundary extends Component<BoundaryProps, { error: unknown }> {
+  state: { error: unknown } = { error: null }
+  static getDerivedStateFromError(error: unknown) { return { error } }
+  componentDidCatch(error: unknown, info: ErrorInfo) { console.warn(`WarWatch: ${this.props.what} failed`, error, info.componentStack?.split('\n').slice(0, 4).join('\n')) }
+  render() {
+    if (this.state.error == null) return this.props.children
+    if (this.props.quiet) return null
+    const updated = updatedSince(this.state.error)
+    const body = <>
+      <p className="text-[13px] leading-[1.45] text-fg">{updated ? `WarWatch was updated since this page was opened, so ${this.props.what} could not load.` : `Something went wrong while showing ${this.props.what}.`}</p>
+      <p className="mt-0.5 text-[12.5px] leading-[1.45] text-fg2">{updated ? 'Reload to get the new version.' : 'The rest of the page still works. Reloading usually fixes it.'}</p>
+      <button type="button" onClick={() => location.reload()} className="tap mt-2.5 min-h-9 rounded-r2 border border-line2 px-3 text-[12.5px] font-medium text-fg hover:border-fg3">Reload</button>
+    </>
+    return this.props.float
+      ? <div role="alert" className="fixed inset-x-3 bottom-[84px] z-[80] mx-auto max-w-[440px] rounded-r3 border border-line2 bg-s1 px-4 py-3 shadow-[var(--shadow)] min-[900px]:bottom-6">{body}</div>
+      : <div role="alert" className={`${this.props.at ?? 'm-5'} rounded-r3 border border-line bg-s1 px-4 py-3`}>{body}</div>
+  }
 }
 
 export function Failed({ what, error }: { what: string; error: unknown }) {

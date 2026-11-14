@@ -164,7 +164,7 @@ function Chokepoints({ live, brief, go }: { live: LiveMap; brief: Brief; go: Go 
     return { c, gfw, counts: [
       [near(live.ships).length, 'military and coast-guard ships', ''],
       ...(gfw ? [[dark.reduce((s, x) => s + (x.count || 0), 0), 'ships dark on radar', dark.length ? `in ${plural(dark.length, 'radar area', 'radar areas')}` : ''],
-        [near(live.loitering).length, 'loitering ships', '']] : []),
+        [near(live.loitering).length, 'loitering carrier vessels', '']] : []),
       [near(live.warnings).length, 'sea warnings', ''],
       [near(live.incidents).length, 'news reports', '(unverified)'],
     ] as [number, string, string][] }
@@ -175,7 +175,7 @@ function Chokepoints({ live, brief, go }: { live: LiveMap; brief: Brief; go: Go 
     <section aria-labelledby="g-choke" className="mt-8 border-t border-line px-5 pt-5">
       <h2 id="g-choke" className="text-[19px] font-semibold tracking-[-0.02em] text-fg">Chokepoints</h2>
       <p className="mt-1.5 max-w-[72ch] text-[12.5px] leading-[1.5] text-fg2">What the map data holds within {fmtDist(NM, units)} of each strait or canal. These are counts now, with no usual level to compare them with yet, so none of them is marked as unusual.
-        <span className="mt-1 block text-[11.5px] text-fg3">Military and coast-guard ships: US Navy positions from USNI News (approximate, weekly) and military or law-enforcement ships heard on AIS. Dark and loitering ships are from Global Fishing Watch, about five days behind, and only in the waters it is asked about. Sea warnings are NGA navigational warnings. News reports are unverified.</span></p>
+        <span className="mt-1 block text-[11.5px] text-fg3">Military and coast-guard ships: US Navy positions from USNI News (approximate, weekly) and military or law-enforcement ships heard on AIS. Dark ships and loitering carrier vessels are from Global Fishing Watch, about five days behind, and only in the waters it is asked about. Sea warnings are NGA navigational warnings. News reports are unverified.</span></p>
       <ul className="mt-3.5 grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-3">
         {rows.map(({ c, gfw, counts }) => { const th = brief.theatres.find(t => t.id === c.theatre), empty = counts.every(x => !x[0]); return (
           <li key={c.name} className="flex flex-col rounded-r3 border border-line bg-s1 px-3.5 pb-3 pt-3">
@@ -184,7 +184,7 @@ function Chokepoints({ live, brief, go }: { live: LiveMap; brief: Brief; go: Go 
             {empty ? <p className="mt-2.5 text-[12px] text-fg3">Nothing in the map data within {fmtDist(NM, units)} now.</p>
               : <dl className="mt-2">{counts.map(([n, what, src]) => (
                 <div key={what} className="flex items-baseline justify-between gap-3 border-t border-line py-[5px] first:border-0">
-                  <dt className="min-w-0 text-[12px] leading-[1.3] text-fg2">{what === 'ships dark on radar' ? <Explain k="dark">ships dark on radar</Explain> : what === 'loitering ships' ? <Explain k="loiter">loitering ships</Explain> : what}{src && <span className="text-fg3"> {src}</span>}</dt>
+                  <dt className="min-w-0 text-[12px] leading-[1.3] text-fg2">{what === 'ships dark on radar' ? <Explain k="dark">ships dark on radar</Explain> : what === 'loitering carrier vessels' ? <Explain k="loiter">loitering carrier vessels</Explain> : what}{src && <span className="text-fg3"> {src}</span>}</dt>
                   <dd className="num shrink-0 text-[15px] font-medium text-fg">{n}</dd>
                 </div>))}</dl>}
             {!gfw && <p className="mt-1.5 text-[11.5px] leading-[1.4] text-fg3">Dark ships and loitering are not covered here.</p>}
