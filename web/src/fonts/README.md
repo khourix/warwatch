@@ -22,3 +22,9 @@ The licence text comes in each family's download from Fontshare (`License/FFL.tx
 
 Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono). Licensed under the SIL Open Font
 License, Version 1.1: https://openfontlicense.org/open-font-license-official-text/. The file is the variable upright cut, unmodified.
+
+## The link-preview cards
+
+`warwatch/share.py` draws the share cards in the same three fonts. The workflow runs `scripts/fetch-fonts.mjs` before `run.py`, and
+`share.write_cards` copies the files it finds here into `og-fonts/` next to the cards, which the site then serves like the app's
+own copies. A file that is missing falls back to a system font on the card.

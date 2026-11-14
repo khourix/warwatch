@@ -1900,6 +1900,69 @@ class ShareCard(unittest.TestCase):
         self.assertIn('og.jpg?v=202610240117"', page)
         self.assertIn('<meta property="og:description" content="Yemen is the only theatre above quiet.', page)
 
+    def _quiet(self, scores, active=False):
+        """Every theatre quiet, with these readings (others None), and the forecast model on or off."""
+        d = self._data()
+        for t, v in d["theatres"].items():
+            v["score"] = scores.get(t)
+        d["model"] = dict(d.get("model") or {}, active=active)
+        return d
+
+    def test_quiet_day_names_the_theatre_closest_to_watch(self):
+        """As the app's dispatch words it (watch.tsx): only while the model is off and the reading is under the line of 50."""
+        import share
+        head = share.summary(self._quiet({"yemen": 45.2, "iraq": 6.5, "southasia": 30}))[0]
+        self.assertEqual(head, "Every theatre reads quiet. Yemen comes closest to Watch, at 45 against a line of 50.")
+        self.assertIn("South Asia comes closest to Watch, at 31 against", share.summary(self._quiet({"southasia": 30.5}))[0])   # short name, half up
+        self.assertIn("at 49 against a line of 50.", share.summary(self._quiet({"yemen": 49.7}))[0])    # under 50 never reads 50
+        self.assertEqual(share.summary(self._quiet({"yemen": 50.2}))[0], "Every theatre reads quiet. No tripwires fired this week.")
+        self.assertEqual(share.summary(self._quiet({"yemen": 45.2}, active=True))[0], "Every theatre reads quiet. No tripwires fired this week.")
+        self.assertEqual(share.summary(self._quiet({}))[0], "Every theatre reads quiet. No tripwires fired this week.")
+        d = self._quiet({"yemen": 45.2})
+        d["theatres"]["iran"]["level"] = "Watch"
+        self.assertEqual(share.summary(d)[0], "Iran is the only theatre above quiet. No tripwires fired this week.")
+
+    def test_whole_matches_the_app(self):
+        import share
+        self.assertEqual([share.whole(x) for x in (0.4, 44.5, 45.2, 49.5, 49.99, 50, 50.4, 99.6)], [0, 45, 45, 49, 49, 50, 50, 100])
+
+    def test_brief_and_card_carry_the_same_headline_and_counts(self):
+        import contract
+        import share
+        d = self._quiet({"yemen": 45.2})
+        head, f = share.summary(d)
+        b = contract.brief(d)
+        self.assertEqual(b["headline"], head)
+        self.assertEqual(b["counts"]["strong"], f["strong"])
+        card = share.card_html(d, None)
+        self.assertIn(head, card)
+        self.assertIn(f"{f['theatres']} theatres · {f['signals']} public signals", card)
+        self.assertIn("Dispatch · 24 Oct 2026 · 01:17 UTC", card)
+
+    def test_card_uses_the_midnight_colours_and_keeps_numbers_in_ink(self):
+        import share
+        card = share.card_html(self._data({"yemen": "Elevated"}, tells_on=("iran",)), geo.load())
+        self.assertIn("background:#080b11", card)
+        for old in ("#090b0f", "#e9b44c", "#f28a3e", "IBM Plex", "Source Serif"):
+            self.assertNotIn(old, card)
+        self.assertNotIn("<b style", card)                                  # the three counts are never amber or orange
+        self.assertIn("border-color:#ff7438", card)                         # Yemen's label takes its level's colour
+        self.assertIn("Sentient,Georgia,serif", card)                       # system fonts when the fetched ones are missing
+        self.assertIn("src:url(og-fonts/switzer-normal.woff2)", card)
+
+    def test_write_cards_copies_the_fonts_it_finds_and_draws_without_them(self):
+        import share
+        fonts, out, bare = tempfile.mkdtemp(), tempfile.mkdtemp(), tempfile.mkdtemp()
+        with open(os.path.join(fonts, "switzer-normal.woff2"), "wb") as f:
+            f.write(b"wOF2 a font")
+        with open(os.path.join(fonts, "sentient-normal.woff2"), "wb") as f:
+            f.write(b"<html>an error page</html>")                         # not a font: left out
+        self.assertEqual(share.write_cards(out, self._data(), None, font_dir=fonts), len(C.THEATRES))
+        self.assertEqual(os.listdir(os.path.join(out, "og-fonts")), ["switzer-normal.woff2"])
+        self.assertEqual(share.write_cards(bare, self._data(), None, font_dir=os.path.join(bare, "none")), len(C.THEATRES))
+        self.assertFalse(os.path.exists(os.path.join(bare, "og-fonts")))
+        self.assertTrue(os.path.getsize(os.path.join(bare, "og-card.html")) > 1000)
+
 
 class ContextLine(unittest.TestCase):
     def test_context_lines_are_well_formed(self):
@@ -2070,6 +2133,20 @@ class TheatreCards(unittest.TestCase):
         self.assertIn("khourix.github.io/warwatch/ukraine", card)
         self.assertIn(C.CONTEXT["ukraine"][0], card)
         self.assertIn("24 Oct 2026 · 01:17 UTC", card)
+
+    def test_card_words_the_level_and_counts_as_the_app_does(self):
+        import copy
+        import share
+        d = copy.deepcopy(self.data)
+        d["theatres"]["southasia"]["level"] = "Elevated"
+        card = share.theatre_card_html(d, None, "southasia")
+        _, f = share.theatre_summary(d, "southasia")
+        self.assertIn('<div class="name">South Asia<span class="lv" style="color:#ff7438">Elevated</span>', card)
+        self.assertIn(f"of {f['scored']} scored", card)
+        self.assertIn("tripwires fired<br>this week" if f["tells"] != 1 else "tripwire fired<br>this week", card)
+        self.assertNotIn("<b style", card)
+        quiet = share.theatre_card_html(self.data, None, "iran")
+        self.assertIn('>Quiet</span>', quiet)
 
 
 class Pages(unittest.TestCase):

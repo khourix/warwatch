@@ -40,6 +40,17 @@ jobs:
         run: python3 -m pip install --quiet --break-system-packages h3
       - name: Live ships collected by the ais job (orphan branch; none yet is fine)
         run: git fetch -q --depth=1 origin ais && git show FETCH_HEAD:state.json > "$RUNNER_TEMP/ais_state.json" || echo "no ais state yet"
+      # Node is set up here, before run.py, so the share cards get their fonts; the new app's build below uses it too.
+      - uses: actions/setup-node@v6
+        continue-on-error: true
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Fonts for the share cards (Switzer and Sentient from Fontshare, never committed; system fonts if this fails)
+        continue-on-error: true
+        timeout-minutes: 2
+        run: node web/scripts/fetch-fonts.mjs
       - name: Fetch, score, render
         env:
           CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
@@ -136,12 +147,6 @@ jobs:
       # The new app (web/, React) is the page at /warwatch/, with an address per theatre (/warwatch/iran/) and its own share card.
       # pages.py moves the old page to /warwatch/classic/ until its CLASSIC_UNTIL date. If the build or pages.py fails, site/ stays as
       # run.py wrote it, so the old page is served at /warwatch/ for that run and nothing is held back.
-      - uses: actions/setup-node@v6
-        continue-on-error: true
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
       - name: New app (web/ built, then written to site/ with a page per address)
         continue-on-error: true
         run: |

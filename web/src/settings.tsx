@@ -32,7 +32,7 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const apply = () => {
       const t = resolvedTheme(prefs), d = document as any, root = document.documentElement
-      const go = () => { root.dataset.theme = t; document.querySelector('meta[name=theme-color]')?.setAttribute('content', t === 'dark' ? '#0a0a0b' : '#f2efe7') }
+      const go = () => { root.dataset.theme = t; document.querySelector('meta[name=theme-color]')?.setAttribute('content', t === 'dark' ? '#080b11' : '#f2efe7') }
       if (root.dataset.theme !== t && d.startViewTransition && prefs.motion === 'on' && !matchMedia('(prefers-reduced-motion: reduce)').matches) d.startViewTransition(go); else go()
       root.dataset.motion = prefs.motion
     }
