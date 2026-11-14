@@ -82,7 +82,7 @@ function BaseRow({ b, i, go }: { b: MapBase; i: number; go: Go }) {
   return (
     <motion.div {...listAnim(i)}>
       <Lnk to={{ v: 'base', id: b.id }} go={go} className="group grid grid-cols-[52px_minmax(0,1fr)_74px] items-center gap-3 py-[7px]">
-        <span className="grid h-[52px] w-[52px] place-items-center overflow-hidden rounded-r1 bg-s3">{b.thumb ? <img src={asset(b.thumb)} alt="" loading="lazy" className="h-full w-full object-cover" /> : <Satellite size={16} className="text-fg3" aria-hidden />}</span>
+        <span className="grid h-[52px] w-[52px] place-items-center overflow-hidden rounded-r1 bg-s3">{b.thumb ? <img src={asset(b.thumb)} alt="" loading="lazy" className="h-full w-full object-cover" onError={e => { e.currentTarget.style.visibility = 'hidden' }} /> : <Satellite size={16} className="text-fg3" aria-hidden />}</span>
         <span className="min-w-0">
           <span className="block text-[12.5px] font-medium leading-[1.3] text-fg group-hover:underline group-hover:decoration-line2 group-hover:underline-offset-[3px]">{b.name}</span>
           <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-fg3">{mark && <i aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: mark }} />}<span className={mark ? 'text-fg2' : ''}>{baseWord(b.state, b.part)}</span>{b.last && b.state !== 'nodata' ? <span className="num">· last pass {shortDate(b.last)}</span> : null}</span>

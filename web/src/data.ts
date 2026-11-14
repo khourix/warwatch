@@ -148,7 +148,7 @@ export function summary(t: Theatre, modelActive: boolean): string {
   const on = t.tells.filter(x => x.on)
   const b = on.length ? ` ${countWord(on.length)} ${on.length === 1 ? 'tripwire' : 'tripwires'} fired this week: ${on.map(x => wireName(x).toLowerCase()).join(', ')}.` : ' No tripwire has fired this week.'
   const top = GROUPS.map(g => [g, t.groups[g]?.z ?? 0] as const).sort((x, y) => y[1] - x[1])[0]
-  const c = top && top[1] >= 2 ? ` ${top[0]} carries the most pressure.` : ''
+  const c = top && top[1] >= 2 ? ` Most of the pressure is in ${top[0]}.` : ''
   return a + b + c
 }
 
