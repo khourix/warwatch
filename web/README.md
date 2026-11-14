@@ -18,22 +18,27 @@ The app fetches `brief.json` again every 10 minutes, also in a background tab, a
 picks up new runs and shows the late line when they stop.
 
 - **Replay.** A day picked on the timeline (`?d=`) replays the board, the dispatch, the tripwires and the feed for that day, from what
-  the data keeps per day: each theatre's level at the day's first run, the group readings from `signals/buildup.json`, and the dated
-  feed. The 0 to 100 reading and the map's marks are not kept per day, so they stay today's, and a banner says so. Escape or
-  "Back to now" returns to live. Since-you-last-looked and notifications ignore a replay (`src/replay.tsx`).
+  the data keeps per day: each theatre's level and the tripwires lit at the day's first run (the forward records), the group
+  readings from `signals/buildup.json`, and the dated feed. A day a record did not keep says "not kept", and heat before
+  `replay.heatFrom` says heat was not kept that far back, never zero. The 0 to 100 readings, context tags, the map's marks and the
+  dossier's tabs are not kept per day, so they stay today's, and the replay line names them. Escape or "Back to now" returns to
+  live. Since-you-last-looked and notifications ignore a replay (`src/replay.tsx`).
 - **Follow.** A pin on each board row and on a theatre's page puts the theatre at the top of the board. The list stays in this browser
-  only (`ww-follow`); settings' Clear removes it. "Notify me" asks the browser's permission only from that switch. While a tab is open
-  (or the app is open from a phone's home screen), each new run is compared with the data the tab saw before, and a followed theatre
-  that rises to Watch or above, or where a tripwire newly fires, gets one notification. There is no push: a closed page cannot
-  notify (`src/follow.ts`).
+  only (`ww-follow`); settings' Clear removes it. "Notify me" asks the browser's permission only from that switch. It works in desktop
+  browsers while a WarWatch tab is open: each newer run is compared with the data the tab saw before, and a followed theatre that
+  rises to Watch or above, or where a tripwire turns on (by id, `tellsLit`), gets one notification. There is no push and no service
+  worker, so a closed page cannot notify and phones cannot at all; there the switch is off and says why (`src/follow.ts`).
 - **Wall.** `/warwatch/wall/` is Watch for a spare screen: large type, no controls, the theatres closest to Watch, the week's
-  tripwires and a globe that moves slowly between them (a cut once a minute under reduced motion). Esc leaves, F switches full
+  tripwires and a globe that moves for 3 seconds every 30 between them and draws nothing in between (a cut once a minute under
+  reduced motion). Esc leaves, F switches full
   screen, and the screen is kept awake where the browser allows. It is in the command menu and settings, not the rail.
 
 The words the explainers show (a dotted term) and the glossary page both come from `src/glossary.ts`, and nowhere else.
 
 Fields the app reads only when they are there (added November 2026; older data still draws):
 
+- The brief's theatre rows: `levels`, `wires` (the tripwire ids lit at each day's first run) and `tellsLit` (the ids lit now), and
+  the brief's `replay` (`heatFrom`, tripwire names). Without them the replay says not kept and notifications send no tripwire.
 - `theatres/<id>.json` and the brief's theatre rows: `lines`, where Watch, Elevated and Critical sit on the 0 to 100 reading. Without
   it the gauge draws Watch at 50, Critical at 90 and no Elevated line.
 - `signals/buildup.json`: the Signals page's build-up wall. Without it the page says the wall is not in this data run.

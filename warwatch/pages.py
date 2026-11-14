@@ -58,7 +58,22 @@ def page(shell, path, title, desc, image, alt, noindex=False):
         if anchor not in shell:
             raise ValueError(f"the app's index.html has no {anchor}")
     out = shell.replace('<meta charset="utf-8">', '<meta charset="utf-8">' + tags, 1).replace("<title>WarWatch</title>", f"<title>{e(title)}</title>", 1)
+    out = _links_after_base(out)
     return re.sub(r'<meta name="description" content="[^"]*">', lambda _: f'<meta name="description" content="{e(desc)}">', out, count=1)
+
+
+def _links_after_base(doc):
+    """A link above <base> (a font preload a build put at the top of the head) resolves against the page's own address, so on any
+    page but the root it asks for a file that is not there, then fetches it again: such links move to just after the base."""
+    at = doc.find("<base ")
+    if at < 0:
+        return doc
+    head, rest = doc[:at], doc[at:]
+    moved = re.findall(r"<link\b[^>]*>\s*", head)
+    if not moved:
+        return doc
+    end = rest.index(">") + 1
+    return re.sub(r"<link\b[^>]*>\s*", "", head) + rest[:end] + "\n" + "".join(m.strip() + "\n" for m in moved).rstrip("\n") + rest[end:]
 
 
 def classic(old, until):

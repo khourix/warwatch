@@ -26,7 +26,8 @@ function siteData(): Plugin {
 
 // The fonts the first screen sets its text in (Switzer for the interface, Sentient upright and italic for the dispatch) are asked for
 // from index.html with the page, not when the CSS is read, so the dispatch does not reflow when they arrive on a slow connection.
-// A font that fetch-fonts.mjs could not download is not in the build and is simply not preloaded.
+// A font that fetch-fonts.mjs could not download is not in the build and is simply not preloaded. The links go at the end of the
+// head, after the <base> pages.py adds, so they resolve against the site root on every address.
 const PRELOAD = /^assets\/(switzer-normal|sentient-normal|sentient-italic)-[\w-]+\.woff2$/
 function preloadFonts(): Plugin {
   return {
@@ -36,7 +37,7 @@ function preloadFonts(): Plugin {
       handler(_html, ctx) {
         if (!ctx.bundle) return
         return Object.keys(ctx.bundle).filter(f => PRELOAD.test(f)).sort().map(f => ({
-          tag: 'link', injectTo: 'head-prepend' as const, attrs: { rel: 'preload', as: 'font', type: 'font/woff2', crossorigin: '', href: './' + f },
+          tag: 'link', injectTo: 'head' as const, attrs: { rel: 'preload', as: 'font', type: 'font/woff2', crossorigin: '', href: './' + f },
         }))
       },
     },

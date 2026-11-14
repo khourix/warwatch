@@ -460,6 +460,28 @@ class TestGeoAndPage(unittest.TestCase):
         self.assertEqual(contract.day_levels(data, "iran"), [["2026-10-11", "Normal"]])     # 30 days back from 9 Nov is 11 Oct
         self.assertEqual(contract.day_levels(data, "israel"), [])
 
+    def test_history_keeps_the_tripwires_lit_at_each_day_s_run(self):
+        """Second review of November 2026: the replay on Watch shows the tripwires that were lit at a day's first run, read from the
+        forward tells record the same way the level is read from log.csv. Every day the record has rows for is there (an empty list
+        when nothing was lit); a day with no rows is missing, so the app says it was not kept."""
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "log.csv"), "w") as f:
+            f.write("date,theatre,p,lo,hi,raw,base,level\n")
+        with open(os.path.join(d, "tells.csv"), "w") as f:
+            f.write("date,theatre,tell,on,fired,src,prev_hash,hash\n"
+                    "2026-10-20,iran,sea,0,,,a,b\n2026-10-20,iran,wave,0,,,b,c\n"
+                    "2026-10-21,iran,sea,1,2026-10-21,nga_iran,c,d\n2026-10-21,iran,wave,1,2026-10-19,x,d,e\n"
+                    "2026-10-23,iran,sea,1,2026-10-21,nga_iran,e,f\n2026-10-23,iran,wave,0,,,f,g\n"
+                    "2026-10-23,nowhere,sea,1,,,g,h\n")
+        res = {"theatres": {"iran": {}, "israel": {}}, "series": [{"id": "x", "kind": "daily", "points": [("2026-10-23", 1.0)]}]}
+        h = dashboard.hist_json(res, {}, fwd=d)
+        self.assertEqual(h["iran"]["lit"], [["2026-10-20", []], ["2026-10-21", ["sea", "wave"]], ["2026-10-23", ["sea"]]])
+        self.assertEqual(h["israel"]["lit"], [])
+        import contract
+        data = {"generated": "2026-11-19 06:00 UTC", "hist": h}           # 30 days back from 19 Nov is 21 Oct
+        self.assertEqual(contract.day_wires(data, "iran"), [["2026-10-21", ["sea", "wave"]], ["2026-10-23", ["sea"]]])
+        self.assertEqual(contract.day_wires(data, "israel"), [])
+
     def test_series_history_splits_into_series_json(self):
         res = run.evaluate(demo.scenario("buildup"))
         d = dashboard.build_data(res, "2026-10-11 03:51 UTC", True, None, None)
@@ -2241,6 +2263,78 @@ class DataContract(unittest.TestCase):
                 self.assertIn(lv, ("Normal", "Watch", "Elevated", "Critical"))
                 self.assertGreaterEqual(d, (dt.date.fromisoformat(self.data["generated"][:10]) - dt.timedelta(days=contract.FEED_DAYS - 1)).isoformat())
 
+    def test_replay_rows_skip_malformed_rows_one_by_one(self):
+        """Second review of November 2026: a level or tripwire row that is not [day, value] is left out and logged, the rest kept,
+        like past_events; a theatre whose rows cannot be read at all gets an empty list and the brief is still written."""
+        import contract
+        import io
+        import contextlib
+        data = {"generated": "2026-11-09 06:00 UTC", "hist": {"iran": {
+            "levels": [["2026-10-20", "Watch"], ["2026-10", "Normal"], ["2026-10-21"], None, ["2026-10-22", 3], "x", ["2026-10-23", "Elevated"]],
+            "lit": [["2026-10-20", ["sea", 5, ""]], ["bad", ["sea"]], ["2026-10-21", "sea"], ["2026-10-22", []], 7]}}}
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(contract.day_levels(data, "iran"), [["2026-10-20", "Watch"], ["2026-10-23", "Elevated"]])
+            self.assertEqual(contract.day_wires(data, "iran"), [["2026-10-20", ["sea"]], ["2026-10-22", []]])
+        self.assertIn("::warning title=Replay levels::", out.getvalue())
+        self.assertIn("::warning title=Replay tripwires::", out.getvalue())
+        d = json.loads(json.dumps(self.data))
+        d.setdefault("hist", {}).setdefault("iran", {})["levels"] = 5          # not a list: the whole row fails
+        d["hist"]["iran"]["lit"] = {"a": 1}
+        with contextlib.redirect_stdout(io.StringIO()):
+            b = contract.files(d)["brief.json"]
+        self.assertEqual(contract.validate(b), [])
+        row = next(t for t in b["theatres"] if t["id"] == "iran")
+        self.assertEqual((row["levels"], row["wires"]), ([], []))
+
+    def test_brief_says_how_far_back_heat_is_kept_and_names_the_tripwires(self):
+        """Second review of November 2026: unusual fires are kept firecls.KEEP_DAYS days, fewer than the feed's 30, so the brief
+        says from which day heat is kept (a replayed day before it says heat was not kept, not "0 heat reports"), and maps each
+        tripwire id in "wires" to its name. Every other lane of the feed reaches back the whole 30 days."""
+        import contract
+        import firecls
+        import tells
+        b = self.files["brief.json"]
+        day = dt.date.fromisoformat(self.data["generated"][:10])
+        self.assertEqual(b["replay"]["heatFrom"], (day - dt.timedelta(days=firecls.KEEP_DAYS)).isoformat())
+        self.assertLess(firecls.KEEP_DAYS, contract.FEED_DAYS)
+        self.assertEqual(b["replay"]["tripwires"], {t["id"]: t["name"] for t in tells.TELLS})
+        for t in b["theatres"]:
+            for d, ids in t["wires"]:
+                self.assertTrue(all(k in b["replay"]["tripwires"] for k in ids))
+        self.assertGreaterEqual(dashboard.HIST_DAYS, contract.FEED_DAYS)       # official steps: the 90-day history
+        for t, row in zip([t for t in self.data.get("order", self.data["theatres"]) if t in self.data["theatres"] and t != "global"], b["theatres"]):
+            self.assertEqual(row["tellsLit"], [x["id"] for x in self.data["theatres"][t].get("tells") or [] if x.get("on")])  # today's, for notifying on onset
+            self.assertEqual(len(row["tellsLit"]), row["tellsOn"])
+        x = json.loads(json.dumps(b))
+        x["replay"] = {"heatFrom": 5}
+        self.assertTrue(any("replay" in p for p in contract.validate(x)))
+        x = json.loads(json.dumps(b))
+        del x["theatres"][0]["wires"]
+        self.assertTrue(any("missing wires" in p for p in contract.validate(x)))
+
+    def test_reasons_cut_any_markup_and_only_an_address_at_the_end(self):
+        """Second review of November 2026: any markup a server sent back is cut, not only pages that open with <!, <html, <head or
+        <body (an XML error, a bare <title>), and only an address at the end (" @ http...", before any closing note) is dropped:
+        text with an "@" in it, like a mail address, stays."""
+        import contract
+        got = contract.failing_sources([
+            "a: HTTP Error 502: <title>Bad Gateway</title>",
+            "b: not what we asked for <?xml version=\"1.0\"?><Error><Code>AccessDenied</Code></Error>",
+            "c: quota reached, write to ops@example.org",
+            "d: refused @ https://x.example/q?key=SECRET (retried twice)",
+            "e: count < 5 and a<b stays",
+            "f: HTTP 500 </p> tail",
+            "g: timed out @ http://h.example/x?k=SECRET",
+        ])
+        self.assertEqual(got, [{"source": "a", "why": "HTTP Error 502."}, {"source": "b", "why": "Not what we asked for."},
+                               {"source": "c", "why": "Quota reached, write to ops@example.org."},
+                               {"source": "d", "why": "Refused (retried twice)"}, {"source": "e", "why": "Count < 5 and a<b stays."},
+                               {"source": "f", "why": "HTTP 500."}, {"source": "g", "why": "Timed out."}])
+        for x in got:
+            self.assertNotIn("SECRET", x["why"])
+            self.assertNotIn("http", x["why"])
+
     def test_brief_carries_data_health_for_the_top_bar(self):
         """Added November 2026: the top bar's readout. Signal statuses as record.json counts them, each source problem of the run
         with its reason (any page text a server sent back cut off), and the cadence the app judges the data's age by."""
@@ -2437,6 +2531,26 @@ class Pages(unittest.TestCase):
     def _read(self, *p):
         with open(os.path.join(*p), encoding="utf-8") as f:
             return f.read()
+
+    def test_font_preloads_come_after_the_base_on_every_address(self):
+        """Second review of November 2026: a preload above <base> resolves against the page's address (/warwatch/iran/assets/...),
+        a 404, and the font is then fetched twice. Links a build put above the charset move to just after the base; the rest stay."""
+        import pages
+        import re
+        shell = ('<!doctype html><html><head>\n<link rel="preload" as="font" crossorigin href="./assets/switzer-normal-x.woff2">\n'
+                 '<meta charset="utf-8">\n<title>WarWatch</title>\n<meta name="description" content="x">\n'
+                 '<link rel="icon" href="favicon.svg">\n</head><body><div id="root"></div></body></html>')
+        for path in ("", "iran/", "wall/"):
+            out = pages.page(shell, path, "T", "D", "https://x/og.jpg", "A")
+            base = out.index('<base href="')
+            self.assertLess(base, out.index('rel="preload"'))
+            self.assertEqual(out.count('rel="preload"'), 1)
+            self.assertLess(out.index('<meta charset="utf-8">'), base)
+            self.assertIn('<link rel="icon" href="favicon.svg">', out)
+            for m in re.finditer(r'(?:href|src)="', out):
+                self.assertGreaterEqual(m.start(), base, out[:m.start() + 40])
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "web", "vite.config.ts")) as f:
+            self.assertNotIn("head-prepend", f.read())
 
     def test_switch_over_writes_every_address(self):
         import pages

@@ -114,7 +114,7 @@ export function SignalsView({ th, brief, go }: { th?: string; brief: Brief; go: 
         <p className="mt-2 max-w-[62ch] font-serif text-[16.5px] leading-[1.42] text-fg [text-wrap:pretty]">{lede ?? <span className="text-fg3">Public series, each scored against its own history.</span>}</p>
       </div>
       <Wall go={go} />
-      {sq.isError ? <Failed what="the signals" error={sq.error} /> : (
+      {sq.isError && !sq.data ? <Failed what="the signals" error={sq.error} /> : (
         <div ref={listBox} className="mt-1 grid items-start gap-x-6 gap-y-4 px-5" style={{ gridTemplateColumns: three ? `272px minmax(0,1fr)${open ? ' 360px' : ''}` : panel ? (open ? 'minmax(0,1fr) 340px' : '272px minmax(0,1fr)') : 'minmax(0,1fr)' }}>
           {/* the matrix beside the list when there is room; folded above it on a phone, or while a signal is open on a mid-width screen */}
           {three || (panel && !open) ? <div className="sticky top-3">{matrix}</div>
@@ -415,7 +415,7 @@ export function SignalView({ id, brief, go }: { id: string; brief: Brief; go: Go
   const back: Route = s && inTheatre ? { v: 'theatre', id: s.theatre, tab: 'signals' } : { v: 'signals' }
   const crumbs = <Crumbs back={back} items={[['Signals', { v: 'signals' }], ...(s && inTheatre ? [[where(brief, s.theatre), { v: 'theatre', id: s.theatre, tab: 'signals' }] as [string, Route]] : []), ['Signal']]} go={go} />
   if (sq.isPending) return <>{crumbs}<Skeleton lines={6} /></>
-  if (sq.isError) return <>{crumbs}<h1 className="px-5 pt-2 text-[23px] font-semibold">Signal</h1><Failed what="the signals" error={sq.error} /></>
+  if (sq.isError && !sq.data) return <>{crumbs}<h1 className="px-5 pt-2 text-[23px] font-semibold">Signal</h1><Failed what="the signals" error={sq.error} /></>
   if (!s) return <>{crumbs}<h1 className="px-5 pt-2 text-[23px] font-semibold">Signal</h1><p className="px-5 py-4 text-[13px] text-fg3">No signal called “{id}” in this run.</p></>
   return <>{crumbs}<SignalDetail s={s} brief={brief} go={go} page /></>
 }

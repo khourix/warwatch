@@ -88,7 +88,7 @@ export function Tabs({ tabs, value, onChange, id, panel, sticky, label }: { tabs
     e.preventDefault(); onChange(tabs[to][0]); refs.current[to]?.focus()
   }
   return (
-    <div role="tablist" aria-label={label} className={`flex gap-1 overflow-x-auto px-4 [scrollbar-width:none] ${sticky ? 'sticky top-0 z-[3] border-b border-line bg-s1' : ''}`}>
+    <div role="tablist" aria-label={label} className={`flex gap-1 overflow-x-auto px-4 [scrollbar-width:none] ${sticky ? 'sticky top-[var(--stick,0px)] z-[3] border-b border-line bg-s1' : ''}`}>
       {tabs.map(([k, label, n], i) => (
         <button key={k} ref={el => { refs.current[i] = el }} role="tab" id={`${id}-tab-${k}`} aria-selected={value === k} aria-controls={panel ? `${id}-panel` : undefined} tabIndex={value === k ? 0 : -1}
           onClick={() => onChange(k)} onKeyDown={e => key(e, i)}
@@ -227,7 +227,8 @@ export function fmtAsOf(s: string, tz: 'utc' | 'local') {
    the code that cannot be fetched is almost always a tab left open across an update: the old files are gone, so it says that. */
 const CHUNK = /dynamically imported module|Importing a module script failed|error loading dynamically imported module|ChunkLoadError|Unable to preload CSS/i
 export const updatedSince = (e: unknown) => CHUNK.test(e instanceof Error ? `${e.name} ${e.message}` : String(e))
-type BoundaryProps = { what: string; children: ReactNode; float?: boolean; quiet?: boolean; at?: string }
+/* top: the boundary around the whole app, where nothing else is left to keep working */
+type BoundaryProps = { what: string; children: ReactNode; float?: boolean; quiet?: boolean; at?: string; top?: boolean }
 export class Boundary extends Component<BoundaryProps, { error: unknown }> {
   state: { error: unknown } = { error: null }
   static getDerivedStateFromError(error: unknown) { return { error } }
@@ -238,7 +239,7 @@ export class Boundary extends Component<BoundaryProps, { error: unknown }> {
     const updated = updatedSince(this.state.error)
     const body = <>
       <p className="text-[13px] leading-[1.45] text-fg">{updated ? `WarWatch was updated since this page was opened, so ${this.props.what} could not load.` : `Something went wrong while showing ${this.props.what}.`}</p>
-      <p className="mt-0.5 text-[12.5px] leading-[1.45] text-fg2">{updated ? 'Reload to get the new version.' : 'The rest of the page still works. Reloading usually fixes it.'}</p>
+      <p className="mt-0.5 text-[12.5px] leading-[1.45] text-fg2">{updated ? 'Reload to get the new version.' : this.props.top ? 'Reloading usually fixes it.' : 'The rest of the page still works. Reloading usually fixes it.'}</p>
       <button type="button" onClick={() => location.reload()} className="tap mt-2.5 min-h-9 rounded-r2 border border-line2 px-3 text-[12.5px] font-medium text-fg hover:border-fg3">Reload</button>
     </>
     return this.props.float

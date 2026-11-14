@@ -36,7 +36,7 @@ NUM = (int, float)
 OPT_NUM = (int, float, type(None))
 SHAPES = {
     "brief": {"generated": str, "headline": str, "counts": dict, "global": dict, "regions[]": list, "theatres[]": list, "feed[]": list, "model": dict,
-              "health": (dict, type(None))},
+              "health": (dict, type(None)), "replay": (dict, type(None))},
     "theatre": {"id": str, "name": str, "region": str, "level": str, "score": OPT_NUM, "signals": dict, "tells[]": list, "groups": dict, "official[]": list,
                 "history[]": list, "items[]": list, "events[]": list, "center": (list, type(None)), "countries": list},
     "signals": {"generated": str, "groups": dict, "signals[]": list},
@@ -51,7 +51,7 @@ SHAPES = {
 ITEMS = {
     "brief.regions": {"id": str, "name": str, "theatres": list, "level": str},
     "brief.theatres": {"id": str, "name": str, "region": str, "level": str, "tellsOn": int, "tellsTotal": int, "strong": int, "context": (str, type(None)),
-                       "groups": dict},
+                       "groups": dict, "levels": list, "wires": list, "tellsLit": list},
     "brief.feed": {"date": str, "kind": str, "theatre": str, "title": str, "detail": str, "to": dict},
     "theatre.tells": {"id": str, "name": str, "on": bool, "says": str},
     "theatre.official": {"name": str, "id": str, "date": str, "value": str},
@@ -73,6 +73,7 @@ ITEMS = {
 }
 # kind.key -> {key: type} for an object (not a list) that must carry these keys when it is there
 FIELDS = {
+    "brief.replay": {"heatFrom": str, "tripwires": dict},
     "brief.health": {"statuses": dict, "sources": list, "everyMinutes": int, "lateAfterMinutes": int},
     "record.health": {"errors": list, "statuses": dict},
 }
@@ -303,13 +304,58 @@ def feed(data):
     return sorted(out, key=lambda f: f["date"], reverse=True)
 
 
+def _replay_since(data):
+    return (dt.date.fromisoformat(data["generated"][:10]) - dt.timedelta(days=FEED_DAYS - 1)).isoformat()
+
+
+def _iso_day(x):
+    """A whole ISO date string, or None."""
+    try:
+        return dt.date.fromisoformat(x).isoformat() if isinstance(x, str) and len(x) == 10 else None
+    except ValueError:
+        return None
+
+
 def day_levels(data, t):
     """Added November 2026, for replaying the last FEED_DAYS days on Watch: [[day, level]] oldest first, the level the page showed at
     each day's first run (dashboard.hist_json "levels", from the hash-chained forward record). Only days the model was off are
-    there, so a missing day is one whose level was not kept, never a quiet one."""
-    since = (dt.date.fromisoformat(data["generated"][:10]) - dt.timedelta(days=FEED_DAYS - 1)).isoformat()
-    rows = ((data.get("hist") or {}).get(t) or {}).get("levels") or []
-    return [[d, lv] for d, lv in rows if d >= since]
+    there, so a missing day is one whose level was not kept, never a quiet one. A malformed row is left out, not the list."""
+    since, out = _replay_since(data), []
+    for r in ((data.get("hist") or {}).get(t) or {}).get("levels") or []:
+        d = _iso_day(r[0]) if isinstance(r, (list, tuple)) and len(r) == 2 else None
+        if not d or not isinstance(r[1], str) or not r[1]:
+            print(f"::warning title=Replay levels::skipped a level row that is not [day, level]: {str(r)[:120]}", flush=True)
+            continue
+        if d >= since:
+            out.append([d, r[1]])
+    return sorted(out)
+
+
+def day_wires(data, t):
+    """Added November 2026, for replaying the last FEED_DAYS days on Watch: [[day, [tripwire ids]]] oldest first, the tripwires lit
+    at each day's first run (dashboard.hist_json "lit", from the hash-chained forward tells record, the same way day_levels reads
+    the level). A day the record has no rows for is missing, so the app says it was not kept; an empty list is a day with nothing
+    lit. A malformed row is left out, not the list."""
+    since, out = _replay_since(data), {}
+    for r in ((data.get("hist") or {}).get(t) or {}).get("lit") or []:
+        d = _iso_day(r[0]) if isinstance(r, (list, tuple)) and len(r) == 2 else None
+        if not d or not isinstance(r[1], list):
+            print(f"::warning title=Replay tripwires::skipped a row that is not [day, [ids]]: {str(r)[:120]}", flush=True)
+            continue
+        if d >= since:
+            out[d] = [k for k in r[1] if isinstance(k, str) and k]
+    return [[d, out[d]] for d in sorted(out)]
+
+
+def replay_keep(data):
+    """Added November 2026: what the replay on Watch needs beside the per-theatre rows. heatFrom: the first day the feed can hold
+    unusual fires (the cluster cache keeps firecls.KEEP_DAYS days; the live map covers less), so a replayed day before it says heat
+    was not kept, not that there was none. Every other lane reaches back the whole FEED_DAYS: official steps come from the 90-day
+    history, base changes from about 60 radar passes. tripwires: id to name, for the lit ids in day_wires."""
+    import firecls
+    import tells
+    day = dt.date.fromisoformat(data["generated"][:10])
+    return {"heatFrom": (day - dt.timedelta(days=firecls.KEEP_DAYS)).isoformat(), "tripwires": {x["id"]: x["name"] for x in tells.TELLS}}
 
 
 def brief(data):
@@ -323,9 +369,11 @@ def brief(data):
         sc = _scored(data["series"], t)
         ths.append({"id": t, "name": v["name"], "region": reg[t]["id"] if t in reg else "", "level": v["level"], "score": v.get("score"),
                     "standingRisk": v.get("xu"), "tellsOn": sum(1 for x in v.get("tells") or [] if x.get("on")), "tellsTotal": len(v.get("tells") or []),
+                    "tellsLit": [x["id"] for x in v.get("tells") or [] if x.get("on") and x.get("id")],
                     "strong": sum(1 for s in sc if abs(s["z"]) >= 3), "context": ctx, "contextChecked": ctxd,
                     "spillover": t in (data.get("spill") or {}), "parents": (data.get("spill") or {}).get(t, []), "center": _box_center(t),
-                    "groups": {k: g["z"] for k, g in _groups(data, t).items()}, "lines": lines(v), "levels": day_levels(data, t)})
+                    "groups": {k: g["z"] for k, g in _groups(data, t).items()}, "lines": lines(v), "levels": _safe("levels", day_levels, data, t) or [],
+                    "wires": _safe("wires", day_wires, data, t) or []})
     mo = data.get("model") or {}
     g = data.get("global") or {}
     return _head("brief", data["generated"], demo=bool(data.get("demo")), eventsThrough=(data.get("events") or {}).get("through", ""),
@@ -333,7 +381,7 @@ def brief(data):
                  regions=[{"id": r["id"], "name": r["name"], "theatres": r["kids"], "level": r["level"], "lead": r.get("lead")} for r in data.get("regions") or []],
                  theatres=ths, feed=feed(data)[:400],
                  model={"version": mo.get("v"), "fitted": mo.get("fitted"), "active": bool(mo.get("active")), "gates": mo.get("gates")},
-                 health=_safe("health", health, data))
+                 health=_safe("health", health, data), replay=_safe("replay", replay_keep, data))
 
 
 def theatre(data, t):
@@ -540,19 +588,21 @@ LATE_AFTER_MIN = 90
 
 # names in data["errors"] that are one source: run.py names a source that has been down for days by its host, extras.py by its key
 SAME_SOURCE = {"msi.nga.mil": "nga"}
-_PAGE_TEXT = re.compile(r"\s*<(?:!|html|head|body)", re.I)
+_PAGE_TEXT = re.compile(r"\s*<(?:[!?]|/?[A-Za-z][\w:-]*(?:\s[^<>]*)?/?>)")   # markup: <!DOCTYPE, <?xml, <title>, </p>, <a href=x>
+_ADDRESS = re.compile(r"\s*@\s*[a-z][a-z0-9+.-]*://\S*(?=\s*(?:\([^()]*\))?\s*$)", re.I)    # " @ http..." at the end, before any (note)
 
 
 def _reason(why):
-    """One source problem as a sentence: <urlopen error X> unwrapped to X, any page text a server sent back (an HTML error page) cut
-    to the address or a closing note in brackets, the " @ address" tail dropped (an address can carry a key), a capital first."""
+    """One source problem as a sentence: <urlopen error X> unwrapped to X, any markup a server sent back (an HTML or XML page, from
+    its first tag) cut to the " @ address" or a closing note in brackets, the address at the end dropped (it can carry a key) but
+    any other "@" kept, a capital first."""
     why = re.sub(r"<urlopen error (.*?)>", r"\1", why)
     m = _PAGE_TEXT.search(why)
     if m:
         rest = why[m.start():]
-        at, note = rest.find(" @ "), re.search(r"\s\([^()<>]*\)\s*$", rest)
-        why = why[:m.start()] + (rest[at:] if at >= 0 else note.group(0) if note else "")
-    why = re.sub(r"\s*@\s*\S+", "", why)
+        at, note = re.search(r"\s@\s*[a-z][a-z0-9+.-]*://", rest, re.I), re.search(r"\s\([^()<>]*\)\s*$", rest)
+        why = why[:m.start()] + (rest[at.start():] if at else note.group(0) if note else "")
+    why = _ADDRESS.sub("", why)
     why = re.sub(r"\s+", " ", why).strip(" :;,-")
     if not why:
         return ""

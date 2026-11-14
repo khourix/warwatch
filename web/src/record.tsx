@@ -25,8 +25,8 @@ export function RecordView({ brief, go }: { brief: Brief; go: Go }) {
         <p className="mt-2.5 max-w-[680px] font-serif text-[17px] leading-[1.42] text-fg [text-wrap:pretty]">How WarWatch knows what it shows, and how it has done: what came before past events, the record of each tripwire, the test the 30-day model is still sitting, and how the data is holding up today.</p>
         <p className="mt-2 text-[12px] text-fg2">Every term is in the <Lnk to={{ v: 'glossary' }} go={go} className="lnk">glossary</Lnk>.</p>
       </div>
-      <ModelTest brief={brief} rec={rq.data} pending={rq.isPending} failed={rq.isError} />
-      {rq.isPending ? <Skeleton lines={8} /> : rq.isError ? <Failed what="the record" error={rq.error} /> : <>
+      <ModelTest brief={brief} rec={rq.data} pending={rq.isPending} failed={rq.isError && !rq.data} />
+      {rq.isPending ? <Skeleton lines={8} /> : rq.isError && !rq.data ? <Failed what="the record" error={rq.error} /> : <>
         <Past brief={brief} past={rq.data.past} go={go} />
         <TripwireRecord brief={brief} />
         <Health brief={brief} rec={rq.data} go={go} />
@@ -90,7 +90,9 @@ function ModelTest({ brief, rec, pending, failed }: { brief: Brief; rec?: Record
       text: sh ? `With each theatre's chances shifted in time, an AUC this good or better turned up ${in100(g.shuffle_p_auc)} times in 100. It must be under 5 in 100.${isNum(g.shuffle_p_bss) ? ` For Brier skill it was ${in100(g.shuffle_p_bss)} in 100; the check reads the AUC.` : ''}` : NOT_RUN,
       line: sh && <GateLine name={`${in100(g.shuffle_p_auc)} in 100, against a limit of 5 in 100`} lo={0} hi={Math.max(.5, g.shuffle_p_auc + .05)} v={g.shuffle_p_auc} at={.05} label="must be under 0.05" fmt={x => x.toFixed(1)} /> },
   ] : []
-  const fw = (rec?.forward || []).filter(f => !f.err)
+  const fw = (rec?.forward || []).filter(f => !f.err), bad = (rec?.forward || []).filter(f => f.err)
+  /* rows that carry err: the scorer could not read that target's log in this run (forward_score.scorecard), said with its reason */
+  const why = [...new Set(bad.map(f => String(f.err).trim().replace(/^\[Errno \d+\]\s*/, '').replace(/\.$/, '')).map(x => x && x[0].toUpperCase() + x.slice(1)))].join('; ')
   return (
     <Part id="rec-model" title={active ? 'The 30-day chance, in use and still scored' : 'The 30-day chance, a test in progress'}
       lede={active ? 'The 30-day model passed its three checks at its last monthly refit, so it sets the levels. Its forecasts are also written to the forward log before anything happens, the harder test still to come.'
@@ -117,8 +119,10 @@ function ModelTest({ brief, rec, pending, failed }: { brief: Brief; rec?: Record
       <div className={`${card} mt-3 px-4 py-3.5`}>
         <h3 className="text-[14px] font-medium text-fg"><Explain k="forward">The forward log</Explain></h3>
         <p className="mt-1 max-w-[680px] text-[12.5px] leading-[1.45] text-fg2">Every day each forecast is written to a log before its outcome is known, and each line carries a fingerprint of the one before, so it cannot be changed afterwards. A forecast counts once its own horizon has passed{horizons(fw)} and the event list has caught up{fw[0] ? `, so a target gets its first scored report after ${fw[0].need} counted days${fw[0].read ? ` and its full read after ${fw[0].read}` : ''}` : ''}. This is the planned harder test, on forecasts nobody could tune after the fact. It does not switch the model on today: the monthly refit's three checks do.</p>
-        {pending ? <Skeleton lines={3} /> : !fw.length ? <p className="mt-2 text-[12.5px] text-fg2">{failed ? 'The forward log could not be loaded; the error is below.' : 'The forward log is not in this data run.'}</p>
-          : <ul className="mt-1">{fw.map(f => <ForwardRow key={f.k} f={f} />)}</ul>}
+        {pending ? <Skeleton lines={3} /> : !fw.length ? <p className="mt-2 text-[12.5px] text-fg2">{failed ? 'The forward log could not be loaded; the error is below.'
+            : bad.length ? `The forward log could not be read in this data run. The reason given: ${why}.` : 'The forward log is not in this data run.'}</p>
+          : <><ul className="mt-1">{fw.map(f => <ForwardRow key={f.k} f={f} />)}</ul>
+            {bad.length > 0 && <p className="mt-2 text-[12.5px] text-fg2">The log for {bad.map(f => f.name || f.k).join(', ')} could not be read in this data run. The reason given: {why}.</p>}</>}
       </div>
     </Part>
   )
@@ -206,7 +210,7 @@ function TripwireRecord({ brief }: { brief: Brief }) {
   const eps = tells.reduce((n, x) => n + (x.record?.episodes || 0), 0), hits = tells.reduce((n, x) => n + (x.record?.hits || 0), 0)
   return (
     <Part id="rec-wires" title="The tripwire record" lede={<>Each <Explain k="tripwire">tripwire</Explain> replayed on the stored history of every theatre it watches. Most firings were not followed by an event: a lit tripwire is a reason to look closer, not a forecast.</>}>
-      {q.isPending ? <Skeleton lines={5} /> : q.isError ? <Failed what="the tripwire record" error={q.error} /> : (
+      {q.isPending ? <Skeleton lines={5} /> : q.isError && !q.data ? <Failed what="the tripwire record" error={q.error} /> : (
         <div className={`${card} px-4`}>
           <ul>{tells.map(x => (
             <li key={x.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 border-t border-line py-2.5 first:border-0 max-[520px]:grid-cols-1">

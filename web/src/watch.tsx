@@ -8,7 +8,7 @@ import { feedKey, type Since } from './since'
 import { Lnk, Explain } from './ui'
 import { X, Pin, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useFollow } from './follow'
-import { useReplay, type Replay, type DayTheatre } from './replay'
+import { useReplay, minusDays, WINDOW, isWave, type Replay, type DayTheatre } from './replay'
 
 /* Watch: the dispatch, the theatre board, what changed, and the 30-day timeline under the map. Everything here is written
    from brief.json in the browser. The 0 to 100 "unusual readings" number has shown no predictive skill, so its meter and
@@ -32,6 +32,8 @@ const utcDay = (d: Date) => d.toISOString().slice(0, 10)
 
 /* ---------------------------------------------------------------- the top bar's status sentence */
 export function Status({ brief }: { brief: Brief }) {
+  const rp = useReplay()
+  if (rp) return <ReplayStatus brief={brief} rp={rp} />
   const up = above(brief), near = closest(brief), n = brief.theatres.length
   const sep = <i className="mx-2 inline-block h-3.5 w-px translate-y-[2px] bg-line2" aria-hidden />
   if (up.length) return <><b className="font-medium text-fg">{up.length} of {n} theatres at Watch or above</b>{sep}<span>{up.slice(0, 3).map(t => `${short(t.name)}, ${t.level}`).join(' · ')}{up.length > 3 ? ' …' : ''}</span></>
@@ -63,11 +65,9 @@ export function Dispatch({ brief, heading }: { brief: Brief; heading: boolean })
   const c = brief.counts
   const still = prefs.motion === 'reduced' || matchMedia('(prefers-reduced-motion: reduce)').matches
   const num = (v: number) => <NumberFlow value={v} animated={!still} transformTiming={{ duration: 200, easing: 'ease-out' }} spinTiming={{ duration: 200, easing: 'ease-out' }} opacityTiming={{ duration: 120, easing: 'ease-out' }} />
-  /* replaying: the same card, written from what the day keeps (replay.tsx) */
-  const wk = rp ? rp.week : null, n = (k: FeedItem['kind']) => k === 'tell' ? Object.values(rp!.theatres).reduce((a, x) => a + x.wires.length, 0) : wk!.filter(f => f.kind === k).length
-  const facts: [number, ReactNode][] = rp
-    ? [[n('tell'), <><Explain k="tripwire">{n('tell') === 1 ? 'tripwire' : 'tripwires'}</Explain> fired in the week to {shortDate(rp.day)}</>],
-       [n('base'), `${n('base') === 1 ? 'base change' : 'base changes'} on radar that week`], [n('fire'), `${n('fire') === 1 ? 'heat report' : 'heat reports'} that week`]]
+  /* replaying: the same card, written from what the day keeps (replay.tsx). A count the data does not keep for that day is a dash
+     with the reason, never a zero. */
+  const facts: [number | null, ReactNode][] = rp ? replayFacts(rp)
     : [[c.tells, <><Explain k="tripwire">{c.tells === 1 ? 'tripwire' : 'tripwires'}</Explain> fired this week</>], [c.bases, c.bases === 1 ? 'base changed on radar' : 'bases changed on radar'], [c.strong, <>{c.strong === 1 ? 'signal' : 'signals'} reading <Explain k="strong">strong</Explain></>]]
   return (
     <section aria-label="Dispatch" className="m-3.5 mb-1.5 rounded-r3 border border-inkline bg-paper px-[18px] pb-3.5 pt-4 text-ink">
@@ -77,15 +77,31 @@ export function Dispatch({ brief, heading }: { brief: Brief; heading: boolean })
         {facts.map(([v, label], i) => (
           <div key={i} className={`flex flex-col-reverse ${i ? 'border-l border-inkline pl-3' : ''}`}>
             <dt className="mt-[5px] text-[11.5px] leading-[1.25] text-ink2">{label}</dt>
-            <dd className="num text-[25px] font-medium leading-none tracking-[-0.03em]">{num(v)}</dd>
+            <dd className="num text-[25px] font-medium leading-none tracking-[-0.03em]">{v == null ? <span aria-label="not kept">–</span> : num(v)}</dd>
           </div>))}
       </dl>
-      {rp?.partial && <p className="mt-2.5 text-[11.5px] leading-[1.4] text-ink2">The data holds the last 30 days, from {shortDate(rp.feedFrom)}, so anything earlier in this week is missing from these counts.</p>}
+      {rp?.partial && <p className="mt-2.5 text-[11.5px] leading-[1.4] text-ink2">The data holds the last 30 days, from {shortDate(rp.feedFrom)}, so anything earlier in this week is missing from the base count.</p>}
     </section>
   )
 }
 
-/* a replayed day in words: the levels kept for it (each theatre's level at that day's first run) and the week's tripwires */
+/* the replayed day's three counts: tripwires lit at that day's run, base changes and heat reports in the week to it */
+function replayFacts(rp: Replay): [number | null, ReactNode][] {
+  const d = shortDate(rp.day), lit = Object.values(rp.theatres).reduce((a, x) => a + (x.wires?.length ?? 0), 0)
+  const n = (k: FeedItem['kind'], from = '') => rp.week.filter(f => f.kind === k && f.date.slice(0, 10) >= from).length
+  const wk = minusDays(rp.day, WINDOW - 1)
+  /* heat: kept from heatFrom only; a day before it has no count, a week that starts before it counts from heatFrom */
+  const heat: [number | null, ReactNode] = rp.heatFrom && rp.day < rp.heatFrom ? [null, 'heat reports: not kept that far back']
+    : rp.heatFrom && wk < rp.heatFrom ? [n('fire', rp.heatFrom), `${n('fire', rp.heatFrom) === 1 ? 'heat report' : 'heat reports'} from ${shortDate(rp.heatFrom)} to ${d}, as far back as heat is kept`]
+    : [n('fire'), `${n('fire') === 1 ? 'heat report' : 'heat reports'} in the week to ${d}`]
+  return [
+    rp.wiresKept ? [lit, <><Explain k="tripwire">{lit === 1 ? 'tripwire' : 'tripwires'}</Explain> lit at the run of {d}</>] : [null, <><Explain k="tripwire">tripwires</Explain> lit on {d}: not kept</>],
+    [n('base'), `${n('base') === 1 ? 'base change' : 'base changes'} on radar in the week to ${d}`],
+    heat,
+  ]
+}
+
+/* a replayed day in words: the levels kept for it (each theatre's level at that day's first run) and the tripwires lit at that run */
 function daySentence(brief: Brief, rp: Replay): ReactNode {
   const d = shortDate(rp.day), kept = brief.theatres.filter(t => rp.theatres[t.id].level)
   const up = kept.filter(t => rp.theatres[t.id].level !== 'Normal').sort((x, y) => RANK[rp.theatres[y.id].level!] - RANK[rp.theatres[x.id].level!])
@@ -95,12 +111,20 @@ function daySentence(brief: Brief, rp: Replay): ReactNode {
     : up.length === 1 ? <>At the first run of {d}, <em>{short(up[0].name)}</em> was at {rp.theatres[up[0].id].level}; {missing ? 'the others with a level kept' : 'every other theatre'} read quiet. </>
     : <>At the first run of {d}, {word(up.length)} theatres were at Watch or above, led by <em>{short(up[0].name)}</em> at {rp.theatres[up[0].id].level}. </>
   const gap = missing && kept.length ? <>{word(missing, true)} {missing === 1 ? 'theatre has' : 'theatres have'} no level kept for that day. </> : null
-  const by = brief.theatres.map(t => [t, rp.theatres[t.id].wires.length] as const).sort((a, b) => b[1] - a[1])
+  if (!rp.wiresKept) return <>{lead}{gap}Which tripwires were lit that day was not kept.</>
+  const by = brief.theatres.map(t => [t, rp.theatres[t.id].wires?.length ?? 0] as const).sort((a, b) => b[1] - a[1])
   const w = by.reduce((a, x) => a + x[1], 0), top = by[0]
-  const wires = !w ? `No tripwire fired in the week to ${d}.`
-    : w === 1 ? `One tripwire fired in the week to ${d}, on ${short(top[0].name)}.`
-    : `${word(w, true)} tripwires fired in the week to ${d}, ${top[1] === w ? (w === 2 ? 'both' : 'all of them') : `${word(top[1])} of them`} on ${short(top[0].name)}.`
+  const wires = !w ? 'No tripwire was lit at that run.'
+    : w === 1 ? `One tripwire was lit at that run, on ${short(top[0].name)}.`
+    : `${word(w, true)} tripwires were lit at that run, ${top[1] === w ? (w === 2 ? 'both' : 'all of them') : `${word(top[1])} of them`} on ${short(top[0].name)}.`
   return <>{lead}{gap}{wires}</>
+}
+
+/* the top bar's sentence while replaying: the day, and its levels as kept, never today's */
+function ReplayStatus({ brief, rp }: { brief: Brief; rp: Replay }) {
+  const sep = <i className="mx-2 inline-block h-3.5 w-px translate-y-[2px] bg-line2" aria-hidden />
+  const kept = brief.theatres.filter(t => rp.theatres[t.id].level), up = kept.filter(t => rp.theatres[t.id].level !== 'Normal')
+  return <><b className="font-medium text-fg">Replaying {shortDate(rp.day)}</b>{sep}<span>{!kept.length ? 'No level kept for that day' : `${up.length} of ${kept.length} theatres with a level kept at Watch or above`}</span></>
 }
 
 /* ---------------------------------------------------------------- the theatre board */
@@ -113,7 +137,7 @@ export function Board({ brief, sel, go, order, setOrder }: { brief: Brief; sel: 
   const byId = useMemo(() => Object.fromEntries(brief.theatres.map(t => [t.id, t])), [brief])
   /* live: by reading; replaying, the reading is not kept, so by that day's level, then the week's tripwires, then the board's order */
   const sorted = useMemo(() => rp ? brief.theatres.map((t, k) => [t, k] as const).sort(([a, i], [b, j]) => RANK[rp.theatres[b.id].level ?? 'Normal'] - RANK[rp.theatres[a.id].level ?? 'Normal']
-    || rp.theatres[b.id].wires.length - rp.theatres[a.id].wires.length || i - j).map(x => x[0]) : [...brief.theatres].sort(byScore), [brief, rp])
+    || (rp.theatres[b.id].wires?.length ?? 0) - (rp.theatres[a.id].wires?.length ?? 0) || i - j).map(x => x[0]) : [...brief.theatres].sort(byScore), [brief, rp])
   const line = !rp && brief.theatres.some(t => lineSets(brief, t))
   const pinned = follow.map(id => byId[id]).filter(Boolean)
   const rest = (L: BriefTheatre[]) => L.filter(t => !follow.includes(t.id))
@@ -135,7 +159,7 @@ export function Board({ brief, sel, go, order, setOrder }: { brief: Brief; sel: 
       {pinned.length > 0 && <div role="group" aria-label="Following"><div className="px-4 pb-[5px] pt-1 text-[11px] font-medium text-fg2">Following</div>{pinned.map(row)}<div className="h-2" /></div>}
       {order === 'closest' ? <div role={pinned.length ? 'group' : undefined} aria-label={pinned.length ? 'All theatres' : undefined}>{pinned.length > 0 && <div className="px-4 pb-[5px] pt-1 text-[11px] font-medium text-fg2">All theatres</div>}{rest(sorted).map(row)}</div>
         : brief.regions.map(r => { const L = rest(r.theatres.map(id => byId[id]).filter(Boolean)); return L.length > 0 && <div key={r.id} role="group" aria-label={r.name}><div className="px-4 pb-[5px] pt-3 text-[11px] font-medium text-fg3">{r.name}</div>{L.map(row)}</div> })}
-      {rp ? <p className="mx-4 mb-[18px] mt-3 text-[11.5px] leading-normal text-fg3">Each theatre's level is the one shown at the first run of {shortDate(rp.day)}{rp.groupsKept ? ', and the five cells are that day\'s signal groups, rebuilt from each signal\'s own history' : '; the group cells for that day could not be loaded'}. The dot counts the <Explain k="tripwire">tripwires</Explain> that fired in the week to that day. The 0 to 100 reading is not kept per day.</p>
+      {rp ? <p className="mx-4 mb-[18px] mt-3 text-[11.5px] leading-normal text-fg3">Each theatre's level is the one shown at the first run of {shortDate(rp.day)}{rp.groupsKept ? ', and the five cells are that day\'s signal groups, rebuilt from each signal\'s own history' : rp.groupsPending ? '; the group cells for that day are loading' : '; the group cells for that day could not be loaded'}. {rp.wiresKept ? <>The dot counts the <Explain k="tripwire">tripwires</Explain> lit at that run.</> : <>Which <Explain k="tripwire">tripwires</Explain> were lit that day was not kept.</>} The 0 to 100 reading is not kept per day.</p>
         : <p className="mx-4 mb-[18px] mt-3 text-[11.5px] leading-normal text-fg3"><Explain k="unusual">Unusual readings</Explain> run from 0 to 100. They are not a chance of war.{line ? <> <Explain k="lines">Watch</Explain> begins at 50.</> : ''} The five cells are the signal <Explain k="group">groups</Explain> Logistics, Markets, People, News and Physical, from slow to fast. <button onClick={() => go({ v: 'record' })} className="lnk">How the number works</button></p>}
     </section>
   )
@@ -150,20 +174,20 @@ function BoardRow({ t, i, rise, on, line, go, day }: { t: BriefTheatre; i: numbe
   const { has, toggle } = useFollow()
   const pin = has(t.id)
   const score = day ? null : t.score == null ? null : Math.max(0, Math.min(100, t.score))
-  const level = day ? day.level : t.level, groups = day ? day.groups : t.groups, wires = day ? day.wires.length : t.tellsOn
+  const level = day ? day.level : t.level, groups = day ? day.groups : t.groups, wires = day ? day.wires?.length ?? 0 : t.tellsOn
   const lvSay = level ? levelWord(level).toLowerCase() : 'level not kept for this day'
-  const say = `${t.name}, ${lvSay}${!day && t.context ? `, ${t.context.toLowerCase()}` : ''}. ${groups ? groupWords(groups) : 'Group readings not kept for this day'}.${day ? '' : ` Unusual readings ${score == null ? 'not available' : `${wholeScore(score)} of 100`}.`}${wires ? ` ${wires} ${wires === 1 ? 'tripwire' : 'tripwires'} fired ${day ? 'in the week to that day' : 'this week'}.` : ''}`
+  const say = `${t.name}, ${lvSay}${!day && t.context ? `, ${t.context.toLowerCase()}` : ''}. ${groups ? groupWords(groups) : 'Group readings not kept for this day'}.${day ? '' : ` Unusual readings ${score == null ? 'not available' : `${wholeScore(score)} of 100`}.`}${day && !day.wires ? ' Tripwires not kept for this day.' : wires ? ` ${wires} ${wires === 1 ? 'tripwire' : 'tripwires'} ${day ? 'lit at that day\'s run' : 'fired this week'}.` : ''}`
   return (
     <div className={`group relative grid grid-cols-[minmax(0,1fr)_28px] items-center border-t border-line transition-colors duration-[120ms] ${on ? 'bg-s3' : 'hover:bg-s2'} ${rise ? 'rise' : ''}`} style={{ ['--i' as string]: i }}>
       <button onClick={() => go({ v: 'theatre', id: t.id })} aria-current={on ? 'true' : undefined} aria-label={say}
-        className="relative grid h-[38px] max-[899px]:h-11 w-full grid-cols-[minmax(0,1fr)_66px_112px] items-center gap-3 pl-4 text-left">
+        className="relative grid h-[38px] max-[899px]:h-11 pointer-coarse:h-11 w-full grid-cols-[minmax(0,1fr)_66px_112px] items-center gap-3 pl-4 text-left">
         {on && <i className="absolute inset-y-0 left-0 w-[2px] bg-sel" aria-hidden />}
         <span className="flex min-w-0 items-baseline gap-[7px]" aria-hidden>
           <b className="min-w-0 shrink truncate text-[13.5px] font-medium">{short(t.name)}</b>
           <small className={`min-w-0 flex-1 truncate text-[11px] ${on ? 'text-fg2' : 'text-fg3 group-hover:text-fg2'}`}>{day ? '' : t.context || ''}</small>
           {level && level !== 'Normal' && <span className="shrink-0 text-[11px] font-medium" style={{ color: level === 'Critical' ? 'var(--crit)' : level === 'Elevated' ? 'var(--z3-text)' : 'var(--z2-text)' }}>{level}</span>}
           {!level && <span className="shrink-0 text-[11px] text-fg2">not kept</span>}
-          {wires > 0 && <span className="inline-flex shrink-0 items-center gap-[3px] font-mono text-[10.5px] font-medium text-z2t" title={`${wires} ${wires === 1 ? 'tripwire' : 'tripwires'} fired ${day ? 'in the week to that day' : 'this week'}`}>
+          {wires > 0 && <span className="inline-flex shrink-0 items-center gap-[3px] font-mono text-[10.5px] font-medium text-z2t" title={`${wires} ${wires === 1 ? 'tripwire' : 'tripwires'} ${day ? 'lit at that day\'s run' : 'fired this week'}`}>
             <i className="h-1.5 w-1.5 rounded-full bg-z2 shadow-[0_0_6px_color-mix(in_srgb,var(--z2)_70%,transparent)]" />{wires}</span>}
         </span>
         <span className="grid grid-cols-5 gap-0.5" aria-hidden title={groups ? GROUPS.map(g => `${g} ${groups[g] == null ? 'no data' : fmtZ(groups[g]) + ' SD'}`).join(' · ') : 'Not kept for this day'}>
@@ -177,8 +201,9 @@ function BoardRow({ t, i, rise, on, line, go, day }: { t: BriefTheatre; i: numbe
           <b className="num text-right text-[12px] font-medium text-fg2">{score == null ? '–' : wholeScore(score)}</b>
         </span>
       </button>
-      <button onClick={() => toggle(t.id)} aria-pressed={pin} aria-label={`Follow ${short(t.name)}`} title={pin ? `Following ${short(t.name)}. Press to stop.` : `Follow ${short(t.name)}: keep it at the top of the board`}
-        className={`grid h-[38px] max-[899px]:h-11 w-7 place-items-center transition-opacity duration-[120ms] ${pin ? 'text-fg' : 'text-fg3 opacity-0 hover:text-fg focus-visible:opacity-100 group-hover:opacity-100 max-[899px]:opacity-100'}`}>
+      {/* on touch the pin's tap area reaches 44 px: 16 px to its left, over the row's gap, and the row's full height */}
+      <button onClick={() => toggle(t.id)} data-follow={t.id} aria-pressed={pin} aria-label={pin ? `Following ${short(t.name)}, press to stop` : `Follow ${short(t.name)}`} title={pin ? `Following ${short(t.name)}. Press to stop.` : `Follow ${short(t.name)}: keep it at the top of the board`}
+        className={`relative grid h-[38px] max-[899px]:h-11 pointer-coarse:h-11 w-7 place-items-center transition-opacity duration-[120ms] pointer-coarse:after:absolute pointer-coarse:after:inset-y-0 pointer-coarse:after:-left-4 pointer-coarse:after:right-0 pointer-coarse:after:content-[''] ${pin ? 'text-fg' : 'text-fg3 opacity-0 hover:text-fg focus-visible:opacity-100 group-hover:opacity-100 max-[899px]:opacity-100 pointer-coarse:opacity-100'}`}>
         <Pin size={13} strokeWidth={pin ? 2.2 : 1.7} fill={pin ? 'currentColor' : 'none'} aria-hidden />
       </button>
     </div>
@@ -208,6 +233,7 @@ export function Feed({ brief, day, setDay, kind, setKind, go, since, dismiss, ne
   since?: Since | null; dismiss?: () => void; newOnly?: boolean; setNewOnly?: (b: boolean) => void; block?: boolean }) {
   const today = utcDay(parseGen(brief.generated))
   const only = newOnly && !!since
+  const rp = useReplay(), noHeat = !!day && !!rp?.heatFrom && day < rp.heatFrom
   const scope = useMemo(() => brief.feed.filter(f => (!day || f.date.slice(0, 10) === day) && (!only || since!.fresh.has(feedKey(f)))), [brief.feed, day, only, since])
   const days = useMemo(() => {
     const m = new Map<string, FeedItem[]>()
@@ -219,7 +245,7 @@ export function Feed({ brief, day, setDay, kind, setKind, go, since, dismiss, ne
     <section aria-label="What changed" id="feed" className="scroll-mt-2">
       <div className="flex items-baseline justify-between gap-2.5 px-4 pb-2 pt-4">
         <h2 className="text-[13px] font-semibold tracking-[-0.005em]">What changed</h2>
-        {day ? <span className="text-[11.5px] text-fg3"><span className="text-fg2">{shortDate(day)} only</span> · <button onClick={() => setDay(null)} className="lnk">Show all days</button></span>
+        {day ? <span className="text-[11.5px] text-fg3"><span className="text-fg2">{shortDate(day)} only</span> · <button onClick={() => setDay(null)} className="lnk">Back to now</button></span>
           : <span className="text-[11.5px] text-fg3">last 30 days</span>}
       </div>
       {block && since && dismiss && setNewOnly && <SinceBlock since={since} dismiss={dismiss} picked={only ? kind : null} pick={k => { setDay(null); setKind(k ?? 'all'); setNewOnly(k != null) }} go={go} />}
@@ -231,17 +257,18 @@ export function Feed({ brief, day, setDay, kind, setKind, go, since, dismiss, ne
           <button key={k} aria-pressed={kind === k} onClick={() => { setKind(k); setNewOnly?.(false) }} aria-label={say} title={say}
             className={`tap rounded-full border px-2 py-[3px] text-[11.5px] transition-colors duration-[120ms] ${kind === k ? 'border-sel bg-sel font-medium text-selink' : 'border-line text-fg2 hover:border-line2'}`}>{label}</button>) })}
       </div>
-      {days.length === 0 && <p className="mx-4 mb-5 mt-3 text-[12.5px] text-fg3">{only ? 'Nothing new of this kind since your last visit.' : day ? 'Nothing of this kind on that day.' : 'Nothing of this kind in the last 30 days.'}</p>}
+      {noHeat && (kind === 'all' || kind === 'fire') && <p className="mx-4 mb-2 text-[11.5px] leading-[1.4] text-fg2">Heat is kept from {shortDate(rp!.heatFrom!)} only, so this day shows no heat reports whether or not there were any.</p>}
+      {days.length === 0 && !(noHeat && kind === 'fire') && <p className="mx-4 mb-5 mt-3 text-[12.5px] text-fg3">{only ? 'Nothing new of this kind since your last visit.' : day ? 'Nothing of this kind on that day.' : 'Nothing of this kind in the last 30 days.'}</p>}
       {days.map(([d, fs]) => (
         <div key={d} role="group" aria-label={dayLabel(d, today)}>
-          <div className="sticky top-0 z-[1] bg-s1 px-4 pb-1 pt-2.5 text-[11px] font-medium text-fg3">{dayLabel(d, today)}</div>
+          <div className="sticky top-[var(--stick,0px)] z-[1] bg-s1 px-4 pb-1 pt-2.5 text-[11px] font-medium text-fg3">{dayLabel(d, today)}</div>
           <ul>{fs.map((f, i) => (
             <li key={i}>
               {/* a focused item draws over the sticky day header, its ring inside, and focus scrolls clear of the header */}
               <button onClick={() => go(toRoute(f.to))} className="group grid w-full scroll-mt-9 grid-cols-[18px_minmax(0,1fr)] gap-[9px] px-4 py-[7px] text-left transition-colors duration-[120ms] hover:bg-s2 focus-visible:relative focus-visible:z-[2] focus-visible:outline-offset-[-2px]">
                 <span className="mt-[3px] grid h-4 w-4 place-items-center" aria-hidden>{GLYPH[f.kind]}</span>
                 <span className="min-w-0">
-                  <span className="block text-[13px] leading-[1.35]"><span className="sr-only">{KIND_WORD[f.kind]}: </span>{name(f.theatre) && <><b className="font-medium">{name(f.theatre)}</b> · </>}{f.title}{since?.fresh.has(feedKey(f)) && <span className="ml-1.5 whitespace-nowrap rounded-[3px] border border-line2 px-1 py-px align-[1px] font-mono text-[9.5px] uppercase tracking-[.06em] text-fg2">new<span className="sr-only"> since your last visit</span></span>}</span>
+                  <span className="block text-[13px] leading-[1.35]"><span className="sr-only">{isWave(f) ? 'Strike wave' : KIND_WORD[f.kind]}: </span>{name(f.theatre) && <><b className="font-medium">{name(f.theatre)}</b> · </>}{f.title}{since?.fresh.has(feedKey(f)) && <span className="ml-1.5 whitespace-nowrap rounded-[3px] border border-line2 px-1 py-px align-[1px] font-mono text-[9.5px] uppercase tracking-[.06em] text-fg2">new<span className="sr-only"> since your last visit</span></span>}</span>
                   <span className="mt-px block text-[11.5px] text-fg3 group-hover:text-fg2">{feedDetail(f.detail).replace(/\.$/, '')}</span>
                 </span>
               </button>
@@ -297,13 +324,17 @@ export const TIME_H = 146   // px the timeline takes at the foot of the map, wit
 export function Timeline({ brief, day, setDay, inline = false }: { brief: Brief; day: string | null; setDay: (d: string | null) => void; inline?: boolean }) {
   const end = parseGen(brief.generated).getTime()
   const days = useMemo(() => Array.from({ length: 30 }, (_, i) => utcDay(new Date(end - (29 - i) * 864e5))), [end])
-  const counts = useMemo(() => {
-    const c = Object.fromEntries(LANES.map(([k]) => [k, days.map(() => 0)])) as Record<FeedItem['kind'], number[]>
-    for (const f of brief.feed) { const i = days.indexOf(f.date.slice(0, 10)); if (i >= 0) c[f.kind][i] += 1 }
-    return c
+  const { counts, waves } = useMemo(() => {
+    const c = Object.fromEntries(LANES.map(([k]) => [k, days.map(() => 0)])) as Record<FeedItem['kind'], number[]>, w = days.map(() => 0)
+    for (const f of brief.feed) { const i = days.indexOf(f.date.slice(0, 10)); if (i >= 0) { c[f.kind][i] += 1; if (isWave(f)) w[i] += 1 } }
+    return { counts: c, waves: w }
   }, [brief.feed, days])
+  /* heat before heatFrom and tripwire days the record did not keep are not zeros: their cells are left open and say so */
+  const heatFrom = brief.replay?.heatFrom ?? null
+  const litKept = useMemo(() => new Set(brief.theatres.flatMap(t => (t.wires || []).map(x => x[0]))), [brief.theatres])
+  const noHeat = (i: number) => !!heatFrom && days[i] < heatFrom
   const at = day ? days.indexOf(day) : 29
-  const btns = useRef<(HTMLButtonElement | null)[]>([]), strip = useRef<HTMLDivElement>(null), drag = useRef(false)
+  const btns = useRef<(HTMLButtonElement | null)[]>([]), strip = useRef<HTMLDivElement>(null), drag = useRef<{ x: number; y: number; on: boolean } | null>(null)
   /* index 29 is today: live, so it clears the replay */
   const pick = (k: number, focus = false) => { const i = Math.max(0, Math.min(29, k)); setDay(i === 29 ? null : days[i]); if (focus) btns.current[i]?.focus() }
   const key = (e: KeyboardEvent) => {
@@ -313,8 +344,11 @@ export function Timeline({ brief, day, setDay, inline = false }: { brief: Brief;
   }
   const fromX = (x: number) => { const r = strip.current!.getBoundingClientRect(); return Math.floor((x - r.left) / r.width * 30) }
   const say = (i: number) => {
-    const parts = LANES.map(([k]) => counts[k][i] ? `${counts[k][i]} ${WORD_OF[k][counts[k][i] === 1 ? 0 : 1]}` : '').filter(Boolean)
-    return `${i === 29 ? 'Today, live, ' : ''}${shortDate(days[i])}: ${parts.length ? parts.join(', ') : 'nothing logged'}`
+    const n = (k: FeedItem['kind']) => k === 'tell' ? counts.tell[i] - waves[i] : counts[k][i]
+    const parts = LANES.map(([k]) => n(k) ? `${n(k)} ${WORD_OF[k][n(k) === 1 ? 0 : 1]} ${k === 'tell' ? 'fired' : ''}`.trim() : '').filter(Boolean)
+    if (waves[i]) parts.splice(1, 0, `${waves[i]} ${waves[i] === 1 ? 'strike wave began' : 'strike waves began'}`)
+    const gaps = [noHeat(i) ? 'heat not kept that far back' : '', i < 29 && litKept.size && !litKept.has(days[i]) ? 'lit tripwires not kept' : ''].filter(Boolean)
+    return `${i === 29 ? 'Today, live, ' : ''}${shortDate(days[i])}: ${parts.length ? parts.join(', ') : 'nothing logged'}${gaps.length ? `; ${gaps.join(', ')}` : ''}`
   }
   const step = 'tap grid h-7 min-w-7 place-items-center rounded-r1 border border-line text-fg2 hover:border-line2 hover:text-fg disabled:opacity-40 disabled:hover:border-line'
   return (
@@ -331,16 +365,24 @@ export function Timeline({ brief, day, setDay, inline = false }: { brief: Brief;
       <div className="flex gap-0">
         <div className="flex w-[62px] shrink-0 flex-col gap-[3px] text-[10.5px] leading-[11px] text-fg3" aria-hidden>{LANES.map(([k, label]) => <span key={k} className="h-[11px]">{label}</span>)}</div>
         <div ref={strip} role="listbox" aria-label="Last 30 days. Arrow keys replay a day; the last day is today, live." onKeyDown={key}
-          onPointerDown={e => { if (e.button) return; drag.current = true; (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); const k = fromX(e.clientX); if (k >= 0 && k < 30) pick(k, true) }}
-          onPointerMove={e => { if (!drag.current) return; const k = fromX(e.clientX); if (k >= 0 && k < 30 && k !== at) pick(k) }}
-          onPointerUp={() => { drag.current = false }} onPointerCancel={() => { drag.current = false }}
+          /* a day is picked on a tap (lifted within 8 px of where it went down) or once a drag is clearly sideways; a swipe that
+             starts here going up or down scrolls and picks nothing */
+          onPointerDown={e => { if (e.button) return; drag.current = { x: e.clientX, y: e.clientY, on: false } }}
+          onPointerMove={e => {
+            const g = drag.current; if (!g) return
+            const dx = Math.abs(e.clientX - g.x), dy = Math.abs(e.clientY - g.y)
+            if (!g.on) { if (dy > 8 && dy >= dx) { drag.current = null; return } if (dx > 8 && dx > dy * 1.5) { g.on = true; (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId) } else return }
+            const k = fromX(e.clientX); if (k >= 0 && k < 30 && k !== at) pick(k)
+          }}
+          onPointerUp={e => { const g = drag.current; drag.current = null; if (!g || g.on || Math.hypot(e.clientX - g.x, e.clientY - g.y) > 8) return; const k = fromX(e.clientX); if (k >= 0 && k < 30) pick(k, true) }}
+          onPointerCancel={() => { drag.current = null }}
           className="grid min-w-0 flex-1 touch-pan-y gap-0.5 py-1" style={{ gridTemplateColumns: 'repeat(30, minmax(0, 1fr))' }}>
           {days.map((d, i) => { const on = i === at && !!day, today = i === 29; return (
             <button key={d} ref={el => { btns.current[i] = el }} role="option" aria-selected={day ? on : today} aria-label={say(i)} title={say(i)} tabIndex={i === at ? 0 : -1}
               onClick={e => { if (e.detail === 0) pick(i, true) }}
               className={`group flex flex-col gap-[3px] rounded-[3px] outline-offset-1 ${on ? 'outline outline-1 outline-sel' : ''} ${day && i > at ? 'opacity-40' : ''}`}>
-              {LANES.map(([k, , tone]) => { const n = counts[k][i], mx = Math.max(1, ...counts[k]); return (
-                <i key={k} className="h-[11px] w-full rounded-[2px] transition-transform duration-[120ms] group-hover:scale-y-[1.3]" style={{ background: n ? tone : 'var(--z0)', opacity: !n ? 1 : n / mx > .6 ? 1 : n / mx > .25 ? .7 : .45 }} />) })}
+              {LANES.map(([k, , tone]) => { const n = counts[k][i], mx = Math.max(1, ...counts[k]), open = k === 'fire' && noHeat(i); return (
+                <i key={k} className={`h-[11px] w-full rounded-[2px] transition-transform duration-[120ms] group-hover:scale-y-[1.3] ${open ? 'border border-dashed border-line2' : ''}`} style={{ background: open ? 'transparent' : n ? tone : 'var(--z0)', opacity: !n ? 1 : n / mx > .6 ? 1 : n / mx > .25 ? .7 : .45 }} />) })}
             </button>) })}
         </div>
       </div>

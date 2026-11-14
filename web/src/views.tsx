@@ -47,14 +47,14 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
   const bt = brief.theatres.find(t => t.id === id)
   const crumbs = (region?: string): [string, Route?][] => [['Watch', { v: 'brief' }], [region || bt?.region || '']]
   if (q.isPending) return <><Crumbs back={{ v: 'brief' }} items={crumbs()} go={go} /><h1 className="px-5 pt-2 text-[27px] font-semibold tracking-[-0.028em]">{bt?.name || id}</h1><Skeleton lines={6} /></>
-  if (q.isError) return <><Crumbs back={{ v: 'brief' }} items={crumbs()} go={go} /><h1 className="px-5 pt-2 text-[27px] font-semibold tracking-[-0.028em]">{bt?.name || id}</h1><Failed what={bt?.name || id} error={q.error} /></>
+  if (q.isError && !q.data) return <><Crumbs back={{ v: 'brief' }} items={crumbs()} go={go} /><h1 className="px-5 pt-2 text-[27px] font-semibold tracking-[-0.028em]">{bt?.name || id}</h1><Failed what={bt?.name || id} error={q.error} /></>
   const t = q.data
   const regionName = brief.regions.find(r => r.theatres.includes(id))?.name || t.region
   const lit = t.tells.filter(x => x.on).length
   const nBases = live ? live.bases.filter(b => b.theatres.includes(id)).length : undefined
   const setTab = (s: string) => go({ v: 'theatre', id, tab: s }, true)
   const on = modelOn(brief, t)
-  const dayLit = day ? wiresOn(t, day.wires) : []
+  const dayLit = day ? wiresOn(t, day.wires) : null
   return (
     <div>
       <Crumbs back={{ v: 'brief' }} items={[['Watch', { v: 'brief' }], [regionName]]} go={go} />
@@ -66,14 +66,15 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
         <div className="mt-2 flex flex-wrap gap-1.5">
           {rp && day ? <Tag mark={day.level ? levelMark(day.level) : undefined}><span className="sr-only">Level on {shortDate(rp.day)}: </span>{day.level ? `${levelWord(day.level)} on ${shortDate(rp.day)}` : `Level not kept for ${shortDate(rp.day)}`}</Tag>
             : <Tag mark={levelMark(t.level)}><span className="sr-only">Level: </span>{levelWord(t.level)}</Tag>}
-          {t.context && <Tag><span title={`Set by hand${t.contextChecked ? `, checked ${shortDate(t.contextChecked)}` : ''}. Context only: it does not change the level.`}>{t.context}</span></Tag>}
-          {(rp ? dayLit.length : lit) > 0 && <Tag mark="var(--z2)">{rp ? dayLit.length : lit} {(rp ? dayLit.length : lit) === 1 ? 'tripwire' : 'tripwires'} lit{rp ? ` on ${shortDate(rp.day)}` : ''}</Tag>}
+          {t.context && !rp && <Tag><span title={`Set by hand${t.contextChecked ? `, checked ${shortDate(t.contextChecked)}` : ''}. Context only: it does not change the level.`}>{t.context}</span></Tag>}
+          {rp && day ? (dayLit ? dayLit.length > 0 && <Tag mark="var(--z2)">{dayLit.length} {dayLit.length === 1 ? 'tripwire' : 'tripwires'} lit at the run of {shortDate(rp.day)}</Tag> : <Tag>Tripwires not kept for {shortDate(rp.day)}</Tag>)
+            : lit > 0 && <Tag mark="var(--z2)">{lit} {lit === 1 ? 'tripwire' : 'tripwires'} lit</Tag>}
           {t.spillover && t.parents.length > 0 && <Tag>Spillover from {t.parents.map(p => brief.theatres.find(x => x.id === p)?.name || p).join(', ')}</Tag>}
         </div>
-        <p className="mt-3 font-serif text-[16.5px] leading-[1.42] text-fg [text-wrap:pretty]">{rp && day ? daySummary(t.name, rp.day, day.level, dayLit.map(x => wireName(x[0]))) : summary(t, on)}</p>
-        {rp && <p className="mt-1.5 text-[11.5px] text-fg2">The reading and the tabs below are today's; the level and tripwires above replay {shortDate(rp.day)}.</p>}
+        <p className="mt-3 font-serif text-[16.5px] leading-[1.42] text-fg [text-wrap:pretty]">{rp && day ? daySummary(t.name, rp.day, day.level, dayLit && dayLit.map(x => wireName(x))) : summary(t, on)}</p>
+        {rp && <p className="mt-1.5 text-[11.5px] text-fg2">Replaying {shortDate(rp.day)}: the level and the tripwires (here and in the Overview's Tripwires block) are that day's, and the context tag is hidden. Live, as today: the reading below, the Ground, Signals and History tabs and the rest of the Overview.</p>}
       </div>
-      <Gauge t={t} active={on} />
+      <Gauge t={t} active={on} today={!!rp} />
       <Tabs id="th" label={`${t.name} dossier`} value={sub} onChange={setTab} panel sticky
         tabs={[['now', 'Overview'], ['ground', 'Ground', nBases], ['signals', 'Signals', t.signals.total], ['history', 'History', t.events.length]]} />
       <AnimatePresence mode="wait" initial={false}>
@@ -95,7 +96,7 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
    thresholds (engine.theatre_composite): a score up to 0.1 under a line its level has reached is at that line, so neither the number
    nor the words ("held") can come from rounding alone. */
 const LEVEL_RANK: Record<string, number> = { Normal: 0, Watch: 1, Elevated: 2, Critical: 3 }
-function Gauge({ t, active }: { t: Theatre; active: boolean }) {
+function Gauge({ t, active, today = false }: { t: Theatre; active: boolean; today?: boolean }) {
   const L = t.lines, W = L?.watch ?? 50, C = L?.critical ?? 90, E = L && L.elevated > W && L.elevated < C ? L.elevated : null
   /* only while the reading sets the level (the model off) does the level say which lines the reading reached */
   const reached = active ? [] : ([[W, 1], [E, 2], [C, 3]] as [number | null, number][]).filter(([x, k]) => x != null && (LEVEL_RANK[t.level] ?? -1) >= k).map(([x]) => x!)
@@ -118,7 +119,7 @@ function Gauge({ t, active }: { t: Theatre; active: boolean }) {
   const ticks: [number, string, boolean][] = [[W, `Watch ${lineWhole(W)}`, false], ...(E != null ? [[E, `Elevated ${lineWhole(E)}`, true] as [number, string, boolean]] : []), [C, `Critical ${lineWhole(C)}`, false]]
   return (
     <section aria-label="Unusual readings" className="mx-5 mb-3.5 rounded-r3 border border-line bg-s2 px-4 pb-3 pt-3.5">
-      <h2 className="eyebrow mb-2.5"><Explain k="unusual">Unusual readings</Explain></h2>
+      <h2 className="eyebrow mb-2.5"><Explain k="unusual">Unusual readings</Explain>{today && <span>, today, live</span>}</h2>
       <div className="flex items-end justify-between gap-3">
         <p className="num whitespace-nowrap text-[46px] font-medium leading-[.9] tracking-[-0.045em] text-fg2">{w ?? '–'}<span className="ml-1.5 text-[13px] font-normal tracking-normal text-fg3">of 100</span></p>
         <p className="text-right text-[12.5px] leading-[1.35] text-fg2">{say}{say && <br />}Level today: {levelWord(t.level)}</p>
@@ -208,20 +209,22 @@ function Ladder({ t, brief, go }: { t: Theatre; brief: Brief; go: Go }) {
 }
 
 /* the theatre's tripwires that the feed shows fired in a replayed week, each with its latest day (feed titles are the rules' names) */
-function wiresOn(t: Theatre, wires: FeedItem[]): [Tell, string][] {
-  return t.tells.flatMap(x => { const d = wires.filter(f => f.title === x.name || f.title === wireName(x)).map(f => f.date.slice(0, 10)).sort().pop(); return d ? [[x, d] as [Tell, string]] : [] })
+/* the theatre's tripwires lit at a replayed day's run (the ids contract.day_wires kept); null when that day was not kept */
+function wiresOn(t: Theatre, ids: string[] | null): Tell[] | null {
+  return ids && t.tells.filter(x => ids.includes(x.id))
 }
-function daySummary(name: string, day: string, level: string | null, wires: string[]): string {
+function daySummary(name: string, day: string, level: string | null, wires: string[] | null): string {
   const d = shortDate(day)
   const a = level ? `At the first run of ${d}, ${name} was ${level === 'Normal' ? 'quiet' : `at ${level}`}.` : `${name}'s level was not kept for ${d}.`
-  const b = wires.length ? ` ${countWord(wires.length)} ${wires.length === 1 ? 'tripwire' : 'tripwires'} fired in the week to ${d}: ${wires.map(w => w.toLowerCase()).join(', ')}.` : ` No tripwire fired in the week to ${d}.`
+  const b = !wires ? ` Which tripwires were lit that day was not kept.`
+    : wires.length ? ` ${countWord(wires.length)} ${wires.length === 1 ? 'tripwire was' : 'tripwires were'} lit at the run of ${d}: ${wires.map(w => w.toLowerCase()).join(', ')}.` : ` No tripwire was lit at the run of ${d}.`
   return a + b
 }
 /* follow: keep this theatre at the top of the board, in this browser */
 function FollowButton({ id, name }: { id: string; name: string }) {
   const { has, toggle } = useFollow(), on = has(id)
-  return <button onClick={() => toggle(id)} aria-pressed={on} aria-label={`Follow ${name}`} title={on ? 'Following: it sits at the top of the board in this browser' : 'Keep it at the top of the board in this browser'}
-    className={`tap mt-1 inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-r2 border px-2.5 text-[12px] transition-colors duration-[120ms] ${on ? 'border-line2 bg-s3 text-fg' : 'border-line text-fg2 hover:border-line2 hover:text-fg'}`}>
+  return <button onClick={() => toggle(id)} data-follow={id} aria-pressed={on} aria-label={on ? `Following ${name}, press to stop` : `Follow ${name}`} title={on ? 'Following: it sits at the top of the board in this browser' : 'Keep it at the top of the board in this browser'}
+    className={`tap mt-1 inline-flex min-h-8 pointer-coarse:min-h-11 shrink-0 items-center gap-1.5 rounded-r2 border px-2.5 text-[12px] transition-colors duration-[120ms] ${on ? 'border-line2 bg-s3 text-fg' : 'border-line text-fg2 hover:border-line2 hover:text-fg'}`}>
     <Pin size={13} aria-hidden fill={on ? 'currentColor' : 'none'} />{on ? 'Following' : 'Follow'}</button>
 }
 
@@ -239,24 +242,24 @@ export function recordLine(x: Tell): string {
 }
 function Tripwires({ t: today }: { t: Theatre }) {
   const [open, setOpen] = useState<string | null>(null)
-  /* replaying, a tripwire is lit when the feed shows it fired in the 7 days to that day */
-  const rp = useReplay(), day = rp?.theatres[today.id]
-  const t = useMemo(() => { if (!day) return today; const m = new Map(wiresOn(today, day.wires).map(([x, d]) => [x.id, d])); return { ...today, tells: today.tells.map(x => ({ ...x, on: m.has(x.id), date: m.get(x.id) ?? null })) } }, [today, day])
+  /* replaying, a tripwire is lit when the record shows it lit at that day's run; a day not kept lights none and says so */
+  const rp = useReplay(), day = rp?.theatres[today.id], unknown = !!day && !day.wires
+  const t = useMemo(() => { if (!day) return today; const m = new Set((wiresOn(today, day.wires) || []).map(x => x.id)); return { ...today, tells: today.tells.map(x => ({ ...x, on: m.has(x.id), date: null })) } }, [today, day])
   const list = useMemo(() => [...t.tells.filter(x => x.on).sort((a, b) => (b.date || '').localeCompare(a.date || '')), ...t.tells.filter(x => !x.on)], [t])
   const lit = list.filter(x => x.on).length
   const eps = t.tells.reduce((n, x) => n + (x.record?.episodes || 0), 0), hits = t.tells.reduce((n, x) => n + (x.record?.hits || 0), 0)
   return (
-    <Block title={<Explain k="tripwire">Tripwires</Explain>} aside={rp ? `${lit} of ${t.tells.length} lit in the week to ${shortDate(rp.day)}` : `${lit} of ${t.tells.length} lit, fixed rules over 7 days`}>
-      {rp?.partial && <p className="-mt-1 mb-2 text-[11.5px] text-fg2">The data holds the last 30 days, from {shortDate(rp.feedFrom)}; a tripwire that fired before that is not shown.</p>}
+    <Block title={<Explain k="tripwire">Tripwires</Explain>} aside={rp ? (unknown ? `not kept for ${shortDate(rp.day)}` : `${lit} of ${t.tells.length} lit at the run of ${shortDate(rp.day)}`) : `${lit} of ${t.tells.length} lit, fixed rules over 7 days`}>
+      {unknown && <p className="-mt-1 mb-2 text-[11.5px] text-fg2">Which tripwires were lit on {shortDate(rp!.day)} was not kept. The rules are listed without a state.</p>}
       <ul className="grid gap-1.5">
         {list.map(x => { const on = open === x.id, r = x.record; return (
           <li key={x.id} className="rounded-r2 border" style={{ borderColor: x.on ? 'color-mix(in srgb, var(--z2) 55%, transparent)' : 'var(--line)', background: x.on ? 'color-mix(in srgb, var(--z2) 7%, var(--s2))' : 'var(--s2)' }}>
             <button onClick={() => setOpen(on ? null : x.id)} aria-expanded={on} aria-controls={`tw-${x.id}`} className="grid w-full grid-cols-[10px_minmax(0,1fr)_14px] items-start gap-2.5 rounded-r2 px-2.5 py-2 text-left">
-              <i aria-hidden className={`mt-[5px] h-2 w-2 rounded-full border ${x.on ? 'tw-lit' : ''}`} style={{ background: x.on ? 'var(--z2)' : 'var(--z0)', borderColor: x.on ? 'var(--z2)' : 'var(--line2)' }} />
+              <i aria-hidden className={`mt-[5px] h-2 w-2 rounded-full border ${x.on ? 'tw-lit' : ''} ${unknown ? 'border-dashed' : ''}`} style={{ background: x.on ? 'var(--z2)' : unknown ? 'transparent' : 'var(--z0)', borderColor: x.on ? 'var(--z2)' : 'var(--line2)' }} />
               <span className="min-w-0">
                 <span className="flex flex-wrap items-baseline gap-x-2 text-[12.5px] font-medium leading-[1.3] text-fg">{wireName(x)}
-                  {x.on && <span className="num text-[11.5px] font-normal text-fg2">{x.date ? `Fired ${shortDate(x.date)}` : 'Fired this week'}</span>}
-                  <span className="sr-only">{x.on ? ', lit' : ', not lit'}.</span></span>
+                  {x.on && <span className="num text-[11.5px] font-normal text-fg2">{rp ? `Lit at the run of ${shortDate(rp.day)}` : x.date ? `Fired ${shortDate(x.date)}` : 'Fired this week'}</span>}
+                  <span className="sr-only">{unknown ? ', not kept for that day' : x.on ? ', lit' : ', not lit'}.</span></span>
                 <span className={`mt-0.5 block text-[11px] leading-[1.35] ${x.on ? 'text-fg2' : 'text-fg3'}`}>{recordLine(x)}<span className="sr-only">.</span></span>
                 {r?.events ? <span className={`block text-[11px] leading-[1.35] ${x.on ? 'text-fg2' : 'text-fg3'}`}>Fired before {r.caught ?? 0} of {r.events} past events</span> : null}
               </span>
@@ -287,7 +290,7 @@ function SignalsTab({ t, go }: { t: Theatre; go: Go }) {
   const top = useMemo(() => all.filter(s => s.z != null).sort((a, b) => Math.abs(b.z!) - Math.abs(a.z!)).slice(0, 14), [all])
   return (
     <Block title="Most unusual now" aside="against each signal's own history">
-      {q.isPending ? <Skeleton lines={8} /> : q.isError ? <Failed what="the signals" error={q.error} />
+      {q.isPending ? <Skeleton lines={8} /> : q.isError && !q.data ? <Failed what="the signals" error={q.error} />
         : top.length === 0 ? <p className="text-[12.5px] text-fg3">No signal for this theatre is scoring today.</p>
         : <ul>{top.map(s => <li key={s.id} className="border-t border-line first:border-0"><SignalRow s={s} go={go} /></li>)}</ul>}
       <p className="mt-2.5 text-[12px]"><Lnk to={{ v: 'signals', th: t.id }} go={go} className="lnk">Open {all.length ? `all ${all.length}` : 'them'} in Signals</Lnk></p>

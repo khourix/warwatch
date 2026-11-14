@@ -7,7 +7,7 @@ import { BaseView } from './ground'
 import { Dispatch, Board, Feed, SinceBlock, Timeline, Status, TIME_H, type Order, type Kind } from './watch'
 import { NotificationBell } from './bell'
 import { HealthReadout, LateBanner } from './health'
-import { ReplayProvider, replayWords } from './replay'
+import { ReplayProvider, replayWords, replayHead, replayLive } from './replay'
 import { useNotifier } from './follow'
 import { FollowPrompt } from './settings'
 import { useSinceLastVisit } from './since'
@@ -48,15 +48,16 @@ const onWatch = (r: Route) => r.v === 'brief' || r.v === 'map' || r.v === 'theat
 const query = () => { try { return new URLSearchParams(location.search) } catch { return new URLSearchParams() } }
 function dayFromAddress(brief: Brief): string | null {
   const d = query().get('d'); if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return null
-  const end = parseGen(brief.generated).getTime(), t = Date.parse(d + 'T12:00Z')
-  const today = new Date(end).toISOString().slice(0, 10)
-  return d !== today && t <= end && t > end - 30 * 864e5 ? d : null      // the timeline's 30 days; today is live
+  /* the timeline's own days (watch.tsx Timeline): the 29 before today; today is live */
+  const end = parseGen(brief.generated).getTime()
+  return Array.from({ length: 29 }, (_, i) => new Date(end - (29 - i) * 864e5).toISOString().slice(0, 10)).includes(d) ? d : null
 }
 
 export default function App() {
   const brief = useBrief()
   if (brief.isPending) return <div className="grid h-full place-items-center text-fg3"><Mark size={40} /></div>
-  if (brief.isError) return <Failed what="the brief" error={brief.error} />
+  /* a failed refresh keeps the data it has (the late banner says how old it is); only a first load that fails shows the error */
+  if (!brief.data) return <Failed what="the brief" error={brief.error} />
   return <Shell brief={brief.data} />
 }
 
@@ -80,6 +81,8 @@ function Shell({ brief }: { brief: Brief }) {
   const { prefs, set, theme } = usePrefs()
   const [settings, setSettings] = useState(false)
   const [cmd, setCmd] = useState(false), [cmdSeen, setCmdSeen] = useState(false)
+  /* letters typed after ⌘K before the search field is there (its code loads on the first open) are kept and handed to it */
+  const early = useRef('')
   useEffect(() => { if (cmd) setCmdSeen(true) }, [cmd])
   const [day, setDay] = useState<string | null>(() => dayFromAddress(brief))
   const [layers, setLayers] = useState<Layers>(() => parseLayers(query().get('l')) ?? loadLayers())
@@ -135,7 +138,12 @@ function Shell({ brief }: { brief: Brief }) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !(e.target as HTMLElement).closest('input,textarea,select'))) { e.preventDefault(); setCmd(c => !c) }
-      if (e.key === 'Escape' && cmd) { e.preventDefault(); setCmd(false); return }   // the search closes first
+      if (e.key === 'Escape' && cmd) { e.preventDefault(); setCmd(false); early.current = ''; return }   // the search closes first
+      if (cmd && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !(e.target as HTMLElement).closest('input,textarea')) {
+        const field = document.querySelector<HTMLInputElement>('[cmdk-input]')
+        if (field) { field.focus(); return }             // the field is there but not focused yet: the key goes on to it
+        early.current += e.key; e.preventDefault(); return
+      }
       /* a page that used the Escape first (a panel, a filter, an explainer) prevents it; an open dialog keeps it */
       if (e.key !== 'Escape' || e.defaultPrevented || cmd || document.querySelector('[aria-modal="true"]')) return
       if (day && onWatch(route)) { setDay(null); return }      // a replay goes back to now first
@@ -170,15 +178,16 @@ function Shell({ brief }: { brief: Brief }) {
   )
   const map = (padBottom: number) => mapOn && <Boundary what="the map" at={wide ? 'm-5' : 'mx-3 mt-[68px]'}><Suspense fallback={null}><MapView brief={brief} live={live} route={route} onPick={go} theme={theme} day={null} flat={prefs.map === 'flat'} onFlat={f => set({ map: f ? 'flat' : 'globe' })} labels={prefs.labels} wide={wide} padBottom={padBottom} layers={layers} onToggle={toggleLayer} /></Suspense></Boundary>
   /* the dispatch is the page's heading only on the Watch home; a dossier or a page (Signals, Record) has its own h1 */
-  const dispatch = <Dispatch brief={brief} heading={!dossier && !page} />
-  const board = <Board brief={brief} sel={sel} go={go} order={order} setOrder={setOrder} />
+  /* each part of Watch has its own boundary: one that fails to draw leaves the others working */
+  const dispatch = <Boundary what="the dispatch" at="m-3.5"><Dispatch brief={brief} heading={!dossier && !page} /></Boundary>
+  const board = <Boundary what="the theatre board" at="m-3.5"><Board brief={brief} sel={sel} go={go} order={order} setOrder={setOrder} /></Boundary>
   const home = <>{dispatch}{board}</>
-  const feed = <Feed brief={brief} day={day} setDay={setDay} kind={kind} setKind={setKind} go={go} since={day ? null : since} dismiss={dismiss} newOnly={newOnly} setNewOnly={setNewOnly} block={wide} />
+  const feed = <Boundary what="the feed" at="m-3.5"><Feed brief={brief} day={day} setDay={setDay} kind={kind} setKind={setKind} go={go} since={day ? null : since} dismiss={dismiss} newOnly={newOnly} setNewOnly={setNewOnly} block={wide} /></Boundary>
   /* on phones "since you last looked" sits under the dispatch, above the board; a pick there jumps to the feed it filters */
-  const phoneSince = since && !day && <SinceBlock since={since} dismiss={dismiss} go={go} className="mx-3.5 mb-1.5 mt-2"
-    picked={newOnly ? kind : null} pick={k => { setDay(null); setKind(k ?? 'all'); setNewOnly(k != null); if (k) requestAnimationFrame(() => document.getElementById('feed')?.scrollIntoView({ block: 'start' })) }} />
+  const phoneSince = since && !day && <Boundary what="since you last looked" quiet><SinceBlock since={since} dismiss={dismiss} go={go} className="mx-3.5 mb-1.5 mt-2"
+    picked={newOnly ? kind : null} pick={k => { setDay(null); setKind(k ?? 'all'); setNewOnly(k != null); if (k) requestAnimationFrame(() => document.getElementById('feed')?.scrollIntoView({ block: 'start' })) }} /></Boundary>
   const overlays = <>
-    {cmdSeen && <Boundary what="the search" float><Suspense fallback={null}><CommandMenu open={cmd} setOpen={setCmd} go={go} toggleTheme={toggleTheme} openSettings={() => setSettings(true)} copyLink={copyLink} brief={brief} live={live} /></Suspense></Boundary>}
+    {cmdSeen && <Boundary what="the search" float><Suspense fallback={null}><CommandMenu open={cmd} setOpen={setCmd} early={early} go={go} toggleTheme={toggleTheme} openSettings={() => setSettings(true)} copyLink={copyLink} brief={brief} live={live} /></Suspense></Boundary>}
     <Boundary what="the settings" float><SettingsSheet open={settings} onClose={() => setSettings(false)} go={go} /></Boundary>
     <Boundary what="the follow prompt" quiet><FollowPrompt names={Object.fromEntries(brief.theatres.map(t => [t.id, t.name]))} /></Boundary>
     <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-[84px] z-[60] flex justify-center px-4 min-[900px]:bottom-6">
@@ -189,10 +198,18 @@ function Shell({ brief }: { brief: Brief }) {
 
   /* replaying a day: what replays and what does not, and the way back (the timeline has the same button) */
   const replaying = !!day && onWatch(route)
+  const back = <button onClick={() => setDay(null)} className="tap min-h-8 shrink-0 rounded-r2 border border-line2 bg-s2 px-2.5 text-[12px] font-medium hover:border-fg3">Back to now</button>
   const banner = replaying && <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-line bg-s2 px-4 py-2 text-[12.5px] leading-[1.4] text-fg">
-    <span className="min-w-0 flex-1">{replayWords(day!)}</span>
-    <button onClick={() => setDay(null)} className="tap min-h-8 shrink-0 rounded-r2 border border-line2 px-2.5 text-[12px] font-medium hover:border-fg3">Back to now</button>
+    <span className="min-w-0 flex-1">{replayWords(day!)}</span>{back}
   </div>
+  /* on phones the day and the way back stay at the top of the sheet while it scrolls (sticky, 44 px: --stick puts the sheet's
+     other sticky headers under it); what stays live is said once below it */
+  const phoneBanner = replaying && <>
+    <div role="status" className="sticky top-0 z-[5] flex h-11 items-center gap-3 border-b border-line bg-s2 px-4 text-[12.5px] text-fg">
+      <b className="min-w-0 flex-1 truncate font-medium">{replayHead(day!)}</b>{back}
+    </div>
+    <p className="border-b border-line bg-s2 px-4 pb-2 pt-1.5 text-[11.5px] leading-[1.4] text-fg2">{replayLive}</p>
+  </>
   const mc = prefs.motion === 'reduced' ? 'always' : 'user'
 
   if (route.v === 'wall') return (
@@ -208,9 +225,11 @@ function Shell({ brief }: { brief: Brief }) {
       <div className="relative h-full overflow-hidden bg-bg text-fg">
         <div className="absolute inset-0">{map(route.v === 'map' ? 200 : Math.round(innerHeight * .55))}</div>
         <PhoneShell route={route} go={go} navActive={navActive} openCmd={() => setCmd(true)} openSettings={() => setSettings(true)} panelRef={panelRef} brief={brief} live={live}>
-          <LateBanner brief={brief} />
-          {banner}
-          {dossier || page ? view : <>{dispatch}{phoneSince}<Timeline brief={brief} day={day} setDay={setDay} inline />{board}{feed}</>}
+          <div style={replaying ? { ['--stick' as string]: '44px' } : undefined}>
+            <LateBanner brief={brief} />
+            {phoneBanner}
+            {dossier || page ? view : <>{dispatch}{phoneSince}<Boundary what="the 30-day timeline" at="m-3.5"><Timeline brief={brief} day={day} setDay={setDay} inline /></Boundary>{board}{feed}</>}
+          </div>
         </PhoneShell>
         {overlays}
       </div>
@@ -238,7 +257,7 @@ function Shell({ brief }: { brief: Brief }) {
         <header className="flex min-w-0 items-center gap-3 border-b border-line px-4">
           <Wordmark mark={false} />
           <i className="h-4 w-px shrink-0 bg-line2" aria-hidden />
-          <p className="min-w-0 flex-1 truncate text-[12.5px] text-fg2"><Status brief={brief} /></p>
+          <p className="min-w-0 flex-1 truncate text-[12.5px] text-fg2"><Boundary what="the status line" quiet><Status brief={brief} /></Boundary></p>
           <button onClick={() => setCmd(true)} aria-keyshortcuts="Control+K Meta+K /" className="flex h-8 w-[min(300px,26vw)] shrink-0 items-center gap-2 rounded-r2 border border-line bg-s1 px-2.5 text-[12.5px] text-fg2 transition-colors duration-[120ms] hover:border-line2">
             <Search size={14} aria-hidden /><span className="min-w-0 flex-1 truncate text-left">Search theatres, bases, signals</span><kbd className="rounded-[3px] border border-line2 px-1 py-0.5 font-mono text-[10.5px] leading-none">⌘K</kbd>
           </button>
@@ -257,7 +276,7 @@ function Shell({ brief }: { brief: Brief }) {
             </aside>
             <div className="relative min-h-0 min-w-0 overflow-hidden" style={{ ['--time-h' as string]: `${TIME_H + 4}px` }}>
               {map(TIME_H)}
-              <Timeline brief={brief} day={day} setDay={setDay} />
+              <Boundary what="the 30-day timeline" at="absolute inset-x-3.5 bottom-3.5 z-10"><Timeline brief={brief} day={day} setDay={setDay} /></Boundary>
             </div>
             <aside aria-label={dossier ? 'Details' : 'What changed'} className={`min-h-0 min-w-0 overflow-hidden bg-s1 ${dossier || roomy ? 'border-l border-line' : ''}`}>
               {(dossier || roomy) && <div ref={dossier ? panelRef : undefined} data-scroll className="scroll-thin h-full overflow-y-auto overflow-x-hidden">

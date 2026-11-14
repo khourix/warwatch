@@ -12,6 +12,11 @@ export type BriefTheatre = {
   /* Added November 2026 (contract.day_levels): [day, level] for the last 30 days, the level the page showed at each day's first run,
      only for days the model was off. A day that is missing was not kept. Older data has none: the replay then shows no level. */
   levels?: [string, Level][]
+  /* Added November 2026 (contract.day_wires): [day, tripwire ids] for the last 30 days, the tripwires lit at each day's first run.
+     A day that is missing was not kept; an empty list is a day with nothing lit. Older data has none: the replay says not kept. */
+  wires?: [string, string[]][]
+  /* Added November 2026: the ids of the tripwires lit now, so a notification is sent when one turns on, not every day it stays lit */
+  tellsLit?: string[]
 }
 export type Brief = {
   generated: string; demo: boolean; eventsThrough: string; headline: string
@@ -21,6 +26,8 @@ export type Brief = {
   theatres: BriefTheatre[]; feed: FeedItem[]
   model: { version: string; fitted: string; active: boolean; gates: Gates | null }
   health?: Health
+  /* Added November 2026 (contract.replay_keep): the first day heat is kept (fewer days than the feed), and tripwire id to name */
+  replay?: { heatFrom: string; tripwires: Record<string, string> } | null
 }
 /* Added November 2026 (contract.health): signal statuses, the run's source problems with their reasons, and the run cadence the
    top bar judges the data's age by. Older data has none: the readout then shows the age alone. */
@@ -105,7 +112,15 @@ async function get<T>(rel: string): Promise<T> {
   if (!r.ok) throw new Error(`${rel}: HTTP ${r.status}`)
   return r.json()
 }
-export const useBrief = () => useQuery({ queryKey: ['brief'], queryFn: () => get<Brief>('brief.json'), refetchInterval: 10 * 60_000, refetchIntervalInBackground: true })
+/* a feed item or theatre row that is not whole (a date that is not a string, a row with no id) is left out on arrival, so one bad
+   row cannot stop the parts of the page that read every row (the timeline, since-you-last-looked, the bell) */
+const str = (x: unknown) => typeof x === 'string'
+function wholeBrief(b: Brief): Brief {
+  if (!b || typeof b !== 'object') throw new Error('brief.json: not an object')
+  return { ...b, theatres: (Array.isArray(b.theatres) ? b.theatres : []).filter(t => t && str(t.id) && str(t.name)),
+    feed: (Array.isArray(b.feed) ? b.feed : []).filter(f => f && str(f.date) && str(f.kind) && str(f.theatre) && str(f.title) && f.to && typeof f.to === 'object') }
+}
+export const useBrief = () => useQuery({ queryKey: ['brief'], queryFn: () => get<Brief>('brief.json').then(wholeBrief), refetchInterval: 10 * 60_000, refetchIntervalInBackground: true })
 export const useTheatre = (id: string) => useQuery({ queryKey: ['theatre', id], queryFn: () => get<Theatre>(`theatres/${id}.json`) })
 export const useSignals = (on = true) => useQuery({ queryKey: ['signals'], queryFn: () => get<Signals>('signals/index.json'), enabled: on })
 export const useLiveMap = (on = true) => useQuery({ queryKey: ['map'], queryFn: () => get<LiveMap>('map/live.json'), refetchInterval: 30 * 60_000, enabled: on })

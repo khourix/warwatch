@@ -354,7 +354,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
   useEffect(() => {
     const m = map.current; if (!m || !ready) return
     const padding = { top: topRef.current + 40, bottom: padBottom + 40, left: 40, right: 40 }
-    const duration = reduced() ? 0 : wall ? 7000 : undefined
+    const duration = reduced() ? 0 : wall ? 3000 : undefined     // the wall: a short move, then still (wall.tsx)
     const focus = route.v === 'theatre' ? route.id : route.v === 'signals' ? route.th : undefined   // Signals filtered to a theatre shows that theatre
     const b = route.v === 'base' ? live?.bases.find(x => x.id === route.id) : undefined
     if (b?.bounds && b.thumb) m.fitBounds([[b.bounds[0], b.bounds[1]], [b.bounds[2], b.bounds[3]]], { padding, maxZoom: 15, duration: duration ?? 1400, essential: true })   // its satellite picture fills the view
@@ -415,7 +415,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
               style={!on && t.level !== 'Normal' ? { borderColor: levelVar(t.level) } : undefined}>
               {t.tellsOn > 0 && <i className="h-[5px] w-[5px] rounded-full bg-z2 shadow-[0_0_6px_var(--z2)]" />}
               {short(t.name)}
-              {t.score != null && <span className={`num font-mono text-[10.5px] font-normal ${on ? 'opacity-70' : 'text-fg3'}`}>{wholeScore(t.score)}</span>}
+              {t.score != null && <span className={`num font-mono text-[calc(10.5px*var(--lbl))] font-normal ${on ? 'opacity-70' : 'text-fg3'}`}>{wholeScore(t.score)}</span>}
             </span>
           </button>) })}
         {(live?.chokepoints || []).map((c, i) => (

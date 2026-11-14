@@ -11,6 +11,6 @@ const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 5 * 60_000,
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={qc}><PrefsProvider><Boundary what="WarWatch"><App /></Boundary></PrefsProvider></QueryClientProvider>
+    <QueryClientProvider client={qc}><PrefsProvider><Boundary what="WarWatch" top><App /></Boundary></PrefsProvider></QueryClientProvider>
   </StrictMode>,
 )

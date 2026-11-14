@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { X } from 'lucide-react'
 import { ROOT, short, type Route } from './data'
-import { useFollow, forgetFollows, permission, askPermission, permissionLine, type Permission } from './follow'
+import { useFollow, forgetFollows, permission, askPermission, permissionLine, WHERE, type Permission } from './follow'
 
 /* Settings: a small sheet, not a page (theme, time, units, motion, map, the board's order). Saved in this browser only; nothing
    here changes the data. With storage blocked (a private window) every choice still works, for this visit. */
@@ -161,33 +161,35 @@ export function SettingsSheet({ open, onClose, go }: { open: boolean; onClose: (
 
 /* "Notify me": a switch, in settings and on the first follow. The browser is asked for permission only from a press on it. */
 export function NotifySwitch({ compact = false }: { compact?: boolean }) {
-  const { notify, setNotify, ids } = useFollow()
+  const { notify, setNotify, ids, failed } = useFollow()
   const [perm, setPerm] = useState<Permission>(permission)
   const [busy, setBusy] = useState(false)
   const on = notify && perm === 'granted'
+  /* phones and browsers without notifications: the switch is off and cannot be turned on */
+  const cannot = perm === 'phone' || perm === 'unsupported'
   const flip = async () => {
     if (on) { setNotify(false); return }
-    if (perm === 'unsupported' || perm === 'denied') { setPerm(permission()); return }
+    if (cannot || perm === 'denied') { setPerm(permission()); return }
     setBusy(true)
     const p = perm === 'granted' ? 'granted' : await askPermission()
     setBusy(false); setPerm(p)
     setNotify(p === 'granted')
   }
-  const line = permissionLine(perm)
+  const line = permissionLine(perm, failed && !cannot)
   return (
     <div>
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
           <span id="notify-h" className="block text-[13.5px] text-fg">Notify me</span>
-          {!compact && <span className="mt-0.5 block text-[11.5px] leading-[1.4] text-fg2">When a theatre you follow rises to Watch or above, or a tripwire fires there. {ids.length ? `You follow ${ids.length} ${ids.length === 1 ? 'theatre' : 'theatres'}.` : 'Follow a theatre with the pin on its row or its page.'}</span>}
+          {!compact && <span className="mt-0.5 block text-[11.5px] leading-[1.4] text-fg2">When a theatre you follow rises to Watch or above, or a tripwire turns on there. {ids.length ? `You follow ${ids.length} ${ids.length === 1 ? 'theatre' : 'theatres'}.` : 'Follow a theatre with the pin on its row or its page.'}</span>}
         </div>
-        <button role="switch" aria-checked={on} aria-labelledby="notify-h" onClick={flip} disabled={busy}
-          className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors duration-[120ms] after:absolute after:-inset-2 after:content-[''] ${on ? 'border-sel bg-sel' : 'border-line2 bg-s3'}`}>
+        <button role="switch" aria-checked={on} aria-labelledby="notify-h" aria-describedby={line ? 'notify-why' : undefined} onClick={flip} disabled={busy || cannot}
+          className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors duration-[120ms] after:absolute after:-inset-2 after:content-[''] disabled:opacity-50 ${on ? 'border-sel bg-sel' : 'border-line2 bg-s3'}`}>
           <i className={`absolute top-[3px] h-5 w-5 rounded-full transition-[left] duration-[150ms] ${on ? 'left-[23px] bg-selink' : 'left-[3px] bg-fg2'}`} aria-hidden />
         </button>
       </div>
-      <p className="mt-1.5 text-[11.5px] leading-[1.4] text-fg2">Only while WarWatch is open in a tab, or open from your home screen. A closed page cannot notify.</p>
-      {line && <p role="status" className="mt-1 text-[11.5px] leading-[1.4] text-fg">{line}</p>}
+      {!cannot && <p className="mt-1.5 text-[11.5px] leading-[1.4] text-fg2">{WHERE} A closed page cannot notify.</p>}
+      {line && <p id="notify-why" role="status" className="mt-1 text-[11.5px] leading-[1.4] text-fg">{line}</p>}
     </div>
   )
 }
@@ -196,10 +198,14 @@ export function NotifySwitch({ compact = false }: { compact?: boolean }) {
 export function FollowPrompt({ names }: { names: Record<string, string> }) {
   const [id, setId] = useState<string | null>(null)
   const { ids } = useFollow()
-  useEffect(() => { const f = (e: Event) => setId((e as CustomEvent<string>).detail); addEventListener('ww-followed', f); return () => removeEventListener('ww-followed', f) }, [])
+  /* the control that followed (the pin or the Follow button) gets the focus back when the prompt closes */
+  const pin = useRef<HTMLElement | null>(null)
+  useEffect(() => { const f = (e: Event) => { pin.current = document.activeElement as HTMLElement | null; setId((e as CustomEvent<string>).detail) }; addEventListener('ww-followed', f); return () => removeEventListener('ww-followed', f) }, [])
   const box = useRef<HTMLDivElement>(null)
-  useEffect(() => { if (!id) return; requestAnimationFrame(() => box.current?.querySelector<HTMLElement>('[role=switch]')?.focus())
-    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setId(null) } }
+  /* the row moves to "Following" when pinned, so the pressed control may be a new element: found again by its theatre */
+  const close = () => { const p = pin.current, at = id; setId(null); requestAnimationFrame(() => { const el = p?.isConnected ? p : document.querySelector<HTMLElement>(`[data-follow="${at}"]`); el?.focus() }) }
+  useEffect(() => { if (!id) return; requestAnimationFrame(() => box.current?.querySelector<HTMLElement>('[role=switch]:not([disabled]), button')?.focus())
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close() } }
     addEventListener('keydown', k, true); return () => removeEventListener('keydown', k, true) }, [id])
   const name = id ? names[id] || '' : ''
   return (
@@ -208,9 +214,9 @@ export function FollowPrompt({ names }: { names: Record<string, string> }) {
         className="fixed bottom-[84px] left-1/2 z-[55] w-[min(420px,calc(100vw-24px))] -translate-x-1/2 rounded-r3 border border-line2 bg-s1 px-4 pb-3 pt-3 shadow-[var(--shadow)] min-[900px]:bottom-6">
         <div className="flex items-start justify-between gap-3">
           <h2 id="follow-h" className="text-[14px] font-medium text-fg">Following {name ? short(name) : `${ids.length} ${ids.length === 1 ? 'theatre' : 'theatres'}`}</h2>
-          <button onClick={() => setId(null)} aria-label="Close" className="-mr-2 -mt-1.5 grid h-9 w-9 place-items-center rounded-r2 text-fg2 hover:bg-s2 hover:text-fg"><X size={15} /></button>
+          <button onClick={close} aria-label="Close" className="-mr-2 -mt-1.5 grid h-9 w-9 place-items-center rounded-r2 text-fg2 hover:bg-s2 hover:text-fg"><X size={15} /></button>
         </div>
-        <p className="mb-2.5 mt-0.5 text-[12.5px] leading-[1.45] text-fg2">It sits at the top of the board, in this browser only. You can also be notified when its level rises to Watch or above, or a tripwire fires there.</p>
+        <p className="mb-2.5 mt-0.5 text-[12.5px] leading-[1.45] text-fg2">It sits at the top of the board, in this browser only. You can also be notified when its level rises to Watch or above, or a tripwire turns on there.</p>
         <NotifySwitch compact />
       </motion.div>}
     </AnimatePresence>

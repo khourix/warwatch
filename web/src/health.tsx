@@ -76,7 +76,7 @@ export function HealthReadout({ brief, go, phone = false }: { brief: Brief; go: 
               </section>}
               <section className="mt-2 border-t border-line pt-3">
                 <h3 className="eyebrow mb-1.5 !text-fg2">How often sources update</h3>
-                {rec.isPending ? <p className="text-[12.5px] text-fg2">Loading…</p> : rec.isError ? <p className="text-[12.5px] text-fg2">The update notes could not be loaded.</p>
+                {rec.isPending ? <p className="text-[12.5px] text-fg2">Loading…</p> : rec.isError && !rec.data ? <p className="text-[12.5px] text-fg2">The update notes could not be loaded.</p>
                   : <ul>{rec.data.health.updates.map((u, i) => <li key={i} className="py-1.5 text-[12px] leading-[1.4]"><span className="flex flex-wrap justify-between gap-x-3"><b className="font-medium text-fg">{u.s}</b><span className="text-fg2">{u.e}</span></span><span className="block text-fg2">{u.l}</span></li>)}</ul>}
               </section>
             </div>
