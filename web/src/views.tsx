@@ -4,7 +4,7 @@ import { ArrowLeft, ChevronDown } from 'lucide-react'
 import { GROUPS, GROUP_HINT, useTheatre, useSignals, summary, gatesSentence, wireName, levelWord, wholeAt, lineWhole, groupTone, stepFixed, fmtZ, shortDate, parseGen,
   type Brief, type LiveMap, type Route, type Signal, type FeedItem, type Theatre, type Tell, type Group } from './data'
 import { GroundTab } from './ground'
-import { Spark, Tabs, tabPanel, Lnk, Tag, Facts, Block, Note, Skeleton, Failed, useWidth } from './ui'
+import { Spark, Tabs, tabPanel, Lnk, Tag, Facts, Block, Note, Skeleton, Failed, useWidth, CopyLink, Explain } from './ui'
 
 type Go = (r: Route, replace?: boolean) => void
 export const toRoute = (to: FeedItem['to']): Route => to.view === 'theatre' && to.id ? { v: 'theatre', id: to.id, tab: to.tab } : to.view === 'base' && to.id ? { v: 'base', id: to.id } : { v: 'brief' }
@@ -18,13 +18,14 @@ export const zMark = (z: number | null | undefined) => z == null ? 'var(--fg3)' 
 export function Crumbs({ back, items, go }: { back: Route; items: [string, Route?][]; go: Go }) {
   return (
     <div className="flex min-w-0 items-center gap-1.5 px-5 pt-3.5 text-[12px] text-fg3">
-      <button onClick={() => go(back)} aria-label="Back" className="-ml-1.5 grid h-7 w-7 shrink-0 place-items-center rounded-r1 hover:bg-s2 hover:text-fg"><ArrowLeft size={15} /></button>
-      <nav aria-label="Breadcrumb" className="min-w-0"><ol className="flex min-w-0 items-center gap-1.5">
+      <button onClick={() => go(back)} aria-label="Back" className="tap -ml-1.5 grid h-7 w-7 max-[899px]:w-11 shrink-0 place-items-center rounded-r1 hover:bg-s2 hover:text-fg"><ArrowLeft size={15} /></button>
+      <nav aria-label="Breadcrumb" className="min-w-0 flex-1"><ol className="flex min-w-0 items-center gap-1.5">
         {items.map(([t, r], i) => <li key={i} className="flex min-w-0 items-center gap-1.5">
           {i > 0 && <span aria-hidden className="text-fg3">/</span>}
-          {r ? <Lnk to={r} go={go} className="truncate hover:text-fg">{t}</Lnk> : <span className="truncate text-fg2">{t}</span>}
+          {r ? <Lnk to={r} go={go} className="block truncate hover:text-fg max-[899px]:-my-3.5 max-[899px]:py-3.5">{t}</Lnk> : <span className="truncate text-fg2">{t}</span>}
         </li>)}
       </ol></nav>
+      <CopyLink />
     </div>
   )
 }
@@ -108,21 +109,21 @@ function Gauge({ t, active }: { t: Theatre; active: boolean }) {
   const ticks: [number, string, boolean][] = [[W, `Watch ${lineWhole(W)}`, false], ...(E != null ? [[E, `Elevated ${lineWhole(E)}`, true] as [number, string, boolean]] : []), [C, `Critical ${lineWhole(C)}`, false]]
   return (
     <section aria-label="Unusual readings" className="mx-5 mb-3.5 rounded-r3 border border-line bg-s2 px-4 pb-3 pt-3.5">
-      <h2 className="eyebrow mb-2.5">Unusual readings</h2>
+      <h2 className="eyebrow mb-2.5"><Explain k="unusual">Unusual readings</Explain></h2>
       <div className="flex items-end justify-between gap-3">
         <p className="num whitespace-nowrap text-[46px] font-medium leading-[.9] tracking-[-0.045em] text-fg2">{w ?? '–'}<span className="ml-1.5 text-[13px] font-normal tracking-normal text-fg3">of 100</span></p>
         <p className="text-right text-[12.5px] leading-[1.35] text-fg2">{say}{say && <br />}Level today: {levelWord(t.level)}</p>
       </div>
       <div className={`relative ${line ? (E != null ? 'mb-8' : 'mb-5') : 'mb-3.5'} mt-3.5 h-2.5 rounded-[5px]`} aria-hidden
         style={{ background: line ? track : 'var(--z0)' }}>
-        {s != null && <motion.i className="absolute inset-y-0 left-0 rounded-[5px] bg-fg2" initial={{ width: 0 }} animate={{ width: `${Math.max(s, 1.2)}%` }} transition={{ duration: .9, ease: [.2, .8, .2, 1] }} />}
+        {s != null && <motion.i className="absolute inset-y-0 left-0 rounded-[5px] bg-fg2" initial={{ width: 0 }} animate={{ width: `${Math.max(s, 1.2)}%` }} transition={{ duration: .22, ease: [.2, .8, .2, 1] }} />}
         {line && ticks.map(([x, l, low]) => (
           <i key={l} className="absolute -bottom-[3px] -top-[3px] w-px bg-fg3" style={{ left: `${x}%`, bottom: low ? -15 : undefined }}><em className={`absolute left-0 ${low ? 'top-[29px]' : 'top-[17px]'} -translate-x-1/2 whitespace-nowrap text-[10px] not-italic leading-none text-fg3`}>{l}</em></i>))}
       </div>
       {line && <p className="sr-only">{ticks.map(x => x[1]).join(', ')}{E != null ? ' on this theatre\'s scale' : ''}.</p>}
       <Facts items={[
-        [<>{t.tells.filter(x => x.on).length}<span className="text-[12px] font-normal text-fg3"> / {t.tells.length}</span></>, 'tripwires lit'],
-        [t.signals.strong, `strong signals of ${t.signals.scored} scoring`],
+        [<>{t.tells.filter(x => x.on).length}<span className="text-[12px] font-normal text-fg3"> / {t.tells.length}</span></>, <><Explain k="tripwire">tripwires</Explain> lit</>],
+        [t.signals.strong, <><Explain k="strong">strong signals</Explain> of {t.signals.scored} scoring</>],
         [t.confidence || 'n/a', 'confidence in the reading'],
       ]} />
     </section>
@@ -162,14 +163,14 @@ function Ladder({ t, brief, go }: { t: Theatre; brief: Brief; go: Go }) {
   const n = Math.max(0, ...GROUPS.map(g => (t.groups[g]?.history || []).slice(-60).length))
   const cols = 'grid grid-cols-[70px_minmax(0,1fr)_36px] gap-2.5'
   return (
-    <Block title="Build-up, slow to fast" aside={`${n > 1 ? `${n} days` : 'Daily'}, darker is more unusual`}>
+    <Block title={<><Explain k="group">Build-up</Explain>, slow to fast</>} aside={`${n > 1 ? `${n} days` : 'Daily'}, darker is more unusual`}>
       {GROUPS.map(g => {
         const d = t.groups[g], h = (d?.history || []).slice(-60), on = open === g
         const vals = h.filter((v): v is number => v != null), peak = vals.length ? Math.max(...vals) : null
         return (
           <div key={g}>
             <button onClick={() => setOpen(on ? null : g)} aria-expanded={on} aria-controls={`lad-${g}`}
-              className={`${cols} -mx-2 w-[calc(100%+16px)] items-center rounded-r1 px-2 py-1 text-left hover:bg-s2`}>
+              className={`${cols} -mx-2 w-[calc(100%+16px)] items-center max-[899px]:min-h-11 rounded-r1 px-2 py-1 text-left hover:bg-s2`}>
               <span className="text-[12.5px] leading-[1.15] text-fg">{g}<small className="block text-[10.5px] text-fg3">{GLOSS[g]}</small></span>
               <span className="grid h-[18px] gap-px" aria-hidden style={{ gridTemplateColumns: `repeat(${Math.max(h.length, 1)}, minmax(0,1fr))` }}>
                 {h.map((z, i) => <i key={i} className="rounded-[1px]" style={{ background: groupTone(z) }} />)}
@@ -215,7 +216,7 @@ function Tripwires({ t }: { t: Theatre }) {
   const lit = list.filter(x => x.on).length
   const eps = t.tells.reduce((n, x) => n + (x.record?.episodes || 0), 0), hits = t.tells.reduce((n, x) => n + (x.record?.hits || 0), 0)
   return (
-    <Block title="Tripwires" aside={`${lit} of ${t.tells.length} lit, fixed rules over 7 days`}>
+    <Block title={<Explain k="tripwire">Tripwires</Explain>} aside={`${lit} of ${t.tells.length} lit, fixed rules over 7 days`}>
       <ul className="grid gap-1.5">
         {list.map(x => { const on = open === x.id, r = x.record; return (
           <li key={x.id} className="rounded-r2 border" style={{ borderColor: x.on ? 'color-mix(in srgb, var(--z2) 55%, transparent)' : 'var(--line)', background: x.on ? 'color-mix(in srgb, var(--z2) 7%, var(--s2))' : 'var(--s2)' }}>
@@ -283,7 +284,7 @@ function HistoryTab({ t, brief, on }: { t: Theatre; brief: Brief; on: boolean })
   const c = t.chance, pct = (p: number) => `${Math.round(p * 100)}%`
   const big = (k: string) => ['strike', 'war', 'onset', 'invasion'].includes(k)
   return <>
-    {hs.length > 1 && <Block title="Standing risk" aside={`since ${shortDate(rows[0][0])}`}>
+    {hs.length > 1 && <Block title={<Explain k="standing">Standing risk</Explain>} aside={`since ${shortDate(rows[0][0])}`}>
       <div className="flex items-center gap-3.5">
         <span role="img" aria-label={`Standing risk since ${shortDate(rows[0][0])}, from ${hs[0]} to ${last[1]} times the usual chance. Lowest ${Math.min(...hs)}, highest ${Math.max(...hs)}.`} className="min-w-0 flex-1">
           <SizedSpark v={hs} h={44} />
@@ -293,7 +294,7 @@ function HistoryTab({ t, brief, on }: { t: Theatre; brief: Brief; on: boolean })
       <p className="mt-1.5 text-[11px] leading-[1.45] text-fg3">{on ? "The model's 30-day chance here, divided by its usual chance. The model has passed its checks and sets the level."
         : `The shadow model's 30-day chance here, divided by its usual chance. ${brief.model.gates?.pass || brief.model.active ? 'It does not set the level for this theatre.' : 'It has not passed its tests and does not set the level.'}`}</p>
     </Block>}
-    {hs.length === 1 && <Block title="Standing risk"><p className="text-[12px] text-fg2"><span className="num">{last[1].toFixed(2)}×</span> the usual chance on {shortDate(last[0])}. Too few days to draw.</p></Block>}
+    {hs.length === 1 && <Block title={<Explain k="standing">Standing risk</Explain>}><p className="text-[12px] text-fg2"><span className="num">{last[1].toFixed(2)}×</span> the usual chance on {shortDate(last[0])}. Too few days to draw.</p></Block>}
     <Block title="What has happened here" aside={`the events the model is tested on, to ${shortDate(brief.eventsThrough)}`}>
       {events.length === 0 ? <p className="text-[12.5px] text-fg3">No labelled event in this theatre since 2018.</p>
         : <ol className="relative ml-[5px] border-l border-line2 pl-4">

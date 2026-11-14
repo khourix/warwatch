@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import { Protocol, PMTiles } from 'pmtiles'
-import { X, Flame, Plane, Ship, TriangleAlert, Satellite, ExternalLink, ImageIcon, Maximize2, PlaneLanding, Radar, Anchor, Plus, Minus, Scan, Map as MapIcon, Globe, Newspaper } from 'lucide-react'
+import { X, Layers as LayersIcon, Flame, Plane, Ship, TriangleAlert, Satellite, ExternalLink, ImageIcon, Maximize2, PlaneLanding, Radar, Anchor, Plus, Minus, Scan, Map as MapIcon, Globe, Newspaper } from 'lucide-react'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import { feature } from 'topojson-client'
 import type { FeatureCollection } from 'geojson'
@@ -9,7 +9,11 @@ import coarse from 'world-atlas/countries-110m.json'
 import { levelVar, levelWord, short, asset, baseState, shortDate, useBase, emergency, heatColour, HEAT, type Brief, type LiveMap, type LonLat, type Route, type MapBase, type MapFire, type MapAircraft, type MapShip, type MapWarning, type MapAirport, type MapDiversion, type MapDark, type MapLoiter, type MapIncident, wholeScore } from './data'
 import { fireImages, baseImages, copernicusUrl, worldviewUrl, type SatImage, type Focus } from './sat'
 import { baseWord, fireWord } from './ground'
-import { reducedMotion as reduced } from './settings'
+import { reducedMotion as reduced, usePrefs, fmtAlt, fmtSpeed, useDialogFocus } from './settings'
+import { motion, AnimatePresence } from 'motion/react'
+import { LAYERS, type Layer, type Layers } from './layers'
+// the map's own styles load with the map, not with the first paint
+import 'maplibre-gl/dist/maplibre-gl.css'
 
 /* The globe: MapLibre with the Natural Earth countries as a GeoJSON source, so it needs no tile server. Theatres are
    coloured by level through feature state; labels are HTML laid over the map with a collision pass (highest level wins).
@@ -66,27 +70,7 @@ const dist = (a: LonLat, b: LonLat) => {   // great-circle angle in degrees
   return Math.acos(Math.min(1, Math.sin(p1) * Math.sin(p2) + Math.cos(p1) * Math.cos(p2) * Math.cos(l1 - l2))) / r
 }
 
-/* The legend chips double as layer switches. Each names its mark; aircraft carry the diverted and turned-back flights, and
-   dark ships the loitering ships (both from Global Fishing Watch). Airports and sea warnings start hidden, as approved. */
-type Layer = 'bases' | 'fires' | 'aircraft' | 'ships' | 'incidents' | 'dark' | 'airports' | 'warnings'
-const LAYERS: [Layer, string, string[], string][] = [
-  ['bases', 'Bases', ['bases', 'bases-halo'], 'Bases watched on satellite radar'],
-  ['fires', 'Heat', ['fires'], 'Fires and heat from NASA VIIRS: orange when unusual, faint when somewhat unusual, grey otherwise'],
-  ['aircraft', 'Aircraft', ['aircraft', 'aircraft-cluster', 'diversions'], 'Military aircraft broadcasting their position, pointing along their track, and flights diverted or turned back'],
-  ['ships', 'Warships', ['ships', 'ship-trails'], 'Warships, from the weekly fleet tracker'],
-  ['incidents', 'Reports', ['incidents'], 'Incidents reported in the news, unverified'],
-  ['dark', 'Dark ships', ['dark', 'loitering'], 'Ships seen on radar with no AIS, and ships loitering at sea'],
-  ['airports', 'Airports', ['airports'], 'Theatre airports, ringed when departures fell or flights were diverted away'],
-  ['warnings', 'Sea warnings', ['warnings'], 'Navigational warnings at sea'],
-]
-const LAYER_KEY = 'ww-layers'
-const ALL: Record<Layer, boolean> = { bases: true, fires: true, aircraft: true, ships: true, incidents: true, dark: true, airports: true, warnings: true }
-const loadLayers = (): Record<Layer, boolean> => {
-  const d = { ...ALL, airports: false, warnings: false }
-  try { return { ...d, ...JSON.parse(localStorage.getItem(LAYER_KEY) || '{}') } } catch { return d }
-}
-
-type Props = { brief: Brief; live?: LiveMap; route: Route; theme: string; wide: boolean; padBottom: number; onPick: (r: Route) => void; flat?: boolean; onFlat?: (flat: boolean) => void; day?: string | null; labels?: number }
+type Props = { brief: Brief; live?: LiveMap; route: Route; theme: string; wide: boolean; padBottom: number; onPick: (r: Route) => void; flat?: boolean; onFlat?: (flat: boolean) => void; day?: string | null; labels?: number; layers: Layers; onToggle: (k: Layer) => void }
 type Peek = { kind: 'base'; x: MapBase } | { kind: 'fire'; x: MapFire } | { kind: 'air'; x: MapAircraft } | { kind: 'ship'; x: MapShip } | { kind: 'warn'; x: MapWarning }
   | { kind: 'airport'; x: MapAirport } | { kind: 'divert'; x: MapDiversion } | { kind: 'dark'; x: MapDark } | { kind: 'loiter'; x: MapLoiter } | { kind: 'news'; x: MapIncident }
 const PICKABLE = ['aircraft-cluster', 'bases', 'fires', 'aircraft', 'ships', 'warnings', 'incidents', 'diversions', 'airports', 'loitering', 'dark'] as const
@@ -110,7 +94,7 @@ const utcTime = (t: number) => new Date(t * 1000).toISOString().slice(11, 16) + 
 const coarsePointer = () => matchMedia('(pointer: coarse)').matches
 const glass = 'border border-line bg-[color-mix(in_oklab,var(--bg)_86%,transparent)] backdrop-blur-[10px]'
 
-export function MapView({ brief, live, route, theme, wide, padBottom, onPick, flat = false, onFlat, day = null, labels = 1 }: Props) {
+export function MapView({ brief, live, route, theme, wide, padBottom, onPick, flat = false, onFlat, day = null, labels = 1, layers, onToggle: toggle }: Props) {
   const box = useRef<HTMLDivElement>(null), ov = useRef<HTMLDivElement>(null), dock = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
   const [ready, setReady] = useState(false)
@@ -121,10 +105,8 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
   const pick = useRef(onPick); pick.current = onPick
   const [peek, setPeek] = useState<Peek | null>(null)
   const [basemap, setBasemap] = useState(false)
-  /* the phone has no legend chips to switch layers back on, so it ignores the saved choice and shows every layer */
-  const [saved, setSaved] = useState(loadLayers)
-  const layers = wide ? saved : ALL
-  const toggle = (k: Layer) => setSaved(l => { const n = { ...l, [k]: !l[k] }; try { localStorage.setItem(LAYER_KEY, JSON.stringify(n)) } catch { /* private mode: the choice lasts this visit */ } return n })
+  /* below tablet width the legend chips give way to a Layers button and a sheet of the same switches */
+  const [sheet, setSheet] = useState(false)
   const selBase = route.v === 'base' ? route.id : null
   const primaryRef = useRef(primary); primaryRef.current = primary
   const peekRef = useRef(peek); peekRef.current = peek
@@ -415,7 +397,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
   const zoom = (d: number) => map.current?.easeTo({ zoom: map.current.getZoom() + d, duration: reduced() ? 0 : 320 })
   const count: Record<Layer, number> = { bases: live?.bases.length || 0, fires: live?.fires.length || 0, aircraft: (live?.aircraft.length || 0) + (live?.squawks.length || 0) + (live?.diversions || []).length, ships: live?.ships.length || 0,
     incidents: live?.incidents.length || 0, dark: (live?.darkShips || []).length, airports: (live?.airports || []).length, warnings: live?.warnings.length || 0 }
-  const ctl = 'grid h-[30px] w-[30px] place-items-center text-fg2 transition-colors duration-[120ms] hover:bg-s2 hover:text-fg'
+  const ctl = 'grid h-[30px] w-[30px] max-[899px]:h-11 max-[899px]:w-11 place-items-center text-fg2 transition-colors duration-[120ms] hover:bg-s2 hover:text-fg'
 
   return (
     <div className="absolute inset-0 select-none overflow-hidden bg-bg">
@@ -426,7 +408,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
           <button key={t.id} data-kind="theatre" data-id={t.id} data-prio={100 + (RANK[t.level] || 0) * 20 + t.tellsOn * 4 + (t.spillover ? 0 : 2)} data-lon={t.center![0]} data-lat={t.center![1]}
             onClick={() => onPick({ v: 'theatre', id: t.id })} aria-current={on ? 'true' : undefined}
             aria-label={`${t.name}, ${levelWord(t.level).toLowerCase()}${t.score != null ? `, unusual readings ${wholeScore(t.score)}` : ''}${t.tellsOn ? `, ${t.tellsOn} ${t.tellsOn === 1 ? 'tripwire' : 'tripwires'} fired` : ''}`}
-            className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full transition-opacity duration-200" style={{ opacity: 0 }}>
+            className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full transition-opacity duration-200 max-[899px]:after:absolute max-[899px]:after:inset-x-0 max-[899px]:after:-inset-y-[11px] max-[899px]:after:content-['']" style={{ opacity: 0 }}>
             <span className={`flex h-[calc(22px*var(--lbl))] items-center gap-1.5 whitespace-nowrap rounded-full border px-2 text-[calc(11.5px*var(--lbl))] font-medium backdrop-blur-[6px] transition-colors duration-150 ${on ? 'border-sel bg-sel text-selink' : 'border-line2 bg-[color-mix(in_oklab,var(--bg)_82%,transparent)] text-fg hover:border-fg2'}`}
               style={!on && t.level !== 'Normal' ? { borderColor: levelVar(t.level) } : undefined}>
               {t.tellsOn > 0 && <i className="h-[5px] w-[5px] rounded-full bg-z2 shadow-[0_0_6px_var(--z2)]" />}
@@ -454,6 +436,9 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
           <i className="h-[7px] w-[7px] rotate-45 bg-z2 ring-1 ring-black/70" aria-hidden />one pass differed<i className="ml-1 h-[7px] w-[7px] rotate-45 bg-z3 ring-1 ring-black/70" aria-hidden />emptier or fuller
         </span>}
       </div>}
+      {!wide && live && <button onClick={() => setSheet(true)} aria-label={`Map layers, ${LAYERS.filter(([k]) => layers[k] && count[k] > 0).length} of ${LAYERS.filter(([k]) => count[k] > 0).length} shown`} aria-haspopup="dialog"
+        className={`absolute right-4 top-[66px] z-10 grid h-11 w-11 place-items-center rounded-full text-fg2 shadow-[var(--shadow)] ${glass}`}><LayersIcon size={18} /></button>}
+      {!wide && <LayerSheet open={sheet} onClose={() => setSheet(false)} layers={layers} toggle={toggle} count={count} />}
       {imgs.length > 0 && <div role="group" aria-label="Satellite picture on the map" className={`absolute z-10 flex items-center gap-0.5 overflow-x-auto rounded-r2 p-1 text-[12px] shadow-[var(--shadow)] ${glass}`} style={{ left: wide ? 14 : 16, top: wide ? dockH + 22 : 66, maxWidth: 'calc(100% - 72px)' }}>
         <ImageIcon size={14} className="mx-1.5 shrink-0 text-fg3" />
         {imgs.map(i => <button key={i.key} aria-pressed={shown?.key === i.key} onClick={() => setImgKey(i.key)} title={i.caption} className={`shrink-0 whitespace-nowrap rounded-[6px] px-2 py-1 ${shown?.key === i.key ? 'bg-sel text-selink' : 'text-fg2 hover:bg-s2 hover:text-fg'}`}>{i.label}</button>)}
@@ -471,6 +456,39 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
         {wide && onFlat && <button aria-label={flat ? 'Show as a globe' : 'Show as a flat map'} title={flat ? 'Globe' : 'Flat map'} onClick={() => onFlat(!flat)} className={`${ctl} border-t border-line`}>{flat ? <Globe size={14} /> : <MapIcon size={14} />}</button>}
       </div>}
     </div>
+  )
+}
+
+/* below tablet width: the layer switches as a sheet from the foot of the screen, each row a switch tall enough for a thumb */
+function LayerSheet({ open, onClose, layers, toggle, count }: { open: boolean; onClose: () => void; layers: Layers; toggle: (k: Layer) => void; count: Record<Layer, number> }) {
+  const box = useRef<HTMLDivElement>(null), close = useRef<HTMLButtonElement>(null)
+  useDialogFocus(open, box)
+  useEffect(() => {
+    if (!open) return
+    requestAnimationFrame(() => close.current?.focus())
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); onClose() } }
+    addEventListener('keydown', k, true); return () => removeEventListener('keydown', k, true)
+  }, [open])
+  return (
+    <AnimatePresence>
+      {open && <motion.div className="fixed inset-0 z-50 flex items-end bg-black/40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .15 }} onClick={onClose}>
+        <motion.div ref={box} role="dialog" aria-modal="true" aria-labelledby="lay-h" onClick={e => e.stopPropagation()} initial={{ y: 40 }} animate={{ y: 0 }} exit={{ y: 40 }} transition={{ duration: .2, ease: [.2, .8, .2, 1] }}
+          className="w-full rounded-t-2xl border border-b-0 border-line2 bg-s1 px-4 pt-2 shadow-[var(--shadow)]" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
+          <div className="flex items-center justify-between"><h2 id="lay-h" className="text-[15px] font-semibold">Map layers</h2>
+            <button ref={close} onClick={onClose} aria-label="Close map layers" className="-mr-2 grid h-11 w-11 place-items-center rounded-r2 text-fg2"><X size={17} /></button></div>
+          <ul className="pb-1">{LAYERS.filter(([k]) => count[k] > 0).map(([k, name, , hint]) => (
+            <li key={k} className="border-t border-line first:border-0">
+              <button role="switch" aria-checked={layers[k]} onClick={() => toggle(k)} className="flex min-h-12 w-full items-center gap-3 py-1.5 text-left">
+                <Swatch k={k} off={!layers[k]} />
+                <span className="min-w-0 flex-1"><span className="block text-[14px] text-fg">{name} <span className="num text-[12px] text-fg2">{count[k].toLocaleString('en')}</span></span><span className="block truncate text-[11.5px] text-fg2">{hint}</span></span>
+                <span aria-hidden className={`relative h-6 w-10 shrink-0 rounded-full border transition-colors duration-[150ms] ${layers[k] ? 'border-sel bg-sel' : 'border-line2 bg-s3'}`}>
+                  <i className={`absolute top-[3px] h-4 w-4 rounded-full transition-[left] duration-[150ms] ${layers[k] ? 'left-[19px] bg-selink' : 'left-[3px] bg-fg2'}`} /></span>
+              </button>
+            </li>))}
+          </ul>
+        </motion.div>
+      </motion.div>}
+    </AnimatePresence>
   )
 }
 
@@ -610,6 +628,7 @@ function paintBasemap(m: maplibregl.Map) {
 function PeekCard({ p, cardRef, onClose, onPick, brief, style, shown, onShow, onEnlarge }: { p: Peek; cardRef: React.RefObject<HTMLDivElement | null>; onClose: () => void; onPick: (r: Route) => void; brief: Brief
   style: React.CSSProperties; shown: SatImage | null; onShow: (key: string) => void; onEnlarge: (i: SatImage) => void }) {
   const name = (id?: string) => brief.theatres.find(t => t.id === id)?.name || ''
+  const { units } = usePrefs().prefs
   const row = 'mt-1 text-[12.5px] leading-snug text-fg2'
   let icon, title: string, sub: string, body: React.ReactNode = null, action: [string, Route] | null = null
   if (p.kind === 'base') {
@@ -638,9 +657,9 @@ function PeekCard({ p, cardRef, onClose, onPick, brief, style, shown, onShow, on
   } else if (p.kind === 'air') {
     const a = p.x, model = (a.d || '').replace(/\s*\(.*\)$/, ''), role = ROLE[a.class] || ROLE.other
     icon = <Plane size={15} className="text-cool" />; title = a.call || a.hex || 'Military aircraft'; sub = [model || a.t, a.o || a.ct].filter(Boolean).join(' · ')
-    const alt = typeof a.alt === 'number' ? `${(Math.round(a.alt / 100) * 100).toLocaleString('en')} ft` : ''
+    const alt = typeof a.alt === 'number' ? fmtAlt(a.alt, units) : ''
     const facts: [string, string][] = ([['Role', role[0]], ['Type', [model, a.t && `(${a.t})`].filter(Boolean).join(' ')], ['Operator', a.o || ''], ['Registered in', a.ct || ''],
-      ['Tail number', a.r || ''], ['Flying', [alt, a.gs != null && `${Math.round(a.gs)} kt`, a.trk != null && `track ${Math.round(a.trk)}°`].filter(Boolean).join(', ')],
+      ['Tail number', a.r || ''], ['Flying', [alt, a.gs != null && fmtSpeed(a.gs, units), a.trk != null && `track ${Math.round(a.trk)}°`].filter(Boolean).join(', ')],
       ['Squawk', a.sq ? a.sq + (emergency(a) ? ' (emergency)' : '') : '']] as [string, string][]).filter(f => f[1])
     const link = 'inline-flex items-center gap-1 rounded-r1 border border-line px-2 py-1 text-[11.5px] text-fg2 hover:bg-s2 hover:text-fg'
     body = <>

@@ -47,6 +47,15 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
+      # the font files from the last run, so Fontshare is asked only when fetch-fonts.mjs changes or the cache has gone (they stay out of git)
+      - name: Cached fonts
+        uses: actions/cache@v5
+        continue-on-error: true
+        with:
+          path: |
+            web/src/fonts/switzer-*.woff2
+            web/src/fonts/sentient-*.woff2
+          key: fonts-${{ hashFiles('web/scripts/fetch-fonts.mjs') }}
       - name: Fonts for the share cards (Switzer and Sentient from Fontshare, never committed; system fonts if this fails)
         continue-on-error: true
         timeout-minutes: 2

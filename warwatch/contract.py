@@ -1,6 +1,7 @@
 """Data contract v1: the JSON files the new app reads, written next to the page every run. Standard library only.
 
-    data/v1/brief.json                 first paint: headline, levels, the feed of the last 30 days (about 45 KB)
+    data/v1/brief.json                 first paint: headline, levels, the feed of the last 30 days (about 45 KB), and the data's health
+                                       for the top bar ("health", added November 2026)
     data/v1/theatres/<id>.json         one theatre in full
     data/v1/signals/index.json         every signal, with a 40-point spark line
     data/v1/signals/series/<id>.json   one signal's full history, loaded on demand
@@ -8,7 +9,8 @@
     data/v1/map/live.json              aircraft, ships, fires, bases, warnings, places; each chokepoint says whether the dark-ship
                                        and loitering data cover it ("gfw", added November 2026)
     data/v1/bases/<id>.json            one base in full, with its radar history and image chips
-    data/v1/record.json                the forward record, the model's gates, siren tempo, data health
+    data/v1/record.json                the forward record, the model's gates, siren tempo, data health, and what the tripwires and
+                                       readings did before the newest past events ("past", added November 2026)
     data/v1/events.json                the labelled event list
 
 Every file carries {"schema": "warwatch/v1", "kind": ..., "generated": ...}. Positions are [lon, lat], as in GeoJSON.
@@ -303,7 +305,8 @@ def brief(data):
                  headline=head, counts=dict(counts, strong=sum(x["strong"] for x in ths)), **{"global": {"level": g.get("level"), "score": g.get("score"), "lead": g.get("lead")}},
                  regions=[{"id": r["id"], "name": r["name"], "theatres": r["kids"], "level": r["level"], "lead": r.get("lead")} for r in data.get("regions") or []],
                  theatres=ths, feed=feed(data)[:400],
-                 model={"version": mo.get("v"), "fitted": mo.get("fitted"), "active": bool(mo.get("active")), "gates": mo.get("gates")})
+                 model={"version": mo.get("v"), "fitted": mo.get("fitted"), "active": bool(mo.get("active")), "gates": mo.get("gates")},
+                 health=health(data))
 
 
 def theatre(data, t):
@@ -436,10 +439,84 @@ def base(data, b):
                  parts=parts)
 
 
-def record(data):
+def record(data, tell_record=None):
     return _head("record", data["generated"], forward=data.get("forward"), model=data.get("model"), tempo=data.get("tempo") or {},
                  health={"errors": data.get("errors") or [], "unavailable": data.get("unavailable") or [], "updates": data.get("updates") or [],
-                         "statuses": _statuses(data["series"])})
+                         "statuses": _statuses(data["series"])},
+                 past=past_events(data, tell_record))
+
+
+PAST_EVENTS = 24     # the newest labelled events the Record page shows
+
+
+def past_events(data, tell_record=None):
+    """The newest PAST_EVENTS labelled events (data["events"], newest first) and what the tripwires and the group readings did in the
+    week before each. tripwires: the rules replayed on that theatre's history (tells.py, tells_record.json "per_theatre") whose
+    replay covers the event's date ("watched") and which of them started an episode 1 to 7 days before it ("started"), the test
+    the tripwire record counts as "caught". groups: each group's highest daily reading over the 7 days before, from the 60-day
+    strips the theatre file carries (dashboard.dom_strips); null when the strips do not reach back that far (they are kept for 60
+    days only), so older events show the tripwires alone.
+    Added November 2026, optional: an app without it says the list is not in this data run."""
+    import tells
+    rec = tell_record if tell_record is not None else tells.load_record()
+    per, win = (rec or {}).get("per_theatre") or {}, int((rec or {}).get("window") or tells.WINDOW)
+    names = {t["id"]: t["name"] for t in tells.TELLS}
+    import dashboard
+    end = dt.date.fromisoformat(data["strip_end"]) if data.get("strip_end") else dashboard._day(data["generated"])
+    out = []
+    for e in reversed((data.get("events") or {}).get("list") or []):
+        if len(out) >= PAST_EVENTS:
+            break
+        day, th, site = dt.date.fromisoformat(e[0][:10]), e[1], e[2] if len(e) > 2 else ""
+        if th not in data["theatres"]:
+            continue
+        watched, started = [], []
+        for tid, rows in per.items():
+            r = rows.get(th)
+            if not r or not r.get("first") or not (r["first"] <= e[0][:10] <= r["last"]):
+                continue
+            watched.append(tid)
+            if any(0 < (day - dt.date.fromisoformat(s)).days <= win for s in r.get("starts") or []):
+                started.append(tid)
+        doms = data["theatres"][th].get("doms") or {}
+        groups = {}
+        for d, name in GROUPS.items():
+            h = list((doms.get(d) or {}).get("h") or [])
+            vals = []
+            for k in range(1, 8):           # the 7 days before the event, read back from the strip's last day
+                i = len(h) - 1 - (end - (day - dt.timedelta(days=k))).days
+                if 0 <= i < len(h) and h[i] is not None:
+                    vals.append(h[i])
+            groups[name] = round(max(vals), 2) if vals else None
+        out.append({"date": e[0][:10], "theatre": th, "site": site, "kind": e[3] if len(e) > 3 else "", "text": e[4] if len(e) > 4 else "",
+                    "tripwires": {"watched": len(watched), "started": [{"id": t, "name": names.get(t, t)} for t in started]}, "window": win, "groups": groups})
+    return out
+
+
+# The top bar's data-health readout (added November 2026). The workflow's "next" job queues a run 30 minutes after one starts, and the
+# live freshness check (.agents/skills/verify-warwatch, live-fresh) fails a page more than 90 minutes old: three runs missed.
+RUN_EVERY_MIN = 30
+LATE_AFTER_MIN = 90
+
+
+def failing_sources(errors):
+    """The run's source problems (data["errors"], each "source: what went wrong") as [{source, why}]: the why cut at any page text a
+    server sent back (an HTML error page), so the reason reads as a sentence."""
+    out = []
+    for x in errors or []:
+        s = x if isinstance(x, str) else json.dumps(x)
+        src, _, why = s.partition(": ")
+        if not why:
+            src, why = "", s
+        why = re.sub(r"\s*<.*?(\(|$)", lambda m: " (" if m.group(1) == "(" else "", why, count=1).strip()
+        out.append({"source": src.strip(), "why": why})
+    return out
+
+
+def health(data):
+    """For the top bar: how many signals score, collect history or failed, the sources that reported a problem with the reason, and
+    the run cadence the app judges the data's age by."""
+    return {"statuses": _statuses(data["series"]), "sources": failing_sources(data.get("errors")), "everyMinutes": RUN_EVERY_MIN, "lateAfterMinutes": LATE_AFTER_MIN}
 
 
 def _statuses(series):

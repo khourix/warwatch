@@ -5,7 +5,7 @@ import { GROUPS, short, levelWord, groupTone, feedDetail, fmtZ, shortDate, parse
 import { usePrefs, fmtTime } from './settings'
 import { toRoute } from './views'
 import { feedKey, type Since } from './since'
-import { Lnk } from './ui'
+import { Lnk, Explain } from './ui'
 import { X } from 'lucide-react'
 
 /* Watch: the dispatch, the theatre board, what changed, and the 30-day timeline under the map. Everything here is written
@@ -58,15 +58,16 @@ export function Dispatch({ brief, heading }: { brief: Brief; heading: boolean })
   const at = parseGen(brief.generated)
   const date = at.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: prefs.tz === 'utc' ? 'UTC' : undefined })
   const c = brief.counts
+  const still = prefs.motion === 'reduced' || matchMedia('(prefers-reduced-motion: reduce)').matches
   return (
     <section aria-label="Dispatch" className="m-3.5 mb-1.5 rounded-r3 border border-inkline bg-paper px-[18px] pb-3.5 pt-4 text-ink">
       <div className="eyebrow flex flex-wrap items-center gap-x-2 !text-ink2"><span>Dispatch</span><span>{date}</span><span>{fmtTime(at, prefs.tz)}</span>{brief.demo && <span className="text-crit">demo data</span>}</div>
       <H className="mb-3.5 mt-[11px] font-serif text-[21.5px] font-normal leading-[1.27] tracking-[-0.012em] [text-wrap:pretty]">{sentence(brief)}</H>
       <dl className="grid grid-cols-3 border-t border-inkline pt-[11px]">
-        {([[c.tells, c.tells === 1 ? 'tripwire fired this week' : 'tripwires fired this week'], [c.bases, c.bases === 1 ? 'base changed on radar' : 'bases changed on radar'], [c.strong, c.strong === 1 ? 'signal reading strong' : 'signals reading strong']] as const).map(([v, label], i) => (
+        {([[c.tells, <><Explain k="tripwire">{c.tells === 1 ? 'tripwire' : 'tripwires'}</Explain> fired this week</>], [c.bases, c.bases === 1 ? 'base changed on radar' : 'bases changed on radar'], [c.strong, <>{c.strong === 1 ? 'signal' : 'signals'} reading <Explain k="strong">strong</Explain></>]] as [number, ReactNode][]).map(([v, label], i) => (
           <div key={i} className={`flex flex-col-reverse ${i ? 'border-l border-inkline pl-3' : ''}`}>
             <dt className="mt-[5px] text-[11.5px] leading-[1.25] text-ink2">{label}</dt>
-            <dd className="num text-[25px] font-medium leading-none tracking-[-0.03em]"><NumberFlow value={v} /></dd>
+            <dd className="num text-[25px] font-medium leading-none tracking-[-0.03em]"><NumberFlow value={v} animated={!still} transformTiming={{ duration: 200, easing: 'ease-out' }} spinTiming={{ duration: 200, easing: 'ease-out' }} opacityTiming={{ duration: 120, easing: 'ease-out' }} /></dd>
           </div>))}
       </dl>
     </section>
@@ -88,7 +89,7 @@ export function Board({ brief, sel, go, order, setOrder }: { brief: Brief; sel: 
         <h2 className="text-[13px] font-semibold tracking-[-0.005em]">Theatres</h2>
         <span className="inline-flex rounded-r2 border border-line p-0.5 text-[11.5px]" role="group" aria-label="Order of the board">
           {([['closest', 'Closest to Watch'], ['region', 'By region']] as const).map(([k, label]) => (
-            <button key={k} aria-pressed={order === k} onClick={() => setOrder(k)} className={`rounded-[6px] px-2 py-0.5 transition-colors duration-[120ms] ${order === k ? 'bg-s3 text-fg' : 'text-fg3 hover:text-fg2'}`}>{label}</button>))}
+            <button key={k} aria-pressed={order === k} onClick={() => setOrder(k)} className={`relative rounded-[6px] px-2 py-0.5 after:absolute after:inset-x-0 after:-inset-y-3 after:content-[''] transition-colors duration-[120ms] ${order === k ? 'bg-s3 text-fg' : 'text-fg3 hover:text-fg2'}`}>{label}</button>))}
         </span>
       </div>
       <div className="grid h-[22px] grid-cols-[minmax(0,1fr)_66px_112px] items-center gap-3 px-4 text-[10.5px] text-fg3" aria-hidden>
@@ -98,7 +99,7 @@ export function Board({ brief, sel, go, order, setOrder }: { brief: Brief; sel: 
       </div>
       {order === 'closest' ? <div>{sorted.map(row)}</div>
         : brief.regions.map(r => <div key={r.id} role="group" aria-label={r.name}><div className="px-4 pb-[5px] pt-3 text-[11px] font-medium text-fg3">{r.name}</div>{r.theatres.map(id => byId[id]).filter(Boolean).map(row)}</div>)}
-      <p className="mx-4 mb-[18px] mt-3 text-[11.5px] leading-normal text-fg3">Unusual readings run from 0 to 100. They are not a chance of war.{line ? ' Watch begins at 50.' : ''} The five cells are Logistics, Markets, People, News and Physical, from slow to fast. <button onClick={() => go({ v: 'record' })} className="lnk">How the number works</button></p>
+      <p className="mx-4 mb-[18px] mt-3 text-[11.5px] leading-normal text-fg3"><Explain k="unusual">Unusual readings</Explain> run from 0 to 100. They are not a chance of war.{line ? <> <Explain k="lines">Watch</Explain> begins at 50.</> : ''} The five cells are the signal <Explain k="group">groups</Explain> Logistics, Markets, People, News and Physical, from slow to fast. <button onClick={() => go({ v: 'record' })} className="lnk">How the number works</button></p>
     </section>
   )
 }
@@ -111,7 +112,7 @@ function BoardRow({ t, i, rise, on, line, go }: { t: BriefTheatre; i: number; ri
   const label = `${t.name}, ${levelWord(t.level).toLowerCase()}${t.context ? `, ${t.context.toLowerCase()}` : ''}. ${groupWords(t)}. Unusual readings ${score == null ? 'not available' : `${wholeScore(score)} of 100`}.${t.tellsOn ? ` ${t.tellsOn} ${t.tellsOn === 1 ? 'tripwire' : 'tripwires'} fired this week.` : ''}`
   return (
     <button onClick={() => go({ v: 'theatre', id: t.id })} aria-current={on ? 'true' : undefined} aria-label={label} style={{ ['--i' as string]: i }}
-      className={`group relative grid h-[38px] w-full grid-cols-[minmax(0,1fr)_66px_112px] items-center gap-3 border-t border-line px-4 text-left transition-colors duration-[120ms] ${on ? 'bg-s3' : 'hover:bg-s2'} ${rise ? 'rise' : ''}`}>
+      className={`group relative grid h-[38px] max-[899px]:h-11 w-full grid-cols-[minmax(0,1fr)_66px_112px] items-center gap-3 border-t border-line px-4 text-left transition-colors duration-[120ms] ${on ? 'bg-s3' : 'hover:bg-s2'} ${rise ? 'rise' : ''}`}>
       {on && <i className="absolute inset-y-0 left-0 w-[2px] bg-sel" aria-hidden />}
       <span className="flex min-w-0 items-baseline gap-[7px]" aria-hidden>
         <b className="min-w-0 shrink truncate text-[13.5px] font-medium">{short(t.name)}</b>
@@ -125,7 +126,7 @@ function BoardRow({ t, i, rise, on, line, go }: { t: BriefTheatre; i: number; ri
       </span>
       <span className="grid grid-cols-[84px_22px] items-center gap-1.5" aria-hidden>
         <span className="relative h-1.5 rounded-[3px] bg-z0">
-          <motion.i className="absolute inset-y-0 left-0 rounded-[3px] bg-fg2" initial={{ width: 0 }} animate={{ width: `${score ?? 0}%` }} transition={{ duration: .8, ease: EASE, delay: rise ? i * .022 : 0 }} />
+          <motion.i className="absolute inset-y-0 left-0 rounded-[3px] bg-fg2" initial={{ width: 0 }} animate={{ width: `${score ?? 0}%` }} transition={{ duration: .22, ease: EASE, delay: rise ? Math.min(i, 8) * .02 : 0 }} />
           {line && <i className="absolute -inset-y-1 left-1/2 w-px bg-fg3" />}
         </span>
         <b className="num text-right text-[12px] font-medium text-fg2">{score == null ? '–' : wholeScore(score)}</b>
@@ -178,7 +179,7 @@ export function Feed({ brief, day, setDay, kind, setKind, go, since, dismiss, ne
       <div className="flex flex-wrap gap-1 px-4 pb-2" role="group" aria-label="Kind of change">
         {KINDS.map(([k, label]) => { const n = k === 'all' ? scope.length : scope.filter(f => f.kind === k).length, say = `${label}, ${n} ${day ? `on ${shortDate(day)}` : 'in the last 30 days'}`; return (
           <button key={k} aria-pressed={kind === k} onClick={() => { setKind(k); setNewOnly?.(false) }} aria-label={say} title={say}
-            className={`rounded-full border px-2 py-[3px] text-[11.5px] transition-colors duration-[120ms] ${kind === k ? 'border-sel bg-sel font-medium text-selink' : 'border-line text-fg2 hover:border-line2'}`}>{label}</button>) })}
+            className={`tap rounded-full border px-2 py-[3px] text-[11.5px] transition-colors duration-[120ms] ${kind === k ? 'border-sel bg-sel font-medium text-selink' : 'border-line text-fg2 hover:border-line2'}`}>{label}</button>) })}
       </div>
       {days.length === 0 && <p className="mx-4 mb-5 mt-3 text-[12.5px] text-fg3">{only ? 'Nothing new of this kind since your last visit.' : day ? 'Nothing of this kind on that day.' : 'Nothing of this kind in the last 30 days.'}</p>}
       {days.map(([d, fs]) => (

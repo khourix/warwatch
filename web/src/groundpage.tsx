@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react'
 import { Satellite, Flame, MapPin } from 'lucide-react'
 import { focusOnMap } from './sat'
 import { asset, shortDate, short, heatColour, routeHref, useLiveMap, type Brief, type LiveMap, type Route, type MapBase, type MapFire, type LonLat } from './data'
-import { Lnk, Skeleton, Failed } from './ui'
+import { Lnk, Skeleton, Failed, Explain } from './ui'
+import { usePrefs, fmtDist } from './settings'
 import { baseWord, baseMark, rankBase, plainDates, fireWord, KIND, Compare } from './ground'
 
 /* Ground: every watched base as a gallery, the unusual fires the imagery review checked on Sentinel-2, and what the map data
@@ -30,7 +31,7 @@ export function GroundView({ brief, live, go }: { brief: Brief; live?: LiveMap; 
   const ths = useMemo(() => brief.theatres.map(t => [t.id, short(t.name), bases.filter(b => b.theatres.includes(t.id)).length] as const).filter(x => x[2] > 0), [brief, bases])
   const shown = useMemo(() => bases.filter(b => f === 'all' ? true : f === 'changed' ? CHANGED.includes(b.state) : f === 'image' ? !!b.thumb : b.theatres.includes(f))
     .sort((a, b) => rankBase(b) - rankBase(a) || a.name.localeCompare(b.name)), [bases, f])
-  const chip = (on: boolean) => `shrink-0 whitespace-nowrap rounded-full border px-2.5 py-[3px] text-[12px] transition-colors duration-[120ms] ${on ? 'border-sel bg-sel font-medium text-selink' : 'border-line2 text-fg2 hover:text-fg'}`
+  const chip = (on: boolean) => `tap shrink-0 whitespace-nowrap rounded-full border px-2.5 py-[3px] text-[12px] transition-colors duration-[120ms] ${on ? 'border-sel bg-sel font-medium text-selink' : 'border-line2 text-fg2 hover:text-fg'}`
   const nImg = bases.filter(b => b.thumb).length
   /* "With image" only when it leaves some out */
   const chips: [string, string, number][] = [['all', 'All', bases.length], ['changed', 'Changed', bases.filter(b => CHANGED.includes(b.state)).length], ...(nImg < bases.length ? [['image', 'With image', nImg] as [string, string, number]] : []), ...ths.map(([id, n, c]) => [id, n, c] as [string, string, number])]
@@ -43,14 +44,14 @@ export function GroundView({ brief, live, go }: { brief: Brief; live?: LiveMap; 
       {!live ? (lq.isError ? <Failed what="the map data" error={lq.error} /> : <Skeleton lines={6} />) : <>
         <section aria-labelledby="g-bases" className="pt-4">
           <h2 id="g-bases" className="sr-only">Watched bases</h2>
-          <div role="group" aria-label="Show bases" className="scroll-thin flex gap-1.5 overflow-x-auto px-5 pb-1 max-[699px]:flex-nowrap min-[700px]:flex-wrap">
+          <div role="group" aria-label="Show bases" className="scroll-thin flex gap-1.5 overflow-x-auto px-5 pb-1 max-[899px]:-mt-2.5 max-[899px]:py-2.5 max-[899px]:mb-[-6px] max-[699px]:flex-nowrap min-[700px]:flex-wrap">
             {chips.map(([k, l, n]) => <button key={k} aria-pressed={f === k} onClick={() => setF(k)} className={chip(f === k)}>{l} <span className="num">{n}</span></button>)}
           </div>
           {shown.length === 0 ? <p className="px-5 py-5 text-[12.5px] text-fg3">{f === 'changed' ? 'No base differed from usual on its latest passes.' : 'No base here.'}</p>
             : <ul className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(176px,1fr))] gap-3 px-5 max-[699px]:grid-cols-1 max-[699px]:gap-2">
               {shown.map(b => <li key={b.id}><BaseCard b={b} go={go} /></li>)}
             </ul>}
-          <p className="mt-2.5 px-5 text-[11.5px] leading-[1.45] text-fg3">Changed bases first. A change on radar is a reason to look, not proof: one pass far outside the usual range marks a base as differing; two in a row within a week mark it as fewer or more than usual.</p>
+          <p className="mt-2.5 px-5 text-[11.5px] leading-[1.45] text-fg3">Changed bases first. Radar counts <Explain k="bright">bright objects</Explain>, and a change is a reason to look, not proof: one pass far outside the usual range marks a base as differing; two in a row within a week mark it as fewer or more than usual.</p>
         </section>
         <Heat live={live} brief={brief} go={go} />
         <Chokepoints live={live} brief={brief} go={go} />
@@ -119,7 +120,7 @@ function Heat({ live, brief, go }: { live: LiveMap; brief: Brief; go: Go }) {
       <h2 id="g-heat" className="text-[19px] font-semibold tracking-[-0.02em] text-fg">Heat with a satellite picture</h2>
       {checks.length === 0 ? <p className="mt-2 text-[12.5px] text-fg3">No unusual fire has a Sentinel-2 check in this data run.</p> : <>
         <p className="mt-1.5 max-w-[72ch] text-[12.5px] leading-[1.5] text-fg2">
-          {plural(checks.length, 'check', 'checks')} at {plural(places, 'place', 'places')} with unusual heat ({plural(spots, 'hot spot', 'hot spots')} seen by NASA VIIRS) compare a clear Sentinel-2 picture from after the fire with one from before, where there was one: {n('scar')} {n('scar') === 1 ? 'shows' : 'show'} a burn scar, {n('unclear')} {n('unclear') === 1 ? 'is' : 'are'} unclear and {n('none')} {n('none') === 1 ? 'shows' : 'show'} no burn scar.
+          {plural(checks.length, 'check', 'checks')} at {plural(places, 'place', 'places')} with unusual heat ({plural(spots, 'hot spot', 'hot spots')} seen by NASA VIIRS) compare a clear Sentinel-2 picture from after the fire with one from before, where there was one: {n('scar')} {n('scar') === 1 ? 'shows' : 'show'} a <Explain k="scar">burn scar</Explain>, {n('unclear')} {n('unclear') === 1 ? 'is' : 'are'} unclear and {n('none')} {n('none') === 1 ? 'shows' : 'show'} no burn scar.
           {' '}The verdict is an automatic reading, not a person's: it measures how much ground turned dark in short-wave infrared over the central kilometre. A burn scar shows that something burned, not what caused it.</p>
         <ul className="mt-3.5 grid grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-4">
           {shown.map(({ f, spots, first, last, mw, day }) => { const im = f.images!, [v, means] = VERDICT[im.v], place = f.site ? `Near ${f.site}` : fireWord(f.class), th = brief.theatres.find(t => t.id === f.theatre)
@@ -168,21 +169,22 @@ function Chokepoints({ live, brief, go }: { live: LiveMap; brief: Brief; go: Go 
       [near(live.incidents).length, 'news reports', '(unverified)'],
     ] as [number, string, string][] }
   }), [live])
+  const { units } = usePrefs().prefs
   if (!rows.length) return null
   return (
     <section aria-labelledby="g-choke" className="mt-8 border-t border-line px-5 pt-5">
       <h2 id="g-choke" className="text-[19px] font-semibold tracking-[-0.02em] text-fg">Chokepoints</h2>
-      <p className="mt-1.5 max-w-[72ch] text-[12.5px] leading-[1.5] text-fg2">What the map data holds within {NM} nautical miles of each strait or canal. These are counts now, with no usual level to compare them with yet, so none of them is marked as unusual.
+      <p className="mt-1.5 max-w-[72ch] text-[12.5px] leading-[1.5] text-fg2">What the map data holds within {fmtDist(NM, units)} of each strait or canal. These are counts now, with no usual level to compare them with yet, so none of them is marked as unusual.
         <span className="mt-1 block text-[11.5px] text-fg3">Military and coast-guard ships: US Navy positions from USNI News (approximate, weekly) and military or law-enforcement ships heard on AIS. Dark and loitering ships are from Global Fishing Watch, about five days behind, and only in the waters it is asked about. Sea warnings are NGA navigational warnings. News reports are unverified.</span></p>
       <ul className="mt-3.5 grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-3">
         {rows.map(({ c, gfw, counts }) => { const th = brief.theatres.find(t => t.id === c.theatre), empty = counts.every(x => !x[0]); return (
           <li key={c.name} className="flex flex-col rounded-r3 border border-line bg-s1 px-3.5 pb-3 pt-3">
             <h3 className="text-[13.5px] font-medium text-fg">{c.name}</h3>
-            <p className="text-[11.5px] text-fg3">{th ? short(th.name) : ''}{th ? ' · ' : ''}within {NM} nm</p>
-            {empty ? <p className="mt-2.5 text-[12px] text-fg3">Nothing in the map data within {NM} nm now.</p>
+            <p className="text-[11.5px] text-fg3">{th ? short(th.name) : ''}{th ? ' · ' : ''}within {fmtDist(NM, units)}</p>
+            {empty ? <p className="mt-2.5 text-[12px] text-fg3">Nothing in the map data within {fmtDist(NM, units)} now.</p>
               : <dl className="mt-2">{counts.map(([n, what, src]) => (
                 <div key={what} className="flex items-baseline justify-between gap-3 border-t border-line py-[5px] first:border-0">
-                  <dt className="min-w-0 text-[12px] leading-[1.3] text-fg2">{what}{src && <span className="text-fg3"> {src}</span>}</dt>
+                  <dt className="min-w-0 text-[12px] leading-[1.3] text-fg2">{what === 'ships dark on radar' ? <Explain k="dark">ships dark on radar</Explain> : what === 'loitering ships' ? <Explain k="loiter">loitering ships</Explain> : what}{src && <span className="text-fg3"> {src}</span>}</dt>
                   <dd className="num shrink-0 text-[15px] font-medium text-fg">{n}</dd>
                 </div>))}</dl>}
             {!gfw && <p className="mt-1.5 text-[11.5px] leading-[1.4] text-fg3">Dark ships and loitering are not covered here.</p>}

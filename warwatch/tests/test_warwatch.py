@@ -2210,6 +2210,61 @@ class DataContract(unittest.TestCase):
         self.assertEqual(row["groups"]["Logistics"], [None] * 57 + [1.5, None, 2.5])
         self.assertEqual(row["groups"]["Markets"], [None] * 60)
 
+    def test_brief_carries_data_health_for_the_top_bar(self):
+        """Added November 2026: the top bar's readout. Signal statuses as record.json counts them, each source problem of the run
+        with its reason (any page text a server sent back cut off), and the cadence the app judges the data's age by."""
+        import contract
+        b = self.files["brief.json"]
+        self.assertEqual(contract.validate(b), [])
+        h = b["health"]
+        self.assertEqual(h["statuses"], self.files["record.json"]["health"]["statuses"])
+        self.assertEqual(sum(h["statuses"].values()), len(self.data["series"]))
+        self.assertEqual(len(h["sources"]), len(self.data.get("errors") or []))
+        self.assertEqual((h["everyMinutes"], h["lateAfterMinutes"]), (30, 90))
+        got = contract.failing_sources(["nga: NGA feed failed earlier this run: HTTP Error 503: Service Unavailable <!DOCTYPE html><html>  (map shows NAVAREA warnings via SeaLagom)",
+                                        "msi.nga.mil: no fresh data for 16 days.", "a plain message", "usni: HTTP Error 500 <html><body>oops</body></html>"])
+        self.assertEqual(got, [{"source": "nga", "why": "NGA feed failed earlier this run: HTTP Error 503: Service Unavailable (map shows NAVAREA warnings via SeaLagom)"},
+                               {"source": "msi.nga.mil", "why": "no fresh data for 16 days."}, {"source": "", "why": "a plain message"},
+                               {"source": "usni", "why": "HTTP Error 500"}])
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".github", "workflows", "warwatch.yml")) as f:
+            self.assertIn("+ 1800 -", f.read())     # the "next" job's 30 minutes, which RUN_EVERY_MIN states
+
+    def test_record_says_what_came_before_past_events(self):
+        """Added November 2026: record.json "past", the newest labelled events with the tripwires whose replay covers the date, the
+        ones that started an episode 1 to 7 days before (the record's "caught" test), and each group's highest reading in that week
+        while the 60-day strips reach back to it."""
+        import contract
+        d = json.loads(json.dumps(self.data))
+        end = dt.date.fromisoformat(d["strip_end"])
+        e1, e2 = (end - dt.timedelta(days=10)).isoformat(), "2025-03-01"
+        d["events"] = {"through": e1, "list": [[e2, "iran", "", "strike", "An old strike", False], [e1, "iran", "gulf", "strike", "A recent strike", False],
+                                              ["2026-01-01", "nowhere", "", "other", "Not a watched theatre", False]]}
+        for g in d["theatres"]["iran"]["doms"].values():
+            g["h"] = [0.5] * 60
+        d["theatres"]["iran"]["doms"]["financial"]["h"][-12] = 2.4            # the day before e1: inside the week
+        d["theatres"]["iran"]["doms"]["financial"]["h"][-9] = 4.0             # 2 days after e1: outside it
+        d["theatres"]["iran"]["doms"]["logistics"]["h"] = [None] * 60
+        rec = {"window": 7, "per_theatre": {
+            "airlines": {"iran": {"first": "2024-06-19", "last": end.isoformat(), "starts": [(end - dt.timedelta(days=13)).isoformat()]}},
+            "tankers": {"iran": {"first": "2024-06-19", "last": end.isoformat(), "starts": [(end - dt.timedelta(days=10)).isoformat(), "2025-02-25"]}},     # e1's own day does not count
+            "departure": {"iran": {"first": "2025-06-01", "last": end.isoformat(), "starts": []}}}}
+        past = contract.past_events(d, rec)
+        self.assertEqual([p["text"] for p in past], ["A recent strike", "An old strike"])     # newest first; an unknown theatre left out
+        new, old = past
+        self.assertEqual(new["tripwires"], {"watched": 3, "started": [{"id": "airlines", "name": next(t["name"] for t in __import__("tells").TELLS if t["id"] == "airlines")}]})
+        self.assertEqual((new["site"], new["window"]), ("gulf", 7))
+        self.assertEqual(new["groups"]["Markets"], 2.4)
+        self.assertEqual(new["groups"]["People"], 0.5)
+        self.assertIsNone(new["groups"]["Logistics"])
+        self.assertEqual(old["tripwires"]["watched"], 2)                # departure's replay starts after it
+        self.assertEqual([x["id"] for x in old["tripwires"]["started"]], ["tankers"])
+        self.assertEqual(set(old["groups"].values()), {None})            # the strips do not reach back a year
+        self.assertEqual(len(contract.past_events(dict(d, events={"list": [[e1, "iran", "", "x", "y", False]] * 40}), rec)), contract.PAST_EVENTS)
+        self.assertEqual(contract.past_events(dict(d, events=None), rec), [])
+        self.assertEqual(contract.past_events(d, {})[0]["tripwires"], {"watched": 0, "started": []})
+        self.assertIn("past", self.files["record.json"])
+        self.assertEqual(contract.validate(self.files["record.json"]), [])
+
     def test_write_lays_out_the_tree(self):
         import contract
         out = tempfile.mkdtemp()
@@ -2325,9 +2380,54 @@ class Pages(unittest.TestCase):
         self.assertIn('<base href="../">', old)
         self.assertIn("It stays here until 7 Dec 2026", old)
         self.assertEqual(old.count("__DATA__"), 0)
-        self.assertEqual(n, len(C.THEATRES) - 1 + len(bases) + 5 + 3)
+        self.assertEqual(n, len(C.THEATRES) - 1 + len(bases) + 6 + 3)
         with self.assertRaises(ValueError):     # a second run on the same site/ would move the app to classic/
             pages.build(site, dist)
+
+    def test_glossary_page_has_its_own_title_and_description(self):
+        """Added November 2026: /warwatch/glossary/, the app's page of terms, with its own title and link preview text."""
+        import pages
+        site, dist = self._site()
+        pages.build(site, dist, today=dt.date(2026, 11, 1))
+        g = self._read(site, "glossary", "index.html")
+        self.assertIn("<title>Glossary · WarWatch</title>", g)
+        self.assertIn('<link rel="canonical" href="https://khourix.github.io/warwatch/glossary/">', g)
+        self.assertIn('<meta property="og:title" content="Glossary · WarWatch">', g)
+        import html
+        self.assertIn(f'<meta name="description" content="{html.escape(pages.GLOSSARY, quote=True)}">', g)
+        self.assertIn(f'<meta property="og:description" content="{html.escape(pages.GLOSSARY, quote=True)}">', g)
+        self.assertIn('<base href="/warwatch/">', g)
+        self.assertNotIn("noindex", g)
+
+    def test_app_can_be_added_to_the_home_screen(self):
+        """The manifest the pages link to: standalone, its start and scope at the site root (/warwatch/ on GitHub Pages), and icons
+        for the home screen."""
+        here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(here, "static", "site.webmanifest")) as f:
+            m = json.load(f)
+        self.assertEqual((m["display"], m["start_url"], m["scope"], m["id"]), ("standalone", "./", "./", "./"))
+        self.assertTrue({"192x192", "512x512"} <= {i["sizes"] for i in m["icons"]})
+        for i in m["icons"]:
+            self.assertTrue(os.path.exists(os.path.join(here, "static", i["src"])), i["src"])
+        site, dist = self._site()
+        import pages
+        pages.build(site, dist, today=dt.date(2026, 11, 1))
+        self.assertIn('<link rel="manifest" href="site.webmanifest">', self._read(site, "iran", "index.html"))
+
+    def test_workflow_caches_card_fonts_but_never_hands_them_out(self):
+        """Added November 2026: the Fontshare files are cached between runs, keyed on the script that fetches them; the cache and
+        the fetch may fail without stopping the run, and the fonts stay out of the backup artifact (licence)."""
+        here = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        with open(os.path.join(here, ".github", "workflows", "warwatch.yml")) as f:
+            wf = f.read()
+        cache = wf[wf.index("- name: Cached fonts"):wf.index("- name: Fonts for the share cards")]
+        self.assertIn("uses: actions/cache@", cache)
+        self.assertIn("continue-on-error: true", cache)
+        self.assertIn("key: fonts-${{ hashFiles('web/scripts/fetch-fonts.mjs') }}", cache)
+        self.assertIn("web/src/fonts/switzer-*.woff2", cache)
+        fetch = wf[wf.index("- name: Fonts for the share cards"):wf.index("run: node web/scripts/fetch-fonts.mjs")]
+        self.assertIn("continue-on-error: true", fetch)
+        self.assertIn("!site/og-fonts/", wf)
 
     def test_old_page_is_dropped_after_its_date(self):
         import pages

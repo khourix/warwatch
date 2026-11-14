@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 /* The data contract (warwatch/contract.py, schema warwatch/v1). Positions are [lon, lat]. */
 export type Level = 'Normal' | 'Watch' | 'Elevated' | 'Critical'
 export type LonLat = [number, number]
-export type Route = { v: 'brief' } | { v: 'theatre'; id: string; tab?: string } | { v: 'base'; id: string } | { v: 'signal'; id: string } | { v: 'signals'; th?: string } | { v: 'record' } | { v: 'map' } | { v: 'ground' }
+export type Route = { v: 'brief' } | { v: 'theatre'; id: string; tab?: string } | { v: 'base'; id: string } | { v: 'signal'; id: string } | { v: 'signals'; th?: string } | { v: 'record' } | { v: 'map' } | { v: 'ground' } | { v: 'glossary' }
 export type FeedItem = { date: string; kind: 'tell' | 'base' | 'fire' | 'official'; theatre: string; title: string; detail: string; to: { view: string; id: string; tab?: string } }
 export type BriefTheatre = {
   id: string; name: string; region: string; level: Level; score: number | null; standingRisk: number | null; tellsOn: number; tellsTotal: number; strong: number
@@ -17,11 +17,15 @@ export type Brief = {
   regions: { id: string; name: string; theatres: string[]; level: Level; lead: string }[]
   theatres: BriefTheatre[]; feed: FeedItem[]
   model: { version: string; fitted: string; active: boolean; gates: Gates | null }
+  health?: Health
 }
+/* Added November 2026 (contract.health): signal statuses, the run's source problems with their reasons, and the run cadence the
+   top bar judges the data's age by. Older data has none: the readout then shows the age alone. */
+export type Health = { statuses: Record<string, number>; sources: { source: string; why: string }[]; everyMinutes: number; lateAfterMinutes: number }
 /* Added November 2026 (contract.lines): where the Watch, Elevated and Critical lines sit on the 0 to 100 reading for one theatre.
    Watch is 50 and Critical 90 by construction; older data has no field, and then the app draws 50 and 90 and no Elevated line. */
 export type Lines = { watch: number; elevated: number; critical: number }
-export type Gates = { bss: number; auc: number; auc_lo: number; auc_hi: number; shuffle_p_auc: number; bss_positive: boolean; auc_lo_above_half: boolean; beats_shuffled: boolean; pass: boolean }
+export type Gates = { bss: number; auc: number; auc_lo: number; auc_hi: number; shuffle_p_auc: number; shuffle_p_bss?: number; bss_positive: boolean; auc_lo_above_half: boolean; beats_shuffled: boolean; pass: boolean }
 export type Tell = { id: string; name: string; on: boolean; date: string | null; says: string; cases: string; record: TellRecord | null }
 /* a tripwire's past: fired `episodes` times since `first`, `hits` of them followed by an event; it fired before `caught` of `events` past events */
 export type TellRecord = { hits?: number; episodes?: number; caught?: number; events?: number; first?: string; last?: string; theatres?: number }
@@ -69,8 +73,15 @@ export type LiveMap = {
   bases: MapBase[]; fires: MapFire[]; aircraft: MapAircraft[]; squawks: MapAircraft[]; ships: MapShip[]; warnings: MapWarning[]; incidents: MapIncident[]; cities: { ll: LonLat; name: string; theatre: string }[]; chokepoints: { ll: LonLat; name: string; theatre: string; id?: string; gfw?: boolean }[]
   airports?: MapAirport[]; diversions?: MapDiversion[]; darkShips?: MapDark[]; loitering?: MapLoiter[]
 }
-export type Forward = { k: string; name: string; first: string; logged: number; days: number; need: number; through: string; ready: boolean; pass: boolean }
-export type RecordFile = { generated: string; forward: Forward[] | null; model: { v: string; fitted: string; active: boolean; gates: Gates } | null; health: { statuses: Record<string, number>; errors: unknown[]; unavailable: { n: string; w: string }[]; updates: { s: string; e: string; l: string }[] } }
+/* forward_score.scorecard: one target's forward record. days: matured forecast days scored so far; need: days before the first
+   interim report (FORWARD_DAYS); read: days before the one read that can promote it (READ_DAYS); final: that read is in */
+export type Forward = { k: string; name: string; h?: number; chain?: boolean; first: string | null; logged: number; days: number; need: number; read?: number; through: string; ready: boolean; pass: boolean
+  final?: boolean; bss?: number | null; auc?: number | null; auc_lo?: number | null; shuffle_p?: number | null; err?: string }
+/* contract.past_events (added November 2026): a past event, the tripwires watched there on its date and the ones that started in the
+   week before, and each group's highest reading in that week (null where the 60-day strips do not reach) */
+export type PastEvent = { date: string; theatre: string; site: string; kind: string; text: string; window: number; tripwires: { watched: number; started: { id: string; name: string }[] }; groups: Partial<Record<Group, number | null>> }
+export type RecordFile = { generated: string; forward: Forward[] | null; model: { v: string; fitted: string; active: boolean; gates: Gates } | null; health: { statuses: Record<string, number>; errors: unknown[]; unavailable: { n: string; w: string }[]; updates: { s: string; e: string; l: string }[] }
+  past?: PastEvent[] }
 
 export const GROUPS = ['Logistics', 'Markets', 'People', 'News', 'Physical'] as const
 export type Group = (typeof GROUPS)[number]
@@ -101,7 +112,7 @@ export const useSeries = (id: string, on = true) => useQuery({ queryKey: ['serie
 /* Added November 2026: the build-up wall's file, every theatre's five group histories over the last 60 days (contract.buildup) */
 export type Buildup = { generated: string; dates: string[]; theatres: { id: string; name: string; region?: string; groups: Partial<Record<Group, (number | null)[]>> }[] }
 export const useBuildup = () => useQuery({ queryKey: ['buildup'], queryFn: () => get<Buildup>('signals/buildup.json'), retry: 1 })
-export const useRecord = () => useQuery({ queryKey: ['record'], queryFn: () => get<RecordFile>('record.json') })
+export const useRecord = (on = true) => useQuery({ queryKey: ['record'], queryFn: () => get<RecordFile>('record.json'), enabled: on })
 
 /* Images and tiles sit at the site root: img/bases/…, basemap.pmtiles */
 export const asset = (src: string) => new URL(src, ROOT).href
@@ -172,8 +183,8 @@ export function summary(t: Theatre, modelActive: boolean): string {
 }
 
 /* Routes are real paths under the root, so each theatre can carry its own share card: /warwatch/iran/, /warwatch/iran/ground/,
-   /warwatch/base/<id>/, /warwatch/signal/<id>/, /warwatch/signals/, /warwatch/ground/, /warwatch/record/, /warwatch/map/. */
-const VIEWS = ['base', 'signal', 'signals', 'record', 'map', 'ground']
+   /warwatch/base/<id>/, /warwatch/signal/<id>/, /warwatch/signals/, /warwatch/ground/, /warwatch/record/, /warwatch/map/, /warwatch/glossary/. */
+const VIEWS = ['base', 'signal', 'signals', 'record', 'map', 'ground', 'glossary']
 export function parsePath(rel: string): Route {
   const p = rel.split(/[?#]/)[0].split('/').filter(x => x && x !== 'index.html').map(decodeURIComponent)
   if (p[0] === 'base' && p[1]) return { v: 'base', id: p[1] }
@@ -182,6 +193,7 @@ export function parsePath(rel: string): Route {
   if (p[0] === 'record') return { v: 'record' }
   if (p[0] === 'map') return { v: 'map' }
   if (p[0] === 'ground') return { v: 'ground' }
+  if (p[0] === 'glossary') return { v: 'glossary' }
   if (p[0] && !VIEWS.includes(p[0])) return { v: 'theatre', id: p[0], tab: p[1] }
   return { v: 'brief' }
 }
@@ -210,6 +222,7 @@ export function legacyHash(h: string): Route | null {
   return null
 }
 
+export const gatesPassed = (g: Gates) => [g.auc_lo_above_half, g.bss_positive, g.beats_shuffled].filter(Boolean).length
 /* The model's three checks (record.tsx lists them) in one plain sentence, from brief.model.gates: which it has passed and which not */
 export function gatesSentence(g: Gates | null, active: boolean): string {
   if (!g) return active ? 'It sets the level.' : 'Its checks have not been run yet, so it does not set the level.'

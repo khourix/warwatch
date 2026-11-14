@@ -51,7 +51,7 @@ export function NotificationBell({ brief, live, go, phone = false }: { brief: Br
   const list = all.filter(n => tab === 'All' || KIND[n.kind][2] === tab)
   const name = (id: string) => brief.theatres.find(t => t.id === id)?.name || ''
   const groups: [string, Note[]][] = [['Last 48 hours', list.filter(fresh)], ['Earlier this week', list.filter(n => !fresh(n))]]
-  const btn = phone ? 'grid h-9 w-9 place-items-center rounded-full border border-line bg-panel/80 backdrop-blur' : 'grid h-8 w-8 place-items-center rounded-full border border-line bg-panel/80 text-fg2 backdrop-blur-md hover:text-fg'
+  const btn = phone ? 'relative grid h-9 w-9 place-items-center after:absolute after:-inset-[5px] after:content-[\'\'] rounded-full border border-line bg-panel/80 backdrop-blur' : 'grid h-8 w-8 place-items-center rounded-full border border-line bg-panel/80 text-fg2 backdrop-blur-md hover:text-fg'
   return (
     <div ref={box} className={phone ? '' : 'pointer-events-auto relative'}>
       <button onClick={() => setOpen(o => !o)} aria-expanded={open} aria-label={unread ? `Notifications, ${unread} new` : 'Notifications'} className={`${btn} relative`}>

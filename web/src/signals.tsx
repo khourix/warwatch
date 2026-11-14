@@ -3,7 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { Search, ExternalLink, X } from 'lucide-react'
 import { GROUPS, useSignals, useSeries, useBuildup, fmtZ, shortDate, short, groupTone, stepFixed, routeHref,
   type Brief, type Route, type Signal, type Group, type Buildup, type SeriesFile } from './data'
-import { Spark, Lnk, Facts, Skeleton, Failed, useWidth } from './ui'
+import { Spark, Lnk, Facts, Skeleton, Failed, useWidth, Explain } from './ui'
 import { Crumbs, zMark } from './views'
 
 /* Signals: the build-up wall (every theatre against the last 60 days), where the unusual readings sit (theatre by group), and
@@ -196,7 +196,7 @@ const Wall = memo(function Wall({ go }: { go: Go }) {
       <h2 id="wall-h" className="text-[12.5px] font-semibold text-fg">Build-up{n > 1 ? `, last ${n} days` : n === 1 ? ', one day so far' : ''}</h2>
       {draw && <div role="group" aria-label="Colour the wall by" className="flex flex-wrap gap-1">
         {WALL_VIEWS.map(v => <button key={v} aria-pressed={view === v} onClick={() => { setView(v); setHover(null) }}
-          className={`rounded-full border px-2.5 py-[3px] text-[12px] transition-colors duration-[120ms] ${view === v ? 'border-sel bg-sel font-medium text-selink' : 'border-line2 text-fg2 hover:text-fg'}`}>{v}</button>)}
+          className={`tap rounded-full border px-2.5 py-[3px] text-[12px] transition-colors duration-[120ms] ${view === v ? 'border-sel bg-sel font-medium text-selink' : 'border-line2 text-fg2 hover:text-fg'}`}>{v}</button>)}
       </div>}
     </div>)
   const frame = (body: ReactNode) => <section aria-labelledby="wall-h" className="mx-5 mb-5 mt-5 rounded-r3 border border-line bg-s1 px-4 pb-3.5 pt-3.5">{head}{body}</section>
@@ -332,7 +332,7 @@ const Matrix = memo(function Matrix({ all, pending, brief, t, g, pick }: { all: 
       <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-fg3" role="group" aria-label="Legend">
         {([['var(--z0)', 'usual'], ['var(--z1)', 'unusual'], ['var(--z2)', '1 strong'], ['var(--z3)', '2 or more strong']] as const).map(([c, l]) => <span key={l} className="inline-flex items-center gap-1.5"><i aria-hidden className="h-2.5 w-2.5 rounded-[2px]" style={{ background: c }} />{l}</span>)}
       </div>
-      <p className="mt-1.5 text-[11.5px] leading-[1.45] text-fg3">Unusual is 2 or more from usual, strong 3 (SD for most series). Pick a square to list its signals; pick it again to clear. Arrow keys move between squares.</p>
+      <p className="mt-1.5 text-[11.5px] leading-[1.45] text-fg3"><Explain k="unusual">Unusual</Explain> is 2 or more from usual, <Explain k="strong">strong</Explain> 3 (<Explain k="sd">SD</Explain> for most series). Pick a square to list its signals; pick it again to clear. Arrow keys move between squares.</p>
     </section>
   )
 })

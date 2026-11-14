@@ -6,6 +6,7 @@ import { useBase, asset, baseState, shortDate, short, ago, parseGen, emergency, 
   type Brief, type LiveMap, type Route, type BasePart, type BaseFile, type Pic, type MapBase, type Theatre, type AirKey, type MapAirport } from './data'
 import { Spark, Lnk, Tag, Facts, Block, Note, Skeleton, Failed, listAnim, useWidth } from './ui'
 import { Crumbs } from './views'
+import { usePrefs, fmtAlt } from './settings'
 
 /* What is physically happening in a theatre (its Ground tab), and the base dossier. Everything here reads map/live.json,
    theatres/<id>.json (aircraft48h) and bases/<id>.json. */
@@ -104,6 +105,7 @@ function AirPicture({ id, t, live }: { id: string; t: Theatre; live: LiveMap }) 
   const divs = (live.diversions || []).filter(d => d.theatre === id).sort((a, b) => b.time - a.time)
   const series = AIR.map(([k, label]) => [k, label, (t.aircraft48h?.[k] || []).filter(p => p && p[0])] as const).filter(s => s[2].filter(p => p[1] != null).length > 1)
   const nowAir = [...live.aircraft, ...live.squawks].filter(a => a.th === id)
+  const { units } = usePrefs().prefs
   const holds = ports.reduce((n, a) => n + (a.holds || 0), 0), biz = ports.reduce((n, a) => n + (a.bizjets || 0), 0), bizOut = ports.reduce((n, a) => n + (a.bizjetsOut || 0), 0)
   const turn = divs.filter(d => d.kind === 'turnback').length
   const nothing = !ports.length && !divs.length && !series.length && !nowAir.length
@@ -139,7 +141,7 @@ function AirPicture({ id, t, live }: { id: string; t: Theatre; live: LiveMap }) 
           <div key={i} className="flex items-center gap-2.5 py-1 text-[12px]">
             <Plane size={13} aria-hidden className="shrink-0" style={{ color: emergency(a) ? 'var(--crit)' : 'var(--cool)', transform: `rotate(${(a.trk ?? 45) - 45}deg)` }} />
             <span className="min-w-0 flex-1 truncate"><span className="text-fg">{a.call || a.hex || 'Unknown'}</span><span className="text-fg3"> · {[a.t, a.o || a.ct].filter(Boolean).join(' · ')}</span></span>
-            <span className="num shrink-0 text-[11.5px] text-fg3">{a.sq ? `squawk ${a.sq}` : a.alt != null ? `${Math.round(a.alt / 100) * 100} ft` : ''}</span>
+            <span className="num shrink-0 text-[11.5px] text-fg3">{a.sq ? `squawk ${a.sq}` : a.alt != null ? fmtAlt(a.alt, units) : ''}</span>
           </div>))}
       </div>}
       {!nothing && <p className="mt-2.5 text-[11px] leading-[1.45] text-fg3">Most military aircraft fly with their transponder off, so none seen is not none there.</p>}
