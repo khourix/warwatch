@@ -22,7 +22,10 @@ const byScore = (a: BriefTheatre, b: BriefTheatre) => (b.score ?? -1) - (a.score
 const above = (b: Brief) => b.theatres.filter(t => t.level !== 'Normal').sort((x, y) => RANK[y.level] - RANK[x.level] || byScore(x, y))
 const closest = (b: Brief) => b.theatres.filter(t => t.level === 'Normal' && t.score != null).sort(byScore)[0]
 /* the line of 50 sets the level only while the forecast model is off; then a quiet theatre under it is "closest to Watch" */
-const underLine = (b: Brief, t?: BriefTheatre) => !b.model.active && !!t && t.score! < 50
+/* the line sets a theatre's level while the model is off, or while the model passes but holds this sub-theatre (it then gives
+   it no chance, so no standing risk) */
+const lineSets = (b: Brief, t: BriefTheatre) => !b.model.active || t.standingRisk == null
+const underLine = (b: Brief, t?: BriefTheatre) => !!t && lineSets(b, t) && t.score! < 50
 const utcDay = (d: Date) => d.toISOString().slice(0, 10)
 
 /* ---------------------------------------------------------------- the top bar's status sentence */
@@ -77,8 +80,8 @@ export function Board({ brief, sel, go, order, setOrder }: { brief: Brief; sel: 
   useEffect(() => { first.current = false }, [])
   const byId = useMemo(() => Object.fromEntries(brief.theatres.map(t => [t.id, t])), [brief])
   const sorted = useMemo(() => [...brief.theatres].sort(byScore), [brief])
-  const line = !brief.model.active
-  const row = (t: BriefTheatre, i: number) => <BoardRow key={t.id} t={t} i={i} rise={first.current} on={sel === t.id} line={line} go={go} />
+  const line = brief.theatres.some(t => lineSets(brief, t))
+  const row = (t: BriefTheatre, i: number) => <BoardRow key={t.id} t={t} i={i} rise={first.current} on={sel === t.id} line={lineSets(brief, t)} go={go} />
   return (
     <section aria-label="Theatres">
       <div className="flex items-center justify-between gap-2.5 px-4 pb-2 pt-4">
@@ -148,9 +151,13 @@ const dayLabel = (d: string, today: string) => {
   return `${n === 0 ? 'Today' : n === 1 ? 'Yesterday' : x.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })}, ${dm}`
 }
 
-export function Feed({ brief, day, setDay, kind, setKind, go, since, dismiss }: { brief: Brief; day: string | null; setDay: (d: string | null) => void; kind: Kind; setKind: (k: Kind) => void; go: Go; since?: Since | null; dismiss?: () => void }) {
+/* newOnly: show only what arrived since the last visit (a "since you last looked" chip sets it); block: draw that block here
+   (on phones it sits under the dispatch instead) */
+export function Feed({ brief, day, setDay, kind, setKind, go, since, dismiss, newOnly = false, setNewOnly, block = true }: { brief: Brief; day: string | null; setDay: (d: string | null) => void; kind: Kind; setKind: (k: Kind) => void; go: Go
+  since?: Since | null; dismiss?: () => void; newOnly?: boolean; setNewOnly?: (b: boolean) => void; block?: boolean }) {
   const today = utcDay(parseGen(brief.generated))
-  const scope = useMemo(() => brief.feed.filter(f => !day || f.date.slice(0, 10) === day), [brief.feed, day])
+  const only = newOnly && !!since
+  const scope = useMemo(() => brief.feed.filter(f => (!day || f.date.slice(0, 10) === day) && (!only || since!.fresh.has(feedKey(f)))), [brief.feed, day, only, since])
   const days = useMemo(() => {
     const m = new Map<string, FeedItem[]>()
     for (const f of [...scope].sort((a, b) => b.date.localeCompare(a.date))) if (kind === 'all' || f.kind === kind) { const d = f.date.slice(0, 10); m.set(d, [...(m.get(d) || []), f]) }
@@ -158,20 +165,22 @@ export function Feed({ brief, day, setDay, kind, setKind, go, since, dismiss }: 
   }, [scope, kind])
   const name = (id: string) => { const t = brief.theatres.find(x => x.id === id); return t ? short(t.name) : '' }
   return (
-    <section aria-label="What changed">
+    <section aria-label="What changed" id="feed" className="scroll-mt-2">
       <div className="flex items-baseline justify-between gap-2.5 px-4 pb-2 pt-4">
         <h2 className="text-[13px] font-semibold tracking-[-0.005em]">What changed</h2>
         {day ? <span className="text-[11.5px] text-fg3"><span className="text-fg2">{shortDate(day)} only</span> · <button onClick={() => setDay(null)} className="lnk">Show all days</button></span>
           : <span className="text-[11.5px] text-fg3">last 30 days</span>}
       </div>
-      {since && dismiss && <SinceBlock since={since} dismiss={dismiss} kind={kind} setKind={k => { setDay(null); setKind(k) }} go={go} />}
+      {block && since && dismiss && setNewOnly && <SinceBlock since={since} dismiss={dismiss} picked={only ? kind : null} pick={k => { setDay(null); setKind(k ?? 'all'); setNewOnly(k != null) }} go={go} />}
+      {only && <p className="mx-4 mb-2 flex flex-wrap items-baseline justify-between gap-x-2 rounded-r1 bg-s2 px-2.5 py-1.5 text-[11.5px] text-fg2" role="status">
+        <span>Only what is new since your last visit{kind !== 'all' ? `: ${SINCE_WORD[kind][1]}` : ''}</span><button onClick={() => { setNewOnly?.(false); setKind('all') }} className="lnk">Show everything</button></p>}
       {/* counts sit in the name and tip only, so the five chips keep to one row */}
       <div className="flex flex-wrap gap-1 px-4 pb-2" role="group" aria-label="Kind of change">
         {KINDS.map(([k, label]) => { const n = k === 'all' ? scope.length : scope.filter(f => f.kind === k).length, say = `${label}, ${n} ${day ? `on ${shortDate(day)}` : 'in the last 30 days'}`; return (
-          <button key={k} aria-pressed={kind === k} onClick={() => setKind(k)} aria-label={say} title={say}
+          <button key={k} aria-pressed={kind === k} onClick={() => { setKind(k); setNewOnly?.(false) }} aria-label={say} title={say}
             className={`rounded-full border px-2 py-[3px] text-[11.5px] transition-colors duration-[120ms] ${kind === k ? 'border-sel bg-sel font-medium text-selink' : 'border-line text-fg2 hover:border-line2'}`}>{label}</button>) })}
       </div>
-      {days.length === 0 && <p className="mx-4 mb-5 mt-3 text-[12.5px] text-fg3">{day ? 'Nothing of this kind on that day.' : 'Nothing of this kind in the last 30 days.'}</p>}
+      {days.length === 0 && <p className="mx-4 mb-5 mt-3 text-[12.5px] text-fg3">{only ? 'Nothing new of this kind since your last visit.' : day ? 'Nothing of this kind on that day.' : 'Nothing of this kind in the last 30 days.'}</p>}
       {days.map(([d, fs]) => (
         <div key={d} role="group" aria-label={dayLabel(d, today)}>
           <div className="sticky top-0 z-[1] bg-s1 px-4 pb-1 pt-2.5 text-[11px] font-medium text-fg3">{dayLabel(d, today)}</div>
@@ -194,7 +203,8 @@ export function Feed({ brief, day, setDay, kind, setKind, go, since, dismiss }: 
 
 /* ---------------------------------------------------------------- since you last looked (since.ts keeps the snapshot) */
 const SINCE_WORD: Record<FeedItem['kind'], [string, string]> = { tell: ['tripwire', 'tripwires'], base: ['base change', 'base changes'], fire: ['heat report', 'heat reports'], official: ['official step', 'official steps'] }
-function SinceBlock({ since, dismiss, kind, setKind, go }: { since: Since; dismiss: () => void; kind: Kind; setKind: (k: Kind) => void; go: Go }) {
+/* picked: the kind whose new items the feed shows now (null: none); pick(k) shows only k's new items, pick(null) clears */
+export function SinceBlock({ since, dismiss, picked, pick, go, className = 'mx-4 mb-2.5' }: { since: Since; dismiss: () => void; picked: Kind | null; pick: (k: FeedItem['kind'] | null) => void; go: Go; className?: string }) {
   const { prefs } = usePrefs()
   const when = `${since.at.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: prefs.tz === 'utc' ? 'UTC' : undefined })}, ${fmtTime(since.at, prefs.tz)}`
   const kinds = (Object.keys(since.counts) as FeedItem['kind'][]).filter(k => since.counts[k] > 0)
@@ -202,7 +212,7 @@ function SinceBlock({ since, dismiss, kind, setKind, go }: { since: Since; dismi
   const r = (v: number | null) => v == null ? '–' : v
   const nothing = !since.moved.length && !kinds.length
   return (
-    <section aria-labelledby="since-h" className="mx-4 mb-2.5 rounded-r2 border border-line bg-s2 px-3 pb-2.5 pt-2">
+    <section aria-labelledby="since-h" className={`${className} rounded-r2 border border-line bg-s2 px-3 pb-2.5 pt-2`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0"><h3 id="since-h" className="text-[12px] font-semibold text-fg">Since you last looked</h3><p className="num text-[11.5px] text-fg3">Your last visit: {when}</p></div>
         <button onClick={dismiss} aria-label="Dismiss since you last looked" className="-mr-1.5 -mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-r1 text-fg3 hover:bg-s3 hover:text-fg"><X size={14} /></button>
@@ -215,9 +225,9 @@ function SinceBlock({ since, dismiss, kind, setKind, go }: { since: Since; dismi
         </li>) })}
         {since.moved.length > shown.length && <li className="text-[11.5px] text-fg3">and {since.moved.length - shown.length} more {since.moved.length - shown.length === 1 ? 'theatre' : 'theatres'} moved</li>}
       </ul>}
-      {kinds.length > 0 && <div className="mt-2 flex flex-wrap gap-1" role="group" aria-label="New in the feed since your last visit; pick one to show that kind">
-        {kinds.map(k => { const n = since.counts[k], on = kind === k; return (
-          <button key={k} aria-pressed={on} onClick={() => setKind(on ? 'all' : k)}
+      {kinds.length > 0 && <div className="mt-2 flex flex-wrap gap-1" role="group" aria-label="New in the feed since your last visit; pick one to show only those">
+        {kinds.map(k => { const n = since.counts[k], on = picked === k; return (
+          <button key={k} aria-pressed={on} onClick={() => pick(on ? null : k)}
             className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-[2px] text-[11.5px] transition-colors duration-[120ms] ${on ? 'border-sel bg-sel font-medium text-selink' : 'border-line2 text-fg2 hover:border-fg3'}`}>
             <span className="grid h-3 w-3 place-items-center" aria-hidden>{GLYPH[k]}</span><span className="num">{n} new {SINCE_WORD[k][n === 1 ? 0 : 1]}</span></button>) })}
       </div>}

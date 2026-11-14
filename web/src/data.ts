@@ -24,7 +24,7 @@ export type TellRecord = { hits?: number; episodes?: number; caught?: number; ev
 /* military aircraft broadcasting over a theatre, about every half hour for 48 hours: [time, count] */
 export type AirKey = 'mil' | 'fighter' | 'isr' | 'lift' | 'tanker'
 export type Air48 = Partial<Record<AirKey, [string, number | null][]>>
-export type GroupDetail = { z: number | null; fast: boolean; history: number[]; top: { id: string; label: string; z: number }[] }
+export type GroupDetail = { z: number | null; fast: boolean; history: (number | null)[]; top: { id: string; label: string; z: number }[] }
 export type Theatre = {
   generated: string; id: string; name: string; region: string; level: Level; score: number | null; standingRisk: number | null
   signals: { scored: number; total: number; strong: number }
@@ -32,7 +32,7 @@ export type Theatre = {
   confidence: string; context: string | null; contextChecked: string | null; spillover: boolean; parents: string[]
   center: LonLat | null; view: [LonLat, LonLat] | null; countries: string[]
   tells: Tell[]; groups: Record<Group, GroupDetail>; official: { name: string; id: string; date: string; value: string }[]
-  history: [string, number, number, string][]; items: { date: string; kind: string; text: string; signal: string }[]
+  history: [string, number | null, number | null, string][]; items: { date: string; kind: string; text: string; signal: string }[]
   events: { date: string; kind: string; text: string }[]
   aircraft48h?: Air48 | null
 }
@@ -122,8 +122,8 @@ export const groupTone = (z: number | null | undefined) => z == null || z < 1 ? 
 /* feed details written before the rename still say "Timing tell" */
 export const feedDetail = (d: string) => d.replace(/^Timing tell/, 'Tripwire')
 export const zColor = (z: number | null | undefined) => z == null ? 'transparent' : Math.abs(z) >= 3 ? 'var(--z3)' : Math.abs(z) >= 2 ? 'var(--z2)' : Math.abs(z) >= 1 ? 'color-mix(in oklab, var(--z2) 38%, transparent)' : 'color-mix(in oklab, var(--fg3) 22%, transparent)'
-/* the 0 to 100 reading as a whole number; just under the Watch line it stays at 49, so 49.6 never reads as "50 against 50" */
-export const wholeScore = (s: number) => s < 50 ? Math.min(49, Math.round(s)) : Math.round(s)
+/* the 0 to 100 reading as a whole number; just under a line it stays under it (49.6 reads 49, 89.7 reads 89), so a number never reads as reaching a line it has not */
+export const wholeScore = (s: number) => s < 50 ? Math.min(49, Math.round(s)) : s < 90 ? Math.min(89, Math.round(s)) : Math.round(s)
 export const fmtZ = (z: number | null | undefined) => z == null ? 'n/a' : (z > 0 ? '+' : z < 0 ? '−' : '') + Math.abs(z).toFixed(1)
 export const parseGen = (g: string) => new Date(g.replace(' UTC', 'Z').replace(' ', 'T'))
 export const shortDate = (d: string) => { const x = new Date(d + (d.length === 7 ? '-01' : '') + 'T00:00Z'); return x.toLocaleDateString('en-GB', { day: d.length === 7 ? undefined : 'numeric', month: 'short', timeZone: 'UTC' }).replace('Sept', 'Sep') }

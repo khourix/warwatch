@@ -9,7 +9,7 @@ import { TheatreView } from './views'
 import { SignalsView, SignalView } from './signals'
 import { RecordView } from './record'
 import { BaseView } from './ground'
-import { Status, Dispatch, Board, Feed, Timeline, TIME_H, type Order, type Kind } from './watch'
+import { Status, Dispatch, Board, Feed, SinceBlock, Timeline, TIME_H, type Order, type Kind } from './watch'
 import { NotificationBell } from './bell'
 import { useSinceLastVisit } from './since'
 import { Wordmark, Mark, Skeleton, Failed } from './ui'
@@ -54,7 +54,9 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   const [order, setOrder] = useState<Order>('closest')
   const [kind, setKind] = useState<Kind>('all')
   const panelRef = useRef<HTMLDivElement>(null)
-  const { since, dismiss } = useSinceLastVisit(brief)
+  const { since, dismiss: dismissSince } = useSinceLastVisit(brief)
+  const [newOnly, setNewOnly] = useState(false)
+  const dismiss = useCallback(() => { setNewOnly(false); dismissSince() }, [dismissSince])
 
   /* replace: change the address without a new history entry (a theatre's tabs, an unknown theatre) */
   const go = useCallback((r: Route, replace = false) => {
@@ -96,15 +98,21 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
     </AnimatePresence>
   )
   const map = (padBottom: number) => <Suspense fallback={null}><MapView brief={brief} live={live} route={route} onPick={go} theme={theme} day={day} flat={prefs.map === 'flat'} onFlat={f => set({ map: f ? 'flat' : 'globe' })} labels={prefs.labels} wide={wide} padBottom={padBottom} /></Suspense>
-  const home = <><Dispatch brief={brief} heading={!dossier} /><Board brief={brief} sel={sel} go={go} order={order} setOrder={setOrder} /></>
-  const feed = <Feed brief={brief} day={day} setDay={setDay} kind={kind} setKind={setKind} go={go} since={since} dismiss={dismiss} />
+  /* the dispatch is the page's heading only on the Watch home; a dossier or a page (Signals, Record) has its own h1 */
+  const dispatch = <Dispatch brief={brief} heading={!dossier && !page} />
+  const board = <Board brief={brief} sel={sel} go={go} order={order} setOrder={setOrder} />
+  const home = <>{dispatch}{board}</>
+  const feed = <Feed brief={brief} day={day} setDay={setDay} kind={kind} setKind={setKind} go={go} since={since} dismiss={dismiss} newOnly={newOnly} setNewOnly={setNewOnly} block={wide} />
+  /* on phones "since you last looked" sits under the dispatch, above the board; a pick there jumps to the feed it filters */
+  const phoneSince = since && <SinceBlock since={since} dismiss={dismiss} go={go} className="mx-3.5 mb-1.5 mt-2"
+    picked={newOnly ? kind : null} pick={k => { setDay(null); setKind(k ?? 'all'); setNewOnly(k != null); if (k) requestAnimationFrame(() => document.getElementById('feed')?.scrollIntoView({ block: 'start' })) }} />
 
   if (!wide) return (
     <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}>
       <div className="relative h-full overflow-hidden bg-bg text-fg">
         <div className="absolute inset-0">{map(route.v === 'map' ? 200 : Math.round(innerHeight * .55))}</div>
         <PhoneShell route={route} go={go} navActive={navActive} openCmd={() => setCmd(true)} openSettings={() => setSettings(true)} panelRef={panelRef} brief={brief} live={live}>
-          {dossier || page ? view : <>{home}{feed}</>}
+          {dossier || page ? view : <>{dispatch}{phoneSince}{board}{feed}</>}
         </PhoneShell>
         <CommandMenu open={cmd} setOpen={setCmd} go={go} toggleTheme={toggleTheme} openSettings={() => setSettings(true)} brief={brief} live={live} />
         <SettingsSheet open={settings} onClose={() => setSettings(false)} />

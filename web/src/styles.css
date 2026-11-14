@@ -97,3 +97,6 @@ button { cursor: pointer; }
 /* a lit tripwire's lamp: a soft ring of its own colour, lit once on arrival (reduced motion keeps it still) */
 .tw-lit { box-shadow: 0 0 0 3px color-mix(in srgb, var(--z2) 22%, transparent), 0 0 9px var(--z2); animation: ignite .9s var(--ease) both; }
 @keyframes ignite { 0% { box-shadow: 0 0 0 0 transparent; transform: scale(.4); } 60% { transform: scale(1.25); } 100% { transform: none; } }
+
+/* a dossier's tab bar sticks to the top of its scroll panel: keep focused content clear of it when tabbing backwards */
+[data-scroll]:has([role="tablist"].sticky) { scroll-padding-top: 52px; }

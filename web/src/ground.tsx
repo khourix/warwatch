@@ -103,7 +103,7 @@ function AirPicture({ id, t, live }: { id: string; t: Theatre; live: LiveMap }) 
   const [allPorts, setAllPorts] = useState(false)
   const ports = (live.airports || []).filter(a => a.theatre === id).sort((a, b) => ratio(a) - ratio(b) || b.usual - a.usual)
   const divs = (live.diversions || []).filter(d => d.theatre === id).sort((a, b) => b.time - a.time)
-  const series = AIR.map(([k, label]) => [k, label, (t.aircraft48h?.[k] || []).filter(p => p && p[0])] as const).filter(s => s[2].length > 1)
+  const series = AIR.map(([k, label]) => [k, label, (t.aircraft48h?.[k] || []).filter(p => p && p[0])] as const).filter(s => s[2].filter(p => p[1] != null).length > 1)
   const nowAir = [...live.aircraft, ...live.squawks].filter(a => a.th === id)
   const holds = ports.reduce((n, a) => n + (a.holds || 0), 0), biz = ports.reduce((n, a) => n + (a.bizjets || 0), 0), bizOut = ports.reduce((n, a) => n + (a.bizjetsOut || 0), 0)
   const turn = divs.filter(d => d.kind === 'turnback').length
@@ -277,7 +277,7 @@ function BaseFull({ b, mb, crumbs, th, thName, go }: { b: BaseFile; mb?: MapBase
         {b.about && <p className="text-[12.5px] leading-[1.5] text-fg2">{b.about}</p>}
         {b.note && <p className="mt-1.5 text-[12px] leading-[1.5] text-fg3">{plainDates(b.note)}</p>}
       </Block>}
-      <Note><b>What this does not say.</b> A change on radar is a reason to look, not proof: one pass outside the usual range happens about one time in five by chance, and two in a row far outside is what marks a base as changed.
+      <Note><b>What this does not say.</b> A change on radar is a reason to look, not proof. One pass far outside the usual range marks a base as changed; two passes in a row within a week, both far below or both far above it, mark it as fewer or more than usual.
         {p && !p.tested ? ' This count is not yet tested against past events, so it carries no weight in the unusual readings.' : ''} Coordinates {coords(b.ll)}.</Note>
       <div className="flex flex-wrap gap-2 px-5 pb-6">
         <a href={`https://browser.dataspace.copernicus.eu/?zoom=14&lat=${b.ll[1]}&lng=${b.ll[0]}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-r2 border border-line px-3 py-1.5 text-[12.5px] text-fg2 hover:bg-s2">Copernicus Browser <ExternalLink size={12} aria-hidden /></a>
@@ -291,14 +291,15 @@ function PassBlock({ p, hot }: { p: BasePart; hot?: string }) {
   const r = (v: number | null) => v == null ? '–' : Math.round(v)
   return (
     <Block title={`${PART_TITLE[p.part] || p.what} counted per pass`} aside={p.tested ? 'band is the usual range' : 'band is the usual range · not yet tested'}>
-      <PassChart p={p} hot={hot} />
+      <PassChart p={p} hot={hot} marked={p.state === 'out' || p.state === 'in' ? 2 : p.state === 'changed' ? 1 : 0} />
       <Facts className="mt-2" items={[[r(p.now), 'on the latest pass'], [r(p.usual), 'usual'], [p.low != null && p.high != null ? `${r(p.low)}–${r(p.high)}` : '–', 'usual range']]} />
     </Block>
   )
 }
 
 /* Count on each pass, the usual range as a band and the usual as a dashed line; the last two passes carry the base's mark */
-function PassChart({ p, hot }: { p: BasePart; hot?: string }) {
+/* marked: how many of the last passes made the state (basewatch.state: two for fewer or more than usual, one for changed) */
+function PassChart({ p, hot, marked }: { p: BasePart; hot?: string; marked: number }) {
   const [ref, w] = useWidth<HTMLDivElement>()
   const h = useMemo(() => p.history.filter(x => x[1] != null), [p])
   const hh = 132, L = 30, R = 6, T = 10, B = 20
@@ -322,7 +323,7 @@ function PassChart({ p, hot }: { p: BasePart; hot?: string }) {
         {geo.band && <polygon points={geo.band} fill="color-mix(in srgb, var(--fg3) 16%, transparent)" />}
         {geo.usual && <polyline points={geo.usual} fill="none" stroke="var(--fg3)" strokeWidth={1} strokeDasharray="3 3" />}
         <polyline points={geo.line} fill="none" stroke="var(--fg)" strokeWidth={1.4} strokeLinejoin="round" />
-        {h.map((x, i) => { const end = i >= h.length - 2; return <circle key={i} cx={geo.X(i)} cy={geo.Y(x[1])} r={end ? 3.2 : 1.7} fill={end ? hot || 'var(--fg)' : 'var(--fg)'} /> })}
+        {h.map((x, i) => { const m = marked > 0 && !!hot && i >= h.length - marked, last = i === h.length - 1; return <circle key={i} cx={geo.X(i)} cy={geo.Y(x[1])} r={m ? 3.4 : last ? 2.8 : 1.7} fill={m ? hot : 'var(--fg)'} /> })}
         <text x={L - 6} y={geo.Y(geo.mx) + 8} textAnchor="end" fontSize={9.5} fill="var(--fg3)" fontFamily="var(--font-mono)">{Math.round(geo.mx)}</text>
         <text x={L - 6} y={geo.Y(geo.mn)} textAnchor="end" fontSize={9.5} fill="var(--fg3)" fontFamily="var(--font-mono)">{Math.round(geo.mn)}</text>
         <text x={L} y={hh - 5} fontSize={9.5} fill="var(--fg3)" fontFamily="var(--font-mono)">{shortDate(h[0][0])}</text>
@@ -338,6 +339,8 @@ function PassChart({ p, hot }: { p: BasePart; hot?: string }) {
 function Compare({ before, after, what, name }: { before: Pic; after: Pic; what: string; name: string }) {
   const [pos, setPos] = useState(50)
   const box = useRef<HTMLDivElement>(null), drag = useRef(false)
+  /* a touch waits to see which way it goes: sideways moves the divider, up or down is left to scroll the page; a tap moves it there */
+  const touch = useRef<{ x: number; y: number; id: number; moved: boolean } | null>(null)   // moved: it became a drag
   if (!after) return null
   const at = (e: PointerEvent) => { const r = box.current!.getBoundingClientRect(); setPos(Math.round(Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100)))) }
   const key = (e: KeyboardEvent) => {
@@ -354,8 +357,23 @@ function Compare({ before, after, what, name }: { before: Pic; after: Pic; what:
     </div>)
   return (
     <div ref={box} className="relative mx-5 cursor-ew-resize select-none overflow-hidden rounded-r2 bg-black" style={{ touchAction: 'pan-y' }}
-      onPointerDown={e => { if (e.button) return; drag.current = true; box.current?.setPointerCapture(e.pointerId); at(e) }}
-      onPointerMove={e => { if (drag.current) at(e) }} onPointerUp={() => { drag.current = false }} onPointerCancel={() => { drag.current = false }}>
+      onPointerDown={e => {
+        if (e.button) return
+        if (e.pointerType !== 'mouse') { touch.current = { x: e.clientX, y: e.clientY, id: e.pointerId, moved: false }; return }
+        drag.current = true; box.current?.setPointerCapture(e.pointerId); at(e)
+      }}
+      onPointerMove={e => {
+        const t = touch.current
+        if (t && !drag.current) {
+          const dx = Math.abs(e.clientX - t.x), dy = Math.abs(e.clientY - t.y)
+          if (dy > 8 && dy >= dx) { touch.current = null; return }          // a scroll: leave the divider alone
+          if (dx > 8 && dx > dy) { drag.current = true; t.moved = true; try { box.current?.setPointerCapture(t.id) } catch { /* pointer gone */ } }
+          else return
+        }
+        if (drag.current) at(e)
+      }}
+      onPointerUp={e => { const t = touch.current; if (t && !t.moved && !drag.current) at(e); drag.current = false; touch.current = null }}
+      onPointerCancel={() => { drag.current = false; touch.current = null }}>
       <img src={asset(after.src)} alt={`${what} of ${name}, latest pass, ${shortDate(after.date)}`} draggable={false} className="pointer-events-none block w-full" />
       <img src={asset(before.src)} alt={`${what} of ${name}, earlier pass, ${shortDate(before.date)}`} draggable={false} className="pointer-events-none absolute inset-0 h-full w-full object-cover" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }} />
       <span className={`${label} left-2`}>Before · {shortDate(before.date)}</span>

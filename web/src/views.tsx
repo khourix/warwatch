@@ -22,7 +22,7 @@ export function Crumbs({ back, items, go }: { back: Route; items: [string, Route
       <nav aria-label="Breadcrumb" className="min-w-0"><ol className="flex min-w-0 items-center gap-1.5">
         {items.map(([t, r], i) => <li key={i} className="flex min-w-0 items-center gap-1.5">
           {i > 0 && <span aria-hidden className="text-fg3">/</span>}
-          {r ? <Lnk to={r} go={go} className="truncate hover:text-fg">{t}</Lnk> : <span className="truncate text-fg2" aria-current={i === items.length - 1 ? 'page' : undefined}>{t}</span>}
+          {r ? <Lnk to={r} go={go} className="truncate hover:text-fg">{t}</Lnk> : <span className="truncate text-fg2">{t}</span>}
         </li>)}
       </ol></nav>
     </div>
@@ -30,6 +30,10 @@ export function Crumbs({ back, items, go }: { back: Route; items: [string, Route
 }
 
 /* ---------------------------------------------------------------- Theatre */
+/* Does the 30-day model set this theatre's level? Only when it is active and gives this theatre a chance: a sub-theatre the
+   model has not passed for (model.py, "held") keeps its signal-pressure level and carries no chance. */
+export const modelOn = (b: Brief, t: Theatre) => b.model.active && t.chance.p != null
+const held = (b: Brief, t: Theatre) => b.model.active && t.chance.p == null
 const TABS = ['now', 'ground', 'signals', 'history']
 const GLOSS: Record<Group, string> = { Logistics: 'supply', Markets: 'money', People: 'advice', News: 'language', Physical: 'movement' }
 
@@ -45,6 +49,7 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
   const lit = t.tells.filter(x => x.on).length
   const nBases = live ? live.bases.filter(b => b.theatres.includes(id)).length : undefined
   const setTab = (s: string) => go({ v: 'theatre', id, tab: s }, true)
+  const on = modelOn(brief, t)
   return (
     <div>
       <Crumbs back={{ v: 'brief' }} items={[['Watch', { v: 'brief' }], [regionName]]} go={go} />
@@ -56,17 +61,17 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
           {lit > 0 && <Tag mark="var(--z2)">{lit} {lit === 1 ? 'tripwire' : 'tripwires'} lit</Tag>}
           {t.spillover && t.parents.length > 0 && <Tag>Spillover from {t.parents.map(p => brief.theatres.find(x => x.id === p)?.name || p).join(', ')}</Tag>}
         </div>
-        <p className="mt-3 font-serif text-[16.5px] leading-[1.42] text-fg [text-wrap:pretty]">{summary(t, brief.model.active)}</p>
+        <p className="mt-3 font-serif text-[16.5px] leading-[1.42] text-fg [text-wrap:pretty]">{summary(t, on)}</p>
       </div>
-      <Gauge t={t} active={brief.model.active} />
+      <Gauge t={t} active={on} />
       <Tabs id="th" label={`${t.name} dossier`} value={sub} onChange={setTab} panel sticky
         tabs={[['now', 'Overview'], ['ground', 'Ground', nBases], ['signals', 'Signals', t.signals.total], ['history', 'History', t.events.length]]} />
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={sub} {...tabPanel('th', sub)} className="outline-none" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: .18, ease: [.22, 1, .36, 1] }}>
-          {sub === 'now' && <Overview t={t} brief={brief} go={go} />}
+          {sub === 'now' && <Overview t={t} brief={brief} on={on} go={go} />}
           {sub === 'ground' && <GroundTab id={id} t={t} live={live} brief={brief} go={go} />}
           {sub === 'signals' && <SignalsTab t={t} go={go} />}
-          {sub === 'history' && <HistoryTab t={t} brief={brief} />}
+          {sub === 'history' && <HistoryTab t={t} brief={brief} on={on} />}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -79,11 +84,13 @@ function Gauge({ t, active }: { t: Theatre; active: boolean }) {
   const s = t.score == null ? null : Math.max(0, Math.min(100, t.score))
   const w = s == null ? null : wholeScore(s)
   const line = !active
+  /* while the reading sets the level, the words follow the level the pipeline set (it can hold a level across the line) */
+  const B = ({ children }: { children: ReactNode }) => <b className="font-medium text-fg">{children}</b>
   const say: ReactNode = s == null || w == null ? 'No reading today'
     : !line ? null
-    : s < 50 ? <><b className="font-medium text-fg">{50 - w} {50 - w === 1 ? 'point' : 'points'}</b> below Watch</>
-    : s >= 90 ? <><b className="font-medium text-fg">Over</b> the Critical line</>
-    : <><b className="font-medium text-fg">{w === 50 ? 'On' : 'Over'}</b> the Watch line</>
+    : t.level === 'Normal' ? (w < 50 ? <><B>{50 - w} {50 - w === 1 ? 'point' : 'points'}</B> below Watch</> : <><B>At</B> the Watch line, level not raised</>)
+    : t.level === 'Critical' ? <><B>Past</B> the Critical line</>
+    : w >= 50 ? <><B>Past</B> the Watch line</> : <>Level <B>held</B> at {levelWord(t.level)}</>
   return (
     <section aria-label="Unusual readings" className="mx-5 mb-3.5 rounded-r3 border border-line bg-s2 px-4 pb-3 pt-3.5">
       <h2 className="eyebrow mb-2.5">Unusual readings</h2>
@@ -107,7 +114,7 @@ function Gauge({ t, active }: { t: Theatre; active: boolean }) {
 }
 
 /* ---------------------------------------------------------------- Overview */
-function Overview({ t, brief, go }: { t: Theatre; brief: Brief; go: Go }) {
+function Overview({ t, brief, on, go }: { t: Theatre; brief: Brief; on: boolean; go: Go }) {
   return <>
     <Ladder t={t} brief={brief} go={go} />
     <Tripwires t={t} />
@@ -121,9 +128,11 @@ function Overview({ t, brief, go }: { t: Theatre; brief: Brief; go: Go }) {
     </Block>}
     <Note>
       <b>How sure is this?</b> Confidence is {(t.confidence || 'not rated').toLowerCase()}: {t.signals.scored} of {t.signals.total} signals for {t.name} are scoring today.{' '}
-      {brief.model.active
+      {on
         ? 'The level comes from the 30-day model, which has passed its checks. The unusual readings measure how unusual today is and are not a chance of war.'
-        : 'The level comes from the unusual readings alone, which measure how unusual today is and are not a chance of war. A 30-day chance model runs in shadow and stays off this screen until it passes its tests.'}{' '}
+        : held(brief, t)
+        ? 'The level comes from the unusual readings alone, which measure how unusual today is and are not a chance of war. The 30-day model has passed its checks overall but not yet for this theatre, so it gives no chance here.'
+        : 'The level comes from the unusual readings alone, which measure how unusual today is and are not a chance of war. A 30-day chance model runs in shadow: its figures are on the History tab and do not set the level.'}{' '}
       <Lnk to={{ v: 'record' }} go={go} className="lnk">See the record</Lnk>
     </Note>
   </>
@@ -134,12 +143,13 @@ function Ladder({ t, brief, go }: { t: Theatre; brief: Brief; go: Go }) {
   const [open, setOpen] = useState<Group | null>(null)
   const end = parseGen(brief.generated).getTime()
   const day = (k: number) => shortDate(new Date(end - k * 864e5).toISOString().slice(0, 10))
+  const n = Math.max(0, ...GROUPS.map(g => (t.groups[g]?.history || []).slice(-60).length))
   const cols = 'grid grid-cols-[70px_minmax(0,1fr)_36px] gap-2.5'
   return (
-    <Block title="Build-up, slow to fast" aside="60 days, darker is more unusual">
+    <Block title="Build-up, slow to fast" aside={`${n > 1 ? `${n} days` : 'Daily'}, darker is more unusual`}>
       {GROUPS.map(g => {
         const d = t.groups[g], h = (d?.history || []).slice(-60), on = open === g
-        const peak = h.length ? Math.max(...h) : null
+        const vals = h.filter((v): v is number => v != null), peak = vals.length ? Math.max(...vals) : null
         return (
           <div key={g}>
             <button onClick={() => setOpen(on ? null : g)} aria-expanded={on} aria-controls={`lad-${g}`}
@@ -149,7 +159,7 @@ function Ladder({ t, brief, go }: { t: Theatre; brief: Brief; go: Go }) {
                 {h.map((z, i) => <i key={i} className="rounded-[1px]" style={{ background: groupTone(z) }} />)}
               </span>
               <span className="num flex items-center justify-end gap-0.5 text-[12px] font-medium text-fg2">{d?.z == null ? '–' : d.z.toFixed(1)}<ChevronDown size={11} aria-hidden className={`shrink-0 text-fg3 transition-transform ${on ? 'rotate-180' : ''}`} /></span>
-              <span className="sr-only">{`: ${d?.z == null ? 'no reading today' : `${d.z.toFixed(1)} standard deviations from usual today`}${peak != null ? `, highest ${peak.toFixed(1)} in 60 days` : ''}. Show its top signals.`}</span>
+              <span className="sr-only">{`: ${d?.z == null ? 'no reading today' : `${d.z.toFixed(1)} standard deviations from usual today`}${peak != null ? `, highest ${peak.toFixed(1)} in the last ${h.length} days` : ', no reading in the last 60 days'}. Show its top signals.`}</span>
             </button>
             <AnimatePresence initial={false}>{on && (
               <motion.div id={`lad-${g}`} initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: .22, ease: [.22, 1, .36, 1] }} className="overflow-hidden">
@@ -165,7 +175,7 @@ function Ladder({ t, brief, go }: { t: Theatre; brief: Brief; go: Go }) {
           </div>)
       })}
       <div className={`${cols} mt-0.5 font-mono text-[9.5px] leading-none text-fg3`} aria-hidden>
-        <span /><span className="flex justify-between"><span>{day(59)}</span><span>{day(29)}</span><span>today</span></span><span />
+        <span />{n > 1 ? <span className="flex justify-between"><span>{day(n - 1)}</span>{n > 20 && <span>{day(Math.round((n - 1) / 2))}</span>}<span>today</span></span> : <span />}<span />
       </div>
     </Block>
   )
@@ -178,8 +188,10 @@ const monthYear = (d: string) => new Date(d.slice(0, 10) + 'T00:00Z').toLocaleDa
 export function recordLine(x: Tell): string {
   const r = x.record
   if (!r || r.episodes == null) return 'New, no record yet'
-  if (!r.episodes) return `Has not fired since ${year(r.first)}`
-  return `Fired ${r.episodes} ${r.episodes === 1 ? 'time' : 'times'} since ${year(r.first)}, ${r.hits ?? 0} followed by an event`
+  /* the record is summed over every theatre the rule was replayed on (tells.py), so the row says so */
+  const where = r.theatres ? ` across ${r.theatres} ${r.theatres === 1 ? 'theatre' : 'theatres'}` : ''
+  if (!r.episodes) return `Has not fired${where} since the record began${r.first ? ` in ${year(r.first)}` : ''}`
+  return `Fired ${r.episodes} ${r.episodes === 1 ? 'time' : 'times'}${where} since ${year(r.first)}, ${r.hits ?? 0} followed by an event`
 }
 function Tripwires({ t }: { t: Theatre }) {
   const [open, setOpen] = useState<string | null>(null)
@@ -215,7 +227,7 @@ function Tripwires({ t }: { t: Theatre }) {
             </AnimatePresence>
           </li>) })}
       </ul>
-      {eps > 0 && <p className="mt-2.5 text-[11.5px] leading-[1.45] text-fg3">Across these rules, {hits} of {eps} past firings were followed by an event. A lit tripwire is a reason to look closer, not a forecast.</p>}
+      {eps > 0 && <p className="mt-2.5 text-[11.5px] leading-[1.45] text-fg3">Across all watched theatres, {hits} of {eps} past firings of these rules were followed by an event. A lit tripwire is a reason to look closer, not a forecast.</p>}
     </Block>
   )
 }
@@ -246,23 +258,26 @@ function SignalRow({ s, go }: { s: Signal; go: Go }) {
 }
 
 /* ---------------------------------------------------------------- History */
-function HistoryTab({ t, brief }: { t: Theatre; brief: Brief }) {
-  const hs = t.history.map(x => x[1])
-  const last = t.history[t.history.length - 1]
+function HistoryTab({ t, brief, on }: { t: Theatre; brief: Brief; on: boolean }) {
+  /* the pipeline writes null where the usual chance is missing: draw only the days that have a value */
+  const rows = t.history.filter((x): x is [string, number, number, string] => x[1] != null && Number.isFinite(x[1]))
+  const hs = rows.map(x => x[1]), last = rows[rows.length - 1]
   const events = useMemo(() => [...t.events].sort((a, b) => b.date.localeCompare(a.date)), [t.events])
   const [all, setAll] = useState(false)
   const c = t.chance, pct = (p: number) => `${Math.round(p * 100)}%`
   const big = (k: string) => ['strike', 'war', 'onset', 'invasion'].includes(k)
   return <>
-    {hs.length > 1 && <Block title="Standing risk" aside={`last ${hs.length} days`}>
+    {hs.length > 1 && <Block title="Standing risk" aside={`since ${shortDate(rows[0][0])}`}>
       <div className="flex items-center gap-3.5">
-        <span role="img" aria-label={`Standing risk over the last ${hs.length} days, from ${hs[0]} to ${last[1]} times the theatre's usual. Lowest ${Math.min(...hs)}, highest ${Math.max(...hs)}.`} className="min-w-0 flex-1">
+        <span role="img" aria-label={`Standing risk since ${shortDate(rows[0][0])}, from ${hs[0]} to ${last[1]} times the usual chance. Lowest ${Math.min(...hs)}, highest ${Math.max(...hs)}.`} className="min-w-0 flex-1">
           <SizedSpark v={hs} h={44} />
         </span>
         <span className="num shrink-0 text-right text-[12.5px] leading-[1.3] text-fg2">{last[1].toFixed(2)}×<small className="block text-[11px] text-fg3">usual, today</small></span>
       </div>
-      <p className="mt-1.5 text-[11px] leading-[1.45] text-fg3">The theatre's rate of qualifying events against its long-run usual, from the {brief.model.active ? 'model' : 'shadow model. It does not set the level'}.</p>
+      <p className="mt-1.5 text-[11px] leading-[1.45] text-fg3">{on ? "The model's 30-day chance here, divided by its usual chance. The model has passed its checks and sets the level."
+        : `The shadow model's 30-day chance here, divided by its usual chance. ${brief.model.gates?.pass || brief.model.active ? 'It does not set the level for this theatre.' : 'It has not passed its tests and does not set the level.'}`}</p>
     </Block>}
+    {hs.length === 1 && <Block title="Standing risk"><p className="text-[12px] text-fg2"><span className="num">{last[1].toFixed(2)}×</span> the usual chance on {shortDate(last[0])}. Too few days to draw.</p></Block>}
     <Block title="What has happened here" aside={`the events the model is tested on, to ${shortDate(brief.eventsThrough)}`}>
       {events.length === 0 ? <p className="text-[12.5px] text-fg3">No labelled event in this theatre since 2018.</p>
         : <ol className="relative ml-[5px] border-l border-line2 pl-4">
@@ -276,9 +291,10 @@ function HistoryTab({ t, brief }: { t: Theatre; brief: Brief }) {
       {events.length > 14 && <button onClick={() => setAll(!all)} className="lnk mt-2 text-[12px]">{all ? 'Show the latest 14' : `Show all ${events.length}`}</button>}
     </Block>
     <Note>
-      <b>{brief.model.active ? 'The 30-day model.' : 'Shadow model.'}</b>{' '}
-      {c.p != null ? <>It puts the 30-day chance of a qualifying event in {t.name} at {pct(c.p)}{c.lo != null && c.hi != null ? ` (${pct(c.lo)} to ${pct(c.hi)})` : ''}{c.usual != null ? `, against a usual ${pct(c.usual)}` : ''}. </> : 'It gives no chance for this theatre today. '}
-      {gatesSentence(brief.model.gates, brief.model.active)}
+      <b>{on || held(brief, t) ? 'The 30-day model.' : 'Shadow model.'}</b>{' '}
+      {held(brief, t) ? 'The 30-day model has passed its checks overall but not yet for this theatre, so it gives no chance here and the level comes from the unusual readings.'
+        : <>{c.p != null ? <>It puts the 30-day chance of a qualifying event in {t.name} at {pct(c.p)}{c.lo != null && c.hi != null ? ` (${pct(c.lo)} to ${pct(c.hi)})` : ''}{c.usual != null ? `, against a usual ${pct(c.usual)}` : ''}. </> : 'It gives no chance for this theatre today. '}
+          {gatesSentence(brief.model.gates, on)}</>}
     </Note>
   </>
 }

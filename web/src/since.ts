@@ -14,15 +14,28 @@ type Snap = { v: 1; at: number; gen: string; from: string; th: [string, Level, n
 export type Moved = { id: string; name: string; from: [Level, number | null]; to: [Level, number | null] }
 export type Since = { at: Date; moved: Moved[]; fresh: Set<string>; counts: Record<FeedItem['kind'], number> }
 
-export const feedKey = (f: FeedItem) => `${f.date.slice(0, 10)}|${f.theatre}|${f.kind}|${f.title}`
+/* A feed item's identity between runs. Heat titles carry counts and a site name that change from run to run, and a base's
+   title carries its words, so those are keyed by what they are about; tripwire and official titles are fixed names. */
+export function feedKey(f: FeedItem): string {
+  const d = f.date.slice(0, 10)
+  switch (f.kind) {
+    case 'fire': return `${d}|${f.theatre}|fire`
+    case 'base': return `${d}|base|${f.to?.id || f.title}`
+    default: return `${d}|${f.theatre}|${f.kind}|${f.title}`
+  }
+}
 const whole = (s: number | null) => s == null ? null : wholeScore(s)
 
 function snapshot(b: Brief): Snap {
   const from = new Date(parseGen(b.generated).getTime() - WINDOW_DAYS * 864e5).toISOString().slice(0, 10)
   return { v: 1, at: Date.now(), gen: b.generated, from, th: b.theatres.map(t => [t.id, t.level, whole(t.score)]), feed: b.feed.filter(f => f.date.slice(0, 10) >= from).map(feedKey) }
 }
+/* anything not exactly the shape this file writes is dropped (and later overwritten), never trusted */
+const valid = (s: any): s is Snap => !!s && s.v === 1 && Number.isFinite(s.at) && typeof s.from === 'string'
+  && Array.isArray(s.th) && s.th.every((x: unknown) => Array.isArray(x) && typeof x[0] === 'string' && typeof x[1] === 'string' && (x[2] === null || Number.isFinite(x[2])))
+  && Array.isArray(s.feed) && s.feed.every((k: unknown) => typeof k === 'string')
 function read(): Snap | null {
-  try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); return s && s.v === 1 && Array.isArray(s.th) && Array.isArray(s.feed) ? s : null } catch { return null }
+  try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); return valid(s) ? s : null } catch { return null }
 }
 function write(b: Brief) {
   try { localStorage.setItem(KEY, JSON.stringify(snapshot(b))) } catch { /* private mode: nothing kept */ }
@@ -39,9 +52,10 @@ export function diff(prev: Snap, b: Brief): Since {
   const rank: Record<string, number> = { Normal: 0, Watch: 1, Elevated: 2, Critical: 3 }
   moved.sort((x, y) => Number(y.from[0] !== y.to[0]) - Number(x.from[0] !== x.to[0]) || rank[y.to[0]] - rank[x.to[0]]
     || Math.abs((y.to[1] ?? 0) - (y.from[1] ?? 0)) - Math.abs((x.to[1] ?? 0) - (x.from[1] ?? 0)))
+  /* counts are rows, so a count matches the rows its chip shows */
   const seen = new Set(prev.feed), fresh = new Set<string>()
   const counts: Since['counts'] = { tell: 0, base: 0, fire: 0, official: 0 }
-  for (const f of b.feed) { const k = feedKey(f); if (f.date.slice(0, 10) >= prev.from && !seen.has(k) && !fresh.has(k)) { fresh.add(k); counts[f.kind] += 1 } }
+  for (const f of b.feed) { const k = feedKey(f); if (f.date.slice(0, 10) >= prev.from && !seen.has(k)) { fresh.add(k); if (f.kind in counts) counts[f.kind] += 1 } }
   return { at: new Date(prev.at), moved, fresh, counts }
 }
 
@@ -56,7 +70,10 @@ export function useSinceLastVisit(brief: Brief): { since: Since | null; dismiss:
     document.addEventListener('visibilitychange', end); addEventListener('pagehide', hide)
     return () => { document.removeEventListener('visibilitychange', end); removeEventListener('pagehide', hide) }
   }, [])
-  const since = useMemo(() => !prev || gone || Date.now() - prev.at <= HOUR ? null : diff(prev, brief), [prev, gone, brief])
+  const since = useMemo(() => {
+    if (!prev || gone || Date.now() - prev.at <= HOUR) return null
+    try { return diff(prev, brief) } catch { return null }     // a surprise in old data costs the block, never the page
+  }, [prev, gone, brief])
   const dismiss = useCallback(() => { write(latest.current); setGone(true) }, [])
   return { since, dismiss }
 }
