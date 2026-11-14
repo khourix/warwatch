@@ -41,7 +41,7 @@ def summary(data):
     else:
         a = f"{_join([v['name'] for _, v in up])} are above quiet." if len(up) <= 3 else f"{WORDS[len(up)] if len(up) < len(WORDS) else len(up)} theatres are above quiet, led by {up[0][1]['name']}."
     word = WORDS[tells] if tells < len(WORDS) else str(tells)
-    b = f" {word} timing tell{'' if tells == 1 else 's'} fired this week."
+    b = f" {word} tripwire{'' if tells == 1 else 's'} fired this week."
     bases = sum(1 for b_ in ((data.get("map") or {}).get("bases") or []) if b_.get("st") in ("out", "in", "changed"))
     signals = sum(1 for s in data.get("series") or [] if not s.get("tf"))
     return a + b, {"tells": tells, "bases": bases, "theatres": len(ths), "signals": signals}
@@ -236,7 +236,7 @@ def card_html(data, topo, fallback=False):
     fact = _fact
     return f"""<!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>WarWatch share card</title><style>{_style(size)}
 </style></head><body>{globe_svg(topo, data)}<div class="wm">{MARK}WarWatch</div><h1>{html.escape(head)}</h1>
-<div class="facts"{' style="display:none"' if fallback else ''}>{fact(f["tells"], "timing tells<br>this week", "#e9b44c" if f["tells"] else "#e9edf3")}{fact(f["bases"], "bases changed<br>on radar", "#f28a3e" if f["bases"] else "#e9edf3")}{fact(f["theatres"], f"theatres,<br>{f['signals']} signals")}</div>
+<div class="facts"{' style="display:none"' if fallback else ''}>{fact(f["tells"], "tripwires<br>this week", "#e9b44c" if f["tells"] else "#e9edf3")}{fact(f["bases"], "bases changed<br>on radar", "#f28a3e" if f["bases"] else "#e9edf3")}{fact(f["theatres"], f"theatres,<br>{f['signals']} signals")}</div>
 <div class="foot"><span>{SITE}</span><span>{html.escape(when)}</span></div></body></html>
 """
 
@@ -247,10 +247,10 @@ LEVEL_WORD = {"Normal": "Quiet", "Watch": "Watch", "Elevated": "Elevated", "Crit
 
 
 def theatre_headline(name, level, tells):
-    """'Iran reads quiet. No timing tells fired this week.' Also the share text on the theatre's page (pages.py)."""
+    """'Iran reads quiet. No tripwires fired this week.' Also the share text on the theatre's page (pages.py)."""
     lv = level if level in LEVEL_FILL else "Normal"
     word = WORDS[tells] if tells < len(WORDS) else str(tells)
-    return (f"{name} reads quiet." if lv == "Normal" else f"{name} reads {lv.lower()}.") + f" {word} timing tell{'' if tells == 1 else 's'} fired this week."
+    return (f"{name} reads quiet." if lv == "Normal" else f"{name} reads {lv.lower()}.") + f" {word} tripwire{'' if tells == 1 else 's'} fired this week."
 
 
 def theatre_summary(data, t):
@@ -279,7 +279,7 @@ h1{{top:196px;width:600px}}.name{{position:absolute;left:72px;top:128px;display:
 .name b{{font-size:22px;font-weight:600;color:#e9edf3}}.lv{{border:1.5px solid;border-radius:8px;padding:2px 10px;font-size:17px;font-weight:600}}.ctx{{font-size:18px}}
 </style></head><body>{globe_svg(topo, data, cx=860, cy=315, r=r, lon0=lon0, lat0=lat0, focus=t)}<div class="wm">{MARK}WarWatch</div>
 <div class="name"><b>{html.escape(f["name"])}</b>{pill}</div><h1>{html.escape(head)}</h1>
-<div class="facts">{fact(f["tells"], "timing tells<br>this week", "#e9b44c" if f["tells"] else "#e9edf3")}{fact(f["strong"], "strong readings<br>3 SD or more", "#f28a3e" if f["strong"] else "#e9edf3")}{fact(f["bases"], "bases changed<br>on radar", "#f28a3e" if f["bases"] else "#e9edf3")}</div>
+<div class="facts">{fact(f["tells"], "tripwires<br>this week", "#e9b44c" if f["tells"] else "#e9edf3")}{fact(f["strong"], "strong readings<br>3 SD or more", "#f28a3e" if f["strong"] else "#e9edf3")}{fact(f["bases"], "bases changed<br>on radar", "#f28a3e" if f["bases"] else "#e9edf3")}</div>
 <div class="foot"><span>{SITE}/{t}</span><span>{html.escape(_when(data))}</span></div></body></html>
 """
 

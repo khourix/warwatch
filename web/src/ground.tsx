@@ -16,7 +16,7 @@ export const baseWord = (state: string, part?: string) =>
   state === 'out' || state === 'in' ? `${state === 'out' ? 'Fewer' : 'More'} ${THINGS[part || ''] || 'objects'} than usual` : baseState(state)[0]
 const FIRE_WORD: Record<string, string> = { anom: 'Unusual heat', hot: 'Much more heat than usual', unex: 'Heat with no known source', ind: 'Industry or gas flare', seas: 'Farm or grass burning', volc: 'Volcano', off: 'Offshore platform' }
 export const fireWord = (c: string) => FIRE_WORD[c] || 'Heat'
-export const fireColour = (c: string) => c === 'anom' || c === 'hot' ? 'var(--elev)' : c === 'unex' ? 'var(--watch)' : 'var(--fg-3)'
+export const fireColour = (c: string) => c === 'anom' || c === 'hot' ? 'var(--z3)' : c === 'unex' ? 'var(--z2)' : 'var(--fg3)'
 
 /* ---------------------------------------------------------------- the theatre's "On the ground" tab */
 export function GroundTab({ id, live, brief, go }: { id: string; live?: LiveMap; brief: Brief; go: Go }) {
@@ -36,7 +36,7 @@ export function GroundTab({ id, live, brief, go }: { id: string; live?: LiveMap;
       <div className="grid gap-2">
         {shown.map((b, i) => <BaseRow key={b.id} b={b} i={i} go={go} />)}
       </div>
-      {bases.length > 6 && <button onClick={() => setAll(!all)} className="mt-2 text-[12.5px] text-accent hover:underline">{all ? 'Show fewer' : `Show all ${bases.length}`}</button>}
+      {bases.length > 6 && <button onClick={() => setAll(!all)} className="mt-2 text-[12.5px] lnk">{all ? 'Show fewer' : `Show all ${bases.length}`}</button>}
     </Section>
     <Section title="Fires and heat, last 48 hours" aside="NASA VIIRS">
       {fires.length === 0 && <p className="text-[13px] text-fg3">No fire detected in this theatre in the last 48 hours.</p>}
@@ -53,7 +53,7 @@ export function GroundTab({ id, live, brief, go }: { id: string; live?: LiveMap;
       {air.length === 0 ? <p className="text-[13px] text-fg3">None broadcasting over this theatre at the last run. Most military aircraft fly with their transponder off, so none seen is not none there.</p>
         : air.slice(0, 12).map((a, i) => (
           <div key={i} className="flex items-center gap-3 py-1.5 text-[12.5px]">
-            <Plane size={14} className="shrink-0" style={{ color: a.emergency || a.sq ? 'var(--elev)' : 'var(--fg-2)', transform: `rotate(${(a.trk ?? 45) - 45}deg)` }} />
+            <Plane size={14} className="shrink-0" style={{ color: a.emergency || a.sq ? 'var(--z3)' : 'var(--fg2)', transform: `rotate(${(a.trk ?? 45) - 45}deg)` }} />
             <span className="min-w-0 flex-1 truncate"><span className="text-fg">{a.call || a.hex || 'Unknown'}</span><span className="text-fg3"> · {[a.t, a.o || a.ct].filter(Boolean).join(' · ')}</span></span>
             <span className="num shrink-0 text-fg3">{a.sq ? `squawk ${a.sq}` : a.alt != null ? `${Math.round(a.alt / 100) * 100} ft` : ''}</span>
           </div>))}
@@ -67,7 +67,7 @@ export function GroundTab({ id, live, brief, go }: { id: string; live?: LiveMap;
         </div>))}
       {warn.slice(0, 10).map((w, i) => (
         <div key={'w' + i} className="flex gap-3 py-1.5 text-[12.5px]">
-          <TriangleAlert size={14} className="mt-0.5 shrink-0" style={{ color: 'var(--watch)' }} />
+          <TriangleAlert size={14} className="mt-0.5 shrink-0" style={{ color: 'var(--z2)' }} />
           <span className="min-w-0 flex-1 text-fg2"><span className="line-clamp-3">{w.text}</span></span>
           <span className="num shrink-0 text-fg3">{w.id}</span>
         </div>))}
@@ -140,7 +140,7 @@ export function BaseView({ id, brief, go }: { id: string; brief: Brief; go: Go }
       <p className="mx-5 mb-4 text-[12px] leading-relaxed text-fg3">One pass outside the normal range happens about one time in five by chance; two in a row far outside is what marks a base as changed. A change is a reason to look, not proof.</p>
       <div className="flex flex-wrap gap-2 px-5 pb-6">
         <a href={`https://browser.dataspace.copernicus.eu/?zoom=14&lat=${b.ll[1]}&lng=${b.ll[0]}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-[12.5px] text-fg2 hover:bg-hover">Copernicus Browser <ExternalLink size={12} /></a>
-        {th && <button onClick={() => go({ v: 'theatre', id: th, tab: 'ground' })} className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-[12.5px] font-medium text-accentink">Open {name(th)}</button>}
+        {th && <button onClick={() => go({ v: 'theatre', id: th, tab: 'ground' })} className="inline-flex items-center gap-1.5 rounded-lg bg-sel px-3 py-1.5 text-[12.5px] font-medium text-selink">Open {name(th)}</button>}
       </div>
     </div>
   )
@@ -189,9 +189,9 @@ function PartChart({ p }: { p: BasePart }) {
       {geo && <svg viewBox={`0 0 ${w} ${H}`} className="mt-2 w-full" role="img" aria-label={`Count on each of the last ${h.length} passes against the usual range`}>
         {geo.bandD && <path d={geo.bandD} fill="var(--line)" />}
         <path d={geo.line} fill="none" stroke={col} strokeWidth={1.5} strokeLinejoin="round" />
-        {h.map((x, i) => { const out = x[3] != null && x[4] != null && (x[1] < x[3] || x[1] > x[4]); return <circle key={i} cx={geo.X(i)} cy={geo.Y(x[1])} r={out ? 2.6 : 1.6} fill={out ? 'var(--elev)' : col}><title>{`${x[0]}: ${x[1]}`}</title></circle> })}
-        <text x={4} y={H - 1} fontSize={10} fill="var(--fg-3)">{shortDate(h[0][0])}</text>
-        <text x={w - 4} y={H - 1} fontSize={10} fill="var(--fg-3)" textAnchor="end">{shortDate(h[h.length - 1][0])}</text>
+        {h.map((x, i) => { const out = x[3] != null && x[4] != null && (x[1] < x[3] || x[1] > x[4]); return <circle key={i} cx={geo.X(i)} cy={geo.Y(x[1])} r={out ? 2.6 : 1.6} fill={out ? 'var(--z3)' : col}><title>{`${x[0]}: ${x[1]}`}</title></circle> })}
+        <text x={4} y={H - 1} fontSize={10} fill="var(--fg3)">{shortDate(h[0][0])}</text>
+        <text x={w - 4} y={H - 1} fontSize={10} fill="var(--fg3)" textAnchor="end">{shortDate(h[h.length - 1][0])}</text>
       </svg>}
       {p.marks && <p className="mt-1 text-[12px] text-fg3">{p.marks.objects} objects on {shortDate(p.marks.date)}{p.marks.new != null && p.marks.gone != null ? `: ${p.marks.new} new and ${p.marks.gone} gone since ${shortDate(p.marks.before)}` : ''}.</p>}
       {!p.tested && <p className="mt-1 text-[12px] text-fg3">Not yet checked against past events, so it carries no weight in the risk numbers.</p>}

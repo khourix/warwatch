@@ -94,30 +94,36 @@ export const asset = (src: string) => new URL(src, ROOT).href
 
 /* Base states as basewatch.py writes them */
 export const BASE_STATE: Record<string, [string, string]> = {
-  out: ['Fewer than usual', 'var(--elev)'], in: ['More than usual', 'var(--elev)'], changed: ['One pass differed', 'var(--watch)'],
-  normal: ['Usual on the latest pass', 'var(--fg-3)'], optical: ['Optical images only', 'var(--fg-3)'], nodata: ['No recent pass', 'var(--fg-3)'],
+  out: ['Fewer than usual', 'var(--z3)'], in: ['More than usual', 'var(--z3)'], changed: ['One pass differed', 'var(--z2)'],
+  normal: ['Usual on the latest pass', 'var(--fg3)'], optical: ['Optical images only', 'var(--fg3)'], nodata: ['No recent pass', 'var(--fg3)'],
 }
-export const baseState = (s: string) => BASE_STATE[s] || [s, 'var(--fg-3)']
+export const baseState = (s: string) => BASE_STATE[s] || [s, 'var(--fg3)']
 
 /* Words and colours */
 export const LEVELS: Level[] = ['Normal', 'Watch', 'Elevated', 'Critical']
-export const levelVar = (l: string) => l === 'Critical' ? 'var(--crit)' : l === 'Elevated' ? 'var(--elev)' : l === 'Watch' ? 'var(--watch)' : 'var(--fg-3)'
+export const levelVar = (l: string) => l === 'Critical' ? 'var(--crit)' : l === 'Elevated' ? 'var(--z3)' : l === 'Watch' ? 'var(--z2)' : 'var(--fg3)'
 export const levelWord = (l: string) => l === 'Normal' ? 'Quiet' : l
-export const zColor = (z: number | null | undefined) => z == null ? 'transparent' : Math.abs(z) >= 3 ? 'var(--elev)' : Math.abs(z) >= 2 ? 'var(--watch)' : Math.abs(z) >= 1 ? 'color-mix(in oklab, var(--watch) 38%, transparent)' : 'color-mix(in oklab, var(--fg-3) 22%, transparent)'
+/* "South Asia (India-Pakistan)" reads "South Asia" on the board, the map and in sentences */
+export const short = (name: string) => name.replace(/\s*\(.*\)/, '')
+/* a signal group's cell on the board: below 1 SD plain, then three steps of warmth */
+export const groupTone = (z: number | null | undefined) => z == null || z < 1 ? 'var(--z0)' : z < 2 ? 'var(--z1)' : z < 3 ? 'var(--z2)' : 'var(--z3)'
+/* feed details written before the rename still say "Timing tell" */
+export const feedDetail = (d: string) => d.replace(/^Timing tell/, 'Tripwire')
+export const zColor = (z: number | null | undefined) => z == null ? 'transparent' : Math.abs(z) >= 3 ? 'var(--z3)' : Math.abs(z) >= 2 ? 'var(--z2)' : Math.abs(z) >= 1 ? 'color-mix(in oklab, var(--z2) 38%, transparent)' : 'color-mix(in oklab, var(--fg3) 22%, transparent)'
 export const fmtZ = (z: number | null | undefined) => z == null ? 'n/a' : (z > 0 ? '+' : z < 0 ? '−' : '') + Math.abs(z).toFixed(1)
 export const parseGen = (g: string) => new Date(g.replace(' UTC', 'Z').replace(' ', 'T'))
 export const shortDate = (d: string) => { const x = new Date(d + (d.length === 7 ? '-01' : '') + 'T00:00Z'); return x.toLocaleDateString('en-GB', { day: d.length === 7 ? undefined : 'numeric', month: 'short', timeZone: 'UTC' }) }
 export const daysBetween = (now: Date, d: string) => Math.round((now.getTime() - new Date(d.slice(0, 10) + 'T12:00Z').getTime()) / 864e5)
 export const ago = (now: Date, d: string) => { const n = daysBetween(now, d); return n <= 0 ? 'Today' : n === 1 ? 'Yesterday' : n < 7 ? `${n} days ago` : shortDate(d.slice(0, 10)) }
 
-/* One plain sentence per theatre, built from its levels and tells (the Brief's headline comes from the build, share.py). */
+/* One plain sentence per theatre, built from its levels and tripwires (the Watch dispatch is written in watch.tsx). */
 export function summary(t: Theatre): string {
   const strong = GROUPS.filter(g => (t.groups[g]?.z ?? 0) >= 2).map(g => g.toLowerCase())
   const parts = [t.level === 'Normal'
     ? (strong.length ? `Quiet overall, with ${strong.join(' and ')} readings above their usual range.` : 'Quiet. No signal group is far from its usual range.')
     : `${t.level}: ${strong.length ? strong.join(' and ') + ' readings are well above usual' : 'several readings are above usual'}.`]
   const on = t.tells.filter(x => x.on)
-  parts.push(on.length ? `${on.length === 1 ? 'One timing tell' : on.length + ' timing tells'} fired this week: ${on.map(x => /^[A-Z][a-z]/.test(x.name) ? x.name[0].toLowerCase() + x.name.slice(1) : x.name).join('; ')}.` : 'No timing tell fired this week.')
+  parts.push(on.length ? `${on.length === 1 ? 'One tripwire' : on.length + ' tripwires'} fired this week: ${on.map(x => /^[A-Z][a-z]/.test(x.name) ? x.name[0].toLowerCase() + x.name.slice(1) : x.name).join('; ')}.` : 'No tripwire fired this week.')
   return parts.join(' ')
 }
 

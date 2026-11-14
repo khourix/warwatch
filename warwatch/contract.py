@@ -218,8 +218,8 @@ def feed(data):
         for x in v.get("tells") or []:
             if x.get("on") and x.get("date"):
                 rec = x.get("rec") or {}
-                detail = (f"Timing tell. Fired before {rec['caught']} of {rec['events']} past events" if rec.get("events")
-                          else "Timing tell. New, no history to test yet")
+                detail = (f"Tripwire. Fired before {rec['caught']} of {rec['events']} past events" if rec.get("events")
+                          else "Tripwire. New, no history to test yet")
                 add({"date": x["date"], "kind": "tell", "theatre": t, "title": x["n"], "detail": detail, "to": {"view": "theatre", "id": t}})
     for t, h in (data.get("hist") or {}).items():
         if t not in data["theatres"] or t == "global":
@@ -228,7 +228,7 @@ def feed(data):
             d, k, text = i[0] + ("-01" if len(i[0]) == 7 else ""), i[1], i[2]
             to = {"view": "theatre", "id": t}
             if k == "tell":
-                add({"date": d, "kind": "tell", "theatre": t, "title": text, "detail": "Timing tell", "to": to})
+                add({"date": d, "kind": "tell", "theatre": t, "title": text, "detail": "Tripwire", "to": to})
             elif k == "wave":
                 add({"date": d, "kind": "tell", "theatre": t, "title": "Strike wave", "detail": text.split(": ", 1)[-1].capitalize(), "to": to})
             elif k == "advisory":

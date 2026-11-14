@@ -9,9 +9,9 @@ import { Spark, Section, Skeleton, Failed } from './ui'
 
 type Go = (r: Route) => void
 const STATUS: Record<string, [string, string]> = {
-  ok: ['Scored', 'var(--fg-3)'], collecting: ['Collecting history', 'var(--fg-3)'], awaiting_key: ['Needs a free key', 'var(--watch)'], error: ['Failed this run', 'var(--crit)'],
+  ok: ['Scored', 'var(--fg3)'], collecting: ['Collecting history', 'var(--fg3)'], awaiting_key: ['Needs a free key', 'var(--z2)'], error: ['Failed this run', 'var(--crit)'],
 }
-const zTone = (z: number | null) => z == null ? 'var(--fg-3)' : Math.abs(z) >= 3 ? 'var(--elev)' : Math.abs(z) >= 2 ? 'var(--watch)' : 'var(--fg-2)'
+const zTone = (z: number | null) => z == null ? 'var(--fg3)' : Math.abs(z) >= 3 ? 'var(--z3)' : Math.abs(z) >= 2 ? 'var(--z2)' : 'var(--fg2)'
 type Sort = 'unusual' | 'name' | 'fresh'
 
 export function SignalsView({ th, brief, go }: { th?: string; brief: Brief; go: Go }) {
@@ -45,15 +45,15 @@ export function SignalsView({ th, brief, go }: { th?: string; brief: Brief; go: 
     <div>
       <div className="flex items-center gap-2 px-5 pt-4 text-[12.5px] text-fg3">
         <button onClick={() => go({ v: 'brief' })} aria-label="Back" className="-ml-1.5 grid h-7 w-7 place-items-center rounded-md hover:bg-hover hover:text-fg"><ArrowLeft size={15} /></button>
-        <button onClick={() => go({ v: 'brief' })} className="hover:text-fg">Brief</button><ChevronRight size={12} className="opacity-50" /><span className="text-fg2">Signals</span>
+        <button onClick={() => go({ v: 'brief' })} className="hover:text-fg">Watch</button><ChevronRight size={12} className="opacity-50" /><span className="text-fg2">Signals</span>
       </div>
       <div className="px-5 pt-3">
         <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Signals</h1>
         <p className="mt-1 text-[13px] text-fg3"><span className="num">{sq.data?.signals.length ?? brief.counts.signals}</span> public series, each scored against its own history.</p>
-        <label className="mt-3 flex items-center gap-2 rounded-lg border border-line bg-raised px-2.5 py-2 focus-within:border-accent"><Search size={14} className="text-fg3" /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search name, source or theatre" aria-label="Search signals" className="w-full bg-transparent text-[13.5px] outline-none placeholder:text-fg3" /></label>
+        <label className="mt-3 flex items-center gap-2 rounded-lg border border-line bg-raised px-2.5 py-2 focus-within:border-line2"><Search size={14} className="text-fg3" /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search name, source or theatre" aria-label="Search signals" className="w-full bg-transparent text-[13.5px] outline-none placeholder:text-fg3" /></label>
         <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {['All', ...GROUPS].map(x => <button key={x} onClick={() => setG(x)} aria-pressed={g === x} className={`rounded-full border px-2.5 py-1 text-[12px] ${g === x ? 'border-accent bg-accentsoft text-fg' : 'border-line text-fg2 hover:border-line2'}`}>{x}</button>)}
-          <button onClick={() => setOnly(!only)} aria-pressed={only} className={`rounded-full border px-2.5 py-1 text-[12px] ${only ? 'border-watch text-watch' : 'border-line text-fg2'}`}>Unusual only</button>
+          {['All', ...GROUPS].map(x => <button key={x} onClick={() => setG(x)} aria-pressed={g === x} className={`rounded-full border px-2.5 py-1 text-[12px] ${g === x ? 'border-sel bg-sel text-selink font-medium' : 'border-line text-fg2 hover:border-line2'}`}>{x}</button>)}
+          <button onClick={() => setOnly(!only)} aria-pressed={only} className={`rounded-full border px-2.5 py-1 text-[12px] ${only ? 'border-sel bg-sel text-selink font-medium' : 'border-line text-fg2'}`}>Unusual only</button>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <select value={t} onChange={e => setT(e.target.value)} aria-label="Theatre" className="rounded-full border border-line bg-panel px-2 py-1 text-[12px] text-fg2"><option value="all">All theatres</option>{brief.theatres.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}<option value="global">Global markets</option></select>
@@ -72,7 +72,7 @@ export function SignalsView({ th, brief, go }: { th?: string; brief: Brief; go: 
               style={{ top: 0, height: it.size, transform: `translateY(${it.start - margin}px)` }}>
               <span className="min-w-0"><span className="block truncate text-[13px] text-fg" title={s.label}>{s.label}</span>
                 <span className="block truncate text-[11.5px] text-fg3">{thName(s.theatre)} · {s.group} · {s.sub}{s.untested ? ' · not tested' : ''}{s.status !== 'ok' ? ` · ${STATUS[s.status]?.[0] || s.status}` : s.stale ? ' · last good copy' : ''}</span></span>
-              <Spark v={s.spark} w={76} h={22} stroke={Math.abs(s.z ?? 0) >= 2 ? 'var(--watch)' : 'var(--fg-3)'} fill={false} />
+              <Spark v={s.spark} w={76} h={22} stroke={Math.abs(s.z ?? 0) >= 2 ? 'var(--z2)' : 'var(--fg3)'} fill={false} />
               <span className="num text-right text-[12.5px]" style={{ color: zTone(s.z) }}>{fmtZ(s.z)}</span>
             </button>) })}
         </div>)}
@@ -95,13 +95,13 @@ export function SignalView({ id, brief, go }: { id: string; brief: Brief; go: Go
   if (sq.isPending) return <>{head}<Skeleton lines={6} /></>
   if (sq.isError) return <>{head}<Failed what="the signals" error={sq.error} /></>
   if (!s) return <>{head}<p className="px-5 py-6 text-[13px] text-fg3">No signal called “{id}” in this run.</p></>
-  const [st, stCol] = STATUS[s.status] || [s.status, 'var(--fg-3)']
+  const [st, stCol] = STATUS[s.status] || [s.status, 'var(--fg3)']
   return (
     <div>
       {head}
       <div className="px-5 pb-2 pt-3">
         <h1 className="text-[21px] font-semibold leading-snug tracking-[-0.015em]">{s.label}</h1>
-        <div className="mt-1.5 flex flex-wrap gap-x-3 text-[12.5px] text-fg3"><span>{s.group} · {s.sub}</span><span>{s.kind === 'monthly' ? 'Monthly' : 'Daily'}</span><span>{s.lagging ? 'Confirms (published late)' : 'Leads'}</span>{s.untested && <span style={{ color: 'var(--watch)' }} title="New in October 2026. Shown and used in the timing tells, but kept out of the score until a test on past events passes.">Not tested yet, not in the score</span>}</div>
+        <div className="mt-1.5 flex flex-wrap gap-x-3 text-[12.5px] text-fg3"><span>{s.group} · {s.sub}</span><span>{s.kind === 'monthly' ? 'Monthly' : 'Daily'}</span><span>{s.lagging ? 'Confirms (published late)' : 'Leads'}</span>{s.untested && <span style={{ color: 'var(--z2)' }} title="New in October 2026. Shown and used in the tripwires, but kept out of the score until a test on past events passes.">Not tested yet, not in the score</span>}</div>
         <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-line bg-[var(--line)]">
           {([['From its normal', <span style={{ color: zTone(s.z) }}>{s.z == null ? 'n/a' : `${fmtZ(s.z)} SD`}</span>, Math.abs(s.z ?? 0) >= 3 ? 'strong' : Math.abs(s.z ?? 0) >= 2 ? 'unusual' : 'usual range'],
             ['Latest value', s.last ? shortDate(s.last.slice(0, 10)) : 'none', s.stale ? `stale, copy of ${s.stale}` : 'fresh'],
@@ -116,7 +116,7 @@ export function SignalView({ id, brief, go }: { id: string; brief: Brief; go: Go
       </Section>
       <div className="flex flex-wrap gap-2 px-5 pb-6">
         {s.url && <a href={s.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-[12.5px] text-fg2 hover:bg-hover">Source <ExternalLink size={12} /></a>}
-        {thName(s.theatre) && <button onClick={() => go({ v: 'theatre', id: s.theatre })} className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-[12.5px] font-medium text-accentink">Open {thName(s.theatre)}</button>}
+        {thName(s.theatre) && <button onClick={() => go({ v: 'theatre', id: s.theatre })} className="inline-flex items-center gap-1.5 rounded-lg bg-sel px-3 py-1.5 text-[12.5px] font-medium text-selink">Open {thName(s.theatre)}</button>}
       </div>
     </div>
   )
@@ -124,7 +124,13 @@ export function SignalView({ id, brief, go }: { id: string; brief: Brief; go: Go
 
 /* Values as a line (at most 400 points), and under it the distance from normal as a heat strip on the same time axis. */
 function HistoryChart({ pts, zs }: { pts: [string, number | null][]; zs: [string, number | null][] }) {
-  const w = 400, H = 110
+  /* drawn at the width it is shown at, so its labels stay at 10 px in a dossier, a page or on a phone */
+  const box = useRef<HTMLDivElement>(null), [w, setW] = useState(400), H = 110
+  useLayoutEffect(() => {
+    const el = box.current; if (!el) return
+    const o = new ResizeObserver(() => setW(Math.max(200, el.clientWidth))); o.observe(el)
+    return () => o.disconnect()
+  }, [])
   const step = Math.max(1, Math.ceil(pts.length / 400))
   const p = pts.filter((_, i) => i % step === 0 || i === pts.length - 1).filter(x => x[1] != null) as [string, number][]
   if (p.length < 2) return <p className="text-[13px] text-fg3">Not enough history to draw yet.</p>
@@ -133,20 +139,20 @@ function HistoryChart({ pts, zs }: { pts: [string, number | null][]; zs: [string
   const d = p.map((x, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(x[1]).toFixed(1)}`).join('')
   const fmt = (n: number) => Math.abs(n) >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : Math.abs(n) >= 1e3 ? `${(n / 1e3).toFixed(1)}k` : String(Math.round(n * 100) / 100)
   const zz = zs.filter(x => x[1] != null) as [string, number][]
-  return <>
+  return <div ref={box}>
     <svg viewBox={`0 0 ${w} ${H}`} className="w-full" role="img" aria-label={`Values from ${p[0][0]} to ${p[p.length - 1][0]}, between ${fmt(lo)} and ${fmt(hi)}`}>
-      <path d={`${d}L${X(p.length - 1)},${H - 16}L${X(0)},${H - 16}Z`} fill="var(--accent)" opacity={.08} />
-      <path d={d} fill="none" stroke="var(--accent)" strokeWidth={1.3} strokeLinejoin="round" />
-      <text x={2} y={9} fontSize={10} fill="var(--fg-3)">{fmt(hi)}</text>
-      <text x={2} y={H - 18} fontSize={10} fill="var(--fg-3)">{fmt(lo)}</text>
-      <text x={2} y={H - 2} fontSize={10} fill="var(--fg-3)">{p[0][0]}</text>
-      <text x={w - 2} y={H - 2} fontSize={10} fill="var(--fg-3)" textAnchor="end">{p[p.length - 1][0]}</text>
+      <path d={`${d}L${X(p.length - 1)},${H - 16}L${X(0)},${H - 16}Z`} fill="var(--fg2)" opacity={.08} />
+      <path d={d} fill="none" stroke="var(--fg2)" strokeWidth={1.3} strokeLinejoin="round" />
+      <text x={2} y={9} fontSize={10} fill="var(--fg3)">{fmt(hi)}</text>
+      <text x={2} y={H - 18} fontSize={10} fill="var(--fg3)">{fmt(lo)}</text>
+      <text x={2} y={H - 2} fontSize={10} fill="var(--fg3)">{p[0][0]}</text>
+      <text x={w - 2} y={H - 2} fontSize={10} fill="var(--fg3)" textAnchor="end">{p[p.length - 1][0]}</text>
     </svg>
     {zz.length > 1 && <>
       <div className="mt-2 grid h-3 gap-px" style={{ gridTemplateColumns: `repeat(${zz.length}, minmax(0,1fr))` }} role="img" aria-label="Distance from normal over the same period">
-        {zz.map(([dt, z], i) => <i key={i} title={`${dt}: ${fmtZ(z)} SD`} className="rounded-[1px]" style={{ background: Math.abs(z) >= 3 ? 'var(--elev)' : Math.abs(z) >= 2 ? 'var(--watch)' : Math.abs(z) >= 1 ? 'color-mix(in oklab, var(--watch) 35%, transparent)' : 'var(--line)' }} />)}
+        {zz.map(([dt, z], i) => <i key={i} title={`${dt}: ${fmtZ(z)} SD`} className="rounded-[1px]" style={{ background: Math.abs(z) >= 3 ? 'var(--z3)' : Math.abs(z) >= 2 ? 'var(--z2)' : Math.abs(z) >= 1 ? 'color-mix(in oklab, var(--z2) 35%, transparent)' : 'var(--line)' }} />)}
       </div>
       <p className="mt-1.5 text-[11.5px] text-fg3">Distance from its own normal, {zz[0][0]} to {zz[zz.length - 1][0]}. Amber at 2 SD, orange at 3.</p>
     </>}
-  </>
+  </div>
 }

@@ -1,70 +1,89 @@
 @import "tailwindcss";
 
-/* WarWatch "Night desk" tokens. Dark first; light is "Day desk". */
+/* Fonts, self-hosted (fonts/README.md): Switzer for the interface, Sentient for the voice, JetBrains Mono for ids and dates */
+@font-face { font-family: Switzer; src: url("./fonts/switzer-normal.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: Sentient; src: url("./fonts/sentient-normal.woff2") format("woff2"); font-weight: 200 700; font-display: swap; }
+@font-face { font-family: Sentient; src: url("./fonts/sentient-italic.woff2") format("woff2"); font-weight: 200 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("./fonts/jet-brains-mono-normal.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
+
+/* WarWatch "Dispatch" tokens. If it has colour, it is data: amber and orange (z2, z3, crit) only for unusual readings, cool slate
+   only for aircraft and ships, ivory (happened) for things that happened. Selection and focus are ivory on dark, ink on light. */
 :root {
-  --bg: #090b0f; --panel: #0f1218; --raised: #151922; --hover: #1b202b;
-  --line: rgba(148,163,190,.12); --line-2: rgba(148,163,190,.22);
-  --fg: #e9edf3; --fg-2: #a5aebd; --fg-3: #7a8597;
-  --accent: #7da8ff; --accent-soft: rgba(125,168,255,.14); --accent-ink: #08132b;
-  --watch: #e9b44c; --elev: #f28a3e; --crit: #f0524f; --event: #f3eadb;
-  --ocean: #07090c; --land: #161b23; --land-2: #1d232e; --border: #2b3342; --grat: rgba(148,163,190,.06);
-  --shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 12px 32px -12px rgba(0,0,0,.6);
+  --bg: #0a0a0b; --s1: #101011; --s2: #161617; --s3: #1f1f21; --line: rgba(255,255,255,.075); --line2: rgba(255,255,255,.15);
+  --fg: #edebe6; --fg2: #a9a69f; --fg3: #7f7c76;
+  --paper: #1b1a17; --ink: #edebe6; --ink2: #a9a69f; --ink-line: rgba(255,244,220,.11);
+  --z0: rgba(255,255,255,.07); --z1: #5d4b20; --z2: #e3a63a; --z3: #f46b2c; --crit: #ff4336;
+  --happened: #f3ead9; --cool: #a7b6c6; --ok: #5bc391;
+  --ocean: #070708; --land: #151516; --land2: #222224; --border: #333336; --grat: rgba(255,255,255,.035);
+  --sel: #edebe6; --sel-ink: #0a0a0b;
+  --shadow: 0 18px 50px -18px rgba(0,0,0,.8);
+  --ease: cubic-bezier(.2,.8,.2,1);
   color-scheme: dark;
 }
 :root[data-theme="light"] {
-  --bg: #f4f5f7; --panel: #ffffff; --raised: #f1f3f6; --hover: #e8ebf0;
-  --line: rgba(15,23,42,.09); --line-2: rgba(15,23,42,.16);
-  --fg: #0d1220; --fg-2: #485366; --fg-3: #6b7487;
-  --accent: #2c5ad8; --accent-soft: rgba(44,90,216,.10); --accent-ink: #ffffff;
-  --watch: #9a6412; --elev: #b8480b; --crit: #c81e1e; --event: #3b3427;
-  --ocean: #e3e8ef; --land: #fbfcfd; --land-2: #f2f4f7; --border: #c3cad6; --grat: rgba(15,23,42,.05);
-  --shadow: 0 1px 2px rgba(15,23,42,.06), 0 12px 32px -16px rgba(15,23,42,.25);
+  --bg: #f2efe7; --s1: #f8f6f0; --s2: #fffefb; --s3: #e9e5da; --line: rgba(30,28,20,.11); --line2: rgba(30,28,20,.24);
+  --fg: #1a1913; --fg2: #56534a; --fg3: #77746a;
+  --paper: #e9e4d6; --ink: #1a1913; --ink2: #56534a; --ink-line: rgba(30,28,20,.15);
+  --z0: rgba(30,28,20,.07); --z1: #e6d3a0; --z2: #c2861a; --z3: #c5451a; --crit: #b0201a;
+  --happened: #3a3526; --cool: #51657a; --ok: #1f7a4f;
+  --ocean: #dde3e1; --land: #f8f6f0; --land2: #ece6d6; --border: #bdb7a6; --grat: rgba(30,28,20,.05);
+  --sel: #1a1913; --sel-ink: #f4f1e9;
+  --shadow: 0 18px 44px -22px rgba(30,28,20,.35);
   color-scheme: light;
 }
 
 @theme {
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-cond: "IBM Plex Sans Condensed", "IBM Plex Sans", ui-sans-serif, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-  --font-serif: "Source Serif 4", Georgia, serif;
-  --color-bg: var(--bg); --color-panel: var(--panel); --color-raised: var(--raised); --color-hover: var(--hover);
-  --color-line: var(--line); --color-line2: var(--line-2);
-  --color-fg: var(--fg); --color-fg2: var(--fg-2); --color-fg3: var(--fg-3);
-  --color-accent: var(--accent); --color-accentsoft: var(--accent-soft); --color-accentink: var(--accent-ink);
-  --color-watch: var(--watch); --color-elev: var(--elev); --color-crit: var(--crit); --color-event: var(--event);
-  --ease-out-quint: cubic-bezier(.22, 1, .36, 1);
+  --font-sans: Switzer, ui-sans-serif, system-ui, sans-serif;
+  --font-serif: Sentient, Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --color-bg: var(--bg); --color-s1: var(--s1); --color-s2: var(--s2); --color-s3: var(--s3);
+  --color-panel: var(--s1); --color-raised: var(--s2); --color-hover: var(--s2);
+  --color-line: var(--line); --color-line2: var(--line2);
+  --color-fg: var(--fg); --color-fg2: var(--fg2); --color-fg3: var(--fg3);
+  --color-paper: var(--paper); --color-ink: var(--ink); --color-ink2: var(--ink2); --color-inkline: var(--ink-line);
+  --color-z0: var(--z0); --color-z1: var(--z1); --color-z2: var(--z2); --color-z3: var(--z3); --color-crit: var(--crit);
+  --color-happened: var(--happened); --color-cool: var(--cool); --color-ok: var(--ok);
+  --color-sel: var(--sel); --color-selink: var(--sel-ink);
+  --radius-r1: 4px; --radius-r2: 8px; --radius-r3: 12px;
+  --ease-ww: cubic-bezier(.2,.8,.2,1);
 }
 
 html, body, #root { height: 100%; }
 body { overflow: hidden; overscroll-behavior: none; }
 #root { position: fixed; inset: 0; }
-body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-sans); font-size: 14px; -webkit-font-smoothing: antialiased; font-feature-settings: "ss02"; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 13.5px/1.45 var(--font-sans); letter-spacing: -.003em; -webkit-font-smoothing: antialiased; }
 .num { font-variant-numeric: tabular-nums; }
-.eyebrow { font-family: var(--font-cond); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-3); font-weight: 500; }
+.eyebrow { font: 500 10.5px/1 var(--font-mono); letter-spacing: .09em; text-transform: uppercase; color: var(--fg3); }
 .hair { border-color: var(--line); }
-.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; border-radius: 4px; }
 button { cursor: pointer; }
+/* a link inside text: the text colour, underlined, never blue */
+.lnk { color: var(--fg); text-decoration: underline; text-decoration-color: var(--line2); text-underline-offset: 3px; transition: text-decoration-color .12s var(--ease); }
+.lnk:hover { text-decoration-color: var(--fg2); }
 
-@keyframes breathe { 0%,100% { opacity: 0; transform: scale(.8); } 50% { opacity: .35; transform: scale(1.4); } }
-.live-dot::after { content: ""; position: absolute; inset: -2px; border-radius: 999px; background: currentColor; opacity: .3; animation: breathe 2.4s ease-in-out infinite; }
+@keyframes breathe { 0%,100% { opacity: 0; transform: scale(.6); } 50% { opacity: .35; transform: scale(1.3); } }
+.live-dot::after { content: ""; position: absolute; inset: -3px; border-radius: 999px; background: currentColor; opacity: .3; animation: breathe 2.6s ease-in-out infinite; }
 @keyframes ping { 0% { transform: scale(.6); opacity: .7; } 100% { transform: scale(2.4); opacity: 0; } }
-.ping::before { content: ""; position: absolute; inset: 0; border-radius: 999px; border: 1.5px solid currentColor; animation: ping 2.2s cubic-bezier(.22,1,.36,1) infinite; }
+.ping::before { content: ""; position: absolute; inset: 0; border-radius: 999px; border: 1.5px solid currentColor; animation: ping 2.2s var(--ease) infinite; }
 @keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+/* board rows rise in, 22 ms apart, on first paint only */
+@keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise .42s var(--ease) both; animation-delay: calc(var(--i, 0) * 22ms + 80ms); }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+:root[data-motion="reduced"] *, :root[data-motion="reduced"] *::before, :root[data-motion="reduced"] *::after {
+  animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important;
 }
 
-
-
-
-/* MapLibre controls in the desk's colours */
-.maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib.maplibregl-compact { background: color-mix(in oklab, var(--panel) 85%, transparent) !important; color: var(--fg-3); font: 11px var(--font-sans); border: 1px solid var(--line); }
-.maplibregl-ctrl-attrib a { color: var(--fg-2); }
+/* MapLibre controls in the theme's colours */
+.maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib.maplibregl-compact { background: color-mix(in oklab, var(--bg) 85%, transparent) !important; color: var(--fg3); font: 11px var(--font-sans); border: 1px solid var(--line); }
+.maplibregl-ctrl-attrib a { color: var(--fg2); }
 .maplibregl-ctrl-attrib-button { filter: var(--attrib-icon, invert(.75)); background-color: transparent !important; }
 :root[data-theme="light"] { --attrib-icon: none; }
-.maplibregl-canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.maplibregl-canvas:focus-visible { outline: 2px solid var(--sel); outline-offset: -2px; }
 
-/* the 30-day strip sits over the bottom of the map on wide screens */
-.ww-wide .maplibregl-ctrl-bottom-left { bottom: 74px; left: 16px; }
+/* the 30-day timeline sits over the foot of the map on wide screens; the attribution stays above it */
+.ww-wide .maplibregl-ctrl-bottom-left { bottom: var(--time-h, 0px); left: 6px; }

@@ -1880,7 +1880,7 @@ class ShareCard(unittest.TestCase):
 
     def test_headline_words_the_levels_and_tells(self):
         import share
-        self.assertEqual(share.summary(self._data())[0], "Every theatre reads quiet. No timing tells fired this week.")
+        self.assertEqual(share.summary(self._data())[0], "Every theatre reads quiet. No tripwires fired this week.")
         head, f = share.summary(self._data({"yemen": "Elevated"}))
         self.assertTrue(head.startswith("Yemen is the only theatre above quiet."))
         head, _ = share.summary(self._data({"iran": "Watch", "israel": "Critical", "sudan": "Elevated", "libya": "Watch"}))
@@ -2054,9 +2054,9 @@ class TheatreCards(unittest.TestCase):
 
     def test_headline_words_level_and_tells(self):
         import share
-        self.assertEqual(share.theatre_headline("Iran", "Normal", 0), "Iran reads quiet. No timing tells fired this week.")
-        self.assertEqual(share.theatre_headline("Yemen", "Elevated", 1), "Yemen reads elevated. One timing tell fired this week.")
-        self.assertEqual(share.theatre_headline("Korea", "Odd", 12), "Korea reads quiet. 12 timing tells fired this week.")
+        self.assertEqual(share.theatre_headline("Iran", "Normal", 0), "Iran reads quiet. No tripwires fired this week.")
+        self.assertEqual(share.theatre_headline("Yemen", "Elevated", 1), "Yemen reads elevated. One tripwire fired this week.")
+        self.assertEqual(share.theatre_headline("Korea", "Odd", 12), "Korea reads quiet. 12 tripwires fired this week.")
 
     def test_cards_render_for_every_theatre(self):
         import share
