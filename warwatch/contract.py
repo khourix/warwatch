@@ -287,7 +287,8 @@ def feed(data):
         to = {"view": "base", "id": b["id"]}
         last = b.get("last") or ""
         if b.get("st") in words:
-            add({"date": last, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[b['st']]}", "detail": "Satellite radar, two passes", "to": to})
+            add({"date": last, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[b['st']]}",
+                 "detail": "Satellite radar, one pass" if b["st"] == "changed" else "Satellite radar, two passes", "to": to})
         for d, st in b.get("ev") or []:
             near = last and b.get("st") in words and abs((dt.date.fromisoformat(d) - dt.date.fromisoformat(last[:10])).days) <= 1
             if st in words and not near:
