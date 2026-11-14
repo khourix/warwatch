@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type KeyboardEvent } from 'react'
 import { motion } from 'motion/react'
 import NumberFlow from '@number-flow/react'
-import { GROUPS, short, levelWord, groupTone, feedDetail, fmtZ, shortDate, parseGen, type Brief, type BriefTheatre, type FeedItem, type Route } from './data'
+import { GROUPS, short, levelWord, groupTone, feedDetail, fmtZ, shortDate, parseGen, type Brief, type BriefTheatre, type FeedItem, type Route, wholeScore } from './data'
 import { usePrefs, fmtTime } from './settings'
 import { toRoute } from './views'
 
@@ -27,7 +27,7 @@ export function Status({ brief }: { brief: Brief }) {
   const up = above(brief), near = closest(brief), n = brief.theatres.length
   const sep = <i className="mx-2 inline-block h-3.5 w-px translate-y-[2px] bg-line2" aria-hidden />
   if (up.length) return <><b className="font-medium text-fg">{up.length} of {n} theatres at Watch or above</b>{sep}<span>{up.slice(0, 3).map(t => `${short(t.name)}, ${t.level}`).join(' · ')}{up.length > 3 ? ' …' : ''}</span></>
-  return <><b className="font-medium text-fg">{n} of {n} theatres quiet</b>{near && <>{sep}<span>{underLine(brief, near) ? `Closest to Watch: ${short(near.name)}, ${Math.round(near.score!)} against 50` : `Highest reading: ${short(near.name)}, ${Math.round(near.score!)}`}</span></>}</>
+  return <><b className="font-medium text-fg">{n} of {n} theatres quiet</b>{near && <>{sep}<span>{underLine(brief, near) ? `Closest to Watch: ${short(near.name)}, ${wholeScore(near.score!)} against 50` : `Highest reading: ${short(near.name)}, ${wholeScore(near.score!)}`}</span></>}</>
 }
 
 /* ---------------------------------------------------------------- the dispatch card */
@@ -37,8 +37,8 @@ function sentence(brief: Brief): ReactNode {
   const lead = !up.length ? <>Every theatre reads quiet. </>
     : up.length === 1 ? <><em>{short(up[0].name)}</em> is at {up[0].level}; every other theatre reads quiet. </>
     : <>{word(up.length, true)} theatres are at Watch or above, led by <em>{short(up[0].name)}</em> at {up[0].level}. </>
-  const gap = !near ? null : underLine(brief, near) ? <>{up.length ? 'Of the rest, ' : ''}<em>{short(near.name)}</em> comes closest to Watch, at {Math.round(near.score!)} against a line of 50. </>
-    : <>{up.length ? 'Of the rest, ' : ''}<em>{short(near.name)}</em> has the most unusual readings, at {Math.round(near.score!)} of 100. </>
+  const gap = !near ? null : underLine(brief, near) ? <>{up.length ? 'Of the rest, ' : ''}<em>{short(near.name)}</em> comes closest to Watch, at {wholeScore(near.score!)} against a line of 50. </>
+    : <>{up.length ? 'Of the rest, ' : ''}<em>{short(near.name)}</em> has the most unusual readings, at {wholeScore(near.score!)} of 100. </>
   const wires = !n ? 'No tripwire fired this week.'
     : n === 1 ? `One tripwire fired this week, on ${short(most.name)}.`
     : `${word(n, true)} tripwires fired this week, ${most.tellsOn === n ? (n === 2 ? 'both' : 'all of them') : `${word(most.tellsOn)} of them`} on ${short(most.name)}.`
@@ -102,7 +102,7 @@ const groupWords = (t: BriefTheatre) => { const w = GROUPS.flatMap(g => { const 
 
 function BoardRow({ t, i, rise, on, line, go }: { t: BriefTheatre; i: number; rise: boolean; on: boolean; line: boolean; go: Go }) {
   const score = t.score == null ? null : Math.max(0, Math.min(100, t.score))
-  const label = `${t.name}, ${levelWord(t.level).toLowerCase()}${t.context ? `, ${t.context.toLowerCase()}` : ''}. ${groupWords(t)}. Unusual readings ${score == null ? 'not available' : `${Math.round(score)} of 100`}.${t.tellsOn ? ` ${t.tellsOn} ${t.tellsOn === 1 ? 'tripwire' : 'tripwires'} fired this week.` : ''}`
+  const label = `${t.name}, ${levelWord(t.level).toLowerCase()}${t.context ? `, ${t.context.toLowerCase()}` : ''}. ${groupWords(t)}. Unusual readings ${score == null ? 'not available' : `${wholeScore(score)} of 100`}.${t.tellsOn ? ` ${t.tellsOn} ${t.tellsOn === 1 ? 'tripwire' : 'tripwires'} fired this week.` : ''}`
   return (
     <button onClick={() => go({ v: 'theatre', id: t.id })} aria-current={on ? 'true' : undefined} aria-label={label} style={{ ['--i' as string]: i }}
       className={`group relative grid h-[38px] w-full grid-cols-[minmax(0,1fr)_66px_112px] items-center gap-3 border-t border-line px-4 text-left transition-colors duration-[120ms] ${on ? 'bg-s3' : 'hover:bg-s2'} ${rise ? 'rise' : ''}`}>
@@ -122,7 +122,7 @@ function BoardRow({ t, i, rise, on, line, go }: { t: BriefTheatre; i: number; ri
           <motion.i className="absolute inset-y-0 left-0 rounded-[3px] bg-fg2" initial={{ width: 0 }} animate={{ width: `${score ?? 0}%` }} transition={{ duration: .8, ease: EASE, delay: rise ? i * .022 : 0 }} />
           {line && <i className="absolute -inset-y-1 left-1/2 w-px bg-fg3" />}
         </span>
-        <b className="num text-right text-[12px] font-medium text-fg2">{score == null ? '–' : Math.round(score)}</b>
+        <b className="num text-right text-[12px] font-medium text-fg2">{score == null ? '–' : wholeScore(score)}</b>
       </span>
     </button>
   )

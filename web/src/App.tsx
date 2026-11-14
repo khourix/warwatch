@@ -228,7 +228,7 @@ function CommandMenu({ open, setOpen, go, toggleTheme, openSettings, brief, live
   const sigs = useSignals(open)
   const run = (r: Route) => { setOpen(false); go(r) }
   const region = (id: string) => brief.regions.find(r => r.id === id)?.name || ''
-  const item = 'flex cursor-pointer items-center gap-3 rounded-r2 px-2.5 py-2 text-[13.5px] text-fg2 data-[selected=true]:bg-s3 data-[selected=true]:text-fg'
+  const item = 'flex cursor-pointer items-center gap-3 rounded-r2 px-2.5 py-2 text-[13.5px] text-fg2 data-[selected=true]:bg-s3 data-[selected=true]:text-fg data-[selected=true]:[&_.text-fg3]:text-fg2'
   const grp = '[&_[cmdk-group-heading]]:eyebrow [&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pb-2 [&_[cmdk-group-heading]]:pt-3'
   return (
     <AnimatePresence>

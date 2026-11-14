@@ -59,6 +59,8 @@ body { margin: 0; background: var(--bg); color: var(--fg); font: 400 13.5px/1.45
 .hair { border-color: var(--line); }
 .scroll-thin { scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
 :focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; border-radius: 4px; }
+/* the search dialog's field is the only place to type and shows its caret; a ring around it only adds a box */
+[cmdk-input]:focus-visible { outline: none; }
 button { cursor: pointer; }
 /* a link inside text: the text colour, underlined, never blue */
 .lnk { color: var(--fg); text-decoration: underline; text-decoration-color: var(--line2); text-underline-offset: 3px; transition: text-decoration-color .12s var(--ease); }

@@ -4,3 +4,4 @@ dist/
 src/fonts/switzer-*.woff2
 src/fonts/sentient-*.woff2
 src/fonts/fontshare.css
+src/fonts/*.part

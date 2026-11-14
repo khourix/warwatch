@@ -6,7 +6,7 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import { feature } from 'topojson-client'
 import type { FeatureCollection } from 'geojson'
 import coarse from 'world-atlas/countries-110m.json'
-import { levelVar, levelWord, short, asset, baseState, shortDate, useBase, emergency, heatColour, HEAT, type Brief, type LiveMap, type LonLat, type Route, type MapBase, type MapFire, type MapAircraft, type MapShip, type MapWarning, type MapAirport, type MapDiversion, type MapDark, type MapLoiter, type MapIncident } from './data'
+import { levelVar, levelWord, short, asset, baseState, shortDate, useBase, emergency, heatColour, HEAT, type Brief, type LiveMap, type LonLat, type Route, type MapBase, type MapFire, type MapAircraft, type MapShip, type MapWarning, type MapAirport, type MapDiversion, type MapDark, type MapLoiter, type MapIncident, wholeScore } from './data'
 import { fireImages, baseImages, copernicusUrl, worldviewUrl, type SatImage, type Focus } from './sat'
 import { baseWord, fireWord } from './ground'
 import { reducedMotion as reduced } from './settings'
@@ -420,13 +420,13 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
         {brief.theatres.filter(t => t.center).map(t => { const on = sel === t.id; return (
           <button key={t.id} data-kind="theatre" data-id={t.id} data-prio={100 + (RANK[t.level] || 0) * 20 + t.tellsOn * 4 + (t.spillover ? 0 : 2)} data-lon={t.center![0]} data-lat={t.center![1]}
             onClick={() => onPick({ v: 'theatre', id: t.id })} aria-current={on ? 'true' : undefined}
-            aria-label={`${t.name}, ${levelWord(t.level).toLowerCase()}${t.score != null ? `, unusual readings ${Math.round(t.score)}` : ''}${t.tellsOn ? `, ${t.tellsOn} ${t.tellsOn === 1 ? 'tripwire' : 'tripwires'} fired` : ''}`}
+            aria-label={`${t.name}, ${levelWord(t.level).toLowerCase()}${t.score != null ? `, unusual readings ${wholeScore(t.score)}` : ''}${t.tellsOn ? `, ${t.tellsOn} ${t.tellsOn === 1 ? 'tripwire' : 'tripwires'} fired` : ''}`}
             className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full transition-opacity duration-200" style={{ opacity: 0 }}>
             <span className={`flex h-[calc(22px*var(--lbl))] items-center gap-1.5 whitespace-nowrap rounded-full border px-2 text-[calc(11.5px*var(--lbl))] font-medium backdrop-blur-[6px] transition-colors duration-150 ${on ? 'border-sel bg-sel text-selink' : 'border-line2 bg-[color-mix(in_oklab,var(--bg)_82%,transparent)] text-fg hover:border-fg2'}`}
               style={!on && t.level !== 'Normal' ? { borderColor: levelVar(t.level) } : undefined}>
               {t.tellsOn > 0 && <i className="h-[5px] w-[5px] rounded-full bg-z2 shadow-[0_0_6px_var(--z2)]" />}
               {short(t.name)}
-              {t.score != null && <span className={`num font-mono text-[10.5px] font-normal ${on ? 'opacity-70' : 'text-fg3'}`}>{Math.round(t.score)}</span>}
+              {t.score != null && <span className={`num font-mono text-[10.5px] font-normal ${on ? 'opacity-70' : 'text-fg3'}`}>{wholeScore(t.score)}</span>}
             </span>
           </button>) })}
         {(live?.chokepoints || []).map((c, i) => (
@@ -459,12 +459,12 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
         style={{ left: wide ? 14 : 8, bottom: cardBottom, maxWidth: wide ? 'min(360px, calc(100% - 72px))' : 'calc(100% - 16px)', maxHeight: `calc(100% - ${cardBottom + (wide ? top + 12 : 116)}px)` }} />}
       {big && <Lightbox img={big} onClose={() => setBig(null)} />}
       {/* bottom right, above the timeline, so the legend chips can take the map's full width */}
-      <div className={`absolute z-10 flex flex-col overflow-hidden rounded-r2 ${glass}`} style={{ right: wide ? 14 : 16, bottom: padBottom + (wide ? 12 : 16) }}>
+      {(wide || !peek) && <div className={`absolute z-10 flex flex-col overflow-hidden rounded-r2 ${glass}`} style={{ right: wide ? 14 : 16, bottom: padBottom + (wide ? 12 : 16) }}>
         <button aria-label="Zoom in" title="Zoom in" onClick={() => zoom(1)} className={ctl}><Plus size={14} /></button>
         <button aria-label="Zoom out" title="Zoom out" onClick={() => zoom(-1)} className={`${ctl} border-t border-line`}><Minus size={14} /></button>
         {wide && <button aria-label="Whole world" title="Whole world" onClick={home} className={`${ctl} border-t border-line`}><Scan size={14} /></button>}
         {wide && onFlat && <button aria-label={flat ? 'Show as a globe' : 'Show as a flat map'} title={flat ? 'Globe' : 'Flat map'} onClick={() => onFlat(!flat)} className={`${ctl} border-t border-line`}>{flat ? <Globe size={14} /> : <MapIcon size={14} />}</button>}
-      </div>
+      </div>}
     </div>
   )
 }
@@ -539,9 +539,9 @@ function paintLive(m: maplibregl.Map) {
   m.setPaintProperty('fires', 'circle-radius', zoomed(['case', strong, ['interpolate', ['linear'], ['sqrt', ['get', 'mw']], 1, 1.8, 10, 2.8, 30, 4], faint, 1.4, 1.1]))
   m.setPaintProperty('fires', 'circle-color', ['case', faint, z3, fg3])
   m.setPaintProperty('fires', 'circle-opacity', ['case', strong, .95, faint, .35, .3])
-  // a changed base: amber or orange, filled, with a dark rim that keeps it off the land; a quiet one: a grey outline
+  // a changed base: amber or orange, filled, with a rim in the page colour that keeps it off the land; a quiet one: a grey outline
   m.setPaintProperty('bases', 'icon-color', ['match', ['get', 'st'], ['out', 'in'], z3, 'changed', z2, fg3])
-  m.setPaintProperty('bases', 'icon-halo-color', 'rgba(10,10,11,.8)')
+  m.setPaintProperty('bases', 'icon-halo-color', bg)
   m.setPaintProperty('bases', 'icon-halo-width', ['case', ['==', ['get', 'hi'], 1], 1.2, 0])
   m.setPaintProperty('bases-halo', 'circle-radius', zoomed(8))
   m.setPaintProperty('bases-halo', 'circle-color', ['match', ['get', 'st'], ['out', 'in'], z3, z2])

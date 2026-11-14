@@ -14,7 +14,7 @@ const KIND: Record<Kind, [typeof Bell, string, string]> = {
   tell: [ShieldAlert, 'var(--z2)', 'Tripwires'], base: [Satellite, 'var(--z3)', 'Bases'], fire: [Flame, 'var(--z3)', 'Heat'], official: [FileText, 'var(--fg3)', 'Official'],
   air: [Plane, 'var(--crit)', 'Live'], sea: [Anchor, 'var(--z3)', 'Live'],
 }
-const TABS = ['All', 'Live', 'Tripwires', 'Bases', 'Fires', 'Official'] as const
+const TABS = ['All', 'Live', 'Tripwires', 'Bases', 'Heat', 'Official'] as const
 const KEY = 'ww-read'
 const load = (): Set<string> => { try { return new Set(JSON.parse(localStorage.getItem(KEY) || '[]')) } catch { return new Set() } }
 const save = (s: Set<string>) => { try { localStorage.setItem(KEY, JSON.stringify([...s].slice(-600))) } catch { /* private mode: nothing kept */ } }
@@ -61,13 +61,13 @@ export function NotificationBell({ brief, live, go, phone = false }: { brief: Br
       <AnimatePresence>
         {open && (
           <motion.div role="dialog" aria-label="Notifications" initial={{ opacity: 0, y: -6, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: .16, ease: [.22, 1, .36, 1] }}
-            className={`z-40 flex flex-col overflow-hidden rounded-2xl border border-line2 bg-panel shadow-[var(--shadow)] ${phone ? 'fixed inset-x-2 top-[60px] max-h-[72vh]' : 'absolute right-0 top-10 max-h-[min(640px,calc(100vh-90px))] w-[420px]'}`}>
+            className={`z-40 flex flex-col overflow-hidden rounded-2xl border border-line2 bg-panel shadow-[var(--shadow)] ${phone ? 'fixed inset-x-2 top-[60px] max-h-[72vh]' : 'absolute right-0 top-10 max-h-[min(640px,calc(100vh-90px))] w-[440px]'}`}>
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3">
               <div><div className="text-[14px] font-medium">Notifications</div><div className="text-[11.5px] text-fg3">This week, newest first. Live alerts on top.</div></div>
               {unread > 0 ? <button onClick={markAll} className="shrink-0 text-[12px] lnk">Mark all as read</button> : <span className="shrink-0 text-[12px] text-fg3">All read</span>}
             </div>
-            <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-line px-3 py-2 text-[12px]">
-              {tabs.map(t => <button key={t} onClick={() => setTab(t)} aria-pressed={tab === t} className={`shrink-0 rounded-full px-2.5 py-1 ${tab === t ? 'bg-hover text-fg' : 'text-fg3 hover:text-fg2'}`}>
+            <div className="flex shrink-0 gap-0.5 overflow-x-auto border-b border-line px-3 py-2 text-[12px]">
+              {tabs.map(t => <button key={t} onClick={() => setTab(t)} aria-pressed={tab === t} className={`shrink-0 rounded-full px-2 py-1 ${tab === t ? 'bg-hover text-fg' : 'text-fg3 hover:text-fg2'}`}>
                 {t} <span className="num text-fg3">{t === 'All' ? all.length : all.filter(n => KIND[n.kind][2] === t).length}</span></button>)}
             </div>
             <div className="scroll-thin min-h-0 flex-1 overflow-y-auto pb-2">

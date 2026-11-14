@@ -116,6 +116,8 @@ export const groupTone = (z: number | null | undefined) => z == null || z < 1 ? 
 /* feed details written before the rename still say "Timing tell" */
 export const feedDetail = (d: string) => d.replace(/^Timing tell/, 'Tripwire')
 export const zColor = (z: number | null | undefined) => z == null ? 'transparent' : Math.abs(z) >= 3 ? 'var(--z3)' : Math.abs(z) >= 2 ? 'var(--z2)' : Math.abs(z) >= 1 ? 'color-mix(in oklab, var(--z2) 38%, transparent)' : 'color-mix(in oklab, var(--fg3) 22%, transparent)'
+/* the 0 to 100 reading as a whole number; just under the Watch line it stays at 49, so 49.6 never reads as "50 against 50" */
+export const wholeScore = (s: number) => s < 50 ? Math.min(49, Math.round(s)) : Math.round(s)
 export const fmtZ = (z: number | null | undefined) => z == null ? 'n/a' : (z > 0 ? '+' : z < 0 ? '−' : '') + Math.abs(z).toFixed(1)
 export const parseGen = (g: string) => new Date(g.replace(' UTC', 'Z').replace(' ', 'T'))
 export const shortDate = (d: string) => { const x = new Date(d + (d.length === 7 ? '-01' : '') + 'T00:00Z'); return x.toLocaleDateString('en-GB', { day: d.length === 7 ? undefined : 'numeric', month: 'short', timeZone: 'UTC' }) }
