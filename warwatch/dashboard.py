@@ -113,7 +113,7 @@ def theatre_json(t, v, res_series, base=None, change=None, tells=None):
                      "drivers": x["drivers"], "w": x["w"], "c": x["contrib"]}
     return {"name": C.THEATRES[t]["name"], "level": v["level"], "firing": v["firing"], "scorable": v["scorable"],
             "basis": v["basis"], "doms": doms, "score": v["score"], "zc": v["zc"], "index": v["index"], "imb": v["imbalance"],
-            "worst": v["worst"], "conf": v["confidence"], "confl": v["conf_label"], "miss": v["missing"], "th": v["th"],
+            "worst": v["worst"], "conf": v["confidence"], "confl": v["conf_label"], "miss": v["missing"], "th": v["th"], "ln": v.get("lines"),
             "p": _r(v.get("p"), 4), "plo": _r(v.get("p_lo"), 4), "phi": _r(v.get("p_hi"), 4), "why": _why(t, v.get("p_why", []), res_series), "aft": bool(v.get("p_aftermath")),
             "lvc": v.get("level_composite"), "pb": _r(base, 4), "pd": change,
             "xu": _r(v["p"] / base, 2) if v.get("p") is not None and base else None,      # standing risk: times this theatre's usual
@@ -335,6 +335,7 @@ EVENTS = os.path.join(HERE, "data", "events.csv")
 EVENTS_THROUGH = os.path.join(HERE, "data", "events_through.txt")
 FORWARD_DIR = os.path.join(os.path.dirname(HERE), "forward")
 HIST_DAYS = 90
+SHOWN_LEVELS = ("Normal", "Watch", "Elevated", "Critical")
 TEMPO = {"israel": ("tzeva_israel", "Siren waves (Tzeva Adom)"), "ukraine": ("uaair_ukraine", "Air-raid alert waves (alerts.in.ua)")}
 CW_WORDS = ["no alert", "deteriorated", "conflict-risk alert", "conflict-risk alert, deteriorated"]
 
@@ -410,28 +411,39 @@ def _n(v):
 
 
 def hist_json(res, by_id, days=HIST_DAYS, fwd=FORWARD_DIR):
-    """Per theatre, the last `days` days: the standing risk from the forward record ([[day, times usual, chance, level]])
-    and a timeline ([[day, kind, text, series id]]) of tells fired, advisory steps, UK advice updates, CrisisWatch ratings
+    """Per theatre, the last `days` days: the standing risk from the forward record ([[day, times usual, chance, level]]),
+    the level the page showed at each day's first run ("levels", [[day, level]]: the forward record's composite_level on the days
+    the model was off, when that level is the one on the page; a day the model was on is left out, as its logged level is not
+    always the one shown), the tripwires lit at each day's run ("lit", [[day, [tell ids]]] from the forward tells record, one entry
+    for every day the record has rows for, an empty list when nothing was lit) and a timeline ([[day, kind, text, series id]]) of tells fired, advisory steps, UK advice updates, CrisisWatch ratings
     and strike waves. Built from the hash-chained records and the stored series, so it is the same on every run."""
     import tells
     last = max((s["points"][-1][0] for s in res["series"] if s.get("points") and s["kind"] == "daily"), default=None)
     if not last:
         return {}
     since = (dt.date.fromisoformat(last[:10]) - dt.timedelta(days=days)).isoformat()
-    out = {t: {"risk": [], "items": []} for t in res["theatres"]}
+    out = {t: {"risk": [], "items": [], "levels": [], "lit": []} for t in res["theatres"]}
     for r in _csv(os.path.join(fwd, "log.csv")):
         t = r.get("theatre")
         if t in out and r.get("date", "") >= since and r.get("p"):
             p, b = float(r["p"]), float(r["base"]) if r.get("base") else None
             out[t]["risk"].append([r["date"], round(p / b, 2) if b else None, round(p, 4), r.get("level") or ""])
+        if t in out and r.get("date", "") >= since and r.get("active") == "0" and r.get("composite_level") in SHOWN_LEVELS:
+            out[t]["levels"].append([r["date"], r["composite_level"]])
     names = {x["id"]: x["name"] for x in tells.TELLS}
-    seen = {}
+    seen, lit = {}, {}
     for r in _csv(os.path.join(fwd, "tells.csv")):
         t, k = r.get("theatre"), r.get("tell")
         on = r.get("on") == "1"
+        if t in out and k and r.get("date", "") >= since:
+            ids = lit.setdefault(t, {}).setdefault(r["date"][:10], [])
+            if on and k not in ids:
+                ids.append(k)
         if t in out and on and not seen.get((t, k)) and r.get("date", "") >= since:
             out[t]["items"].append([r.get("fired") or r["date"], "tell", names.get(k, k), r.get("src") or None])
         seen[(t, k)] = on
+    for t, by_day in lit.items():    # what was lit at each day's run, as the page showed it; a day with no rows is not kept
+        out[t]["lit"] = [[d, ids] for d, ids in sorted(by_day.items())]
     for t, L in (res.get("tells") or {}).items():    # today's firings, before the record has them
         for x in L:
             if t in out and x.get("on") and x.get("date") and not any(i[1] == "tell" and i[2] == x["n"] for i in out[t]["items"]):
@@ -503,7 +515,7 @@ def feed_items(data, days=8):
     for t, v in data["theatres"].items():
         for x in v.get("tells") or []:
             if x.get("on"):
-                out.append({"d": x.get("date") or gen, "t": t, "title": f"{name[t]}: {x['n']}", "sub": "Timing tell. " + x["says"], "hot": 1})
+                out.append({"d": x.get("date") or gen, "t": t, "title": f"{name[t]}: {x['n']}", "sub": "Tripwire. " + x["says"], "hot": 1})
     for t, h in (data.get("hist") or {}).items():
         for d, kind, text, sid in h["items"]:
             if kind in ("advisory", "rating", "wave") and d >= cut[:len(d)]:
@@ -531,7 +543,7 @@ def feed_xml(data, site="https://khourix.github.io/warwatch/"):
         f"<guid isPermaLink=\"false\">{escape(f['t'] + '|' + f['d'] + '|' + f['title'])}</guid><pubDate>{when(f['d'])}</pubDate></item>"
         for f in feed_items(data))
     return ('<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>WarWatch: this week</title>'
-            f"<link>{escape(site)}</link><description>Timing tells, official steps and strong readings for 17 theatres in 6 regions. "
+            f"<link>{escape(site)}</link><description>Tripwires, official steps and strong readings for 17 theatres in 6 regions. "
             f"Built {escape(data['generated'])}.</description>{items}</channel></rss>\n")
 
 

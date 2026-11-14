@@ -1,12 +1,18 @@
 """Data contract v1: the JSON files the new app reads, written next to the page every run. Standard library only.
 
-    data/v1/brief.json                 first paint: headline, levels, the feed of the last 30 days (about 45 KB)
+    data/v1/brief.json                 first paint: headline, levels, the feed of the last 30 days (about 45 KB), and the data's health
+                                       for the top bar ("health", added November 2026: {statuses, sources: [{source, why}],
+                                       everyMinutes, lateAfterMinutes}, or null when it could not be built)
     data/v1/theatres/<id>.json         one theatre in full
     data/v1/signals/index.json         every signal, with a 40-point spark line
     data/v1/signals/series/<id>.json   one signal's full history, loaded on demand
-    data/v1/map/live.json              aircraft, ships, fires, bases, warnings, places
+    data/v1/signals/buildup.json       every theatre's five group histories over the last 60 days, for the Signals page (about 25 KB)
+    data/v1/map/live.json              aircraft, ships, fires, bases, warnings, places; each chokepoint says whether the dark-ship
+                                       and loitering data cover it ("gfw", added November 2026)
     data/v1/bases/<id>.json            one base in full, with its radar history and image chips
-    data/v1/record.json                the forward record, the model's gates, siren tempo, data health
+    data/v1/record.json                the forward record, the model's gates, siren tempo, data health, and what the tripwires and
+                                       readings did before the newest past events ("past", added November 2026; null when it could
+                                       not be built, so the run still writes every file)
     data/v1/events.json                the labelled event list
 
 Every file carries {"schema": "warwatch/v1", "kind": ..., "generated": ...}. Positions are [lon, lat], as in GeoJSON.
@@ -29,21 +35,23 @@ GROUPS = {"logistics": "Logistics", "financial": "Markets", "behavioral": "Peopl
 NUM = (int, float)
 OPT_NUM = (int, float, type(None))
 SHAPES = {
-    "brief": {"generated": str, "headline": str, "counts": dict, "global": dict, "regions[]": list, "theatres[]": list, "feed[]": list, "model": dict},
+    "brief": {"generated": str, "headline": str, "counts": dict, "global": dict, "regions[]": list, "theatres[]": list, "feed[]": list, "model": dict,
+              "health": (dict, type(None)), "replay": (dict, type(None))},
     "theatre": {"id": str, "name": str, "region": str, "level": str, "score": OPT_NUM, "signals": dict, "tells[]": list, "groups": dict, "official[]": list,
                 "history[]": list, "items[]": list, "events[]": list, "center": (list, type(None)), "countries": list},
     "signals": {"generated": str, "groups": dict, "signals[]": list},
     "series": {"id": str, "points": list, "zHistory": list},
+    "buildup": {"dates": list, "theatres[]": list},
     "map": {"theatres": dict, "aircraft[]": list, "ships[]": list, "fires[]": list, "bases[]": list, "warnings[]": list, "cities[]": list,
             "chokepoints[]": list},
     "base": {"id": str, "name": str, "state": str, "ll": list, "radar": list, "why": str, "images": dict, "parts[]": list},
-    "record": {"forward": (list, type(None)), "model": (dict, type(None)), "tempo": dict, "health": dict},
+    "record": {"forward": (list, type(None)), "model": (dict, type(None)), "tempo": dict, "health": dict, "past[]": (list, type(None))},
     "events": {"through": str, "events[]": list},
 }
 ITEMS = {
     "brief.regions": {"id": str, "name": str, "theatres": list, "level": str},
     "brief.theatres": {"id": str, "name": str, "region": str, "level": str, "tellsOn": int, "tellsTotal": int, "strong": int, "context": (str, type(None)),
-                       "groups": dict},
+                       "groups": dict, "levels": list, "wires": list, "tellsLit": list},
     "brief.feed": {"date": str, "kind": str, "theatre": str, "title": str, "detail": str, "to": dict},
     "theatre.tells": {"id": str, "name": str, "on": bool, "says": str},
     "theatre.official": {"name": str, "id": str, "date": str, "value": str},
@@ -51,6 +59,7 @@ ITEMS = {
     "theatre.items": {"date": str, "kind": str, "text": str},
     "theatre.events": {"date": str, "kind": str, "text": str},
     "signals.signals": {"id": str, "label": str, "group": str, "theatre": str, "z": OPT_NUM, "status": str, "spark": list},
+    "buildup.theatres": {"id": str, "name": str, "groups": dict},
     "map.aircraft": {"ll": list, "call": str, "class": str},
     "map.ships": {"ll": list, "name": str},
     "map.fires": {"ll": list, "mw": NUM, "date": str, "class": str},
@@ -58,8 +67,15 @@ ITEMS = {
     "map.warnings": {"ll": list, "text": str},
     "base.parts": {"part": str, "state": str, "history": list, "images": dict},
     "map.cities": {"ll": list, "name": str, "theatre": str},
-    "map.chokepoints": {"ll": list, "name": str},
+    "map.chokepoints": {"ll": list, "name": str, "gfw": bool},
     "events.events": {"date": str, "theatre": str, "kind": str, "text": str},
+    "record.past": {"date": str, "theatre": str, "site": str, "kind": str, "text": str, "tripwires": dict, "window": int, "groups": dict},
+}
+# kind.key -> {key: type} for an object (not a list) that must carry these keys when it is there
+FIELDS = {
+    "brief.replay": {"heatFrom": str, "tripwires": dict},
+    "brief.health": {"statuses": dict, "sources": list, "everyMinutes": int, "lateAfterMinutes": int},
+    "record.health": {"errors": list, "statuses": dict},
 }
 
 
@@ -79,8 +95,17 @@ def validate(obj):
         if not isinstance(obj[name], typ):
             out.append(f"{kind}.{name}: {type(obj[name]).__name__}, expected {typ}")
             continue
+        sub = FIELDS.get(f"{kind}.{name}")
+        if sub and isinstance(obj[name], dict):
+            for k, t in sub.items():
+                if not isinstance(obj[name].get(k), t):
+                    out.append(f"{kind}.{name}.{k}: {type(obj[name].get(k)).__name__}, expected {t}")
+            if name == "health" and isinstance(obj[name].get("sources"), list):
+                for i, x in enumerate(obj[name]["sources"]):
+                    if not (isinstance(x, dict) and isinstance(x.get("source"), str) and isinstance(x.get("why"), str)):
+                        out.append(f"{kind}.health.sources[{i}]: expected {{source, why}} strings")
         item = ITEMS.get(f"{kind}.{name}")
-        if key.endswith("[]") and item:
+        if key.endswith("[]") and item and obj[name] is not None:
             for i, x in enumerate(obj[name]):
                 if isinstance(item, type):
                     if not isinstance(x, item):
@@ -154,11 +179,27 @@ def _groups(data, t, top=0):
     return out
 
 
+LINES = ("watch", "elevated", "critical")
+
+
+def lines(v):
+    """Where the Watch, Elevated and Critical lines sit on the 0 to 100 reading (engine.logistic_score of each threshold): Watch at
+    50 and Critical at 90 by construction, Elevated in between, per theatre. None when the theatre has no reading (no thresholds).
+    They come from the unrounded thresholds the score and the level use (the engine's "lines", the page data's "ln"), rounded only
+    here, to 2 places; data from before that falls back to the thresholds as stored (rounded to 3 places).
+    Added November 2026, optional: an app without it draws Watch at 50 and Critical at 90 and no Elevated line."""
+    ln = v.get("ln")
+    if ln and len(ln) == 3:
+        return {k: round(x, 2) for k, x in zip(LINES, ln)}
+    th = v.get("th")
+    if not th or len(th) != 3:
+        return None
+    import engine
+    return {k: round(engine.logistic_score(z, th), 2) for k, z in zip(LINES, th)}
+
+
 def _ctx(t):
     return (C.CONTEXT.get(t) or (None, None)) if hasattr(C, "CONTEXT") else (None, None)
-
-
-PART_THINGS = {"apron": "aircraft", "harbour": "ships", "ground": "vehicles"}
 
 
 FEED_DAYS = 30    # the strip under the map shows 30 days; the bell, the last 7
@@ -218,8 +259,8 @@ def feed(data):
         for x in v.get("tells") or []:
             if x.get("on") and x.get("date"):
                 rec = x.get("rec") or {}
-                detail = (f"Timing tell. Fired before {rec['caught']} of {rec['events']} past events" if rec.get("events")
-                          else "Timing tell. New, no history to test yet")
+                detail = (f"Tripwire. Fired before {rec['caught']} of {rec['events']} past events" if rec.get("events")
+                          else "Tripwire. New, no history to test yet")
                 add({"date": x["date"], "kind": "tell", "theatre": t, "title": x["n"], "detail": detail, "to": {"view": "theatre", "id": t}})
     for t, h in (data.get("hist") or {}).items():
         if t not in data["theatres"] or t == "global":
@@ -228,7 +269,7 @@ def feed(data):
             d, k, text = i[0] + ("-01" if len(i[0]) == 7 else ""), i[1], i[2]
             to = {"view": "theatre", "id": t}
             if k == "tell":
-                add({"date": d, "kind": "tell", "theatre": t, "title": text, "detail": "Timing tell", "to": to})
+                add({"date": d, "kind": "tell", "theatre": t, "title": text, "detail": "Tripwire", "to": to})
             elif k == "wave":
                 add({"date": d, "kind": "tell", "theatre": t, "title": "Strike wave", "detail": text.split(": ", 1)[-1].capitalize(), "to": to})
             elif k == "advisory":
@@ -239,18 +280,18 @@ def feed(data):
             elif k == "rating" and d[:7] >= since[:7]:
                 add({"date": d, "kind": "official", "theatre": t, "title": text, "detail": "Crisis Group, monthly", "to": to})
     m = data.get("map") or {}
-    words = {"out": "fewer {} than usual", "in": "more {} than usual", "changed": "one pass differed"}
+    # basewatch's own words (STATE_WHY): radar counts bright objects; whether they are aircraft, ships or vehicles is a guess
+    words = {"out": "far fewer bright objects than usual", "in": "far more bright objects than usual", "changed": "one pass differed"}
     for b in m.get("bases") or []:
-        what = PART_THINGS.get(b.get("mp") or "", "objects")
         name = b["n"].split(",")[0]
         to = {"view": "base", "id": b["id"]}
         last = b.get("last") or ""
         if b.get("st") in words:
-            add({"date": last, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[b['st']].format(what)}", "detail": "Satellite radar, two passes", "to": to})
+            add({"date": last, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[b['st']]}", "detail": "Satellite radar, two passes", "to": to})
         for d, st in b.get("ev") or []:
             near = last and b.get("st") in words and abs((dt.date.fromisoformat(d) - dt.date.fromisoformat(last[:10])).days) <= 1
             if st in words and not near:
-                add({"date": d, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[st].format(what)}",
+                add({"date": d, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[st]}",
                      "detail": "Satellite radar, one pass" if st == "changed" else "Satellite radar, two passes", "to": to})
     for f in _fire_items(data, since):
         add(f)
@@ -261,6 +302,60 @@ def feed(data):
                 if not any(x["theatre"] == t and x["title"].startswith("CrisisWatch") and x["date"][:7] == d[:7] for x in out):
                     add({"date": d, "kind": "official", "theatre": t, "title": f"CrisisWatch: {o['v']}", "detail": "Crisis Group, monthly", "to": {"view": "theatre", "id": t}})
     return sorted(out, key=lambda f: f["date"], reverse=True)
+
+
+def _replay_since(data):
+    return (dt.date.fromisoformat(data["generated"][:10]) - dt.timedelta(days=FEED_DAYS - 1)).isoformat()
+
+
+def _iso_day(x):
+    """A whole ISO date string, or None."""
+    try:
+        return dt.date.fromisoformat(x).isoformat() if isinstance(x, str) and len(x) == 10 else None
+    except ValueError:
+        return None
+
+
+def day_levels(data, t):
+    """Added November 2026, for replaying the last FEED_DAYS days on Watch: [[day, level]] oldest first, the level the page showed at
+    each day's first run (dashboard.hist_json "levels", from the hash-chained forward record). Only days the model was off are
+    there, so a missing day is one whose level was not kept, never a quiet one. A malformed row is left out, not the list."""
+    since, out = _replay_since(data), []
+    for r in ((data.get("hist") or {}).get(t) or {}).get("levels") or []:
+        d = _iso_day(r[0]) if isinstance(r, (list, tuple)) and len(r) == 2 else None
+        if not d or not isinstance(r[1], str) or not r[1]:
+            print(f"::warning title=Replay levels::skipped a level row that is not [day, level]: {str(r)[:120]}", flush=True)
+            continue
+        if d >= since:
+            out.append([d, r[1]])
+    return sorted(out)
+
+
+def day_wires(data, t):
+    """Added November 2026, for replaying the last FEED_DAYS days on Watch: [[day, [tripwire ids]]] oldest first, the tripwires lit
+    at each day's first run (dashboard.hist_json "lit", from the hash-chained forward tells record, the same way day_levels reads
+    the level). A day the record has no rows for is missing, so the app says it was not kept; an empty list is a day with nothing
+    lit. A malformed row is left out, not the list."""
+    since, out = _replay_since(data), {}
+    for r in ((data.get("hist") or {}).get(t) or {}).get("lit") or []:
+        d = _iso_day(r[0]) if isinstance(r, (list, tuple)) and len(r) == 2 else None
+        if not d or not isinstance(r[1], list):
+            print(f"::warning title=Replay tripwires::skipped a row that is not [day, [ids]]: {str(r)[:120]}", flush=True)
+            continue
+        if d >= since:
+            out[d] = [k for k in r[1] if isinstance(k, str) and k]
+    return [[d, out[d]] for d in sorted(out)]
+
+
+def replay_keep(data):
+    """Added November 2026: what the replay on Watch needs beside the per-theatre rows. heatFrom: the first day the feed can hold
+    unusual fires (the cluster cache keeps firecls.KEEP_DAYS days; the live map covers less), so a replayed day before it says heat
+    was not kept, not that there was none. Every other lane reaches back the whole FEED_DAYS: official steps come from the 90-day
+    history, base changes from about 60 radar passes. tripwires: id to name, for the lit ids in day_wires."""
+    import firecls
+    import tells
+    day = dt.date.fromisoformat(data["generated"][:10])
+    return {"heatFrom": (day - dt.timedelta(days=firecls.KEEP_DAYS)).isoformat(), "tripwires": {x["id"]: x["name"] for x in tells.TELLS}}
 
 
 def brief(data):
@@ -274,16 +369,19 @@ def brief(data):
         sc = _scored(data["series"], t)
         ths.append({"id": t, "name": v["name"], "region": reg[t]["id"] if t in reg else "", "level": v["level"], "score": v.get("score"),
                     "standingRisk": v.get("xu"), "tellsOn": sum(1 for x in v.get("tells") or [] if x.get("on")), "tellsTotal": len(v.get("tells") or []),
+                    "tellsLit": [x["id"] for x in v.get("tells") or [] if x.get("on") and x.get("id")],
                     "strong": sum(1 for s in sc if abs(s["z"]) >= 3), "context": ctx, "contextChecked": ctxd,
                     "spillover": t in (data.get("spill") or {}), "parents": (data.get("spill") or {}).get(t, []), "center": _box_center(t),
-                    "groups": {k: g["z"] for k, g in _groups(data, t).items()}})
+                    "groups": {k: g["z"] for k, g in _groups(data, t).items()}, "lines": lines(v), "levels": _safe("levels", day_levels, data, t) or [],
+                    "wires": _safe("wires", day_wires, data, t) or []})
     mo = data.get("model") or {}
     g = data.get("global") or {}
     return _head("brief", data["generated"], demo=bool(data.get("demo")), eventsThrough=(data.get("events") or {}).get("through", ""),
                  headline=head, counts=dict(counts, strong=sum(x["strong"] for x in ths)), **{"global": {"level": g.get("level"), "score": g.get("score"), "lead": g.get("lead")}},
                  regions=[{"id": r["id"], "name": r["name"], "theatres": r["kids"], "level": r["level"], "lead": r.get("lead")} for r in data.get("regions") or []],
                  theatres=ths, feed=feed(data)[:400],
-                 model={"version": mo.get("v"), "fitted": mo.get("fitted"), "active": bool(mo.get("active")), "gates": mo.get("gates")})
+                 model={"version": mo.get("v"), "fitted": mo.get("fitted"), "active": bool(mo.get("active")), "gates": mo.get("gates")},
+                 health=_safe("health", health, data), replay=_safe("replay", replay_keep, data))
 
 
 def theatre(data, t):
@@ -295,7 +393,7 @@ def theatre(data, t):
     sc = _scored(data["series"], t)
     return _head("theatre", data["generated"], id=t, name=v["name"], region=reg[t]["name"] if t in reg else "", level=v["level"], score=v.get("score"),
                  signals={"scored": len(sc), "total": sum(1 for s in data["series"] if s["t"] == t), "strong": sum(1 for s in sc if abs(s["z"]) >= 3)},
-                 standingRisk=v.get("xu"), chance={"p": v.get("p"), "lo": v.get("plo"), "hi": v.get("phi"), "usual": v.get("pb"), "change": v.get("pd")},
+                 lines=lines(v), standingRisk=v.get("xu"), chance={"p": v.get("p"), "lo": v.get("plo"), "hi": v.get("phi"), "usual": v.get("pb"), "change": v.get("pd")},
                  confidence=v.get("confl"), context=ctx, contextChecked=ctxd, spillover=t in (data.get("spill") or {}),
                  parents=(data.get("spill") or {}).get(t, []), center=_box_center(t), view=_view(t), countries=C.THEATRES.get(t, {}).get("countries", []),
                  tells=[{"id": x.get("id", ""), "name": x["n"], "on": bool(x.get("on")), "date": x.get("date"), "says": x.get("says", ""),
@@ -319,6 +417,28 @@ def signals(data):
                     "spark": [_r(p[1]) if isinstance(p[1], (int, float)) else None for p in pts[-40:]]})
     return _head("signals", data["generated"], groups={GROUPS[k]: C.GROUP_HELP.get(k, "") for k in GROUPS},
                  signals=out)
+
+
+def buildup(data):
+    """The build-up wall on the Signals page: the dates of the last STRIP_DAYS days (oldest first) and, per theatre, the five
+    group histories theatres/<id>.json carries in groups.<group>.history (dashboard.dom_strips, display only), each aligned to
+    those dates: a history shorter than the dates is padded with null at the start, a day with no reading stays null.
+    Added November 2026, optional: the app goes without the wall when this file is missing."""
+    import dashboard
+    end = dt.date.fromisoformat(data["strip_end"]) if data.get("strip_end") else dashboard._day(data["generated"])
+    n = dashboard.STRIP_DAYS
+    dates = [(end - dt.timedelta(days=n - 1 - k)).isoformat() for k in range(n)]
+    reg = _region_of(data)
+    order = [t for t in data.get("order", data["theatres"]) if t in data["theatres"] and t != "global"]
+    rows = []
+    for t in order:
+        th = data["theatres"][t]
+        groups = {}
+        for d, name in GROUPS.items():
+            h = list(((th.get("doms") or {}).get(d) or {}).get("h") or [])[-n:]
+            groups[name] = [None] * (n - len(h)) + h
+        rows.append({"id": t, "name": th["name"], "region": reg[t]["id"] if t in reg else "", "groups": groups})
+    return _head("buildup", data["generated"], dates=dates, theatres=rows)
 
 
 def series(data, s):
@@ -357,9 +477,20 @@ def live_map(data):
         warnings=[{"ll": ll(w["xy"]), "id": w.get("id", ""), "text": w.get("tx", ""), "issued": w.get("iss", ""), "theatre": w.get("th", "")} for w in m.get("nga") or []],
         conflictZones=[{"ll": ll(z["xy"]), "name": z.get("n", ""), "updated": z.get("u", ""), "theatre": z.get("th", "")} for z in m.get("czib") or []],
         cities=[{"ll": ll(c["xy"]), "name": c["n"], "theatre": c["t"]} for c in m.get("cities") or []],
-        chokepoints=[{"ll": ll(c["xy"]), "name": c["n"], "theatre": c["t"], "id": c.get("k", "")} for c in m.get("choke") or []],
+        # gfw: whether the strait lies inside one of Global Fishing Watch's waters boxes, the only places the dark-ship and
+        # loitering data cover (added November 2026; an app reading data without it treats the strait as not covered)
+        chokepoints=[{"ll": ll(c["xy"]), "name": c["n"], "theatre": c["t"], "id": c.get("k", ""), "gfw": gfw_covers(c.get("k", ""), ll(c["xy"]))}
+                     for c in m.get("choke") or []],
         hubs=[{"ll": ll(h["xy"]), "theatre": h["t"], "radiusNm": h.get("nm")} for h in m.get("hubs") or []],
         seas=[{"ll": ll(s["xy"]), "name": s["n"]} for s in m.get("seas") or []])
+
+
+def gfw_covers(key, lonlat):
+    """True when a chokepoint (config.CHOKE_XY[key], else its [lon, lat]) lies inside a Global Fishing Watch waters box (gfw.BOX):
+    only there does the map carry dark ships and loitering, so elsewhere a count of 0 means not covered, not calm."""
+    import gfw
+    lat, lon = C.CHOKE_XY[key][:2] if key in C.CHOKE_XY else (lonlat[1], lonlat[0])
+    return any(la0 <= lat <= la1 and lo0 <= lon <= lo1 for la0, la1, lo0, lo1 in gfw.BOX.values())
 
 
 def _pic(img, k):
@@ -383,10 +514,141 @@ def base(data, b):
                  parts=parts)
 
 
-def record(data):
+def record(data, tell_record=None):
     return _head("record", data["generated"], forward=data.get("forward"), model=data.get("model"), tempo=data.get("tempo") or {},
                  health={"errors": data.get("errors") or [], "unavailable": data.get("unavailable") or [], "updates": data.get("updates") or [],
-                         "statuses": _statuses(data["series"])})
+                         "statuses": _statuses(data["series"])},
+                 past=_safe("past", past_events, data, tell_record))
+
+
+PAST_EVENTS = 24     # the newest labelled events the Record page shows
+
+
+def _days_before(day, start, win):
+    """True when an episode that started on `start` began 1 to win days before `day`; a start that is not a date counts as none."""
+    try:
+        return 0 < (day - dt.date.fromisoformat(str(start)[:10])).days <= win
+    except ValueError:
+        return False
+
+
+def past_events(data, tell_record=None):
+    """The newest PAST_EVENTS labelled events (data["events"], newest first) and what the tripwires and the group readings did in the
+    week before each. tripwires: the rules replayed on that theatre's history (tells.py, tells_record.json "per_theatre") whose
+    replay covers the event's date ("watched") and which of them started an episode 1 to 7 days before it ("started"), the test
+    the tripwire record counts as "caught". groups: each group's highest daily reading over the 7 days before, from the 60-day
+    strips the theatre file carries (dashboard.dom_strips); null when the strips do not reach back that far (they are kept for 60
+    days only), so older events show the tripwires alone.
+    Added November 2026, optional: an app without it says the list is not in this data run."""
+    import tells
+    rec = tell_record if tell_record is not None else tells.load_record()
+    per, win = (rec or {}).get("per_theatre") or {}, int((rec or {}).get("window") or tells.WINDOW)
+    names = {t["id"]: t["name"] for t in tells.TELLS}
+    import dashboard
+    end = dt.date.fromisoformat(data["strip_end"]) if data.get("strip_end") else dashboard._day(data["generated"])
+    out = []
+    for e in reversed((data.get("events") or {}).get("list") or []):
+        if len(out) >= PAST_EVENTS:
+            break
+        try:            # a row that is not a whole date (events.csv "2026-10") is left out, not the list
+            day, th, site = dt.date.fromisoformat(str(e[0])[:10]), e[1], e[2] if len(e) > 2 else ""
+        except (ValueError, TypeError, IndexError):
+            print(f"::warning title=Past events::skipped an event row that is not dated: {str(e)[:120]}", flush=True)
+            continue
+        if th not in data["theatres"]:
+            continue
+        watched, started = [], []
+        for tid, rows in per.items():
+            r = (rows or {}).get(th)
+            if not r or not r.get("first") or not r.get("last") or not (r["first"] <= day.isoformat() <= r["last"]):
+                continue            # a tripwire whose replay has no span (no "first" or "last") does not watch the date
+            watched.append(tid)
+            if any(_days_before(day, s, win) for s in r.get("starts") or []):
+                started.append(tid)
+        doms = data["theatres"][th].get("doms") or {}
+        groups = {}
+        for d, name in GROUPS.items():
+            h = list((doms.get(d) or {}).get("h") or [])
+            vals = []
+            for k in range(1, 8):           # the 7 days before the event, read back from the strip's last day
+                i = len(h) - 1 - (end - (day - dt.timedelta(days=k))).days
+                if 0 <= i < len(h) and h[i] is not None:
+                    vals.append(h[i])
+            groups[name] = round(max(vals), 2) if vals else None
+        out.append({"date": day.isoformat(), "theatre": th, "site": site, "kind": e[3] if len(e) > 3 else "", "text": e[4] if len(e) > 4 else "",
+                    "tripwires": {"watched": len(watched), "started": [{"id": t, "name": names.get(t, t)} for t in started]}, "window": win, "groups": groups})
+    return out
+
+
+# The top bar's data-health readout (added November 2026). The workflow's "next" job queues a run 30 minutes after one starts. The
+# app calls the data late after 90 minutes, the line the live freshness check (.agents/skills/verify-warwatch, live-fresh) also
+# uses: by then the two runs due after it (at 30 and 60 minutes) have not come through, and a third is due.
+RUN_EVERY_MIN = 30
+LATE_AFTER_MIN = 90
+
+# names in data["errors"] that are one source: run.py names a source that has been down for days by its host, extras.py by its key
+SAME_SOURCE = {"msi.nga.mil": "nga"}
+_PAGE_TEXT = re.compile(r"\s*<(?:[!?]|/?[A-Za-z][\w:-]*(?:\s[^<>]*)?/?>)")   # markup: <!DOCTYPE, <?xml, <title>, </p>, <a href=x>
+_ADDRESS = re.compile(r"\s*@\s*[a-z][a-z0-9+.-]*://\S*(?=\s*(?:\([^()]*\))?\s*$)", re.I)    # " @ http..." at the end, before any (note)
+
+
+def _reason(why):
+    """One source problem as a sentence: <urlopen error X> unwrapped to X, any markup a server sent back (an HTML or XML page, from
+    its first tag) cut to the " @ address" or a closing note in brackets, the address at the end dropped (it can carry a key) but
+    any other "@" kept, a capital first."""
+    why = re.sub(r"<urlopen error (.*?)>", r"\1", why)
+    m = _PAGE_TEXT.search(why)
+    if m:
+        rest = why[m.start():]
+        at, note = re.search(r"\s@\s*[a-z][a-z0-9+.-]*://", rest, re.I), re.search(r"\s\([^()<>]*\)\s*$", rest)
+        why = why[:m.start()] + (rest[at.start():] if at else note.group(0) if note else "")
+    why = _ADDRESS.sub("", why)
+    why = re.sub(r"\s+", " ", why).strip(" :;,-")
+    if not why:
+        return ""
+    why = why[0].upper() + why[1:]
+    return why if why[-1] in ".!?)" else why + "."
+
+
+def failing_sources(errors):
+    """The run's source problems (data["errors"], each "source: what went wrong") as [{source, why}], one entry per source (two
+    names for one source are merged, their reasons joined), each reason a plain sentence (_reason). Entries with no text are left
+    out. A problem here is not always lost data: some sources fell back to another feed, and some are WarWatch's own caches."""
+    out, at = [], {}
+    for x in errors or []:
+        if x is None:
+            continue
+        s = x if isinstance(x, str) else json.dumps(x)
+        src, sep, why = s.partition(": ")
+        if not sep:
+            src, why = "", s
+        src, why = SAME_SOURCE.get(src.strip(), src.strip()), _reason(why)
+        if not why:
+            continue
+        if src and src in at:
+            if why not in at[src]["why"]:
+                at[src]["why"] += " " + why
+            continue
+        out.append({"source": src, "why": why})
+        if src:
+            at[src] = out[-1]
+    return out
+
+
+def health(data):
+    """For the top bar: how many signals score, collect history or failed, the sources that reported a problem with the reason, and
+    the run cadence the app judges the data's age by."""
+    return {"statuses": _statuses(data["series"]), "sources": failing_sources(data.get("errors")), "everyMinutes": RUN_EVERY_MIN, "lateAfterMinutes": LATE_AFTER_MIN}
+
+
+def _safe(name, fn, *args):
+    """A part that is added on top of the run (health, past events): a failure there is logged and leaves it null, so the other
+    files are still written."""
+    try:
+        return fn(*args)
+    except Exception as e:      # noqa: BLE001, any failure here must not stop the run's files
+        print(f"::error title=contract {name}::{type(e).__name__}: {e}"[:300], flush=True)
+        return None
 
 
 def _statuses(series):
@@ -405,8 +667,8 @@ def events(data):
 
 def files(data):
     """-> {relative path: object} for the whole contract."""
-    out = {"brief.json": brief(data), "signals/index.json": signals(data), "map/live.json": live_map(data), "record.json": record(data),
-           "events.json": events(data)}
+    out = {"brief.json": brief(data), "signals/index.json": signals(data), "signals/buildup.json": buildup(data), "map/live.json": live_map(data),
+           "record.json": record(data), "events.json": events(data)}
     for t in data["theatres"]:
         if t != "global":
             out[f"theatres/{t}.json"] = theatre(data, t)

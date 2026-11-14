@@ -40,6 +40,38 @@ jobs:
         run: python3 -m pip install --quiet --break-system-packages h3
       - name: Live ships collected by the ais job (orphan branch; none yet is fine)
         run: git fetch -q --depth=1 origin ais && git show FETCH_HEAD:state.json > "$RUNNER_TEMP/ais_state.json" || echo "no ais state yet"
+      # Node is set up here, before run.py, so the share cards get their fonts; the new app's build below uses it too.
+      - uses: actions/setup-node@v6
+        continue-on-error: true
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      # the font files from the last run, so Fontshare is asked only when fetch-fonts.mjs changes or the cache has gone (they stay out of git).
+      # Restored here and saved below only when every file is whole, since a key that never changes would keep a partial save for good.
+      - name: Cached fonts
+        id: fonts-cache
+        uses: actions/cache/restore@v5
+        continue-on-error: true
+        with:
+          path: |
+            web/src/fonts/switzer-*.woff2
+            web/src/fonts/sentient-*.woff2
+          key: fonts-${{ hashFiles('web/scripts/fetch-fonts.mjs') }}
+      - name: Fonts for the share cards (Switzer and Sentient from Fontshare, never committed; system fonts if this fails)
+        id: fonts
+        continue-on-error: true
+        timeout-minutes: 2
+        run: node web/scripts/fetch-fonts.mjs
+      - name: Keep the fonts for the next run (only when all of them are whole)
+        if: steps.fonts.outputs.complete == 'true' && steps.fonts-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        continue-on-error: true
+        with:
+          path: |
+            web/src/fonts/switzer-*.woff2
+            web/src/fonts/sentient-*.woff2
+          key: fonts-${{ hashFiles('web/scripts/fetch-fonts.mjs') }}
       - name: Fetch, score, render
         env:
           CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
@@ -64,7 +96,10 @@ jobs:
         continue-on-error: true
         with:
           name: warwatch-dashboard
-          path: site/
+          # the share cards' fonts are served from the site but not handed out as files (Fontshare licence)
+          path: |
+            site/
+            !site/og-fonts/
           retention-days: 30
       - name: Commit history (public data only)
         if: github.event.inputs.only == ''
@@ -136,12 +171,6 @@ jobs:
       # The new app (web/, React) is the page at /warwatch/, with an address per theatre (/warwatch/iran/) and its own share card.
       # pages.py moves the old page to /warwatch/classic/ until its CLASSIC_UNTIL date. If the build or pages.py fails, site/ stays as
       # run.py wrote it, so the old page is served at /warwatch/ for that run and nothing is held back.
-      - uses: actions/setup-node@v6
-        continue-on-error: true
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
       - name: New app (web/ built, then written to site/ with a page per address)
         continue-on-error: true
         run: |

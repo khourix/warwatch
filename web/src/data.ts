@@ -3,11 +3,20 @@ import { useQuery } from '@tanstack/react-query'
 /* The data contract (warwatch/contract.py, schema warwatch/v1). Positions are [lon, lat]. */
 export type Level = 'Normal' | 'Watch' | 'Elevated' | 'Critical'
 export type LonLat = [number, number]
-export type Route = { v: 'brief' } | { v: 'theatre'; id: string; tab?: string } | { v: 'base'; id: string } | { v: 'signal'; id: string } | { v: 'signals'; th?: string } | { v: 'record' } | { v: 'map' }
+export type Route = { v: 'brief' } | { v: 'theatre'; id: string; tab?: string } | { v: 'base'; id: string } | { v: 'signal'; id: string } | { v: 'signals'; th?: string } | { v: 'record' } | { v: 'map' } | { v: 'ground' } | { v: 'glossary'; term?: string } | { v: 'wall' }
 export type FeedItem = { date: string; kind: 'tell' | 'base' | 'fire' | 'official'; theatre: string; title: string; detail: string; to: { view: string; id: string; tab?: string } }
 export type BriefTheatre = {
   id: string; name: string; region: string; level: Level; score: number | null; standingRisk: number | null; tellsOn: number; tellsTotal: number; strong: number
   context: string | null; contextChecked: string | null; spillover: boolean; parents: string[]; center: LonLat | null; groups: Record<Group, number | null>
+  lines?: Lines | null
+  /* Added November 2026 (contract.day_levels): [day, level] for the last 30 days, the level the page showed at each day's first run,
+     only for days the model was off. A day that is missing was not kept. Older data has none: the replay then shows no level. */
+  levels?: [string, Level][]
+  /* Added November 2026 (contract.day_wires): [day, tripwire ids] for the last 30 days, the tripwires lit at each day's first run.
+     A day that is missing was not kept; an empty list is a day with nothing lit. Older data has none: the replay says not kept. */
+  wires?: [string, string[]][]
+  /* Added November 2026: the ids of the tripwires lit now, so a notification is sent when one turns on, not every day it stays lit */
+  tellsLit?: string[]
 }
 export type Brief = {
   generated: string; demo: boolean; eventsThrough: string; headline: string
@@ -16,10 +25,24 @@ export type Brief = {
   regions: { id: string; name: string; theatres: string[]; level: Level; lead: string }[]
   theatres: BriefTheatre[]; feed: FeedItem[]
   model: { version: string; fitted: string; active: boolean; gates: Gates | null }
+  health?: Health
+  /* Added November 2026 (contract.replay_keep): the first day heat is kept (fewer days than the feed), and tripwire id to name */
+  replay?: { heatFrom: string; tripwires: Record<string, string> } | null
 }
-export type Gates = { bss: number; auc: number; auc_lo: number; auc_hi: number; shuffle_p_auc: number; bss_positive: boolean; auc_lo_above_half: boolean; beats_shuffled: boolean; pass: boolean }
-export type Tell = { id: string; name: string; on: boolean; date: string | null; says: string; cases: string; record: { hits?: number; episodes?: number; caught?: number; events?: number } | null }
-export type GroupDetail = { z: number | null; fast: boolean; history: number[]; top: { id: string; label: string; z: number }[] }
+/* Added November 2026 (contract.health): signal statuses, the run's source problems with their reasons, and the run cadence the
+   top bar judges the data's age by. Older data has none: the readout then shows the age alone. */
+export type Health = { statuses: Record<string, number>; sources: { source: string; why: string }[]; everyMinutes: number; lateAfterMinutes: number }
+/* Added November 2026 (contract.lines): where the Watch, Elevated and Critical lines sit on the 0 to 100 reading for one theatre.
+   Watch is 50 and Critical 90 by construction; older data has no field, and then the app draws 50 and 90 and no Elevated line. */
+export type Lines = { watch: number; elevated: number; critical: number }
+export type Gates = { bss: number; auc: number; auc_lo: number; auc_hi: number; shuffle_p_auc: number; shuffle_p_bss?: number; bss_positive: boolean; auc_lo_above_half: boolean; beats_shuffled: boolean; pass: boolean }
+export type Tell = { id: string; name: string; on: boolean; date: string | null; says: string; cases: string; record: TellRecord | null }
+/* a tripwire's past: fired `episodes` times since `first`, `hits` of them followed by an event; it fired before `caught` of `events` past events */
+export type TellRecord = { hits?: number; episodes?: number; caught?: number; events?: number; first?: string; last?: string; theatres?: number }
+/* military aircraft broadcasting over a theatre, about every half hour for 48 hours: [time, count] */
+export type AirKey = 'mil' | 'fighter' | 'isr' | 'lift' | 'tanker'
+export type Air48 = Partial<Record<AirKey, [string, number | null][]>>
+export type GroupDetail = { z: number | null; fast: boolean; history: (number | null)[]; top: { id: string; label: string; z: number }[] }
 export type Theatre = {
   generated: string; id: string; name: string; region: string; level: Level; score: number | null; standingRisk: number | null
   signals: { scored: number; total: number; strong: number }
@@ -27,8 +50,10 @@ export type Theatre = {
   confidence: string; context: string | null; contextChecked: string | null; spillover: boolean; parents: string[]
   center: LonLat | null; view: [LonLat, LonLat] | null; countries: string[]
   tells: Tell[]; groups: Record<Group, GroupDetail>; official: { name: string; id: string; date: string; value: string }[]
-  history: [string, number, number, string][]; items: { date: string; kind: string; text: string; signal: string }[]
+  history: [string, number | null, number | null, string][]; items: { date: string; kind: string; text: string; signal: string }[]
   events: { date: string; kind: string; text: string }[]
+  aircraft48h?: Air48 | null
+  lines?: Lines | null
 }
 export type Signal = { id: string; label: string; group: Group; sub: string; theatre: string; z: number | null; status: string; stale: string; last: string; lagging: boolean; kind: string; why: string; url: string; event: string | null; untested?: boolean; spark: (number | null)[] }
 export type Signals = { generated: string; groups: Record<Group, string>; signals: Signal[] }
@@ -55,11 +80,18 @@ export type BaseFile = { generated: string; id: string; name: string; type: stri
   radar: number[]; why: string; about: string; note: string; mainPart: string; bounds?: Bounds | null; images: { radar: Pic; radarBefore: Pic; optical: Pic; opticalBefore: Pic }; parts: BasePart[] }
 export type LiveMap = {
   generated: string; theatres: Record<string, { center: LonLat | null; view: [LonLat, LonLat] | null; countries: string[] }>
-  bases: MapBase[]; fires: MapFire[]; aircraft: MapAircraft[]; squawks: MapAircraft[]; ships: MapShip[]; warnings: MapWarning[]; incidents: MapIncident[]; cities: { ll: LonLat; name: string; theatre: string }[]; chokepoints: { ll: LonLat; name: string; theatre: string }[]
+  bases: MapBase[]; fires: MapFire[]; aircraft: MapAircraft[]; squawks: MapAircraft[]; ships: MapShip[]; warnings: MapWarning[]; incidents: MapIncident[]; cities: { ll: LonLat; name: string; theatre: string }[]; chokepoints: { ll: LonLat; name: string; theatre: string; id?: string; gfw?: boolean }[]
   airports?: MapAirport[]; diversions?: MapDiversion[]; darkShips?: MapDark[]; loitering?: MapLoiter[]
 }
-export type Forward = { k: string; name: string; first: string; logged: number; days: number; need: number; through: string; ready: boolean; pass: boolean }
-export type RecordFile = { generated: string; forward: Forward[] | null; model: { v: string; fitted: string; active: boolean; gates: Gates } | null; health: { statuses: Record<string, number>; errors: unknown[]; unavailable: { n: string; w: string }[]; updates: { s: string; e: string; l: string }[] } }
+/* forward_score.scorecard: one target's forward record. days: matured forecast days scored so far; need: days before the first
+   interim report (FORWARD_DAYS); read: days before the full read (READ_DAYS; the planned harder test, which does not switch the model on today); final: that read is in */
+export type Forward = { k: string; name: string; h?: number; chain?: boolean; first: string | null; logged: number; days: number; need: number; read?: number; through: string; ready: boolean; pass: boolean
+  final?: boolean; bss?: number | null; auc?: number | null; auc_lo?: number | null; shuffle_p?: number | null; err?: string }
+/* contract.past_events (added November 2026): a past event, the tripwires watched there on its date and the ones that started in the
+   week before, and each group's highest reading in that week (null where the 60-day strips do not reach) */
+export type PastEvent = { date: string; theatre: string; site: string; kind: string; text: string; window: number; tripwires: { watched: number; started: { id: string; name: string }[] }; groups: Partial<Record<Group, number | null>> }
+export type RecordFile = { generated: string; forward: Forward[] | null; model: { v: string; fitted: string; active: boolean; gates: Gates } | null; health: { statuses: Record<string, number>; errors: unknown[]; unavailable: { n: string; w: string }[]; updates: { s: string; e: string; l: string }[] }
+  past?: PastEvent[] }
 
 export const GROUPS = ['Logistics', 'Markets', 'People', 'News', 'Physical'] as const
 export type Group = (typeof GROUPS)[number]
@@ -80,50 +112,97 @@ async function get<T>(rel: string): Promise<T> {
   if (!r.ok) throw new Error(`${rel}: HTTP ${r.status}`)
   return r.json()
 }
-export const useBrief = () => useQuery({ queryKey: ['brief'], queryFn: () => get<Brief>('brief.json'), refetchInterval: 10 * 60_000 })
+/* a feed item or theatre row that is not whole (a date that is not a string, a row with no id) is left out on arrival, so one bad
+   row cannot stop the parts of the page that read every row (the timeline, since-you-last-looked, the bell) */
+const str = (x: unknown) => typeof x === 'string'
+function wholeBrief(b: Brief): Brief {
+  if (!b || typeof b !== 'object') throw new Error('brief.json: not an object')
+  return { ...b, theatres: (Array.isArray(b.theatres) ? b.theatres : []).filter(t => t && str(t.id) && str(t.name)),
+    feed: (Array.isArray(b.feed) ? b.feed : []).filter(f => f && str(f.date) && str(f.kind) && str(f.theatre) && str(f.title) && f.to && typeof f.to === 'object') }
+}
+export const useBrief = () => useQuery({ queryKey: ['brief'], queryFn: () => get<Brief>('brief.json').then(wholeBrief), refetchInterval: 10 * 60_000, refetchIntervalInBackground: true })
 export const useTheatre = (id: string) => useQuery({ queryKey: ['theatre', id], queryFn: () => get<Theatre>(`theatres/${id}.json`) })
 export const useSignals = (on = true) => useQuery({ queryKey: ['signals'], queryFn: () => get<Signals>('signals/index.json'), enabled: on })
-export const useLiveMap = () => useQuery({ queryKey: ['map'], queryFn: () => get<LiveMap>('map/live.json') })
+export const useLiveMap = (on = true) => useQuery({ queryKey: ['map'], queryFn: () => get<LiveMap>('map/live.json'), refetchInterval: 30 * 60_000, enabled: on })
 export const useBase = (id: string, on = true) => useQuery({ queryKey: ['base', id], queryFn: () => get<BaseFile>(`bases/${id}.json`), enabled: on && !!id })
 export type SeriesFile = { generated: string; id: string; points: [string, number | null][]; zHistory: [string, number | null][] }
-export const useSeries = (id: string) => useQuery({ queryKey: ['series', id], queryFn: () => get<SeriesFile>(`signals/series/${id}.json`) })
-export const useRecord = () => useQuery({ queryKey: ['record'], queryFn: () => get<RecordFile>('record.json') })
+export const useSeries = (id: string, on = true) => useQuery({ queryKey: ['series', id], queryFn: () => get<SeriesFile>(`signals/series/${id}.json`), enabled: on && !!id, retry: 1 })
+/* Added November 2026: the build-up wall's file, every theatre's five group histories over the last 60 days (contract.buildup) */
+export type Buildup = { generated: string; dates: string[]; theatres: { id: string; name: string; region?: string; groups: Partial<Record<Group, (number | null)[]>> }[] }
+export const useBuildup = (on = true) => useQuery({ queryKey: ['buildup'], queryFn: () => get<Buildup>('signals/buildup.json'), retry: 1, enabled: on })
+export const useRecord = (on = true) => useQuery({ queryKey: ['record'], queryFn: () => get<RecordFile>('record.json'), enabled: on })
 
 /* Images and tiles sit at the site root: img/bases/…, basemap.pmtiles */
 export const asset = (src: string) => new URL(src, ROOT).href
 
 /* Base states as basewatch.py writes them */
 export const BASE_STATE: Record<string, [string, string]> = {
-  out: ['Fewer than usual', 'var(--elev)'], in: ['More than usual', 'var(--elev)'], changed: ['One pass differed', 'var(--watch)'],
-  normal: ['Usual on the latest pass', 'var(--fg-3)'], optical: ['Optical images only', 'var(--fg-3)'], nodata: ['No recent pass', 'var(--fg-3)'],
+  out: ['Far fewer bright objects than usual', 'var(--z3-text)'], in: ['Far more bright objects than usual', 'var(--z3-text)'], changed: ['One pass differed', 'var(--z2-text)'],
+  normal: ['Usual on the latest pass', 'var(--fg3)'], optical: ['Optical images only', 'var(--fg3)'], nodata: ['No recent pass', 'var(--fg3)'],
 }
-export const baseState = (s: string) => BASE_STATE[s] || [s, 'var(--fg-3)']
+export const baseState = (s: string) => BASE_STATE[s] || [s, 'var(--fg3)']
 
-/* Words and colours */
+/* an aircraft in an emergency: flagged so by the source, or squawking hijack (7500), radio failure (7600) or emergency (7700) */
+export const emergency = (a: MapAircraft) => a.emergency || ['7500', '7600', '7700'].includes(a.sq || '')
+/* heat follows the fire score everywhere (map, lists, cards): orange from 70, faint orange from 40, grey below */
+export const HEAT = { faint: 40, strong: 70 }
+export const heatColour = (score: number) => score >= HEAT.strong ? 'var(--z3)' : score >= HEAT.faint ? 'color-mix(in oklab, var(--z3) 45%, var(--fg3))' : 'var(--fg3)'
+
+/* Words and colours (text colours: the level word and base state are read as text) */
 export const LEVELS: Level[] = ['Normal', 'Watch', 'Elevated', 'Critical']
-export const levelVar = (l: string) => l === 'Critical' ? 'var(--crit)' : l === 'Elevated' ? 'var(--elev)' : l === 'Watch' ? 'var(--watch)' : 'var(--fg-3)'
+export const levelVar = (l: string) => l === 'Critical' ? 'var(--crit)' : l === 'Elevated' ? 'var(--z3-text)' : l === 'Watch' ? 'var(--z2-text)' : 'var(--fg3)'
 export const levelWord = (l: string) => l === 'Normal' ? 'Quiet' : l
-export const zColor = (z: number | null | undefined) => z == null ? 'transparent' : Math.abs(z) >= 3 ? 'var(--elev)' : Math.abs(z) >= 2 ? 'var(--watch)' : Math.abs(z) >= 1 ? 'color-mix(in oklab, var(--watch) 38%, transparent)' : 'color-mix(in oklab, var(--fg-3) 22%, transparent)'
+/* "South Asia (India-Pakistan)" reads "South Asia" on the board, the map and in sentences */
+export const short = (name: string) => name.replace(/\s*\(.*\)/, '')
+/* a signal group's cell on the board: below 1 SD plain, then three steps of warmth */
+export const groupTone = (z: number | null | undefined) => z == null || z < 1 ? 'var(--z0)' : z < 2 ? 'var(--z1)' : z < 3 ? 'var(--z2)' : 'var(--z3)'
+/* feed details written before the rename still say "Timing tell" */
+export const feedDetail = (d: string) => d.replace(/^Timing tell/, 'Tripwire')
+export const zColor = (z: number | null | undefined) => z == null ? 'transparent' : Math.abs(z) >= 3 ? 'var(--z3)' : Math.abs(z) >= 2 ? 'var(--z2)' : Math.abs(z) >= 1 ? 'color-mix(in oklab, var(--z2) 38%, transparent)' : 'color-mix(in oklab, var(--fg3) 22%, transparent)'
+/* the 0 to 100 reading as a whole number; just under a line it stays under it (49.6 reads 49, 89.7 reads 89), so a number never reads as reaching a line it has not */
+export const wholeScore = (s: number) => s < 50 ? Math.min(49, Math.round(s)) : s < 90 ? Math.min(89, Math.round(s)) : Math.round(s)
+/* the same rule against a theatre's own lines: a line prints as the whole number at or above it (66.4 prints 67), a reading under a
+   line prints below that number and a reading at or past it prints at least that number, so the two always compare as they should */
+export const lineWhole = (l: number) => Math.ceil(l - 1e-9)
+export function wholeAt(s: number, lines: number[]): number {
+  let r = Math.round(s)
+  for (const l of lines) r = s < l ? Math.min(r, lineWhole(l) - 1) : Math.max(r, lineWhole(l))
+  return r
+}
+/* a reading to one decimal that never rounds up onto a step it has not reached (1.99 prints 1.9, not 2.0), so the number agrees
+   with the colour the steps at 1, 2 and 3 give it (groupTone) */
+export const stepFixed = (z: number) => { const r = Math.round(z * 10) / 10; for (const k of [1, 2, 3]) if (z < k && r >= k) return (k - .1).toFixed(1); return r.toFixed(1) }
 export const fmtZ = (z: number | null | undefined) => z == null ? 'n/a' : (z > 0 ? '+' : z < 0 ? '−' : '') + Math.abs(z).toFixed(1)
 export const parseGen = (g: string) => new Date(g.replace(' UTC', 'Z').replace(' ', 'T'))
-export const shortDate = (d: string) => { const x = new Date(d + (d.length === 7 ? '-01' : '') + 'T00:00Z'); return x.toLocaleDateString('en-GB', { day: d.length === 7 ? undefined : 'numeric', month: 'short', timeZone: 'UTC' }) }
+export const shortDate = (d: string) => { const x = new Date(d + (d.length === 7 ? '-01' : '') + 'T00:00Z'); return x.toLocaleDateString('en-GB', { day: d.length === 7 ? undefined : 'numeric', month: 'short', timeZone: 'UTC' }).replace('Sept', 'Sep') }
 export const daysBetween = (now: Date, d: string) => Math.round((now.getTime() - new Date(d.slice(0, 10) + 'T12:00Z').getTime()) / 864e5)
 export const ago = (now: Date, d: string) => { const n = daysBetween(now, d); return n <= 0 ? 'Today' : n === 1 ? 'Yesterday' : n < 7 ? `${n} days ago` : shortDate(d.slice(0, 10)) }
 
-/* One plain sentence per theatre, built from its levels and tells (the Brief's headline comes from the build, share.py). */
-export function summary(t: Theatre): string {
-  const strong = GROUPS.filter(g => (t.groups[g]?.z ?? 0) >= 2).map(g => g.toLowerCase())
-  const parts = [t.level === 'Normal'
-    ? (strong.length ? `Quiet overall, with ${strong.join(' and ')} readings above their usual range.` : 'Quiet. No signal group is far from its usual range.')
-    : `${t.level}: ${strong.length ? strong.join(' and ') + ' readings are well above usual' : 'several readings are above usual'}.`]
+/* Tripwires by their short names (the feed and the prototype's), falling back to the name the data carries */
+const WIRE: Record<string, string> = { departure: 'Embassy drawdown', leave: 'Advisories raised', airlines: 'Airliners thin out', tankers: 'Tankers forward', airspace: 'Airspace closed',
+  sea: 'Sea firing warnings', wave: 'Strike waves', bases: 'Bases emptying', diverted: 'Flights diverted', bizjets: 'Bizjets fly out', dark: 'Ships go dark', civil: 'Civil defence' }
+export const wireName = (x: { id: string; name: string }) => WIRE[x.id] || x.name
+const NUM = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve']
+export const countWord = (n: number) => NUM[n] ?? String(n)
+
+/* The theatre's summary, from its data. The line of 50 is named only while the model is off and the reading is under it
+   (then it sets the level); a reading under 50 never prints as 50 (wholeScore). Otherwise the sentence gives the reading alone. */
+export function summary(t: Theatre, modelActive: boolean): string {
+  const s = t.score
+  let a: string
+  if (s == null) a = 'There is no unusual-readings number for this theatre today.'
+  else if (!modelActive && s < 50) { const gap = 50 - wholeScore(s); a = `Unusual readings stand at ${wholeScore(s)} of 100, ${gap < 10 ? `${gap} ${gap === 1 ? 'point' : 'points'} below Watch` : 'far below Watch'}.` }
+  else a = `Unusual readings stand at ${wholeScore(s)} of 100.`
   const on = t.tells.filter(x => x.on)
-  parts.push(on.length ? `${on.length === 1 ? 'One timing tell' : on.length + ' timing tells'} fired this week: ${on.map(x => /^[A-Z][a-z]/.test(x.name) ? x.name[0].toLowerCase() + x.name.slice(1) : x.name).join('; ')}.` : 'No timing tell fired this week.')
-  return parts.join(' ')
+  const b = on.length ? ` ${countWord(on.length)} ${on.length === 1 ? 'tripwire' : 'tripwires'} fired this week: ${on.map(x => wireName(x).toLowerCase()).join(', ')}.` : ' No tripwire has fired this week.'
+  const top = GROUPS.map(g => [g, t.groups[g]?.z ?? 0] as const).sort((x, y) => y[1] - x[1])[0]
+  const c = top && top[1] >= 2 ? ` Most of the pressure is in ${top[0]}.` : ''
+  return a + b + c
 }
 
 /* Routes are real paths under the root, so each theatre can carry its own share card: /warwatch/iran/, /warwatch/iran/ground/,
-   /warwatch/base/<id>/, /warwatch/signal/<id>/, /warwatch/signals/, /warwatch/record/, /warwatch/map/. */
-const VIEWS = ['base', 'signal', 'signals', 'record', 'map']
+   /warwatch/base/<id>/, /warwatch/signal/<id>/, /warwatch/signals/, /warwatch/ground/, /warwatch/record/, /warwatch/map/, /warwatch/glossary/, /warwatch/wall/. */
+const VIEWS = ['base', 'signal', 'signals', 'record', 'map', 'ground', 'glossary', 'wall']
 export function parsePath(rel: string): Route {
   const p = rel.split(/[?#]/)[0].split('/').filter(x => x && x !== 'index.html').map(decodeURIComponent)
   if (p[0] === 'base' && p[1]) return { v: 'base', id: p[1] }
@@ -131,15 +210,27 @@ export function parsePath(rel: string): Route {
   if (p[0] === 'signals') return { v: 'signals', th: p[1] }
   if (p[0] === 'record') return { v: 'record' }
   if (p[0] === 'map') return { v: 'map' }
+  if (p[0] === 'ground') return { v: 'ground' }
+  if (p[0] === 'glossary') return { v: 'glossary' }
+  if (p[0] === 'wall') return { v: 'wall' }
   if (p[0] && !VIEWS.includes(p[0])) return { v: 'theatre', id: p[0], tab: p[1] }
   return { v: 'brief' }
 }
 export const routePath = (r: Route) => r.v === 'brief' ? '' : r.v === 'theatre' ? `${r.id}/${r.tab && r.tab !== 'now' ? r.tab + '/' : ''}`
-  : r.v === 'base' || r.v === 'signal' ? `${r.v}/${encodeURIComponent(r.id)}/` : r.v === 'signals' ? `signals/${r.th ? r.th + '/' : ''}` : `${r.v}/`
+  : r.v === 'base' || r.v === 'signal' ? `${r.v}/${encodeURIComponent(r.id)}/` : r.v === 'signals' ? `signals/${r.th ? r.th + '/' : ''}`
+  : r.v === 'glossary' && r.term ? `glossary/#${r.term}` : `${r.v}/`
 export const routeHref = (r: Route) => new URL(routePath(r), ROOT).href
 export function currentRoute(): Route {
   const root = new URL(ROOT).pathname, path = location.pathname
-  return parsePath(path.startsWith(root) ? path.slice(root.length) : '')
+  const r = parsePath(path.startsWith(root) ? path.slice(root.length) : '')
+  /* a glossary term is the page's anchor: /warwatch/glossary/#sd */
+  if (r.v === 'glossary' && /^#[A-Za-z]+$/.test(location.hash)) return { v: 'glossary', term: location.hash.slice(1) }
+  return r
+}
+/* old hash links are read only where they lived: the root (the old page) and /next/ (the preview); elsewhere a hash is an anchor */
+export const hashIsLegacy = () => {
+  const root = new URL(ROOT).pathname, rel = location.pathname.startsWith(root) ? location.pathname.slice(root.length) : ''
+  return /^(index\.html)?$/.test(rel) || /^next\/?(index\.html)?$/.test(rel)
 }
 
 /* Links from before the switch-over still work: the preview's #/theatre/iran/now and the old page's #iran/signals, #signals?q=…, #record */
@@ -157,4 +248,20 @@ export function legacyHash(h: string): Route | null {
   if (a === 'record' || a === 'settings' || a === 'system') return { v: 'record' }
   if (/^[a-z_]+$/.test(a)) return { v: 'theatre', id: a, tab: b === 'signals' || b === 'markets' ? 'signals' : b === 'history' || b === 'alerts' ? 'history' : undefined }
   return null
+}
+
+export const gatesPassed = (g: Gates) => [g.auc_lo_above_half, g.bss_positive, g.beats_shuffled].filter(x => x === true).length
+/* The model's three checks (record.tsx lists them) in one plain sentence, from brief.model.gates: which it has passed and which not */
+export function gatesSentence(g: Gates | null, active: boolean): string {
+  if (!g) return active ? 'It sets the level.' : 'Its checks have not been run yet, so it does not set the level.'
+  /* a check whose result is not a true or false in this data has not been run: said as such, never counted as passed or failed */
+  const checks: [boolean | undefined, string][] = [[g.auc_lo_above_half, 'ranks past theatre-days better than a coin flip'], [g.bss_positive, "beats each theatre's usual rate"], [g.beats_shuffled, 'beats the same signals with their timing shuffled']]
+  const known = checks.filter(c => typeof c[0] === 'boolean'), notRun = checks.length - known.length
+  const yes = known.filter(c => c[0]).map(c => c[1]), no = known.filter(c => !c[0]).map(c => c[1])
+  const list = (a: string[]) => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]
+  const passed = !known.length ? 'None of its three checks has been run in this data'
+    : !no.length ? (notRun ? `It ${list(yes)}` : `It passes all three of its checks: it ${list(yes)}`)
+    : !yes.length ? `It has not shown that it ${list(no)}` : `It ${list(yes)}, but it has not shown that it ${list(no)}`
+  const rest = notRun ? `; ${notRun === 1 ? 'one check has' : `${notRun} checks have`} not been run` : ''
+  return active ? `${passed}${rest}. It sets the level.` : `${passed}${rest}, so it stays here and does not set the level.`
 }

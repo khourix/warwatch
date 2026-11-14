@@ -270,6 +270,7 @@ def theatre_composite(series, theatre, wt, calib=(0.0, 1.0)):
         basis = "leading and lagging" if any(doms[d]["fast"] for d in firing) else "lagging only"
     res.update(level=lvl, zc=round(zc, 3), index=round(idx, 2), score=round(logistic_score(zc, th), 1),
                imbalance=round(sd, 2), firing=firing, basis=basis, th=[round(t, 3) for t in th], calib=[round(c, 2) for c in calib],
+               lines=[round(logistic_score(t, th), 2) for t in th],   # where Watch, Elevated and Critical sit on the reading, from the unrounded thresholds
                pctl=round(100 * bisect.bisect_left(null, zc) / len(null), 1))
     return res, {"groups": audit_groups, "correlated": pairs_all, "mean": round(m, 2), "sd": round(sd, 2), "mpi": round(idx, 2)}
 

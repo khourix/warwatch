@@ -6,7 +6,7 @@ its own (/warwatch/iran/) with its own link preview. Standard library only. The 
 It reads what run.py wrote to site/ (data/v1/ from contract.py, the old page as index.html) and:
 - moves the old page to classic/ until CLASSIC_UNTIL, with <base href="../"> so its files still load from the root; after
   that date it is left out;
-- writes the app's index.html once per address (the root, each theatre, each base, signals/, record/, map/) with its own title,
+- writes the app's index.html once per address (the root, each theatre, each base, signals/, ground/, record/, map/, glossary/, wall/) with its own title,
   description and og/twitter tags, and <base href> at the root so data, images and routes resolve from any depth;
 - writes 404.html, the same page: GitHub Pages serves it for any other address (a theatre's tab, a signal) and the app reads
   the path;
@@ -58,7 +58,22 @@ def page(shell, path, title, desc, image, alt, noindex=False):
         if anchor not in shell:
             raise ValueError(f"the app's index.html has no {anchor}")
     out = shell.replace('<meta charset="utf-8">', '<meta charset="utf-8">' + tags, 1).replace("<title>WarWatch</title>", f"<title>{e(title)}</title>", 1)
+    out = _links_after_base(out)
     return re.sub(r'<meta name="description" content="[^"]*">', lambda _: f'<meta name="description" content="{e(desc)}">', out, count=1)
+
+
+def _links_after_base(doc):
+    """A link above <base> (a font preload a build put at the top of the head) resolves against the page's own address, so on any
+    page but the root it asks for a file that is not there, then fetches it again: such links move to just after the base."""
+    at = doc.find("<base ")
+    if at < 0:
+        return doc
+    head, rest = doc[:at], doc[at:]
+    moved = re.findall(r"<link\b[^>]*>\s*", head)
+    if not moved:
+        return doc
+    end = rest.index(">") + 1
+    return re.sub(r"<link\b[^>]*>\s*", "", head) + rest[:end] + "\n" + "".join(m.strip() + "\n" for m in moved).rstrip("\n") + rest[end:]
 
 
 def classic(old, until):
@@ -71,6 +86,14 @@ def classic(old, until):
         raise ValueError("the old page has no charset or body tag")
     old = old.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n<base href="../">\n<meta name="robots" content="noindex">', 1)
     return old.replace("<body>", "<body>" + bar, 1)
+
+
+# the glossary's link preview; its terms are written once, in the app (web/src/glossary.ts)
+GLOSSARY = ("What WarWatch's words and numbers mean, in one plain sentence each: unusual readings, the Watch, Elevated and Critical "
+            "lines, tripwires, standing risk, SD, the five signal groups, bright objects on radar, burn scars, dark ships and loitering.")
+# the wall view's link preview: Watch on a spare screen, for a room
+WALL = ("WarWatch on a spare screen: the theatres closest to Watch, the week's tripwires and how old the data is, in large type, "
+        "with the globe moving between theatres. It updates itself.")
 
 
 NEXT = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>WarWatch</title>
@@ -113,6 +136,12 @@ def build(site, dist, today=None, until=CLASSIC_UNTIL):
         pages[f"base/{b['id']}/"] = page(shell, f"base/{b['id']}/", f"{name} · WarWatch", why, site_img, site_alt)
     for path, title in (("signals/", "Signals"), ("record/", "Track record"), ("map/", "Map")):
         pages[path] = page(shell, path, f"{title} · WarWatch", f"{head} {about}".strip(), site_img, site_alt)
+    pages["glossary/"] = page(shell, "glossary/", "Glossary · WarWatch", GLOSSARY, site_img, site_alt)
+    pages["wall/"] = page(shell, "wall/", "Wall · WarWatch", WALL, site_img, site_alt)
+    n = len(bases)
+    watched = (f"{n} {'base is' if n == 1 else 'bases are'}" if n else "Bases are") + " watched on satellite images; most are passed by Sentinel-1 radar every two to three days."
+    pages["ground/"] = page(shell, "ground/", "Ground · WarWatch", f"{watched} Unusual heat is checked on Sentinel-2 pictures, and the page counts what is near the sea chokepoints. {about}",
+                            site_img, site_alt)
     not_found = page(shell, "", "WarWatch", about, site_img, site_alt, noindex=True)
     keep_classic = today <= dt.date.fromisoformat(until)
     old_page = classic(old, until) if keep_classic else None
