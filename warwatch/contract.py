@@ -5,7 +5,8 @@
     data/v1/signals/index.json         every signal, with a 40-point spark line
     data/v1/signals/series/<id>.json   one signal's full history, loaded on demand
     data/v1/signals/buildup.json       every theatre's five group histories over the last 60 days, for the Signals page (about 25 KB)
-    data/v1/map/live.json              aircraft, ships, fires, bases, warnings, places
+    data/v1/map/live.json              aircraft, ships, fires, bases, warnings, places; each chokepoint says whether the dark-ship
+                                       and loitering data cover it ("gfw", added November 2026)
     data/v1/bases/<id>.json            one base in full, with its radar history and image chips
     data/v1/record.json                the forward record, the model's gates, siren tempo, data health
     data/v1/events.json                the labelled event list
@@ -61,7 +62,7 @@ ITEMS = {
     "map.warnings": {"ll": list, "text": str},
     "base.parts": {"part": str, "state": str, "history": list, "images": dict},
     "map.cities": {"ll": list, "name": str, "theatre": str},
-    "map.chokepoints": {"ll": list, "name": str},
+    "map.chokepoints": {"ll": list, "name": str, "gfw": bool},
     "events.events": {"date": str, "theatre": str, "kind": str, "text": str},
 }
 
@@ -157,22 +158,27 @@ def _groups(data, t, top=0):
     return out
 
 
+LINES = ("watch", "elevated", "critical")
+
+
 def lines(v):
     """Where the Watch, Elevated and Critical lines sit on the 0 to 100 reading (engine.logistic_score of each threshold): Watch at
     50 and Critical at 90 by construction, Elevated in between, per theatre. None when the theatre has no reading (no thresholds).
+    They come from the unrounded thresholds the score and the level use (the engine's "lines", the page data's "ln"), rounded only
+    here, to 2 places; data from before that falls back to the thresholds as stored (rounded to 3 places).
     Added November 2026, optional: an app without it draws Watch at 50 and Critical at 90 and no Elevated line."""
+    ln = v.get("ln")
+    if ln and len(ln) == 3:
+        return {k: round(x, 2) for k, x in zip(LINES, ln)}
     th = v.get("th")
     if not th or len(th) != 3:
         return None
     import engine
-    return {k: round(engine.logistic_score(z, th), 2) for k, z in zip(("watch", "elevated", "critical"), th)}
+    return {k: round(engine.logistic_score(z, th), 2) for k, z in zip(LINES, th)}
 
 
 def _ctx(t):
     return (C.CONTEXT.get(t) or (None, None)) if hasattr(C, "CONTEXT") else (None, None)
-
-
-PART_THINGS = {"apron": "aircraft", "harbour": "ships", "ground": "vehicles"}
 
 
 FEED_DAYS = 30    # the strip under the map shows 30 days; the bell, the last 7
@@ -253,18 +259,18 @@ def feed(data):
             elif k == "rating" and d[:7] >= since[:7]:
                 add({"date": d, "kind": "official", "theatre": t, "title": text, "detail": "Crisis Group, monthly", "to": to})
     m = data.get("map") or {}
-    words = {"out": "fewer {} than usual", "in": "more {} than usual", "changed": "one pass differed"}
+    # basewatch's own words (STATE_WHY): radar counts bright objects; whether they are aircraft, ships or vehicles is a guess
+    words = {"out": "far fewer bright objects than usual", "in": "far more bright objects than usual", "changed": "one pass differed"}
     for b in m.get("bases") or []:
-        what = PART_THINGS.get(b.get("mp") or "", "objects")
         name = b["n"].split(",")[0]
         to = {"view": "base", "id": b["id"]}
         last = b.get("last") or ""
         if b.get("st") in words:
-            add({"date": last, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[b['st']].format(what)}", "detail": "Satellite radar, two passes", "to": to})
+            add({"date": last, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[b['st']]}", "detail": "Satellite radar, two passes", "to": to})
         for d, st in b.get("ev") or []:
             near = last and b.get("st") in words and abs((dt.date.fromisoformat(d) - dt.date.fromisoformat(last[:10])).days) <= 1
             if st in words and not near:
-                add({"date": d, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[st].format(what)}",
+                add({"date": d, "kind": "base", "theatre": b.get("th", ""), "title": f"{name}: {words[st]}",
                      "detail": "Satellite radar, one pass" if st == "changed" else "Satellite radar, two passes", "to": to})
     for f in _fire_items(data, since):
         add(f)
@@ -393,9 +399,20 @@ def live_map(data):
         warnings=[{"ll": ll(w["xy"]), "id": w.get("id", ""), "text": w.get("tx", ""), "issued": w.get("iss", ""), "theatre": w.get("th", "")} for w in m.get("nga") or []],
         conflictZones=[{"ll": ll(z["xy"]), "name": z.get("n", ""), "updated": z.get("u", ""), "theatre": z.get("th", "")} for z in m.get("czib") or []],
         cities=[{"ll": ll(c["xy"]), "name": c["n"], "theatre": c["t"]} for c in m.get("cities") or []],
-        chokepoints=[{"ll": ll(c["xy"]), "name": c["n"], "theatre": c["t"], "id": c.get("k", "")} for c in m.get("choke") or []],
+        # gfw: whether the strait lies inside one of Global Fishing Watch's waters boxes, the only places the dark-ship and
+        # loitering data cover (added November 2026; an app reading data without it treats the strait as not covered)
+        chokepoints=[{"ll": ll(c["xy"]), "name": c["n"], "theatre": c["t"], "id": c.get("k", ""), "gfw": gfw_covers(c.get("k", ""), ll(c["xy"]))}
+                     for c in m.get("choke") or []],
         hubs=[{"ll": ll(h["xy"]), "theatre": h["t"], "radiusNm": h.get("nm")} for h in m.get("hubs") or []],
         seas=[{"ll": ll(s["xy"]), "name": s["n"]} for s in m.get("seas") or []])
+
+
+def gfw_covers(key, lonlat):
+    """True when a chokepoint (config.CHOKE_XY[key], else its [lon, lat]) lies inside a Global Fishing Watch waters box (gfw.BOX):
+    only there does the map carry dark ships and loitering, so elsewhere a count of 0 means not covered, not calm."""
+    import gfw
+    lat, lon = C.CHOKE_XY[key][:2] if key in C.CHOKE_XY else (lonlat[1], lonlat[0])
+    return any(la0 <= lat <= la1 and lo0 <= lon <= lo1 for la0, la1, lo0, lo1 in gfw.BOX.values())
 
 
 def _pic(img, k):

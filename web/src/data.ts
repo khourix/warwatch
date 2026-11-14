@@ -66,7 +66,7 @@ export type BaseFile = { generated: string; id: string; name: string; type: stri
   radar: number[]; why: string; about: string; note: string; mainPart: string; bounds?: Bounds | null; images: { radar: Pic; radarBefore: Pic; optical: Pic; opticalBefore: Pic }; parts: BasePart[] }
 export type LiveMap = {
   generated: string; theatres: Record<string, { center: LonLat | null; view: [LonLat, LonLat] | null; countries: string[] }>
-  bases: MapBase[]; fires: MapFire[]; aircraft: MapAircraft[]; squawks: MapAircraft[]; ships: MapShip[]; warnings: MapWarning[]; incidents: MapIncident[]; cities: { ll: LonLat; name: string; theatre: string }[]; chokepoints: { ll: LonLat; name: string; theatre: string; id?: string }[]
+  bases: MapBase[]; fires: MapFire[]; aircraft: MapAircraft[]; squawks: MapAircraft[]; ships: MapShip[]; warnings: MapWarning[]; incidents: MapIncident[]; cities: { ll: LonLat; name: string; theatre: string }[]; chokepoints: { ll: LonLat; name: string; theatre: string; id?: string; gfw?: boolean }[]
   airports?: MapAirport[]; diversions?: MapDiversion[]; darkShips?: MapDark[]; loitering?: MapLoiter[]
 }
 export type Forward = { k: string; name: string; first: string; logged: number; days: number; need: number; through: string; ready: boolean; pass: boolean }
@@ -108,7 +108,7 @@ export const asset = (src: string) => new URL(src, ROOT).href
 
 /* Base states as basewatch.py writes them */
 export const BASE_STATE: Record<string, [string, string]> = {
-  out: ['Fewer than usual', 'var(--z3-text)'], in: ['More than usual', 'var(--z3-text)'], changed: ['One pass differed', 'var(--z2-text)'],
+  out: ['Far fewer bright objects than usual', 'var(--z3-text)'], in: ['Far more bright objects than usual', 'var(--z3-text)'], changed: ['One pass differed', 'var(--z2-text)'],
   normal: ['Usual on the latest pass', 'var(--fg3)'], optical: ['Optical images only', 'var(--fg3)'], nodata: ['No recent pass', 'var(--fg3)'],
 }
 export const baseState = (s: string) => BASE_STATE[s] || [s, 'var(--fg3)']

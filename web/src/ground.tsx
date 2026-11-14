@@ -11,10 +11,9 @@ import { Crumbs } from './views'
    theatres/<id>.json (aircraft48h) and bases/<id>.json. */
 
 type Go = (r: Route, replace?: boolean) => void
-const THINGS: Record<string, string> = { apron: 'aircraft', harbour: 'ships', ground: 'vehicles' }
 const PART_TITLE: Record<string, string> = { apron: 'Aircraft', harbour: 'Ships', ground: 'Vehicles and equipment' }
-export const baseWord = (state: string, part?: string) =>
-  state === 'out' || state === 'in' ? `${state === 'out' ? 'Fewer' : 'More'} ${THINGS[part || ''] || 'objects'} than usual` : baseState(state)[0]
+/* basewatch's own words (STATE_WHY): radar counts bright objects; whether they are aircraft, ships or vehicles it cannot tell */
+export const baseWord = (state: string, _part?: string) => baseState(state)[0]
 /* a base's state as a data mark (a dot or the end of its sparkline); the words stay ink */
 export const baseMark = (state: string) => state === 'out' || state === 'in' ? 'var(--z3)' : state === 'changed' ? 'var(--z2)' : undefined
 const FIRE_WORD: Record<string, string> = { anom: 'Unusual heat', hot: 'Much more heat than usual', unex: 'Heat with no known source', ind: 'Industry or gas flare', seas: 'Farm or grass burning', volc: 'Volcano', off: 'Offshore platform' }
@@ -277,7 +276,7 @@ function BaseFull({ b, mb, crumbs, th, thName, go }: { b: BaseFile; mb?: MapBase
         {b.about && <p className="text-[12.5px] leading-[1.5] text-fg2">{b.about}</p>}
         {b.note && <p className="mt-1.5 text-[12px] leading-[1.5] text-fg3">{plainDates(b.note)}</p>}
       </Block>}
-      <Note><b>What this does not say.</b> A change on radar is a reason to look, not proof. One pass far outside the usual range marks a base as changed; two passes in a row within a week, both far below or both far above it, mark it as fewer or more than usual.
+      <Note><b>What this does not say.</b> A change on radar is a reason to look, not proof. One pass far outside the usual range marks a base as changed; two passes in a row within a week, both far below or both far above it, mark it as far fewer or far more bright objects than usual.
         {p && !p.tested ? ' This count is not yet tested against past events, so it carries no weight in the unusual readings.' : ''} Coordinates {coords(b.ll)}.</Note>
       <div className="flex flex-wrap gap-2 px-5 pb-6">
         <a href={`https://browser.dataspace.copernicus.eu/?zoom=14&lat=${b.ll[1]}&lng=${b.ll[0]}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-r2 border border-line px-3 py-1.5 text-[12.5px] text-fg2 hover:bg-s2">Copernicus Browser <ExternalLink size={12} aria-hidden /></a>
@@ -340,14 +339,16 @@ function PassChart({ p, hot, marked }: { p: BasePart; hot?: string; marked: numb
    A picture that fails to load is dropped: without the before, the latest shows alone; without the latest, a quiet line says so. */
 export function Compare({ before: b0, after, what, name, className = 'mx-5', lazy = false, words = ['Before', 'Now'] }: { before: Pic; after: Pic; what: string; name: string; className?: string; lazy?: boolean; words?: [string, string] }) {
   const [pos, setPos] = useState(50)
-  const [bad, setBad] = useState<{ a?: boolean; b?: boolean }>({})
-  const before = bad.b ? null : b0
+  /* failed pictures by source, so a failure never outlives a switch to other pictures (another part, radar or optical) */
+  const [bad, setBad] = useState<Record<string, true>>({})
+  const fail = (src: string) => () => setBad(x => ({ ...x, [src]: true }))
+  const before = b0 && bad[b0.src] ? null : b0
   const load = lazy ? 'lazy' as const : undefined, fit = lazy ? 'aspect-square object-cover' : ''   // lazy: square chips (the fire close-ups), sized before they load
   const box = useRef<HTMLDivElement>(null), drag = useRef(false)
   /* a touch waits to see which way it goes: sideways moves the divider, up or down is left to scroll the page; a tap moves it there */
   const touch = useRef<{ x: number; y: number; id: number; moved: boolean } | null>(null)   // moved: it became a drag
   if (!after) return null
-  if (bad.a) return <div className={`${className} grid aspect-square place-items-center rounded-r2 bg-s3 px-4 text-center text-[11.5px] text-fg2`}>The picture of {shortDate(after.date)} is not available.</div>
+  if (bad[after.src]) return <div className={`${className} grid aspect-square place-items-center rounded-r2 bg-s3 px-4 text-center text-[11.5px] text-fg2`}>The picture of {shortDate(after.date)} is not available.</div>
   const at = (e: PointerEvent) => { const r = box.current!.getBoundingClientRect(); setPos(Math.round(Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100)))) }
   const key = (e: KeyboardEvent) => {
     const step = e.shiftKey ? 10 : 2
@@ -358,7 +359,7 @@ export function Compare({ before: b0, after, what, name, className = 'mx-5', laz
   const label = 'font-mono absolute top-2 rounded-[3px] bg-black/75 px-1.5 py-1 text-[10.5px] font-medium leading-none text-white'
   if (!before) return (
     <div className={`relative ${className} overflow-hidden rounded-r2 bg-black`}>
-      <img src={asset(after.src)} alt={`${what} of ${name}, ${shortDate(after.date)}`} loading={load} onError={() => setBad(x => ({ ...x, a: true }))} className={`block w-full ${fit}`} />
+      <img src={asset(after.src)} alt={`${what} of ${name}, ${shortDate(after.date)}`} loading={load} onError={fail(after.src)} className={`block w-full ${fit}`} />
       <span className={`${label} right-2`}>{words[1]} · {shortDate(after.date)}</span>
     </div>)
   return (
@@ -380,8 +381,8 @@ export function Compare({ before: b0, after, what, name, className = 'mx-5', laz
       }}
       onPointerUp={e => { const t = touch.current; if (t && !t.moved && !drag.current) at(e); drag.current = false; touch.current = null }}
       onPointerCancel={() => { drag.current = false; touch.current = null }}>
-      <img src={asset(after.src)} alt={`${what} of ${name}, latest pass, ${shortDate(after.date)}`} draggable={false} loading={load} onError={() => setBad(x => ({ ...x, a: true }))} className={`pointer-events-none block w-full ${fit}`} />
-      <img src={asset(before.src)} alt={`${what} of ${name}, earlier pass, ${shortDate(before.date)}`} draggable={false} loading={load} onError={() => setBad(x => ({ ...x, b: true }))} className="pointer-events-none absolute inset-0 h-full w-full object-cover" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }} />
+      <img src={asset(after.src)} alt={`${what} of ${name}, latest pass, ${shortDate(after.date)}`} draggable={false} loading={load} onError={fail(after.src)} className={`pointer-events-none block w-full ${fit}`} />
+      <img src={asset(before.src)} alt={`${what} of ${name}, earlier pass, ${shortDate(before.date)}`} draggable={false} loading={load} onError={fail(before.src)} className="pointer-events-none absolute inset-0 h-full w-full object-cover" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }} />
       <span className={`${label} left-2`}>{words[0]} · {shortDate(before.date)}</span>
       <span className={`${label} right-2`}>{words[1]} · {shortDate(after.date)}</span>
       <div className="pointer-events-none absolute inset-y-0 w-[2px] -translate-x-1/2 bg-white shadow-[0_0_0_1px_rgba(0,0,0,.4)]" style={{ left: `${pos}%` }}>

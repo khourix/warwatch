@@ -65,7 +65,9 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
 
   /* replace: change the address without a new history entry (a theatre's tabs, an unknown theatre) */
   const go = useCallback((r: Route, replace = false) => {
-    const href = routeHref(r) + location.search
+    /* ?s=<id> is the signal open on the Signals page: it stays while the page does, and goes when the page is left */
+    const sp = new URLSearchParams(location.search); if (r.v !== 'signals') sp.delete('s')
+    const qs = sp.toString(), href = routeHref(r) + (qs ? '?' + qs : '')
     if (location.href !== href) history[replace ? 'replaceState' : 'pushState'](null, '', href)
     setRoute(r); if (!replace) panelRef.current?.scrollTo({ top: 0 })
   }, [])
@@ -77,7 +79,8 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !(e.target as HTMLElement).closest('input,textarea,select'))) { e.preventDefault(); setCmd(c => !c) }
-      if (e.key === 'Escape' && !cmd && route.v !== 'brief') go({ v: 'brief' })
+      if (e.key === 'Escape' && cmd) { e.preventDefault(); setCmd(false); return }   // the search closes first
+      if (e.key === 'Escape' && !e.defaultPrevented && !cmd && route.v !== 'brief') go({ v: 'brief' })   // a page that used the Escape first (a panel, a filter) prevents it
     }
     addEventListener('keydown', k); return () => removeEventListener('keydown', k)
   }, [cmd, route, go])
@@ -93,7 +96,7 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   const navActive = (k: string) => route.v === k || (k === 'brief' && (route.v === 'map' || dossier)) || (k === 'signals' && route.v === 'signal')
   const view = (
     <AnimatePresence mode="popLayout" initial={false}>
-      <motion.div key={route.v === 'theatre' ? 'theatre/' + route.id : JSON.stringify(route)} initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: .34, ease: EASE }}>
+      <motion.div key={route.v === 'theatre' ? 'theatre/' + route.id : route.v === 'signals' ? 'signals' : JSON.stringify(route)} initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: .34, ease: EASE }}>
         {route.v === 'theatre' && <TheatreView key={route.id} id={route.id} tab={route.tab} brief={brief} live={live} go={go} />}
         {route.v === 'base' && <BaseView key={route.id} id={route.id} brief={brief} live={live} go={go} />}
         {route.v === 'signal' && <SignalView key={route.id} id={route.id} brief={brief} go={go} />}
@@ -251,10 +254,18 @@ function CommandMenu({ open, setOpen, go, toggleTheme, openSettings, brief, live
       {open && (
         <motion.div className="fixed inset-0 z-50 grid place-items-start justify-center bg-black/40 px-4 pt-[12vh] backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .15 }} onClick={() => setOpen(false)}>
           <motion.div role="dialog" aria-label="Search" initial={{ scale: .98, y: -6, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: .98, opacity: 0 }} transition={{ duration: .18, ease: EASE }} onClick={e => e.stopPropagation()} className="w-[min(600px,92vw)] overflow-hidden rounded-r3 border border-line2 bg-s1 shadow-[var(--shadow)]">
-            <Command label="Search WarWatch" loop filter={(v, q) => { const a = v.toLowerCase(), b = q.toLowerCase().trim(); if (!b) return 1; if (a.startsWith(b)) return 1; if (a.includes(' ' + b)) return .9; return a.includes(b) ? .6 : 0 }}>
+            <Command label="Search WarWatch" loop filter={(v, q) => { const a = v.toLowerCase(), b = q.toLowerCase().trim(); if (!b) return 1; if (a.startsWith(b)) return 1; if (a.includes(' ' + b)) return .9; return a.includes(b) ? .2 : 0 }}>
               <div className="flex items-center gap-2 border-b border-line px-4"><Search size={16} className="text-fg3" /><Command.Input autoFocus placeholder="Search theatres, bases, signals, or type a command" className="h-12 w-full bg-transparent text-[15px] outline-none placeholder:text-fg3 focus-visible:outline-none" /></div>
               <Command.List className="scroll-thin max-h-[52vh] overflow-y-auto p-2">
                 <Command.Empty className="px-3 py-6 text-center text-[13px] text-fg3">Nothing matches. Try a country, a base or a source.</Command.Empty>
+                <Command.Group heading="Go to" className={grp}>
+                  <Command.Item value="Watch home" onSelect={() => run({ v: 'brief' })} className={item}><Globe size={15} />Watch</Command.Item>
+                  <Command.Item value="Signals all signals" onSelect={() => run({ v: 'signals' })} className={item}><Activity size={15} />All signals</Command.Item>
+                  <Command.Item value="Ground bases fires chokepoints" onSelect={() => run({ v: 'ground' })} className={item}><GroundIcon size={15} />Ground: bases, heat and chokepoints</Command.Item>
+                  <Command.Item value="Record track record" onSelect={() => run({ v: 'record' })} className={item}><ClipboardCheck size={15} />Track record</Command.Item>
+                  <Command.Item onSelect={() => { setOpen(false); toggleTheme() }} className={item}><Sun size={15} />Switch light or dark</Command.Item>
+                  <Command.Item onSelect={() => { setOpen(false); openSettings() }} className={item}><SlidersHorizontal size={15} />Settings</Command.Item>
+                </Command.Group>
                 <Command.Group heading="Theatres" className={grp}>
                   {brief.theatres.map(t => <Command.Item key={t.id} value={`${t.name} ${region(t.region)} ${(live?.theatres[t.id]?.countries || []).join(' ')} ${t.id}`} onSelect={() => run({ v: 'theatre', id: t.id })} className={item}><MapPin size={15} style={{ color: levelVar(t.level) }} /><span className="flex-1">{short(t.name)}</span><span className="text-[12px] text-fg3">{region(t.region)}</span></Command.Item>)}
                 </Command.Group>
@@ -265,14 +276,6 @@ function CommandMenu({ open, setOpen, go, toggleTheme, openSettings, brief, live
                   {sigs.data.signals.filter(s => s.z != null).slice(0, 400).map(s => <Command.Item key={s.id} value={`${s.label} ${s.sub} ${s.id}`} onSelect={() => run({ v: 'signal', id: s.id })} className={item}><Activity size={15} /><span className="min-w-0 flex-1 truncate">{s.label}</span><span className="num font-mono text-[11.5px] text-fg3">{fmtZ(s.z)}</span></Command.Item>)}
                 </Command.Group>}
                 {sigs.isPending && <Skeleton lines={2} />}
-                <Command.Group heading="Go to" className={grp}>
-                  <Command.Item onSelect={() => run({ v: 'brief' })} className={item}><Globe size={15} />Watch</Command.Item>
-                  <Command.Item onSelect={() => run({ v: 'signals' })} className={item}><Activity size={15} />All signals</Command.Item>
-                  <Command.Item value="Ground bases fires chokepoints" onSelect={() => run({ v: 'ground' })} className={item}><GroundIcon size={15} />Ground: bases, heat and chokepoints</Command.Item>
-                  <Command.Item onSelect={() => run({ v: 'record' })} className={item}><ClipboardCheck size={15} />Track record</Command.Item>
-                  <Command.Item onSelect={() => { setOpen(false); toggleTheme() }} className={item}><Sun size={15} />Switch light or dark</Command.Item>
-                  <Command.Item onSelect={() => { setOpen(false); openSettings() }} className={item}><SlidersHorizontal size={15} />Settings</Command.Item>
-                </Command.Group>
               </Command.List>
             </Command>
           </motion.div>

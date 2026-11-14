@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { memo, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject, type SyntheticEvent } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { Search, ExternalLink, X } from 'lucide-react'
 import { GROUPS, useSignals, useSeries, useBuildup, fmtZ, shortDate, short, groupTone, stepFixed, routeHref,
@@ -8,19 +8,24 @@ import { Crumbs, zMark } from './views'
 
 /* Signals: the build-up wall (every theatre against the last 60 days), where the unusual readings sit (theatre by group), and
    every series in one virtual list (921 rows, about 25 in the DOM) with a detail panel. A signal also has a page of its own,
-   /signal/<id>/, which phones open instead of the panel. */
+   /signal/<id>/, which phones open instead of the panel. The open panel is in the address as ?s=<id>, a theatre filter as
+   /signals/<theatre>/, so a reload keeps them and Back steps through them. */
 
 type Go = (r: Route, replace?: boolean) => void
-/* the pipeline's words (contract.py, share.py): a signal is scoring when its status is ok and it has a reading; strong at 3 SD or
-   more from its usual (brief counts.strong), unusual at 2 */
+/* the pipeline's words (contract.py, share.py): a signal is scoring when its status is ok and it has a reading; strong at 3 or more
+   from its usual (brief counts.strong), unusual at 2. For most series that is 3 SD; an action series ("step", travel-advisory level
+   sums) reads 3 per level it moved in 14 days, a rating series ("event", CrisisWatch) 2.5 per point of its rating (stats.STEP_Z,
+   stats.EVENT_Z), so those are not in SD */
 const scoring = (s: Signal) => s.status === 'ok' && s.z != null
 const isStrong = (s: Signal) => scoring(s) && Math.abs(s.z!) >= 3
 const isUnusual = (s: Signal) => scoring(s) && Math.abs(s.z!) >= 2
+const inSD = (s: Signal) => s.event !== 'step' && s.event !== 'event'
 const STATUS: Record<string, string> = { ok: 'scoring', collecting: 'collecting history', awaiting_key: 'needs a free key', error: 'failed this run' }
 type Only = 'all' | 'unusual' | 'strong' | 'off'
 const ONLY: [Only, string][] = [['all', 'All'], ['unusual', 'Unusual'], ['strong', 'Strong'], ['off', 'Not scoring']]
 const where = (brief: Brief, id: string) => id === 'global' ? 'Worldwide' : short(brief.theatres.find(t => t.id === id)?.name || id)
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+const andList = (xs: string[]) => xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1]
 /* dates with the year when it is not this one: "13 Nov", "4 Mar 2024", a month "Oct 2026" */
 const thisYear = new Date().getUTCFullYear()
 const longDate = (d: string, monthly = false) => {
@@ -28,44 +33,96 @@ const longDate = (d: string, monthly = false) => {
   if (d.length === 7) return new Date(d + '-01T00:00Z').toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' }).replace('Sept', 'Sep')
   return shortDate(d.slice(0, 10)) + (+d.slice(0, 4) === thisYear ? '' : ' ' + d.slice(0, 4))
 }
+const openDialog = () => !!document.querySelector('[role=dialog]')
+
+/* the opening sentence: SD only for the series scored in SD; the action and rating series that read strong are named apart, in words */
+function ledeOf(all: Signal[]): string {
+  const st = all.filter(isStrong)
+  const nSc = all.filter(scoring).length, nSt = st.filter(s => inSD(s) && s.theatre !== 'global').length, nStG = st.filter(s => inSD(s) && s.theatre === 'global').length
+  const cw = st.filter(s => s.event === 'event' && s.id.startsWith('crisiswatch')).length, ev = st.filter(s => s.event === 'event').length - cw
+  const adv = st.filter(s => s.event === 'step' && s.id.startsWith('state')).length, stp = st.filter(s => s.event === 'step').length - adv
+  const apart = [
+    cw && `${plural(cw, 'Crisis Group rating is', 'Crisis Group ratings are')} at a conflict-risk alert`,
+    ev && `${plural(ev, 'other rating reads', 'other ratings read')} high`,
+    adv && `${plural(adv, 'sum of US travel-advisory levels', 'sums of US travel-advisory levels')} moved by a level or more in two weeks`,
+    stp && `${plural(stp, 'other series', 'other series')} moved by a step or more`,
+  ].filter(Boolean) as string[]
+  return `${plural(all.length, 'public series', 'public series')}, each scored against its own history. ${nSc} ${nSc === 1 ? 'is' : 'are'} scoring today; ` +
+    `${nSt} ${nSt === 1 ? 'reads' : 'read'} strong in the theatres${nStG ? ` and ${nStG} worldwide` : ''}, 3 SD or more from usual${apart.length ? `, and ${andList(apart)}` : ''}.`
+}
 
 export function SignalsView({ th, brief, go }: { th?: string; brief: Brief; go: Go }) {
   const sq = useSignals()
-  const all = sq.data?.signals || []
-  const [q, setQ] = useState(''), [only, setOnly] = useState<Only>('all'), [g, setG] = useState<Group | null>(null), [t, setT] = useState<string | null>(th || null)
-  const [sel, setSel] = useState<string | null>(null)
+  const all = useMemo(() => sq.data?.signals || [], [sq.data])
+  const [q, setQ] = useState(''), [only, setOnly] = useState<Only>('all'), [g, setG] = useState<Group | null>(null)
+  const t = th || null                                       // the theatre filter is the address: /signals/<theatre>/
+  const dq = useDeferredValue(q)                             // typing stays quick; the list follows a frame later
+  const [sel, setSel] = useState<string | null>(() => { try { return new URLSearchParams(location.search).get('s') } catch { return null } })
   const [box, cw] = useWidth<HTMLDivElement>()
   const three = cw >= 1180, panel = cw >= 860, phone = cw > 0 && cw < 700
   const list = useMemo(() => {
-    const needle = q.toLowerCase().trim()
+    const needle = dq.toLowerCase().trim()
     return all.filter(s => (!g || s.group === g) && (!t || s.theatre === t)
       && (only === 'all' || (only === 'unusual' && isUnusual(s)) || (only === 'strong' && isStrong(s)) || (only === 'off' && !scoring(s)))
       && (!needle || `${s.label} ${s.sub} ${s.id} ${s.group} ${where(brief, s.theatre)}`.toLowerCase().includes(needle)))
       .sort((a, b) => (b.z == null ? -1 : Math.abs(b.z)) - (a.z == null ? -1 : Math.abs(a.z)))
-  }, [all, q, g, t, only, brief])
+  }, [all, dq, g, t, only, brief])
   const open = panel ? all.find(s => s.id === sel) : undefined
-  const pick = (th: string, gr: Group) => { if (t === th && g === gr) { setT(null); setG(null) } else { setT(th); setG(gr) } }
+  /* the open signal in the address (?s=<id>), without a history entry of its own */
+  useEffect(() => {
+    if (!panel || sq.isPending) return
+    const u = new URL(location.href), want = open ? open.id : null
+    if (u.searchParams.get('s') === want) return
+    if (want) u.searchParams.set('s', want); else u.searchParams.delete('s')
+    history.replaceState(history.state, '', u.href)
+  }, [open, panel, sq.isPending])
+  /* a matrix square filters by theatre (the address, so Back undoes it) and by group; the group it set goes when the address
+     leaves that theatre (Back, or the theatre chip's ×) */
+  const gFrom = useRef<string | null>(null)
+  const pick = useCallback((id: string, gr: Group) => {
+    if (t === id && g === gr) { setG(null); gFrom.current = null; go({ v: 'signals' }) } else { setG(gr); gFrom.current = id; if (t !== id) go({ v: 'signals', th: id }) }
+  }, [t, g, go])
+  useEffect(() => { if (gFrom.current && gFrom.current !== t) { gFrom.current = null; setG(null) } }, [t])
+  const pickG = useCallback((x: Group | null) => { gFrom.current = null; setG(x) }, [])
+  /* closing the panel gives focus back to the row it was opened from, or to the list when that row has scrolled away */
+  const listBox = useRef<HTMLDivElement>(null)
+  const close = useCallback(() => {
+    const id = sel
+    setSel(null)
+    requestAnimationFrame(() => {
+      const row = id ? listBox.current?.querySelector<HTMLElement>(`[data-sid="${CSS.escape(id)}"] a`) : null
+      ;(row || listBox.current?.querySelector<HTMLElement>('[data-list]'))?.focus()
+    })
+  }, [sel])
+  /* Escape closes the panel, then clears the filter box, before the app's own Escape (back to Watch) */
+  const qRef = useRef(q); qRef.current = q
+  useEffect(() => {
+    const k = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented || openDialog()) return
+      if (open) { e.preventDefault(); close() }
+      else if (qRef.current && (e.target as HTMLElement)?.closest?.('[data-filter]')) { e.preventDefault(); setQ('') }
+    }
+    addEventListener('keydown', k, true); return () => removeEventListener('keydown', k, true)
+  }, [open, close])
 
-  const nSc = all.filter(scoring).length, nSt = all.filter(s => isStrong(s) && s.theatre !== 'global').length, nStG = all.filter(s => isStrong(s) && s.theatre === 'global').length
-  /* strong as brief counts.strong counts it: in the theatres; the worldwide series (markets, US procurement) are named apart */
-  const lede = !all.length ? null : `${all.length} public series, each scored against its own history. ${nSc} ${nSc === 1 ? 'is' : 'are'} scoring today; ${nSt} ${nSt === 1 ? 'reads' : 'read'} strong in the theatres${nStG ? ` and ${nStG} worldwide` : ''}, 3 SD or more from usual.`
-  const matrix = <Matrix all={all} brief={brief} t={t} g={g} pick={pick} />
+  const lede = sq.isPending ? null : !all.length ? 'No public series is in this data run.' : ledeOf(all)
+  const matrix = <Matrix all={all} pending={sq.isPending} brief={brief} t={t} g={g} pick={pick} />
   return (
     <div ref={box} className="pb-6">
       <div className="px-5 pt-5">
         <h1 className="text-[27px] font-semibold leading-[1.1] tracking-[-0.028em]">Signals</h1>
-        <p className="mt-2 max-w-[62ch] font-serif text-[16.5px] leading-[1.42] text-fg [text-wrap:pretty]">{lede ?? <span className="text-fg3">{brief.counts.signals} public series, each scored against its own history.</span>}</p>
+        <p className="mt-2 max-w-[62ch] font-serif text-[16.5px] leading-[1.42] text-fg [text-wrap:pretty]">{lede ?? <span className="text-fg3">Public series, each scored against its own history.</span>}</p>
       </div>
       <Wall go={go} />
       {sq.isError ? <Failed what="the signals" error={sq.error} /> : (
-        <div className="mt-1 grid items-start gap-x-6 gap-y-4 px-5" style={{ gridTemplateColumns: three ? `272px minmax(0,1fr)${open ? ' 360px' : ''}` : panel ? (open ? 'minmax(0,1fr) 340px' : '272px minmax(0,1fr)') : 'minmax(0,1fr)' }}>
+        <div ref={listBox} className="mt-1 grid items-start gap-x-6 gap-y-4 px-5" style={{ gridTemplateColumns: three ? `272px minmax(0,1fr)${open ? ' 360px' : ''}` : panel ? (open ? 'minmax(0,1fr) 340px' : '272px minmax(0,1fr)') : 'minmax(0,1fr)' }}>
           {/* the matrix beside the list when there is room; folded above it on a phone, or while a signal is open on a mid-width screen */}
           {three || (panel && !open) ? <div className="sticky top-3">{matrix}</div>
             : <details className={`group rounded-r3 border border-line bg-s1 [&_summary::-webkit-details-marker]:hidden ${panel ? 'col-span-2' : ''}`}><summary className="flex cursor-pointer items-center justify-between px-3.5 py-2.5 text-[12.5px] font-semibold text-fg">Where it is unusual<span className="text-[11.5px] font-normal text-fg3 group-open:hidden">theatre by group, {t || g ? 'filtering the list' : 'pick a square to filter'}</span></summary><div className="max-w-[360px] px-0.5 pb-1">{matrix}</div></details>}
-          <SignalList list={list} total={all.length} pending={sq.isPending} brief={brief} go={go} q={q} setQ={setQ} only={only} setOnly={setOnly} g={g} setG={setG} t={t} clearT={() => setT(null)}
+          <SignalList list={list} total={all.length} pending={sq.isPending} brief={brief} go={go} q={q} setQ={setQ} only={only} setOnly={setOnly} g={g} setG={pickG} t={t} clearT={() => go({ v: 'signals' })}
             sel={open?.id} select={panel ? setSel : null} phone={phone} />
           {open && <aside aria-label="The selected signal" className="sticky top-3 max-h-[calc(100vh-88px)] overflow-y-auto rounded-r3 border border-line bg-s1 scroll-thin">
-            <SignalDetail key={open.id} s={open} brief={brief} go={go} onClose={() => setSel(null)} />
+            <SignalDetail key={open.id} s={open} brief={brief} go={go} onClose={close} />
           </aside>}
         </div>)}
     </div>
@@ -85,106 +142,150 @@ const LEGEND: Record<'Breadth' | 'one', [string, string][]> = {
   one: [['var(--z0)', 'usual, under 1'], ['var(--z1)', 'raised, 1 to 2'], ['var(--z2)', 'high, 2 to 3'], ['var(--z3)', 'very high, 3 or more']],
 }
 type Cell = { v: number | null; text: string }
-type Row = { id: string; name: string; cells: Cell[]; today: number | null; recent: number; high: Group[] }
+type Row = { id: string; name: string; cells: Cell[]; last: number | null; recent: number; high: Group[] }
+type RC = [number, number]
 
 function wallRows(b: Buildup, view: WallView, n: number): Row[] {
-  const fit = (h?: (number | null)[]) => { const x = (h || []).slice(-n); return [...Array(n - x.length).fill(null), ...x] as (number | null)[] }
+  const fit = (h?: (number | null)[] | null) => { const x = (h || []).slice(-n); return [...Array(n - x.length).fill(null), ...x] as (number | null)[] }
   return b.theatres.map(r => {
-    const hs = Object.fromEntries(GROUPS.map(gr => [gr, fit(r.groups[gr])])) as Record<Group, (number | null)[]>
+    const hs = Object.fromEntries(GROUPS.map(gr => [gr, fit(r.groups?.[gr])])) as Record<Group, (number | null)[]>
     const cells: Cell[] = Array.from({ length: n }, (_, i) => {
       if (view !== 'Breadth') { const z = hs[view][i]; return { v: z, text: z == null ? 'No reading' : `${view} reads ${stepFixed(z)}, ${groupWord(z)}` } }
       const read = GROUPS.filter(gr => hs[gr][i] != null), high = read.filter(gr => hs[gr][i]! >= HIGH)
       return { v: read.length ? high.length : null, text: !read.length ? 'No reading' : high.length ? `${high.length} of 5 groups high: ${high.join(', ')}` : 'No group high' }
     })
-    return { id: r.id, name: short(r.name), cells, today: cells[n - 1]?.v ?? null, recent: cells.slice(-14).reduce((a, c) => a + (c.v || 0), 0), high: GROUPS.filter(gr => (hs[gr][n - 1] ?? 0) >= HIGH) }
-  }).sort((a, b) => (b.today ?? -1) - (a.today ?? -1) || b.recent - a.recent || a.name.localeCompare(b.name))
+    return { id: r.id, name: short(r.name), cells, last: cells[n - 1]?.v ?? null, recent: cells.slice(-14).reduce((a, c) => a + (c.v || 0), 0), high: GROUPS.filter(gr => (hs[gr][n - 1] ?? 0) >= HIGH) }
+  }).sort((a, b) => (b.last ?? -1) - (a.last ?? -1) || b.recent - a.recent || a.name.localeCompare(b.name))
 }
 
-function Wall({ go }: { go: Go }) {
+/* the wall's last day in one line; theatres that tie at the top are all named */
+function wallSummary(rows: Row[], view: WallView, day: string): string {
+  const lit = rows.filter(r => (r.last ?? 0) >= (view === 'Breadth' ? 1 : HIGH))
+  if (!lit.length) return view === 'Breadth' ? `On ${day}, no theatre had a group reading high.` : `On ${day}, no theatre read high in ${view}.`
+  if (view === 'Breadth') {
+    const top = rows.filter(r => r.last === rows[0].last), k = rows[0].last!
+    const named = top.length > 4 ? `${top.length} theatres` : andList(top.map(r => `${r.name} (${r.high.join(', ')})`))
+    return `On ${day}, ${lit.length} of ${rows.length} theatres had at least one group high. The most: ${named}, with ${k}${top.length > 1 ? ' each' : ''}.`
+  }
+  const v = stepFixed(rows[0].last!), top = rows.filter(r => r.last != null && stepFixed(r.last) === v)
+  return `On ${day}, ${lit.length} of ${rows.length} theatres read high in ${view}. The highest: ${top.length > 4 ? `${top.length} theatres` : andList(top.map(r => r.name))} at ${v}${top.length > 1 ? ' each' : ''}.`
+}
+
+/* The wall draws its 1,000 or so cells once per view (WallGrid is memoised and its cells hold no handlers); hover, focus and the
+   tooltip live in the small WallTip beside it, and the roving tab stop moves in the DOM, so pointing at a day redraws one box */
+const Wall = memo(function Wall({ go }: { go: Go }) {
   const bq = useBuildup()
   const [view, setView] = useState<WallView>('Breadth')
-  const [hover, setHover] = useState<[number, number] | null>(null)
-  const [focus, setFocus] = useState<[number, number] | null>(null)
-  const [cur, setCur] = useState<[number, number] | null>(null)     // the cell in the tab order (roving)
-  const gridRef = useRef<HTMLDivElement>(null), tipBox = useRef<HTMLDivElement>(null)
+  const [hover, setHover] = useState<RC | null>(null)
+  const [focus, setFocus] = useState<RC | null>(null)
+  const gridRef = useRef<HTMLDivElement>(null), tipBox = useRef<HTMLDivElement>(null), touched = useRef(false)
   const b = bq.data
   const n = b ? Math.min(60, b.dates.length) : 0
-  const dates = b ? b.dates.slice(-n) : []
+  const dates = useMemo(() => b ? b.dates.slice(-n) : [], [b, n])
   const rows = useMemo(() => b && n ? wallRows(b, view, n) : [], [b, view, n])
+  const draw = !!b && n >= 2 && rows.length > 0
+  /* a tooltip opened by touch clears on a tap anywhere else */
+  useEffect(() => {
+    if (!hover || !touched.current) return
+    const off = (e: PointerEvent) => { if (!gridRef.current?.contains(e.target as Node) || !(e.target as HTMLElement).closest('[data-rc]')) { touched.current = false; setHover(null) } }
+    document.addEventListener('pointerdown', off, true); return () => document.removeEventListener('pointerdown', off, true)
+  }, [hover])
+  const onTheatre = useCallback((id: string) => go({ v: 'theatre', id }), [go])
   const head = (
     <div className="mb-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-      <h2 id="wall-h" className="text-[12.5px] font-semibold text-fg">Build-up, last {n > 1 ? `${n} days` : '60 days'}</h2>
-      {rows.length > 0 && <div role="group" aria-label="Colour the wall by" className="flex flex-wrap gap-1">
-        {WALL_VIEWS.map(v => <button key={v} aria-pressed={view === v} onClick={() => setView(v)}
+      <h2 id="wall-h" className="text-[12.5px] font-semibold text-fg">Build-up{n > 1 ? `, last ${n} days` : n === 1 ? ', one day so far' : ''}</h2>
+      {draw && <div role="group" aria-label="Colour the wall by" className="flex flex-wrap gap-1">
+        {WALL_VIEWS.map(v => <button key={v} aria-pressed={view === v} onClick={() => { setView(v); setHover(null) }}
           className={`rounded-full border px-2.5 py-[3px] text-[12px] transition-colors duration-[120ms] ${view === v ? 'border-sel bg-sel font-medium text-selink' : 'border-line2 text-fg2 hover:text-fg'}`}>{v}</button>)}
       </div>}
     </div>)
   const frame = (body: ReactNode) => <section aria-labelledby="wall-h" className="mx-5 mb-5 mt-5 rounded-r3 border border-line bg-s1 px-4 pb-3.5 pt-3.5">{head}{body}</section>
   if (bq.isPending) return frame(<Skeleton lines={4} />)
-  if (!b || n < 2 || !rows.length) return frame(<p className="text-[12.5px] text-fg3">{!b ? 'The build-up wall is not in this data run.' : 'Too few days to draw the wall yet.'} Each theatre's page shows its own build-up.</p>)
+  if (!draw) return frame(<p className="text-[12.5px] text-fg3">{!b ? 'The build-up wall is not in this data run.' : 'Too few days to draw the wall yet.'} Each theatre's page shows its own build-up.</p>)
 
-  const active = hover || focus
-  const move = (e: KeyboardEvent, r: number, c: number) => {
-    const to: [number, number] | null = e.key === 'ArrowRight' ? [r, Math.min(n - 1, c + 1)] : e.key === 'ArrowLeft' ? [r, Math.max(0, c - 1)]
-      : e.key === 'ArrowDown' ? [Math.min(rows.length - 1, r + 1), c] : e.key === 'ArrowUp' ? [Math.max(0, r - 1), c]
-      : e.key === 'Home' ? [r, 0] : e.key === 'End' ? [r, n - 1] : null
-    if (!to) return
-    e.preventDefault(); setCur(to)
-    ;(gridRef.current?.querySelector(`[data-rc="${to[0]}-${to[1]}"]`) as HTMLElement | null)?.focus()
-  }
-  const [cr, cc] = cur || [0, n - 1]
   const legend = LEGEND[view === 'Breadth' ? 'Breadth' : 'one']
-  /* the key numbers as text: today's picture in one line */
-  const lit = rows.filter(r => (r.today ?? 0) >= (view === 'Breadth' ? 1 : HIGH)), top = rows[0]
-  const summary = view === 'Breadth'
-    ? (lit.length ? `Today ${lit.length} of ${rows.length} theatres have at least one group high. The most: ${top.name}, with ${top.high.length} (${top.high.join(', ')}).` : `Today no theatre has a group reading high.`)
-    : (lit.length ? `Today ${lit.length} of ${rows.length} theatres read high in ${view}. The highest: ${top.name} at ${stepFixed(top.today!)}.` : `Today no theatre reads high in ${view}.`)
-  const tip = (() => {
-    if (!active || !gridRef.current || !tipBox.current) return null
-    const el = gridRef.current.querySelector(`[data-rc="${active[0]}-${active[1]}"]`) as HTMLElement | null
-    if (!el) return null
-    const o = tipBox.current.getBoundingClientRect(), r = el.getBoundingClientRect(), row = rows[active[0]]
-    const x = Math.max(4, Math.min(o.width - 224, r.left - o.left + r.width / 2 - 110))
-    return <div role="presentation" className="pointer-events-none absolute z-10 w-[220px] rounded-r1 border border-line2 bg-s2 px-2 py-1.5 text-[11.5px] leading-[1.35] text-fg2 shadow-[var(--shadow)]"
-      style={r.top - o.top < 48 ? { left: x, top: r.bottom - o.top + 8 } : { left: x, top: r.top - o.top - 8, transform: 'translateY(-100%)' }}><b className="font-medium text-fg">{row.name}</b> · {longDate(dates[active[1]])}<br />{row.cells[active[1]].text}</div>
-  })()
+  const day = longDate(dates[n - 1])
   return frame(<>
     <div ref={tipBox} className="relative">
-      <div className="scroll-thin -mx-1 overflow-x-auto px-1 pb-1">
-        <div ref={gridRef} role="grid" aria-label={`Build-up wall, ${view === 'Breadth' ? 'how many of the five signal groups read high' : `how unusual ${view} reads`}, each theatre over ${n} days from ${longDate(dates[0])} to ${longDate(dates[n - 1])}`}
-          aria-rowcount={rows.length} className="min-w-[620px]" onPointerLeave={e => { if (e.pointerType === 'mouse') setHover(null) }}>
-          {rows.map((row, r) => (
-            <div key={row.id} role="row" className="grid h-[19px] grid-cols-[118px_minmax(0,1fr)_34px] items-center gap-2.5">
-              <span role="rowheader" className="min-w-0 truncate text-[12px] leading-none"><Lnk to={{ v: 'theatre', id: row.id }} go={go} className="text-fg2 hover:text-fg hover:underline hover:decoration-line2 hover:underline-offset-[3px]">{row.name}</Lnk></span>
-              <span role="none" className="grid h-[15px] gap-px" style={{ gridTemplateColumns: `repeat(${n}, minmax(0,1fr))` }}>
-                {row.cells.map((c, i) => (
-                  <span key={i} role="gridcell" data-rc={`${r}-${i}`} tabIndex={r === cr && i === cc ? 0 : -1} aria-label={`${row.name}, ${longDate(dates[i])}: ${c.text}`}
-                    onPointerEnter={() => setHover([r, i])} onPointerDown={e => { if (e.pointerType !== 'mouse') setHover([r, i]) }}
-                    onFocus={() => { setFocus([r, i]); setCur([r, i]) }} onBlur={() => setFocus(null)} onKeyDown={e => move(e, r, i)}
-                    className="rounded-[1.5px] focus-visible:outline-offset-1"
-                    style={{ background: c.v == null ? 'transparent' : view === 'Breadth' ? BREADTH_TONE[Math.min(3, c.v)] : groupTone(c.v), boxShadow: c.v == null ? 'inset 0 0 0 1px var(--line)' : undefined }} />))}
-              </span>
-              <span role="gridcell" className="num text-right text-[12px] font-medium text-fg">{row.today == null ? '–' : view === 'Breadth' ? row.today : stepFixed(row.today)}</span>
-            </div>))}
-          <div className="mt-1.5 grid grid-cols-[118px_minmax(0,1fr)_34px] gap-2.5 font-mono text-[10px] leading-none text-fg3" aria-hidden>
-            <span /><span className="flex justify-between"><span>{longDate(dates[0])}</span><span>{longDate(dates[Math.floor((n - 1) / 2)])}</span><span>{longDate(dates[n - 1])}</span></span><span className="text-right">today</span>
-          </div>
-        </div>
+      <div className="scroll-thin -mx-1 overflow-x-auto px-1 pb-1" onScroll={() => { if (hover) setHover(null) }}>
+        <WallGrid gridRef={gridRef} rows={rows} dates={dates} view={view} setHover={setHover} setFocus={setFocus} touched={touched} onTheatre={onTheatre} />
       </div>
-      {tip}
+      <WallTip at={hover || focus} rows={rows} dates={dates} gridRef={gridRef} tipBox={tipBox} />
     </div>
     <div className="mt-2.5 flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[11.5px] text-fg3" aria-label="Legend" role="group">
       {legend.map(([c, l]) => <span key={l} className="inline-flex items-center gap-1.5"><i aria-hidden className="h-2.5 w-2.5 rounded-[2px]" style={{ background: c }} />{l}</span>)}
       <span className="inline-flex items-center gap-1.5"><i aria-hidden className="h-2.5 w-2.5 rounded-[2px] shadow-[inset_0_0_0_1px_var(--line2)]" />no reading</span>
     </div>
-    <p className="mt-1.5 text-[11.5px] leading-[1.45] text-fg2">{summary} <span className="text-fg3">{view === 'Breadth' ? 'A group reads high at 2 or more, the step where a theatre\'s build-up strips turn amber.' : 'The same readings as the build-up strips on each theatre\'s page.'} Hover, tap or use the arrow keys for a day.</span></p>
+    <p className="mt-1.5 text-[11.5px] leading-[1.45] text-fg2">{wallSummary(rows, view, day)} <span className="text-fg3">{view === 'Breadth' ? 'A group reads high at 2 or more, the step where a theatre\'s build-up strips turn amber.' : 'The same readings as the build-up strips on each theatre\'s page.'} Hover, tap or use the arrow keys for a day; Enter opens the theatre.</span></p>
   </>)
+})
+
+const rcOf = (el: EventTarget | null): RC | null => { const s = (el as HTMLElement | null)?.closest?.('[data-rc]')?.getAttribute('data-rc'); return s ? s.split('-').map(Number) as RC : null }
+
+const WallGrid = memo(function WallGrid({ gridRef, rows, dates, view, setHover, setFocus, touched, onTheatre }: {
+  gridRef: RefObject<HTMLDivElement | null>; rows: Row[]; dates: string[]; view: WallView; setHover: (x: RC | null) => void; setFocus: (x: RC | null) => void
+  touched: RefObject<boolean>; onTheatre: (id: string) => void
+}) {
+  const n = dates.length
+  const cellAt = (r: number, c: number) => gridRef.current?.querySelector<HTMLElement>(`[data-rc="${r}-${c}"]`)
+  /* one tab stop: the cell that last had focus keeps tabindex 0 */
+  const rove = (el: HTMLElement) => { gridRef.current?.querySelectorAll<HTMLElement>('[data-rc][tabindex="0"]').forEach(x => { if (x !== el) x.tabIndex = -1 }); el.tabIndex = 0 }
+  const key = (e: KeyboardEvent) => {
+    const at = rcOf(e.target); if (!at) return
+    const [r, c] = at
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTheatre(rows[r].id); return }
+    const to: RC | null = e.key === 'ArrowRight' ? [r, Math.min(n - 1, c + 1)] : e.key === 'ArrowLeft' ? [r, Math.max(0, c - 1)]
+      : e.key === 'ArrowDown' ? [Math.min(rows.length - 1, r + 1), c] : e.key === 'ArrowUp' ? [Math.max(0, r - 1), c]
+      : e.key === 'Home' ? [r, 0] : e.key === 'End' ? [r, n - 1] : null
+    if (!to) return
+    e.preventDefault(); cellAt(to[0], to[1])?.focus()
+  }
+  const point = (e: SyntheticEvent) => setHover(rcOf(e.target))
+  return (
+    <div ref={gridRef} role="grid" aria-label={`Build-up wall, ${view === 'Breadth' ? 'how many of the five signal groups read high' : `how unusual ${view} reads`}, each theatre over ${n} days from ${longDate(dates[0])} to ${longDate(dates[n - 1])}. Enter opens a theatre.`}
+      aria-rowcount={rows.length} className="min-w-[620px]"
+      onPointerOver={e => { if (e.pointerType === 'mouse') point(e) }}
+      onPointerDown={e => { if (e.pointerType !== 'mouse') { e.preventDefault(); touched.current = true; point(e) } }}   // a tap shows the day without taking focus, so the tip clears with the tap
+      onPointerCancel={() => { touched.current = false; setHover(null) }}
+      onPointerLeave={e => { if (e.pointerType === 'mouse') setHover(null) }}
+      onFocus={e => { const at = rcOf(e.target); if (at) { rove(e.target as HTMLElement); setFocus(at) } }}
+      onBlur={() => setFocus(null)} onKeyDown={key}>
+      {rows.map((row, r) => (
+        <div key={row.id} role="row" className="grid h-[19px] grid-cols-[118px_minmax(0,1fr)_40px] items-center gap-2.5">
+          <span role="rowheader" className="min-w-0 truncate text-[12px] leading-none"><a href={routeHref({ v: 'theatre', id: row.id })} tabIndex={-1} onClick={e => { if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); onTheatre(row.id) }} className="text-fg2 hover:text-fg hover:underline hover:decoration-line2 hover:underline-offset-[3px]">{row.name}</a></span>
+          <span role="none" className="grid h-[15px] gap-px" style={{ gridTemplateColumns: `repeat(${n}, minmax(0,1fr))` }}>
+            {row.cells.map((c, i) => (
+              <span key={i} role="gridcell" data-rc={`${r}-${i}`} tabIndex={r === 0 && i === n - 1 ? 0 : -1} aria-label={`${row.name}, ${longDate(dates[i])}: ${c.text}`}
+                className="rounded-[1.5px] focus-visible:outline-offset-1"
+                style={{ background: c.v == null ? 'transparent' : view === 'Breadth' ? BREADTH_TONE[Math.min(3, c.v)] : groupTone(c.v), boxShadow: c.v == null ? 'inset 0 0 0 1px var(--line)' : undefined }} />))}
+          </span>
+          <span role="gridcell" className="num text-right text-[12px] font-medium text-fg">{row.last == null ? '–' : view === 'Breadth' ? row.last : stepFixed(row.last)}</span>
+        </div>))}
+      <div className="mt-1.5 grid grid-cols-[118px_minmax(0,1fr)_40px] gap-2.5 font-mono text-[10px] leading-none text-fg3" aria-hidden>
+        <span /><span className="flex justify-between"><span>{longDate(dates[0])}</span><span>{longDate(dates[Math.floor((n - 1) / 2)])}</span><span /></span><span className="whitespace-nowrap text-right">{longDate(dates[n - 1])}</span>
+      </div>
+    </div>
+  )
+})
+
+/* the day under the pointer or the focus: a ring on its cell and a line of text above it (below, near the top) */
+function WallTip({ at, rows, dates, gridRef, tipBox }: { at: RC | null; rows: Row[]; dates: string[]; gridRef: RefObject<HTMLDivElement | null>; tipBox: RefObject<HTMLDivElement | null> }) {
+  if (!at || !gridRef.current || !tipBox.current || !rows[at[0]]) return null
+  const el = gridRef.current.querySelector(`[data-rc="${at[0]}-${at[1]}"]`) as HTMLElement | null
+  if (!el) return null
+  const o = tipBox.current.getBoundingClientRect(), r = el.getBoundingClientRect(), row = rows[at[0]]
+  const x = Math.max(4, Math.min(o.width - 224, r.left - o.left + r.width / 2 - 110))
+  return <>
+    <i aria-hidden className="pointer-events-none absolute z-10 rounded-[2px] shadow-[0_0_0_1.5px_var(--fg)]" style={{ left: r.left - o.left, top: r.top - o.top, width: r.width, height: r.height }} />
+    <div role="presentation" className="pointer-events-none absolute z-10 w-[220px] rounded-r1 border border-line2 bg-s2 px-2 py-1.5 text-[11.5px] leading-[1.35] text-fg2 shadow-[var(--shadow)]"
+      style={r.top - o.top < 48 ? { left: x, top: r.bottom - o.top + 8 } : { left: x, top: r.top - o.top - 8, transform: 'translateY(-100%)' }}><b className="font-medium text-fg">{row.name}</b> · {longDate(dates[at[1]])}<br />{row.cells[at[1]].text}</div>
+  </>
 }
 
 /* ---------------------------------------------------------------- where it is unusual */
 type MCell = { n: number; unusual: number; strong: number }
 const mTone = (c?: MCell) => !c || !c.n ? 'var(--z0)' : c.strong >= 2 ? 'var(--z3)' : c.strong === 1 ? 'var(--z2)' : c.unusual ? 'var(--z1)' : 'var(--z0)'
-function Matrix({ all, brief, t, g, pick }: { all: Signal[]; brief: Brief; t: string | null; g: Group | null; pick: (t: string, g: Group) => void }) {
+const Matrix = memo(function Matrix({ all, pending, brief, t, g, pick }: { all: Signal[]; pending: boolean; brief: Brief; t: string | null; g: Group | null; pick: (t: string, g: Group) => void }) {
   const m = useMemo(() => {
     const out: Record<string, MCell> = {}
     for (const s of all) {
@@ -194,33 +295,47 @@ function Matrix({ all, brief, t, g, pick }: { all: Signal[]; brief: Brief; t: st
     }
     return out
   }, [all])
-  const rows = [...(all.some(s => s.theatre === 'global') ? ['global'] : []), ...[...brief.theatres].sort((a, b) => (b.score ?? -1) - (a.score ?? -1)).map(x => x.id)]
-  if (!all.length) return <section className="rounded-r3 border border-line bg-s1 px-3.5 py-3"><Skeleton lines={5} /></section>
+  const rows = useMemo(() => [...(all.some(s => s.theatre === 'global') ? ['global'] : []), ...[...brief.theatres].sort((a, b) => (b.score ?? -1) - (a.score ?? -1)).map(x => x.id)], [all, brief])
+  /* one tab stop: the picked square, else the first; arrow keys, Home and End move between squares */
+  const [cur, setCur] = useState<RC | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
+  if (pending) return <section className="rounded-r3 border border-line bg-s1 px-3.5 py-3"><Skeleton lines={5} /></section>
+  if (!all.length) return <section aria-labelledby="mx-h" className="rounded-r3 border border-line bg-s1 px-3.5 py-3"><h2 id="mx-h" className="eyebrow mb-2">Where it is unusual</h2><p className="text-[12.5px] text-fg3">No signal is in this data run.</p></section>
+  const picked = t && g ? [rows.indexOf(t), GROUPS.indexOf(g)] as RC : null
+  const [cr, cc] = cur || (picked && picked[0] >= 0 ? picked : [0, 0])
+  const key = (e: KeyboardEvent, r: number, c: number) => {
+    const to: RC | null = e.key === 'ArrowRight' ? [r, Math.min(GROUPS.length - 1, c + 1)] : e.key === 'ArrowLeft' ? [r, Math.max(0, c - 1)]
+      : e.key === 'ArrowDown' ? [Math.min(rows.length - 1, r + 1), c] : e.key === 'ArrowUp' ? [Math.max(0, r - 1), c]
+      : e.key === 'Home' ? [e.ctrlKey ? 0 : r, 0] : e.key === 'End' ? [e.ctrlKey ? rows.length - 1 : r, GROUPS.length - 1] : null
+    if (!to) return
+    e.preventDefault(); setCur(to); ref.current?.querySelector<HTMLElement>(`[data-mc="${to[0]}-${to[1]}"]`)?.focus()
+  }
   return (
     <section aria-labelledby="mx-h" className="rounded-r3 border border-line bg-s1 px-3.5 pb-3 pt-3">
       <h2 id="mx-h" className="eyebrow mb-2.5">Where it is unusual</h2>
       <div className="scroll-thin overflow-x-auto">
-        <div className="min-w-[236px]">
+        <div ref={ref} role="grid" aria-labelledby="mx-h" className="min-w-[236px]">
           <div className="grid h-[18px] grid-cols-[minmax(0,1fr)_repeat(5,28px)] items-center gap-[3px] text-center font-mono text-[10px] text-fg3" aria-hidden>
             <span />{GROUPS.map(x => <span key={x} title={x}>{x.slice(0, 3)}</span>)}
           </div>
-          {rows.map(id => { const name = where(brief, id); return (
-            <div key={id} className="grid h-6 grid-cols-[minmax(0,1fr)_repeat(5,28px)] items-center gap-[3px]">
-              <span className="truncate text-[12px] text-fg2">{name}</span>
-              {GROUPS.map(gr => { const c = m[id + '|' + gr], on = t === id && g === gr
-                const label = `${name}, ${gr}: ${c?.n ? `${plural(c.n, 'signal', 'signals')} scoring, ${c.strong} strong, ${c.unusual} more unusual` : 'no signal scoring'}`
-                return <button key={gr} aria-pressed={on} aria-label={label} title={label} onClick={() => pick(id, gr)}
-                  className={`h-5 rounded-[3px] transition-transform duration-100 hover:scale-110 ${on ? 'outline outline-[1.5px] outline-offset-1 outline-sel' : ''}`} style={{ background: mTone(c) }} /> })}
+          {rows.map((id, r) => { const name = where(brief, id); return (
+            <div key={id} role="row" className="grid h-6 grid-cols-[minmax(0,1fr)_repeat(5,28px)] items-center gap-[3px]">
+              <span role="rowheader" className="truncate text-[12px] text-fg2">{name}</span>
+              {GROUPS.map((gr, c) => { const x = m[id + '|' + gr], on = t === id && g === gr
+                const label = `${name}, ${gr}: ${x?.n ? `${plural(x.n, 'signal', 'signals')} scoring, ${x.strong} strong, ${x.unusual} more unusual` : 'no signal scoring'}`
+                return <span key={gr} role="gridcell" className="contents"><button data-mc={`${r}-${c}`} tabIndex={r === cr && c === cc ? 0 : -1} aria-pressed={on} aria-label={label} title={label}
+                  onClick={() => { setCur([r, c]); pick(id, gr) }} onFocus={() => setCur([r, c])} onKeyDown={e => key(e, r, c)}
+                  className={`h-5 rounded-[3px] transition-transform duration-100 hover:scale-110 ${on ? 'outline outline-[1.5px] outline-offset-1 outline-sel' : ''}`} style={{ background: mTone(x) }} /></span> })}
             </div>) })}
         </div>
       </div>
       <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-fg3" role="group" aria-label="Legend">
         {([['var(--z0)', 'usual'], ['var(--z1)', 'unusual'], ['var(--z2)', '1 strong'], ['var(--z3)', '2 or more strong']] as const).map(([c, l]) => <span key={l} className="inline-flex items-center gap-1.5"><i aria-hidden className="h-2.5 w-2.5 rounded-[2px]" style={{ background: c }} />{l}</span>)}
       </div>
-      <p className="mt-1.5 text-[11.5px] leading-[1.45] text-fg3">Unusual is 2 SD or more from usual, strong 3. Pick a square to list its signals; pick it again to clear.</p>
+      <p className="mt-1.5 text-[11.5px] leading-[1.45] text-fg3">Unusual is 2 or more from usual, strong 3 (SD for most series). Pick a square to list its signals; pick it again to clear. Arrow keys move between squares.</p>
     </section>
   )
-}
+})
 
 /* ---------------------------------------------------------------- the list */
 function SignalList({ list, total, pending, brief, go, q, setQ, only, setOnly, g, setG, t, clearT, sel, select, phone }: {
@@ -243,8 +358,8 @@ function SignalList({ list, total, pending, brief, go, q, setQ, only, setOnly, g
   return (
     <section aria-label="All signals" className="min-w-0">
       <div className="flex flex-wrap items-center gap-2">
-        <label className="flex min-w-[200px] flex-1 items-center gap-2 rounded-r2 border border-line bg-s1 px-2.5 py-[7px] focus-within:border-line2"><Search size={14} className="shrink-0 text-fg3" aria-hidden />
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder={`Filter ${total || ''} signals`} aria-label="Filter signals by name, source or theatre" className="w-full bg-transparent text-[13.5px] outline-none placeholder:text-fg3" /></label>
+        <label data-filter className="flex min-w-[200px] flex-1 items-center gap-2 rounded-r2 border border-line bg-s1 px-2.5 py-[7px] focus-within:border-line2"><Search size={14} className="shrink-0 text-fg3" aria-hidden />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder={total ? `Filter ${total} signals` : 'Filter signals'} aria-label="Filter signals by name, source or theatre" className="w-full bg-transparent text-[13.5px] outline-none placeholder:text-fg3" /></label>
         <span role="group" aria-label="Show" className="inline-flex rounded-r2 border border-line p-0.5 text-[12.5px]">
           {ONLY.map(([k, l]) => <button key={k} aria-pressed={only === k} onClick={() => setOnly(k)} className={`rounded-[6px] px-2.5 py-1 transition-colors duration-[120ms] ${only === k ? 'bg-s3 text-fg' : 'text-fg2 hover:text-fg'}`}>{l}</button>)}
         </span>
@@ -252,15 +367,16 @@ function SignalList({ list, total, pending, brief, go, q, setQ, only, setOnly, g
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <span role="group" aria-label="Signal group" className="flex flex-wrap gap-1.5">{GROUPS.map(x => <button key={x} aria-pressed={g === x} onClick={() => setG(g === x ? null : x)} className={chip(g === x)}>{x}</button>)}</span>
         {t && <button onClick={clearT} className={`${chip(true)} inline-flex items-center gap-1`} aria-label={`Showing ${where(brief, t)} only. Show every theatre`}>{where(brief, t)}<X size={12} aria-hidden /></button>}
-        <span className="num ml-auto text-[12px] text-fg3" aria-live="polite">{pending ? 'Loading…' : `${list.length} shown, most unusual first`}</span>
+        <span className="num ml-auto text-[12px] text-fg3" aria-live="polite">{pending ? 'Loading…' : total ? `${list.length} shown, most unusual first` : ''}</span>
       </div>
       <div className={`mt-2.5 grid ${cols} items-end gap-3 border-b border-line2 px-2 pb-1.5 text-[11px] text-fg3`} aria-hidden>
         <span>Signal</span>{!phone && <span>Recent</span>}<span>Unusualness</span>
       </div>
-      {pending ? <Skeleton lines={10} /> : list.length === 0 ? <p className="px-2 py-6 text-[12.5px] text-fg3">No signal matches. Clear a filter to see more.</p> : (
-        <div ref={listRef} className="relative" style={{ height: v.getTotalSize() }} role="list" aria-label={`Signals, ${list.length} shown`}>
+      {pending ? <Skeleton lines={10} /> : total === 0 ? <p className="px-2 py-6 text-[12.5px] text-fg3">No signal is in this data run.</p>
+        : list.length === 0 ? <p className="px-2 py-6 text-[12.5px] text-fg3">No signal matches. Clear a filter to see more.</p> : (
+        <div ref={listRef} data-list tabIndex={-1} className="relative outline-none" style={{ height: v.getTotalSize() }} role="list" aria-label={`Signals, ${list.length} shown`}>
           {v.getVirtualItems().map(it => { const s = list[it.index], z = s.z, on = sel === s.id; return (
-            <div key={s.id} role="listitem" className="absolute inset-x-0" style={{ top: 0, height: it.size, transform: `translateY(${it.start - margin}px)` }}>
+            <div key={s.id} role="listitem" data-sid={s.id} className="absolute inset-x-0" style={{ top: 0, height: it.size, transform: `translateY(${it.start - margin}px)` }}>
               <Lnk to={{ v: 'signal', id: s.id }} go={select ? () => select(s.id) : go} className={`grid h-full ${cols} items-center gap-3 border-b border-line px-2 transition-colors duration-[120ms] ${on ? 'bg-s2 shadow-[inset_2px_0_0_var(--sel)]' : 'hover:bg-s2'}`}>
                 <span className="min-w-0">
                   <span className={`block text-[13px] leading-[1.3] text-fg ${phone ? 'line-clamp-2' : 'truncate'}`} title={s.label}>{s.label}</span>
@@ -289,6 +405,7 @@ function ZBar({ z }: { z: number | null }) {
     </span>
   )
 }
+
 
 /* ---------------------------------------------------------------- one signal: the panel, or its own page */
 export function SignalView({ id, brief, go }: { id: string; brief: Brief; go: Go }) {
@@ -361,6 +478,9 @@ function pastEvents(s: Signal, pts: [string, number | null][]): { date: string; 
   }
   return out
 }
+/* what the ticks are, in the series' own terms: steps of an action series, or the months (days) a rating series read above zero */
+const evWords = (s: Signal, n: number) => s.event === 'step' ? plural(n, 'step', 'steps')
+  : `${plural(n, s.kind === 'monthly' ? 'month' : 'day', s.kind === 'monthly' ? 'months' : 'days')} ${s.id.startsWith('crisiswatch') ? 'rated' : 'reading'} above zero`
 const tms = (d: string) => Date.parse((d.length === 7 ? d + '-01' : d.slice(0, 10)) + 'T00:00Z')
 
 /* the series' values on a time axis (at most 500 points drawn), past events as quiet ivory ticks, and under it the distance from
@@ -382,7 +502,7 @@ function SeriesChart({ s, f }: { s: Signal; f: SeriesFile }) {
   const shownEv = ev.filter(e => tms(e.date) >= t0), m = s.kind === 'monthly', ld = (d: string) => longDate(d, m)
   return (
     <div ref={ref}>
-      {w > 0 && <svg width={w} height={H} className="block" role="img" aria-label={`${s.label}: values from ${ld(p[0][0])} to ${ld(last[0])}, between ${fmt(lo)} and ${fmt(hi)}; latest ${fmt(last[1])}.${shownEv.length ? ` ${plural(shownEv.length, 'past event is', 'past events are')} marked.` : ''}`}>
+      {w > 0 && <svg width={w} height={H} className="block" role="img" aria-label={`${s.label}: values from ${ld(p[0][0])} to ${ld(last[0])}, between ${fmt(lo)} and ${fmt(hi)}; latest ${fmt(last[1])}.${shownEv.length ? ` ${evWords(s, shownEv.length)} marked.` : ''}`}>
         {shownEv.map((e, i) => <line key={i} x1={X(e.date)} x2={X(e.date)} y1={2} y2={H - B} stroke="var(--happened)" strokeOpacity={.5} strokeWidth={1} />)}
         <path d={`${d}L${X(last[0])},${H - B}L${X(p[0][0])},${H - B}Z`} fill="var(--fg2)" opacity={.07} />
         <path d={d} fill="none" stroke="var(--fg)" strokeWidth={1.3} strokeLinejoin="round" />

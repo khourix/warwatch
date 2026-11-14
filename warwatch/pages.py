@@ -113,8 +113,9 @@ def build(site, dist, today=None, until=CLASSIC_UNTIL):
         pages[f"base/{b['id']}/"] = page(shell, f"base/{b['id']}/", f"{name} · WarWatch", why, site_img, site_alt)
     for path, title in (("signals/", "Signals"), ("record/", "Track record"), ("map/", "Map")):
         pages[path] = page(shell, path, f"{title} · WarWatch", f"{head} {about}".strip(), site_img, site_alt)
-    watched = f"{len(bases)} bases watched on free satellite radar" if bases else "Bases watched on free satellite radar"
-    pages["ground/"] = page(shell, "ground/", "Ground · WarWatch", f"{watched}, unusual heat checked on Sentinel-2 pictures, and what is near the sea chokepoints. {about}",
+    n = len(bases)
+    watched = (f"{n} {'base is' if n == 1 else 'bases are'}" if n else "Bases are") + " watched on satellite images; most are passed by Sentinel-1 radar every two to three days."
+    pages["ground/"] = page(shell, "ground/", "Ground · WarWatch", f"{watched} Unusual heat is checked on Sentinel-2 pictures, and the page counts what is near the sea chokepoints. {about}",
                             site_img, site_alt)
     not_found = page(shell, "", "WarWatch", about, site_img, site_alt, noindex=True)
     keep_classic = today <= dt.date.fromisoformat(until)

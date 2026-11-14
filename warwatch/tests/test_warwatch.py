@@ -2078,7 +2078,7 @@ class DataContract(unittest.TestCase):
             ("2026-10-14", "official", "iran", "US travel advisories raised"),
             ("2026-10-01", "official", "iran", "CrisisWatch: conflict-risk alert"),
             ("2026-10-20", "official", "yemen", "UK travel advice updated on 3 days that week"),
-            ("2026-10-22", "base", "iran", "X Air Base: fewer aircraft than usual"),
+            ("2026-10-22", "base", "iran", "X Air Base: far fewer bright objects than usual"),
             ("2026-10-05", "base", "iran", "X Air Base: one pass differed"),           # 21 Oct is the current reading, not a second item
             ("2026-10-23", "fire", "iran", "Heat near Isfahan air base"),
             ("2026-10-08", "fire", "iran", "2 unusual fires"),                        # one item per theatre and day; 9 Oct was a burnt field
@@ -2126,7 +2126,8 @@ class DataContract(unittest.TestCase):
             self.assertEqual((ln["watch"], ln["critical"]), (50.0, 90.0), t)
             self.assertLess(50.0, ln["elevated"], t)
             self.assertLess(ln["elevated"], 90.0, t)
-            self.assertAlmostEqual(ln["elevated"], engine.logistic_score(v["th"][1], v["th"]), places=2)
+            self.assertAlmostEqual(ln["elevated"], v["ln"][1], places=2)                                  # from the unrounded thresholds
+            self.assertAlmostEqual(ln["elevated"], engine.logistic_score(v["th"][1], v["th"]), delta=0.1)   # near the stored ones
             if v.get("zc") is not None and v["level"] in engine.LEVELS:   # the level the thresholds set agrees with the reading against the lines
                 lv = engine.LEVELS[sum(v["zc"] >= x for x in v["th"])]
                 sc = engine.logistic_score(v["zc"], v["th"])
@@ -2134,6 +2135,57 @@ class DataContract(unittest.TestCase):
         self.assertGreater(seen, 0)
         self.assertIsNone(contract.lines({"th": None}))
         self.assertEqual(contract.lines({"th": [1.0, 1.5, 2.0]})["watch"], 50.0)
+
+    def test_lines_come_from_the_unrounded_thresholds(self):
+        """The level is set from the unrounded reading against the unrounded thresholds and the score is rounded to 0.1, so the lines
+        must come from the same unrounded thresholds: a theatre set Elevated with a score of 66.4 can have its line at 66.43, never
+        further than the score's rounding above it (the gauge reads a score within 0.1 of a line its level has reached as at it)."""
+        import contract
+        import engine
+        import math
+        th = [1.00049, None, 2.00049]
+        tau = (th[2] - th[0]) / math.log(9)
+
+        def at(s):                                           # the reading that scores s
+            return th[0] - tau * math.log(100 / s - 1)
+        th[1] = at(66.4302)                                  # the Elevated threshold sits at 66.4302
+        zc = at(66.44)                                       # a reading just past it, which rounds to 66.4
+        self.assertEqual(engine.LEVELS[sum(zc >= x for x in th)], "Elevated")
+        score = round(engine.logistic_score(zc, th), 1)
+        ln = contract.lines({"th": [round(x, 3) for x in th], "ln": [engine.logistic_score(x, th) for x in th]})
+        self.assertEqual((score, ln["elevated"]), (66.4, 66.43))
+        self.assertLessEqual(ln["elevated"] - score, 0.1)
+        self.assertEqual((ln["watch"], ln["critical"]), (50.0, 90.0))
+        # older page data carries no "ln": the lines fall back to the stored thresholds
+        self.assertAlmostEqual(contract.lines({"th": [round(x, 3) for x in th]})["elevated"], 66.43, delta=0.05)
+        # every theatre of the run whose level the reading set: a level that has reached a line has a score no further than 0.1 below it
+        for t, v in self.data["theatres"].items():
+            ln = self.files[f"theatres/{t}.json"]["lines"] if t != "global" else None
+            if not ln or v.get("score") is None or v.get("zc") is None or v["level"] != engine.LEVELS[sum(v["zc"] >= x for x in v["th"])]:
+                continue
+            for need, k in ((1, "watch"), (2, "elevated"), (3, "critical")):
+                if engine.LEVELS.index(v["level"]) >= need:
+                    self.assertGreaterEqual(v["score"], ln[k] - 0.1, (t, k))
+
+    def test_chokepoints_say_whether_dark_ships_cover_them(self):
+        """Added November 2026: each chokepoint says whether it lies in a Global Fishing Watch waters box (gfw.BOX), the only places
+        the dark-ship and loitering data cover; elsewhere the app says they are not covered instead of showing 0."""
+        import contract
+        import gfw
+        cp = self.files["map/live.json"]["chokepoints"]
+        self.assertTrue(cp)
+        for c in cp:
+            self.assertIsInstance(c["gfw"], bool, c["name"])
+        by = {c["id"]: c["gfw"] for c in cp}
+        for k, (la, lo, _) in C.CHOKE_XY.items():
+            inside = any(a <= la <= b and c <= lo <= d for a, b, c, d in gfw.BOX.values())
+            self.assertEqual(contract.gfw_covers(k, [lo, la]), inside, k)
+            if k in by:
+                self.assertEqual(by[k], inside, k)
+        self.assertTrue(contract.gfw_covers("Hormuz", [0, 0]))         # the Gulf is in iran's box
+        self.assertFalse(contract.gfw_covers("Panama", [0, 0]))        # no box in the Americas' canals
+        self.assertTrue(contract.gfw_covers("", [42.0, 15.0]))         # an unknown key: its position, here the Red Sea
+        self.assertFalse(contract.gfw_covers("", [-79.7, 9.1]))
 
     def test_buildup_carries_each_theatres_group_histories(self):
         """Added November 2026: signals/buildup.json, the Signals page's wall. Its numbers are the theatre files' group histories,
@@ -2262,7 +2314,7 @@ class Pages(unittest.TestCase):
         self.assertIn('<link rel="canonical" href="https://khourix.github.io/warwatch/ground/">', ground)
         self.assertIn('<meta property="og:image" content="https://khourix.github.io/warwatch/og.jpg?v=202610240117">', ground)
         nb = len(self.files["map/live.json"]["bases"])
-        self.assertIn(f"{nb} bases watched" if nb else "Bases watched on free satellite radar", ground)
+        self.assertIn((f"{nb} {'base is' if nb == 1 else 'bases are'}" if nb else "Bases are") + " watched on satellite images; most are passed by Sentinel-1 radar every two to three days.", ground)
         bases = [b for b in self.files["map/live.json"]["bases"]]
         if bases:
             self.assertIn("· WarWatch</title>", self._read(site, "base", bases[0]["id"], "index.html"))

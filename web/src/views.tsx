@@ -81,9 +81,15 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
 /* The reading on its track. Grey at every value: it has shown no skill as a forecast. The Watch, Elevated and Critical ticks are
    drawn only while the model is off, because only then does the reading set the level. Where the lines sit comes from the data
    (theatre.lines, added November 2026); older data has none, and then Watch is 50, Critical 90 and there is no Elevated tick. */
+/* The score is rounded to 0.1 and the lines to 0.01, while the level is set from the unrounded reading against the unrounded
+   thresholds (engine.theatre_composite): a score up to 0.1 under a line its level has reached is at that line, so neither the number
+   nor the words ("held") can come from rounding alone. */
+const LEVEL_RANK: Record<string, number> = { Normal: 0, Watch: 1, Elevated: 2, Critical: 3 }
 function Gauge({ t, active }: { t: Theatre; active: boolean }) {
-  const s = t.score == null ? null : Math.max(0, Math.min(100, t.score))
   const L = t.lines, W = L?.watch ?? 50, C = L?.critical ?? 90, E = L && L.elevated > W && L.elevated < C ? L.elevated : null
+  /* only while the reading sets the level (the model off) does the level say which lines the reading reached */
+  const reached = active ? [] : ([[W, 1], [E, 2], [C, 3]] as [number | null, number][]).filter(([x, k]) => x != null && (LEVEL_RANK[t.level] ?? -1) >= k).map(([x]) => x!)
+  const s = t.score == null ? null : reached.reduce((v, x) => v < x && v >= x - 0.1 ? x : v, Math.max(0, Math.min(100, t.score)))
   const marks = E == null ? [W, C] : [W, E, C]
   const w = s == null ? null : wholeAt(s, marks)
   const line = !active
