@@ -18,7 +18,12 @@ export type Brief = {
   model: { version: string; fitted: string; active: boolean; gates: Gates | null }
 }
 export type Gates = { bss: number; auc: number; auc_lo: number; auc_hi: number; shuffle_p_auc: number; bss_positive: boolean; auc_lo_above_half: boolean; beats_shuffled: boolean; pass: boolean }
-export type Tell = { id: string; name: string; on: boolean; date: string | null; says: string; cases: string; record: { hits?: number; episodes?: number; caught?: number; events?: number } | null }
+export type Tell = { id: string; name: string; on: boolean; date: string | null; says: string; cases: string; record: TellRecord | null }
+/* a tripwire's past: fired `episodes` times since `first`, `hits` of them followed by an event; it fired before `caught` of `events` past events */
+export type TellRecord = { hits?: number; episodes?: number; caught?: number; events?: number; first?: string; last?: string; theatres?: number }
+/* military aircraft broadcasting over a theatre, about every half hour for 48 hours: [time, count] */
+export type AirKey = 'mil' | 'fighter' | 'isr' | 'lift' | 'tanker'
+export type Air48 = Partial<Record<AirKey, [string, number | null][]>>
 export type GroupDetail = { z: number | null; fast: boolean; history: number[]; top: { id: string; label: string; z: number }[] }
 export type Theatre = {
   generated: string; id: string; name: string; region: string; level: Level; score: number | null; standingRisk: number | null
@@ -29,6 +34,7 @@ export type Theatre = {
   tells: Tell[]; groups: Record<Group, GroupDetail>; official: { name: string; id: string; date: string; value: string }[]
   history: [string, number, number, string][]; items: { date: string; kind: string; text: string; signal: string }[]
   events: { date: string; kind: string; text: string }[]
+  aircraft48h?: Air48 | null
 }
 export type Signal = { id: string; label: string; group: Group; sub: string; theatre: string; z: number | null; status: string; stale: string; last: string; lagging: boolean; kind: string; why: string; url: string; event: string | null; untested?: boolean; spark: (number | null)[] }
 export type Signals = { generated: string; groups: Record<Group, string>; signals: Signal[] }
@@ -120,19 +126,30 @@ export const zColor = (z: number | null | undefined) => z == null ? 'transparent
 export const wholeScore = (s: number) => s < 50 ? Math.min(49, Math.round(s)) : Math.round(s)
 export const fmtZ = (z: number | null | undefined) => z == null ? 'n/a' : (z > 0 ? '+' : z < 0 ? '−' : '') + Math.abs(z).toFixed(1)
 export const parseGen = (g: string) => new Date(g.replace(' UTC', 'Z').replace(' ', 'T'))
-export const shortDate = (d: string) => { const x = new Date(d + (d.length === 7 ? '-01' : '') + 'T00:00Z'); return x.toLocaleDateString('en-GB', { day: d.length === 7 ? undefined : 'numeric', month: 'short', timeZone: 'UTC' }) }
+export const shortDate = (d: string) => { const x = new Date(d + (d.length === 7 ? '-01' : '') + 'T00:00Z'); return x.toLocaleDateString('en-GB', { day: d.length === 7 ? undefined : 'numeric', month: 'short', timeZone: 'UTC' }).replace('Sept', 'Sep') }
 export const daysBetween = (now: Date, d: string) => Math.round((now.getTime() - new Date(d.slice(0, 10) + 'T12:00Z').getTime()) / 864e5)
 export const ago = (now: Date, d: string) => { const n = daysBetween(now, d); return n <= 0 ? 'Today' : n === 1 ? 'Yesterday' : n < 7 ? `${n} days ago` : shortDate(d.slice(0, 10)) }
 
-/* One plain sentence per theatre, built from its levels and tripwires (the Watch dispatch is written in watch.tsx). */
-export function summary(t: Theatre): string {
-  const strong = GROUPS.filter(g => (t.groups[g]?.z ?? 0) >= 2).map(g => g.toLowerCase())
-  const parts = [t.level === 'Normal'
-    ? (strong.length ? `Quiet overall, with ${strong.join(' and ')} readings above their usual range.` : 'Quiet. No signal group is far from its usual range.')
-    : `${t.level}: ${strong.length ? strong.join(' and ') + ' readings are well above usual' : 'several readings are above usual'}.`]
+/* Tripwires by their short names (the feed and the prototype's), falling back to the name the data carries */
+const WIRE: Record<string, string> = { departure: 'Embassy drawdown', leave: 'Advisories raised', airlines: 'Airliners thin out', tankers: 'Tankers forward', airspace: 'Airspace closed',
+  sea: 'Sea firing warnings', wave: 'Strike waves', bases: 'Bases emptying', diverted: 'Flights diverted', bizjets: 'Bizjets fly out', dark: 'Ships go dark', civil: 'Civil defence' }
+export const wireName = (x: { id: string; name: string }) => WIRE[x.id] || x.name
+const NUM = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve']
+export const countWord = (n: number) => NUM[n] ?? String(n)
+
+/* The theatre's summary, from its data. The line of 50 is named only while the model is off and the reading is under it
+   (then it sets the level); a reading under 50 never prints as 50 (wholeScore). Otherwise the sentence gives the reading alone. */
+export function summary(t: Theatre, modelActive: boolean): string {
+  const s = t.score
+  let a: string
+  if (s == null) a = 'There is no unusual-readings number for this theatre today.'
+  else if (!modelActive && s < 50) { const gap = 50 - wholeScore(s); a = `Unusual readings stand at ${wholeScore(s)} of 100, ${gap < 10 ? `${gap} ${gap === 1 ? 'point' : 'points'} below Watch` : 'far below Watch'}.` }
+  else a = `Unusual readings stand at ${wholeScore(s)} of 100.`
   const on = t.tells.filter(x => x.on)
-  parts.push(on.length ? `${on.length === 1 ? 'One tripwire' : on.length + ' tripwires'} fired this week: ${on.map(x => /^[A-Z][a-z]/.test(x.name) ? x.name[0].toLowerCase() + x.name.slice(1) : x.name).join('; ')}.` : 'No tripwire fired this week.')
-  return parts.join(' ')
+  const b = on.length ? ` ${countWord(on.length)} ${on.length === 1 ? 'tripwire' : 'tripwires'} fired this week: ${on.map(x => wireName(x).toLowerCase()).join(', ')}.` : ' No tripwire has fired this week.'
+  const top = GROUPS.map(g => [g, t.groups[g]?.z ?? 0] as const).sort((x, y) => y[1] - x[1])[0]
+  const c = top && top[1] >= 2 ? ` ${top[0]} carries the most pressure.` : ''
+  return a + b + c
 }
 
 /* Routes are real paths under the root, so each theatre can carry its own share card: /warwatch/iran/, /warwatch/iran/ground/,
@@ -171,4 +188,14 @@ export function legacyHash(h: string): Route | null {
   if (a === 'record' || a === 'settings' || a === 'system') return { v: 'record' }
   if (/^[a-z_]+$/.test(a)) return { v: 'theatre', id: a, tab: b === 'signals' || b === 'markets' ? 'signals' : b === 'history' || b === 'alerts' ? 'history' : undefined }
   return null
+}
+
+/* The model's three checks (record.tsx lists them) in one plain sentence, from brief.model.gates: which it has passed and which not */
+export function gatesSentence(g: Gates | null, active: boolean): string {
+  if (!g) return active ? 'It sets the level.' : 'Its checks have not been run yet, so it does not set the level.'
+  const checks: [boolean, string][] = [[g.auc_lo_above_half, 'ranks past theatre-months better than a coin flip'], [g.bss_positive, "beats each theatre's usual rate"], [g.beats_shuffled, 'beats the same signals with their timing shuffled']]
+  const yes = checks.filter(c => c[0]).map(c => c[1]), no = checks.filter(c => !c[0]).map(c => c[1])
+  const list = (a: string[]) => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]
+  const passed = !no.length ? `It passes all three of its checks: it ${list(yes)}` : !yes.length ? `It has passed none of its three checks: it has not shown that it ${list(no)}` : `It ${list(yes)}, but it has not shown that it ${list(no)}`
+  return active ? `${passed}. It sets the level.` : `${passed}, so it stays here and does not set the level.`
 }

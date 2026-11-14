@@ -4,6 +4,9 @@ import NumberFlow from '@number-flow/react'
 import { GROUPS, short, levelWord, groupTone, feedDetail, fmtZ, shortDate, parseGen, type Brief, type BriefTheatre, type FeedItem, type Route, wholeScore } from './data'
 import { usePrefs, fmtTime } from './settings'
 import { toRoute } from './views'
+import { feedKey, type Since } from './since'
+import { Lnk } from './ui'
+import { X } from 'lucide-react'
 
 /* Watch: the dispatch, the theatre board, what changed, and the 30-day timeline under the map. Everything here is written
    from brief.json in the browser. The 0 to 100 "unusual readings" number has shown no predictive skill, so its meter and
@@ -145,7 +148,7 @@ const dayLabel = (d: string, today: string) => {
   return `${n === 0 ? 'Today' : n === 1 ? 'Yesterday' : x.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })}, ${dm}`
 }
 
-export function Feed({ brief, day, setDay, kind, setKind, go }: { brief: Brief; day: string | null; setDay: (d: string | null) => void; kind: Kind; setKind: (k: Kind) => void; go: Go }) {
+export function Feed({ brief, day, setDay, kind, setKind, go, since, dismiss }: { brief: Brief; day: string | null; setDay: (d: string | null) => void; kind: Kind; setKind: (k: Kind) => void; go: Go; since?: Since | null; dismiss?: () => void }) {
   const today = utcDay(parseGen(brief.generated))
   const scope = useMemo(() => brief.feed.filter(f => !day || f.date.slice(0, 10) === day), [brief.feed, day])
   const days = useMemo(() => {
@@ -161,6 +164,7 @@ export function Feed({ brief, day, setDay, kind, setKind, go }: { brief: Brief; 
         {day ? <span className="text-[11.5px] text-fg3"><span className="text-fg2">{shortDate(day)} only</span> · <button onClick={() => setDay(null)} className="lnk">Show all days</button></span>
           : <span className="text-[11.5px] text-fg3">last 30 days</span>}
       </div>
+      {since && dismiss && <SinceBlock since={since} dismiss={dismiss} kind={kind} setKind={k => { setDay(null); setKind(k) }} go={go} />}
       {/* counts sit in the name and tip only, so the five chips keep to one row */}
       <div className="flex flex-wrap gap-1 px-4 pb-2" role="group" aria-label="Kind of change">
         {KINDS.map(([k, label]) => { const n = k === 'all' ? scope.length : scope.filter(f => f.kind === k).length, say = `${label}, ${n} ${day ? `on ${shortDate(day)}` : 'in the last 30 days'}`; return (
@@ -177,13 +181,46 @@ export function Feed({ brief, day, setDay, kind, setKind, go }: { brief: Brief; 
               <button onClick={() => go(toRoute(f.to))} className="group grid w-full scroll-mt-9 grid-cols-[18px_minmax(0,1fr)] gap-[9px] px-4 py-[7px] text-left transition-colors duration-[120ms] hover:bg-s2 focus-visible:relative focus-visible:z-[2] focus-visible:outline-offset-[-2px]">
                 <span className="mt-[3px] grid h-4 w-4 place-items-center" aria-hidden>{GLYPH[f.kind]}</span>
                 <span className="min-w-0">
-                  <span className="block text-[13px] leading-[1.35]"><span className="sr-only">{KIND_WORD[f.kind]}: </span>{name(f.theatre) && <><b className="font-medium">{name(f.theatre)}</b> · </>}{f.title}</span>
+                  <span className="block text-[13px] leading-[1.35]"><span className="sr-only">{KIND_WORD[f.kind]}: </span>{name(f.theatre) && <><b className="font-medium">{name(f.theatre)}</b> · </>}{f.title}{since?.fresh.has(feedKey(f)) && <span className="ml-1.5 whitespace-nowrap rounded-[3px] border border-line2 px-1 py-px align-[1px] font-mono text-[9.5px] uppercase tracking-[.06em] text-fg2">new<span className="sr-only"> since your last visit</span></span>}</span>
                   <span className="mt-px block text-[11.5px] text-fg3 group-hover:text-fg2">{feedDetail(f.detail).replace(/\.$/, '')}</span>
                 </span>
               </button>
             </li>))}
           </ul>
         </div>))}
+    </section>
+  )
+}
+
+/* ---------------------------------------------------------------- since you last looked (since.ts keeps the snapshot) */
+const SINCE_WORD: Record<FeedItem['kind'], [string, string]> = { tell: ['tripwire', 'tripwires'], base: ['base change', 'base changes'], fire: ['heat report', 'heat reports'], official: ['official step', 'official steps'] }
+function SinceBlock({ since, dismiss, kind, setKind, go }: { since: Since; dismiss: () => void; kind: Kind; setKind: (k: Kind) => void; go: Go }) {
+  const { prefs } = usePrefs()
+  const when = `${since.at.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: prefs.tz === 'utc' ? 'UTC' : undefined })}, ${fmtTime(since.at, prefs.tz)}`
+  const kinds = (Object.keys(since.counts) as FeedItem['kind'][]).filter(k => since.counts[k] > 0)
+  const shown = since.moved.slice(0, 5)
+  const r = (v: number | null) => v == null ? '–' : v
+  const nothing = !since.moved.length && !kinds.length
+  return (
+    <section aria-labelledby="since-h" className="mx-4 mb-2.5 rounded-r2 border border-line bg-s2 px-3 pb-2.5 pt-2">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0"><h3 id="since-h" className="text-[12px] font-semibold text-fg">Since you last looked</h3><p className="num text-[11.5px] text-fg3">Your last visit: {when}</p></div>
+        <button onClick={dismiss} aria-label="Dismiss since you last looked" className="-mr-1.5 -mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-r1 text-fg3 hover:bg-s3 hover:text-fg"><X size={14} /></button>
+      </div>
+      {nothing && <p className="mt-1 text-[12px] text-fg2">Nothing has changed on the board or in the feed.</p>}
+      {shown.length > 0 && <ul className="mt-1.5">{shown.map(m => { const lv = m.from[0] !== m.to[0], rd = m.from[1] !== m.to[1]; return (
+        <li key={m.id} className="flex items-baseline justify-between gap-3 py-[2px] text-[12px]">
+          <Lnk to={{ v: 'theatre', id: m.id }} go={go} className="min-w-0 truncate font-medium text-fg hover:underline hover:decoration-line2 hover:underline-offset-[3px]">{short(m.name)}</Lnk>
+          <span className="num shrink-0 text-right text-fg2">{rd && <>{r(m.from[1])} to {r(m.to[1])}</>}{rd && lv && <span className="text-fg3"> · </span>}{lv && <>{levelWord(m.from[0])} to {levelWord(m.to[0])}</>}</span>
+        </li>) })}
+        {since.moved.length > shown.length && <li className="text-[11.5px] text-fg3">and {since.moved.length - shown.length} more {since.moved.length - shown.length === 1 ? 'theatre' : 'theatres'} moved</li>}
+      </ul>}
+      {kinds.length > 0 && <div className="mt-2 flex flex-wrap gap-1" role="group" aria-label="New in the feed since your last visit; pick one to show that kind">
+        {kinds.map(k => { const n = since.counts[k], on = kind === k; return (
+          <button key={k} aria-pressed={on} onClick={() => setKind(on ? 'all' : k)}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-[2px] text-[11.5px] transition-colors duration-[120ms] ${on ? 'border-sel bg-sel font-medium text-selink' : 'border-line2 text-fg2 hover:border-fg3'}`}>
+            <span className="grid h-3 w-3 place-items-center" aria-hidden>{GLYPH[k]}</span><span className="num">{n} new {SINCE_WORD[k][n === 1 ? 0 : 1]}</span></button>) })}
+      </div>}
     </section>
   )
 }

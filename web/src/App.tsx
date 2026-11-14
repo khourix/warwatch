@@ -11,6 +11,7 @@ import { RecordView } from './record'
 import { BaseView } from './ground'
 import { Status, Dispatch, Board, Feed, Timeline, TIME_H, type Order, type Kind } from './watch'
 import { NotificationBell } from './bell'
+import { useSinceLastVisit } from './since'
 import { Wordmark, Mark, Skeleton, Failed } from './ui'
 import { useBrief, useLiveMap, useSignals, currentRoute, legacyHash, routeHref, parseGen, levelVar, fmtZ, short, type Brief, type LiveMap, type Route } from './data'
 
@@ -53,6 +54,7 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   const [order, setOrder] = useState<Order>('closest')
   const [kind, setKind] = useState<Kind>('all')
   const panelRef = useRef<HTMLDivElement>(null)
+  const { since, dismiss } = useSinceLastVisit(brief)
 
   /* replace: change the address without a new history entry (a theatre's tabs, an unknown theatre) */
   const go = useCallback((r: Route, replace = false) => {
@@ -86,7 +88,7 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
     <AnimatePresence mode="popLayout" initial={false}>
       <motion.div key={route.v === 'theatre' ? 'theatre/' + route.id : JSON.stringify(route)} initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: .34, ease: EASE }}>
         {route.v === 'theatre' && <TheatreView key={route.id} id={route.id} tab={route.tab} brief={brief} live={live} go={go} />}
-        {route.v === 'base' && <BaseView key={route.id} id={route.id} brief={brief} go={go} />}
+        {route.v === 'base' && <BaseView key={route.id} id={route.id} brief={brief} live={live} go={go} />}
         {route.v === 'signal' && <SignalView key={route.id} id={route.id} brief={brief} go={go} />}
         {route.v === 'signals' && <SignalsView th={route.th} brief={brief} go={go} />}
         {route.v === 'record' && <RecordView brief={brief} go={go} />}
@@ -95,7 +97,7 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
   )
   const map = (padBottom: number) => <Suspense fallback={null}><MapView brief={brief} live={live} route={route} onPick={go} theme={theme} day={day} flat={prefs.map === 'flat'} onFlat={f => set({ map: f ? 'flat' : 'globe' })} labels={prefs.labels} wide={wide} padBottom={padBottom} /></Suspense>
   const home = <><Dispatch brief={brief} heading={!dossier} /><Board brief={brief} sel={sel} go={go} order={order} setOrder={setOrder} /></>
-  const feed = <Feed brief={brief} day={day} setDay={setDay} kind={kind} setKind={setKind} go={go} />
+  const feed = <Feed brief={brief} day={day} setDay={setDay} kind={kind} setKind={setKind} go={go} since={since} dismiss={dismiss} />
 
   if (!wide) return (
     <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}>
