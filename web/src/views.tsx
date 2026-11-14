@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { ArrowLeft, ChevronDown } from 'lucide-react'
-import { GROUPS, GROUP_HINT, useTheatre, useSignals, summary, gatesSentence, wireName, levelWord, wholeScore, groupTone, fmtZ, shortDate, parseGen,
+import { GROUPS, GROUP_HINT, useTheatre, useSignals, summary, gatesSentence, wireName, levelWord, wholeAt, lineWhole, groupTone, stepFixed, fmtZ, shortDate, parseGen,
   type Brief, type LiveMap, type Route, type Signal, type FeedItem, type Theatre, type Tell, type Group } from './data'
 import { GroundTab } from './ground'
 import { Spark, Tabs, tabPanel, Lnk, Tag, Facts, Block, Note, Skeleton, Failed, useWidth } from './ui'
@@ -78,19 +78,28 @@ export function TheatreView({ id, tab, brief, live, go }: { id: string; tab?: st
   )
 }
 
-/* The reading on its track. Grey at every value: it has shown no skill as a forecast. The Watch and Critical ticks are drawn
-   only while the model is off, because only then does the reading set the level. */
+/* The reading on its track. Grey at every value: it has shown no skill as a forecast. The Watch, Elevated and Critical ticks are
+   drawn only while the model is off, because only then does the reading set the level. Where the lines sit comes from the data
+   (theatre.lines, added November 2026); older data has none, and then Watch is 50, Critical 90 and there is no Elevated tick. */
 function Gauge({ t, active }: { t: Theatre; active: boolean }) {
   const s = t.score == null ? null : Math.max(0, Math.min(100, t.score))
-  const w = s == null ? null : wholeScore(s)
+  const L = t.lines, W = L?.watch ?? 50, C = L?.critical ?? 90, E = L && L.elevated > W && L.elevated < C ? L.elevated : null
+  const marks = E == null ? [W, C] : [W, E, C]
+  const w = s == null ? null : wholeAt(s, marks)
   const line = !active
-  /* while the reading sets the level, the words follow the level the pipeline set (it can hold a level across the line) */
+  /* while the reading sets the level, the words follow the level the pipeline set (it can hold a level across a line) */
   const B = ({ children }: { children: ReactNode }) => <b className="font-medium text-fg">{children}</b>
+  const below = (to: number, name: string) => { const n = lineWhole(to) - w!; return <><B>{n} {n === 1 ? 'point' : 'points'}</B> below {name}</> }
   const say: ReactNode = s == null || w == null ? 'No reading today'
     : !line ? null
-    : t.level === 'Normal' ? (w < 50 ? <><B>{50 - w} {50 - w === 1 ? 'point' : 'points'}</B> below Watch</> : <><B>At</B> the Watch line, level not raised</>)
-    : t.level === 'Critical' ? <><B>Past</B> the Critical line</>
-    : w >= 50 ? <><B>Past</B> the Watch line</> : <>Level <B>held</B> at {levelWord(t.level)}</>
+    : t.level === 'Normal' ? (s < W ? below(W, 'Watch') : <><B>At</B> the Watch line, level not raised</>)
+    : t.level === 'Critical' ? (s >= C ? <><B>Past</B> the Critical line</> : <>Level <B>held</B> at Critical</>)
+    : t.level === 'Elevated' ? (E == null ? (s >= W ? <><B>Past</B> the Watch line</> : <>Level <B>held</B> at Elevated</>) : s >= E ? <><B>Past</B> the Elevated line</> : <>Level <B>held</B> at Elevated</>)
+    : s >= W ? (E != null && s < E ? <><B>Past</B> the Watch line, {below(E, 'Elevated')}</> : <><B>Past</B> the Watch line</>) : <>Level <B>held</B> at {levelWord(t.level)}</>
+  const grey = (a: number) => `color-mix(in srgb, var(--fg3) ${a}%, transparent)`
+  const track = E == null ? `linear-gradient(90deg, var(--z0) 0 ${W}%, ${grey(26)} ${W}% ${C}%, ${grey(46)} ${C}%)`
+    : `linear-gradient(90deg, var(--z0) 0 ${W}%, ${grey(20)} ${W}% ${E}%, ${grey(32)} ${E}% ${C}%, ${grey(46)} ${C}%)`
+  const ticks: [number, string, boolean][] = [[W, `Watch ${lineWhole(W)}`, false], ...(E != null ? [[E, `Elevated ${lineWhole(E)}`, true] as [number, string, boolean]] : []), [C, `Critical ${lineWhole(C)}`, false]]
   return (
     <section aria-label="Unusual readings" className="mx-5 mb-3.5 rounded-r3 border border-line bg-s2 px-4 pb-3 pt-3.5">
       <h2 className="eyebrow mb-2.5">Unusual readings</h2>
@@ -98,12 +107,13 @@ function Gauge({ t, active }: { t: Theatre; active: boolean }) {
         <p className="num whitespace-nowrap text-[46px] font-medium leading-[.9] tracking-[-0.045em] text-fg2">{w ?? '–'}<span className="ml-1.5 text-[13px] font-normal tracking-normal text-fg3">of 100</span></p>
         <p className="text-right text-[12.5px] leading-[1.35] text-fg2">{say}{say && <br />}Level today: {levelWord(t.level)}</p>
       </div>
-      <div className={`relative ${line ? "mb-5" : "mb-3.5"} mt-3.5 h-2.5 rounded-[5px]`} aria-hidden
-        style={{ background: line ? 'linear-gradient(90deg, var(--z0) 0 50%, color-mix(in srgb, var(--fg3) 26%, transparent) 50% 90%, color-mix(in srgb, var(--fg3) 46%, transparent) 90%)' : 'var(--z0)' }}>
+      <div className={`relative ${line ? (E != null ? 'mb-8' : 'mb-5') : 'mb-3.5'} mt-3.5 h-2.5 rounded-[5px]`} aria-hidden
+        style={{ background: line ? track : 'var(--z0)' }}>
         {s != null && <motion.i className="absolute inset-y-0 left-0 rounded-[5px] bg-fg2" initial={{ width: 0 }} animate={{ width: `${Math.max(s, 1.2)}%` }} transition={{ duration: .9, ease: [.2, .8, .2, 1] }} />}
-        {line && ([[50, 'Watch 50'], [90, 'Critical 90']] as const).map(([x, l]) => (
-          <i key={x} className="absolute -bottom-[3px] -top-[3px] w-px bg-fg3" style={{ left: `${x}%` }}><em className="absolute left-0 top-[17px] -translate-x-1/2 whitespace-nowrap text-[10px] not-italic leading-none text-fg3">{l}</em></i>))}
+        {line && ticks.map(([x, l, low]) => (
+          <i key={l} className="absolute -bottom-[3px] -top-[3px] w-px bg-fg3" style={{ left: `${x}%`, bottom: low ? -15 : undefined }}><em className={`absolute left-0 ${low ? 'top-[29px]' : 'top-[17px]'} -translate-x-1/2 whitespace-nowrap text-[10px] not-italic leading-none text-fg3`}>{l}</em></i>))}
       </div>
+      {line && <p className="sr-only">{ticks.map(x => x[1]).join(', ')}{E != null ? ' on this theatre\'s scale' : ''}.</p>}
       <Facts items={[
         [<>{t.tells.filter(x => x.on).length}<span className="text-[12px] font-normal text-fg3"> / {t.tells.length}</span></>, 'tripwires lit'],
         [t.signals.strong, `strong signals of ${t.signals.scored} scoring`],
@@ -158,8 +168,8 @@ function Ladder({ t, brief, go }: { t: Theatre; brief: Brief; go: Go }) {
               <span className="grid h-[18px] gap-px" aria-hidden style={{ gridTemplateColumns: `repeat(${Math.max(h.length, 1)}, minmax(0,1fr))` }}>
                 {h.map((z, i) => <i key={i} className="rounded-[1px]" style={{ background: groupTone(z) }} />)}
               </span>
-              <span className="num flex items-center justify-end gap-0.5 text-[12px] font-medium text-fg2">{d?.z == null ? '–' : d.z.toFixed(1)}<ChevronDown size={11} aria-hidden className={`shrink-0 text-fg3 transition-transform ${on ? 'rotate-180' : ''}`} /></span>
-              <span className="sr-only">{`: ${d?.z == null ? 'no reading today' : `${d.z.toFixed(1)} standard deviations from usual today`}${peak != null ? `, highest ${peak.toFixed(1)} in the last ${h.length} days` : ', no reading in the last 60 days'}. Show its top signals.`}</span>
+              <span className="num flex items-center justify-end gap-0.5 text-[12px] font-medium text-fg2">{d?.z == null ? '–' : stepFixed(d.z)}<ChevronDown size={11} aria-hidden className={`shrink-0 text-fg3 transition-transform ${on ? 'rotate-180' : ''}`} /></span>
+              <span className="sr-only">{`: ${d?.z == null ? 'no reading today' : `${stepFixed(d.z)} standard deviations from usual today`}${peak != null ? `, highest ${peak.toFixed(1)} in the last ${h.length} days` : ', no reading in the last 60 days'}. Show its top signals.`}</span>
             </button>
             <AnimatePresence initial={false}>{on && (
               <motion.div id={`lad-${g}`} initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: .22, ease: [.22, 1, .36, 1] }} className="overflow-hidden">

@@ -2107,6 +2107,57 @@ class DataContract(unittest.TestCase):
         live = contract.live_map(dict(self.data, map=dict(self.data["map"], bases=[dict(self.data["map"]["bases"][0], bb=[51.29, 25.08, 51.33, 25.14])])))
         self.assertEqual(live["bases"][0]["bounds"], [51.29, 25.08, 51.33, 25.14])
 
+    def test_lines_sit_where_the_reading_crosses_each_threshold(self):
+        """Added November 2026: where Watch, Elevated and Critical sit on the 0 to 100 reading, per theatre, in the theatre file and
+        the brief. Watch is 50 and Critical 90 by construction (engine.logistic_score); Elevated is the reading at its own threshold."""
+        import contract
+        import engine
+        b = {t["id"]: t for t in self.files["brief.json"]["theatres"]}
+        seen = 0
+        for t, v in self.data["theatres"].items():
+            if t == "global":
+                continue
+            ln = self.files[f"theatres/{t}.json"]["lines"]
+            self.assertEqual(b[t]["lines"], ln, t)
+            if not v.get("th"):
+                self.assertIsNone(ln, t)
+                continue
+            seen += 1
+            self.assertEqual((ln["watch"], ln["critical"]), (50.0, 90.0), t)
+            self.assertLess(50.0, ln["elevated"], t)
+            self.assertLess(ln["elevated"], 90.0, t)
+            self.assertAlmostEqual(ln["elevated"], engine.logistic_score(v["th"][1], v["th"]), places=2)
+            if v.get("zc") is not None and v["level"] in engine.LEVELS:   # the level the thresholds set agrees with the reading against the lines
+                lv = engine.LEVELS[sum(v["zc"] >= x for x in v["th"])]
+                sc = engine.logistic_score(v["zc"], v["th"])
+                self.assertEqual(lv, engine.LEVELS[sum(sc >= x - 1e-6 for x in (ln["watch"], ln["elevated"], ln["critical"]))], t)
+        self.assertGreater(seen, 0)
+        self.assertIsNone(contract.lines({"th": None}))
+        self.assertEqual(contract.lines({"th": [1.0, 1.5, 2.0]})["watch"], 50.0)
+
+    def test_buildup_carries_each_theatres_group_histories(self):
+        """Added November 2026: signals/buildup.json, the Signals page's wall. Its numbers are the theatre files' group histories,
+        aligned to the last 60 dates (a short history is padded with null at the start)."""
+        import contract
+        f = self.files["signals/buildup.json"]
+        self.assertEqual(contract.validate(f), [])
+        self.assertEqual(len(f["dates"]), 60)
+        self.assertEqual(f["dates"][-1], self.data["strip_end"])
+        self.assertEqual([r["id"] for r in f["theatres"]], [t["id"] for t in self.files["brief.json"]["theatres"]])
+        for r in f["theatres"]:
+            th = self.files[f"theatres/{r['id']}.json"]
+            self.assertEqual(sorted(r["groups"]), sorted(contract.GROUPS.values()))
+            for g, h in r["groups"].items():
+                self.assertEqual(len(h), 60, (r["id"], g))
+                self.assertEqual(h, th["groups"][g]["history"], (r["id"], g))
+        self.assertLess(len(json.dumps(f, separators=(",", ":"))), 40_000)
+        d = json.loads(json.dumps(self.data))       # an older run: one group short, one with no history at all
+        d["theatres"]["iran"]["doms"]["logistics"]["h"] = [1.5, None, 2.5]
+        d["theatres"]["iran"]["doms"]["financial"].pop("h", None)
+        row = next(r for r in contract.buildup(d)["theatres"] if r["id"] == "iran")
+        self.assertEqual(row["groups"]["Logistics"], [None] * 57 + [1.5, None, 2.5])
+        self.assertEqual(row["groups"]["Markets"], [None] * 60)
+
     def test_write_lays_out_the_tree(self):
         import contract
         out = tempfile.mkdtemp()
@@ -2204,8 +2255,14 @@ class Pages(unittest.TestCase):
         self.assertIn('<link rel="canonical" href="https://khourix.github.io/warwatch/yemen/">', yemen)
         self.assertIn('content="https://khourix.github.io/warwatch/og.jpg?v=202610240117"', self._read(site, "iran", "index.html"))
         self.assertIn(C.CONTEXT["ukraine"][0] + ". Ukraine reads", self._read(site, "ukraine", "index.html"))
-        for path in ("signals", "record", "map"):
+        for path in ("signals", "ground", "record", "map"):
             self.assertIn('<base href="/warwatch/">', self._read(site, path, "index.html"))
+        ground = self._read(site, "ground", "index.html")     # added November 2026: the Ground page, with the site's share image
+        self.assertIn("<title>Ground · WarWatch</title>", ground)
+        self.assertIn('<link rel="canonical" href="https://khourix.github.io/warwatch/ground/">', ground)
+        self.assertIn('<meta property="og:image" content="https://khourix.github.io/warwatch/og.jpg?v=202610240117">', ground)
+        nb = len(self.files["map/live.json"]["bases"])
+        self.assertIn(f"{nb} bases watched" if nb else "Bases watched on free satellite radar", ground)
         bases = [b for b in self.files["map/live.json"]["bases"]]
         if bases:
             self.assertIn("· WarWatch</title>", self._read(site, "base", bases[0]["id"], "index.html"))
@@ -2216,7 +2273,7 @@ class Pages(unittest.TestCase):
         self.assertIn('<base href="../">', old)
         self.assertIn("It stays here until 7 Dec 2026", old)
         self.assertEqual(old.count("__DATA__"), 0)
-        self.assertEqual(n, len(C.THEATRES) - 1 + len(bases) + 4 + 3)
+        self.assertEqual(n, len(C.THEATRES) - 1 + len(bases) + 5 + 3)
         with self.assertRaises(ValueError):     # a second run on the same site/ would move the app to classic/
             pages.build(site, dist)
 

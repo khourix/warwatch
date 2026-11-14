@@ -9,6 +9,7 @@ import { TheatreView } from './views'
 import { SignalsView, SignalView } from './signals'
 import { RecordView } from './record'
 import { BaseView } from './ground'
+import { GroundView } from './groundpage'
 import { Status, Dispatch, Board, Feed, SinceBlock, Timeline, TIME_H, type Order, type Kind } from './watch'
 import { NotificationBell } from './bell'
 import { useSinceLastVisit } from './since'
@@ -24,8 +25,12 @@ const useBreakpoint = () => {
   return b
 }
 const EASE = [.2, .8, .2, 1] as const
-type Nav = [Route['v'], string, typeof Globe][]
-const NAV: Nav = [['brief', 'Watch', Globe], ['signals', 'Signals', Activity], ['record', 'Record', ClipboardCheck]]
+/* Ground: a diamond within a diamond (the prototype's mark; lucide has none like it) */
+function GroundIcon({ size = 19, strokeWidth = 1.6, className }: { size?: number | string; strokeWidth?: number | string; className?: string }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinejoin="round" className={className} aria-hidden><path d="M12 3l9 9-9 9-9-9z" /><path d="M12 9l3 3-3 3-3-3z" /></svg>
+}
+type Nav = [Route['v'], string, (p: { size?: number; strokeWidth?: number }) => React.ReactNode][]
+const NAV: Nav = [['brief', 'Watch', Globe], ['signals', 'Signals', Activity], ['ground', 'Ground', GroundIcon], ['record', 'Record', ClipboardCheck]]
 
 export default function App() {
   const brief = useBrief(), live = useLiveMap()
@@ -77,12 +82,12 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
     addEventListener('keydown', k); return () => removeEventListener('keydown', k)
   }, [cmd, route, go])
   useEffect(() => { document.title = route.v === 'theatre' ? `${brief.theatres.find(t => t.id === route.id)?.name || route.id} · WarWatch` : route.v === 'base' ? `${live?.bases.find(b => b.id === route.id)?.name.split(',')[0] || 'Base'} · WarWatch`
-    : route.v === 'brief' ? 'WarWatch' : `${{ signal: 'Signal', signals: 'Signals', record: 'Track record', map: 'Map' }[route.v]} · WarWatch` }, [route, brief, live])
+    : route.v === 'brief' ? 'WarWatch' : `${{ signal: 'Signal', signals: 'Signals', ground: 'Ground', record: 'Track record', map: 'Map' }[route.v]} · WarWatch` }, [route, brief, live])
 
   const toggleTheme = () => set({ theme: theme === 'dark' ? 'light' : 'dark' })
-  /* Watch is the home (brief), the map address and an open theatre or base; Signals and Record are pages of their own */
+  /* Watch is the home (brief), the map address and an open theatre or base; Signals, Ground and Record are pages of their own */
   const dossier = route.v === 'theatre' || route.v === 'base'
-  const page = route.v === 'signals' || route.v === 'signal' || route.v === 'record'
+  const page = route.v === 'signals' || route.v === 'signal' || route.v === 'record' || route.v === 'ground'
   /* the board marks the open theatre, or the theatre of the open base */
   const sel = route.v === 'theatre' ? route.id : route.v === 'base' ? live?.bases.find(b => b.id === route.id)?.theatres[0] ?? null : null
   const navActive = (k: string) => route.v === k || (k === 'brief' && (route.v === 'map' || dossier)) || (k === 'signals' && route.v === 'signal')
@@ -93,6 +98,7 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
         {route.v === 'base' && <BaseView key={route.id} id={route.id} brief={brief} live={live} go={go} />}
         {route.v === 'signal' && <SignalView key={route.id} id={route.id} brief={brief} go={go} />}
         {route.v === 'signals' && <SignalsView th={route.th} brief={brief} go={go} />}
+        {route.v === 'ground' && <GroundView brief={brief} live={live} go={go} />}
         {route.v === 'record' && <RecordView brief={brief} go={go} />}
       </motion.div>
     </AnimatePresence>
@@ -165,7 +171,7 @@ function Shell({ brief, live }: { brief: Brief; live?: LiveMap }) {
             </aside>
           </div>
           {page && <main ref={panelRef} data-scroll className="scroll-thin absolute inset-0 z-10 overflow-y-auto overflow-x-hidden bg-bg">
-            <div className={`mx-auto pb-10 pt-2 ${route.v === 'signals' ? 'max-w-[960px]' : 'max-w-[760px]'}`}>{view}</div>
+            <div className={`mx-auto pb-10 pt-2 ${route.v === 'signals' || route.v === 'ground' ? 'max-w-[1440px]' : 'max-w-[760px]'}`}>{view}</div>
           </main>}
         </div>
       </div>
@@ -262,6 +268,7 @@ function CommandMenu({ open, setOpen, go, toggleTheme, openSettings, brief, live
                 <Command.Group heading="Go to" className={grp}>
                   <Command.Item onSelect={() => run({ v: 'brief' })} className={item}><Globe size={15} />Watch</Command.Item>
                   <Command.Item onSelect={() => run({ v: 'signals' })} className={item}><Activity size={15} />All signals</Command.Item>
+                  <Command.Item value="Ground bases fires chokepoints" onSelect={() => run({ v: 'ground' })} className={item}><GroundIcon size={15} />Ground: bases, heat and chokepoints</Command.Item>
                   <Command.Item onSelect={() => run({ v: 'record' })} className={item}><ClipboardCheck size={15} />Track record</Command.Item>
                   <Command.Item onSelect={() => { setOpen(false); toggleTheme() }} className={item}><Sun size={15} />Switch light or dark</Command.Item>
                   <Command.Item onSelect={() => { setOpen(false); openSettings() }} className={item}><SlidersHorizontal size={15} />Settings</Command.Item>

@@ -6,7 +6,7 @@ its own (/warwatch/iran/) with its own link preview. Standard library only. The 
 It reads what run.py wrote to site/ (data/v1/ from contract.py, the old page as index.html) and:
 - moves the old page to classic/ until CLASSIC_UNTIL, with <base href="../"> so its files still load from the root; after
   that date it is left out;
-- writes the app's index.html once per address (the root, each theatre, each base, signals/, record/, map/) with its own title,
+- writes the app's index.html once per address (the root, each theatre, each base, signals/, ground/, record/, map/) with its own title,
   description and og/twitter tags, and <base href> at the root so data, images and routes resolve from any depth;
 - writes 404.html, the same page: GitHub Pages serves it for any other address (a theatre's tab, a signal) and the app reads
   the path;
@@ -113,6 +113,9 @@ def build(site, dist, today=None, until=CLASSIC_UNTIL):
         pages[f"base/{b['id']}/"] = page(shell, f"base/{b['id']}/", f"{name} · WarWatch", why, site_img, site_alt)
     for path, title in (("signals/", "Signals"), ("record/", "Track record"), ("map/", "Map")):
         pages[path] = page(shell, path, f"{title} · WarWatch", f"{head} {about}".strip(), site_img, site_alt)
+    watched = f"{len(bases)} bases watched on free satellite radar" if bases else "Bases watched on free satellite radar"
+    pages["ground/"] = page(shell, "ground/", "Ground · WarWatch", f"{watched}, unusual heat checked on Sentinel-2 pictures, and what is near the sea chokepoints. {about}",
+                            site_img, site_alt)
     not_found = page(shell, "", "WarWatch", about, site_img, site_alt, noindex=True)
     keep_classic = today <= dt.date.fromisoformat(until)
     old_page = classic(old, until) if keep_classic else None

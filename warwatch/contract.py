@@ -4,6 +4,7 @@
     data/v1/theatres/<id>.json         one theatre in full
     data/v1/signals/index.json         every signal, with a 40-point spark line
     data/v1/signals/series/<id>.json   one signal's full history, loaded on demand
+    data/v1/signals/buildup.json       every theatre's five group histories over the last 60 days, for the Signals page (about 25 KB)
     data/v1/map/live.json              aircraft, ships, fires, bases, warnings, places
     data/v1/bases/<id>.json            one base in full, with its radar history and image chips
     data/v1/record.json                the forward record, the model's gates, siren tempo, data health
@@ -34,6 +35,7 @@ SHAPES = {
                 "history[]": list, "items[]": list, "events[]": list, "center": (list, type(None)), "countries": list},
     "signals": {"generated": str, "groups": dict, "signals[]": list},
     "series": {"id": str, "points": list, "zHistory": list},
+    "buildup": {"dates": list, "theatres[]": list},
     "map": {"theatres": dict, "aircraft[]": list, "ships[]": list, "fires[]": list, "bases[]": list, "warnings[]": list, "cities[]": list,
             "chokepoints[]": list},
     "base": {"id": str, "name": str, "state": str, "ll": list, "radar": list, "why": str, "images": dict, "parts[]": list},
@@ -51,6 +53,7 @@ ITEMS = {
     "theatre.items": {"date": str, "kind": str, "text": str},
     "theatre.events": {"date": str, "kind": str, "text": str},
     "signals.signals": {"id": str, "label": str, "group": str, "theatre": str, "z": OPT_NUM, "status": str, "spark": list},
+    "buildup.theatres": {"id": str, "name": str, "groups": dict},
     "map.aircraft": {"ll": list, "call": str, "class": str},
     "map.ships": {"ll": list, "name": str},
     "map.fires": {"ll": list, "mw": NUM, "date": str, "class": str},
@@ -152,6 +155,17 @@ def _groups(data, t, top=0):
             g.update(history=v.get("h") or [], top=[{"id": s["id"], "label": s["l"], "z": s["z"]} for s in best])
         out[name] = g
     return out
+
+
+def lines(v):
+    """Where the Watch, Elevated and Critical lines sit on the 0 to 100 reading (engine.logistic_score of each threshold): Watch at
+    50 and Critical at 90 by construction, Elevated in between, per theatre. None when the theatre has no reading (no thresholds).
+    Added November 2026, optional: an app without it draws Watch at 50 and Critical at 90 and no Elevated line."""
+    th = v.get("th")
+    if not th or len(th) != 3:
+        return None
+    import engine
+    return {k: round(engine.logistic_score(z, th), 2) for k, z in zip(("watch", "elevated", "critical"), th)}
 
 
 def _ctx(t):
@@ -276,7 +290,7 @@ def brief(data):
                     "standingRisk": v.get("xu"), "tellsOn": sum(1 for x in v.get("tells") or [] if x.get("on")), "tellsTotal": len(v.get("tells") or []),
                     "strong": sum(1 for s in sc if abs(s["z"]) >= 3), "context": ctx, "contextChecked": ctxd,
                     "spillover": t in (data.get("spill") or {}), "parents": (data.get("spill") or {}).get(t, []), "center": _box_center(t),
-                    "groups": {k: g["z"] for k, g in _groups(data, t).items()}})
+                    "groups": {k: g["z"] for k, g in _groups(data, t).items()}, "lines": lines(v)})
     mo = data.get("model") or {}
     g = data.get("global") or {}
     return _head("brief", data["generated"], demo=bool(data.get("demo")), eventsThrough=(data.get("events") or {}).get("through", ""),
@@ -295,7 +309,7 @@ def theatre(data, t):
     sc = _scored(data["series"], t)
     return _head("theatre", data["generated"], id=t, name=v["name"], region=reg[t]["name"] if t in reg else "", level=v["level"], score=v.get("score"),
                  signals={"scored": len(sc), "total": sum(1 for s in data["series"] if s["t"] == t), "strong": sum(1 for s in sc if abs(s["z"]) >= 3)},
-                 standingRisk=v.get("xu"), chance={"p": v.get("p"), "lo": v.get("plo"), "hi": v.get("phi"), "usual": v.get("pb"), "change": v.get("pd")},
+                 lines=lines(v), standingRisk=v.get("xu"), chance={"p": v.get("p"), "lo": v.get("plo"), "hi": v.get("phi"), "usual": v.get("pb"), "change": v.get("pd")},
                  confidence=v.get("confl"), context=ctx, contextChecked=ctxd, spillover=t in (data.get("spill") or {}),
                  parents=(data.get("spill") or {}).get(t, []), center=_box_center(t), view=_view(t), countries=C.THEATRES.get(t, {}).get("countries", []),
                  tells=[{"id": x.get("id", ""), "name": x["n"], "on": bool(x.get("on")), "date": x.get("date"), "says": x.get("says", ""),
@@ -319,6 +333,28 @@ def signals(data):
                     "spark": [_r(p[1]) if isinstance(p[1], (int, float)) else None for p in pts[-40:]]})
     return _head("signals", data["generated"], groups={GROUPS[k]: C.GROUP_HELP.get(k, "") for k in GROUPS},
                  signals=out)
+
+
+def buildup(data):
+    """The build-up wall on the Signals page: the dates of the last STRIP_DAYS days (oldest first) and, per theatre, the five
+    group histories theatres/<id>.json carries in groups.<group>.history (dashboard.dom_strips, display only), each aligned to
+    those dates: a history shorter than the dates is padded with null at the start, a day with no reading stays null.
+    Added November 2026, optional: the app goes without the wall when this file is missing."""
+    import dashboard
+    end = dt.date.fromisoformat(data["strip_end"]) if data.get("strip_end") else dashboard._day(data["generated"])
+    n = dashboard.STRIP_DAYS
+    dates = [(end - dt.timedelta(days=n - 1 - k)).isoformat() for k in range(n)]
+    reg = _region_of(data)
+    order = [t for t in data.get("order", data["theatres"]) if t in data["theatres"] and t != "global"]
+    rows = []
+    for t in order:
+        th = data["theatres"][t]
+        groups = {}
+        for d, name in GROUPS.items():
+            h = list(((th.get("doms") or {}).get(d) or {}).get("h") or [])[-n:]
+            groups[name] = [None] * (n - len(h)) + h
+        rows.append({"id": t, "name": th["name"], "region": reg[t]["id"] if t in reg else "", "groups": groups})
+    return _head("buildup", data["generated"], dates=dates, theatres=rows)
 
 
 def series(data, s):
@@ -405,8 +441,8 @@ def events(data):
 
 def files(data):
     """-> {relative path: object} for the whole contract."""
-    out = {"brief.json": brief(data), "signals/index.json": signals(data), "map/live.json": live_map(data), "record.json": record(data),
-           "events.json": events(data)}
+    out = {"brief.json": brief(data), "signals/index.json": signals(data), "signals/buildup.json": buildup(data), "map/live.json": live_map(data),
+           "record.json": record(data), "events.json": events(data)}
     for t in data["theatres"]:
         if t != "global":
             out[f"theatres/{t}.json"] = theatre(data, t)

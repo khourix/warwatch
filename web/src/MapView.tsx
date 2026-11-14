@@ -142,6 +142,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
      switched on or off (and the chips rewrapping) never moves the camera. */
   const top = wide ? dockH + 28 : 60
   const topRef = useRef(top); topRef.current = top
+  const padRef = useRef(padBottom); padRef.current = padBottom
 
   /* satellite pictures laid on the map: the open fire's (Sentinel-2 close-ups, that day's VIIRS pass) or the open base's */
   const baseQ = useBase(selBase || '', !!selBase)
@@ -333,9 +334,13 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
     m.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding, maxZoom: 15, duration: reduced() ? 0 : 1200, essential: true })
   }, [focusKey, ready])
 
-  /* lists outside the map (a theatre's fires) open a fire here */
+  /* lists outside the map open a fire here (a theatre's fires, the Ground page), or centre a place (a chokepoint) */
   useEffect(() => {
-    const f = (e: Event) => { const d = (e as CustomEvent<Focus>).detail; if (d?.kind === 'fire') setPeek({ kind: 'fire', x: d.x }) }
+    const f = (e: Event) => {
+      const d = (e as CustomEvent<Focus>).detail
+      if (d?.kind === 'fire') setPeek({ kind: 'fire', x: d.x })
+      else if (d?.kind === 'place') { setPeek(null); map.current?.flyTo({ center: d.ll, zoom: d.zoom, padding: { top: topRef.current, bottom: padRef.current, left: 0, right: 0 }, duration: reduced() ? 0 : 1200, essential: true }) }
+    }
     addEventListener('ww-focus', f); return () => removeEventListener('ww-focus', f)
   }, [])
 

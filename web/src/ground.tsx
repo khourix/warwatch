@@ -19,8 +19,8 @@ export const baseWord = (state: string, part?: string) =>
 export const baseMark = (state: string) => state === 'out' || state === 'in' ? 'var(--z3)' : state === 'changed' ? 'var(--z2)' : undefined
 const FIRE_WORD: Record<string, string> = { anom: 'Unusual heat', hot: 'Much more heat than usual', unex: 'Heat with no known source', ind: 'Industry or gas flare', seas: 'Farm or grass burning', volc: 'Volcano', off: 'Offshore platform' }
 export const fireWord = (c: string) => FIRE_WORD[c] || 'Heat'
-const KIND: Record<string, string> = { air: 'Air base', naval: 'Naval base', 'air+naval': 'Air and naval base', launch: 'Launch site', port: 'Port', missile: 'Missile base', depot: 'Depot', airdef: 'Air defence' }
-const rankBase = (b: MapBase) => (({ out: 5, in: 5, changed: 4, normal: 2, optical: 1, nodata: 0 } as Record<string, number>)[b.state] || 0) * 10 + Math.abs(b.z || 0)
+export const KIND: Record<string, string> = { air: 'Air base', naval: 'Naval base', 'air+naval': 'Air and naval base', launch: 'Launch site', port: 'Port', missile: 'Missile base', depot: 'Depot', airdef: 'Air defence' }
+export const rankBase = (b: MapBase) => (({ out: 5, in: 5, changed: 4, normal: 2, optical: 1, nodata: 0 } as Record<string, number>)[b.state] || 0) * 10 + Math.abs(b.z || 0)
 
 /* ---------------------------------------------------------------- the theatre's Ground tab */
 export function GroundTab({ id, t, live, brief, go }: { id: string; t: Theatre; live?: LiveMap; brief: Brief; go: Go }) {
@@ -209,7 +209,7 @@ function BaseHead({ name, state, part, kind, side, why }: { name: string; state:
   )
 }
 /* ISO dates in the pipeline's sentences read as "10 Nov"; the "not yet checked" clause moves to the closing note */
-const plainDates = (s: string) => s.replace(/\b(\d{4}-\d{2}-\d{2})\b/g, (_, d) => shortDate(d))
+export const plainDates = (s: string) => s.replace(/\b(\d{4}-\d{2}-\d{2})\b/g, (_, d) => shortDate(d))
 const whyText = (s: string) => plainDates(s.split(/ Not yet checked/)[0])
 const coords = (ll: [number, number]) => <span className="font-mono">{ll[1].toFixed(3)}, {ll[0].toFixed(3)}</span>
 
@@ -336,12 +336,18 @@ function PassChart({ p, hot, marked }: { p: BasePart; hot?: string; marked: numb
 
 /* Before on the left of the divider, the latest pass under it on the right. Drag anywhere on the picture (mouse or touch; a
    vertical swipe still scrolls), or focus the handle and use the arrow keys (Shift for larger steps), Home and End. */
-function Compare({ before, after, what, name }: { before: Pic; after: Pic; what: string; name: string }) {
+/* className places it (a dossier's 20 px margins by default); lazy defers the pictures until they near the screen (a long list).
+   A picture that fails to load is dropped: without the before, the latest shows alone; without the latest, a quiet line says so. */
+export function Compare({ before: b0, after, what, name, className = 'mx-5', lazy = false, words = ['Before', 'Now'] }: { before: Pic; after: Pic; what: string; name: string; className?: string; lazy?: boolean; words?: [string, string] }) {
   const [pos, setPos] = useState(50)
+  const [bad, setBad] = useState<{ a?: boolean; b?: boolean }>({})
+  const before = bad.b ? null : b0
+  const load = lazy ? 'lazy' as const : undefined, fit = lazy ? 'aspect-square object-cover' : ''   // lazy: square chips (the fire close-ups), sized before they load
   const box = useRef<HTMLDivElement>(null), drag = useRef(false)
   /* a touch waits to see which way it goes: sideways moves the divider, up or down is left to scroll the page; a tap moves it there */
   const touch = useRef<{ x: number; y: number; id: number; moved: boolean } | null>(null)   // moved: it became a drag
   if (!after) return null
+  if (bad.a) return <div className={`${className} grid aspect-square place-items-center rounded-r2 bg-s3 px-4 text-center text-[11.5px] text-fg2`}>The picture of {shortDate(after.date)} is not available.</div>
   const at = (e: PointerEvent) => { const r = box.current!.getBoundingClientRect(); setPos(Math.round(Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100)))) }
   const key = (e: KeyboardEvent) => {
     const step = e.shiftKey ? 10 : 2
@@ -351,12 +357,12 @@ function Compare({ before, after, what, name }: { before: Pic; after: Pic; what:
   }
   const label = 'font-mono absolute top-2 rounded-[3px] bg-black/75 px-1.5 py-1 text-[10.5px] font-medium leading-none text-white'
   if (!before) return (
-    <div className="relative mx-5 overflow-hidden rounded-r2 bg-black">
-      <img src={asset(after.src)} alt={`${what} of ${name}, ${shortDate(after.date)}`} className="block w-full" />
-      <span className={`${label} right-2`}>Now · {shortDate(after.date)}</span>
+    <div className={`relative ${className} overflow-hidden rounded-r2 bg-black`}>
+      <img src={asset(after.src)} alt={`${what} of ${name}, ${shortDate(after.date)}`} loading={load} onError={() => setBad(x => ({ ...x, a: true }))} className={`block w-full ${fit}`} />
+      <span className={`${label} right-2`}>{words[1]} · {shortDate(after.date)}</span>
     </div>)
   return (
-    <div ref={box} className="relative mx-5 cursor-ew-resize select-none overflow-hidden rounded-r2 bg-black" style={{ touchAction: 'pan-y' }}
+    <div ref={box} className={`relative ${className} cursor-ew-resize select-none overflow-hidden rounded-r2 bg-black`} style={{ touchAction: 'pan-y' }}
       onPointerDown={e => {
         if (e.button) return
         if (e.pointerType !== 'mouse') { touch.current = { x: e.clientX, y: e.clientY, id: e.pointerId, moved: false }; return }
@@ -374,10 +380,10 @@ function Compare({ before, after, what, name }: { before: Pic; after: Pic; what:
       }}
       onPointerUp={e => { const t = touch.current; if (t && !t.moved && !drag.current) at(e); drag.current = false; touch.current = null }}
       onPointerCancel={() => { drag.current = false; touch.current = null }}>
-      <img src={asset(after.src)} alt={`${what} of ${name}, latest pass, ${shortDate(after.date)}`} draggable={false} className="pointer-events-none block w-full" />
-      <img src={asset(before.src)} alt={`${what} of ${name}, earlier pass, ${shortDate(before.date)}`} draggable={false} className="pointer-events-none absolute inset-0 h-full w-full object-cover" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }} />
-      <span className={`${label} left-2`}>Before · {shortDate(before.date)}</span>
-      <span className={`${label} right-2`}>Now · {shortDate(after.date)}</span>
+      <img src={asset(after.src)} alt={`${what} of ${name}, latest pass, ${shortDate(after.date)}`} draggable={false} loading={load} onError={() => setBad(x => ({ ...x, a: true }))} className={`pointer-events-none block w-full ${fit}`} />
+      <img src={asset(before.src)} alt={`${what} of ${name}, earlier pass, ${shortDate(before.date)}`} draggable={false} loading={load} onError={() => setBad(x => ({ ...x, b: true }))} className="pointer-events-none absolute inset-0 h-full w-full object-cover" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }} />
+      <span className={`${label} left-2`}>{words[0]} · {shortDate(before.date)}</span>
+      <span className={`${label} right-2`}>{words[1]} · {shortDate(after.date)}</span>
       <div className="pointer-events-none absolute inset-y-0 w-[2px] -translate-x-1/2 bg-white shadow-[0_0_0_1px_rgba(0,0,0,.4)]" style={{ left: `${pos}%` }}>
         <span role="slider" tabIndex={0} aria-label="Compare the earlier and the latest pass" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pos}
           aria-valuetext={`${pos}% of the picture shows the earlier pass of ${shortDate(before.date)}, the rest the latest of ${shortDate(after.date)}`} onKeyDown={key}
