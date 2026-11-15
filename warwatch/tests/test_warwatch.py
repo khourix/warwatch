@@ -2129,6 +2129,13 @@ class DataContract(unittest.TestCase):
         self.assertEqual([x["date"] for x in f], sorted((x["date"] for x in f), reverse=True))
         adv = next(x for x in f if x["title"] == "US travel advisories raised")
         self.assertEqual(adv["detail"], "Level sum 7.8 to 8. US State Department")
+        self.assertEqual({x["title"]: x["detail"] for x in f if x["kind"] == "base"},
+                         {"X Air Base: far fewer bright objects than usual": "Satellite radar, two passes",
+                          "X Air Base: one pass differed": "Satellite radar, one pass"})
+        # a base whose current reading is one pass that differed says one pass, not two
+        one = contract.feed({"generated": "2026-10-24 01:17 UTC", "theatres": {"iran": {"tells": [], "official": []}}, "hist": {},
+                             "map": {"bases": [{"id": "y", "n": "Y Base, Iran", "th": "iran", "st": "changed", "last": "2026-10-23", "ev": []}]}})
+        self.assertEqual([(x["title"], x["detail"]) for x in one if x["kind"] == "base"], [("Y Base: one pass differed", "Satellite radar, one pass")])
         self.assertTrue(next(x for x in f if x["kind"] == "tell")["detail"].startswith("Tripwire"))
         self.assertEqual(next(x for x in f if x["kind"] == "fire" and x["date"] == "2026-10-08")["detail"], "Strongest 40 MW, NASA VIIRS")
 
