@@ -1,6 +1,6 @@
 site,part,date,before,objects,new,gone
-adampur,apron,2026-11-05,2026-10-24,6,1,1
-adampur,ground,2026-11-05,2026-10-24,90,24,28
+adampur,apron,2026-11-17,2026-11-05,8,2,0
+adampur,ground,2026-11-17,2026-11-05,88,25,26
 ain_al_asad,apron,2026-11-13,2026-11-01,4,1,0
 ain_al_asad,ground,2026-11-13,2026-11-01,410,90,83
 akrotiri,apron,2026-11-14,2026-11-08,14,3,5
@@ -195,7 +195,7 @@ palmachim,ground,2026-11-15,2026-11-09,282,66,121
 pathankot,apron,2026-11-17,2026-11-05,5,0,0
 pathankot,ground,2026-11-17,2026-11-05,103,33,47
 pk_akro_garrison,ground,2026-11-08,2026-10-15,60,22,13
-pk_gujranwala_garrison,ground,2026-11-10,2026-10-17,89,50,63
+pk_gujranwala_garrison,ground,2026-11-17,2026-11-05,83,34,25
 pk_khuzdar_garrison,ground,2026-11-13,2026-11-01,205,74,61
 pk_sargodha_garrison,ground,2026-11-14,2026-11-02,89,44,41
 port_sudan,apron,2026-11-12,2026-11-06,3,1,1
