@@ -7,7 +7,7 @@ muwaffaq_salti,normal,2026-11-17,2026-11-17,2026-11-12,0.00,apron,,apron:normal:
 nsa_bahrain,normal,2026-11-18,2026-11-18,,0.67,harbour,,harbour:normal:0.67:2026-11-18:10:9:7:11;ground:normal:0.00:2026-11-18:1:1:1:1
 diego_garcia,optical,,,2026-11-08,,apron,,
 akrotiri,normal,2026-11-14,2026-11-14,2026-11-13,0.34,apron,,apron:normal:0.34:2026-11-14:14:13:10:16;ground:normal:-0.72:2026-11-14:187:194:177:203
-incirlik,normal,2026-11-08,2026-11-08,2026-11-15,2.02,apron,,apron:normal:2.02:2026-11-08:12:8:5:12;ground:changed:-2.68:2026-11-08:209:270:229:285
+incirlik,nodata,,2026-11-08,2026-11-15,2.02,apron,,apron:nodata:2.02::12:8:5:12;ground:nodata:-2.68::209:270:229:285
 lemonnier,normal,2026-11-16,2026-11-16,2026-11-17,0.67,apron,,apron:normal:0.67:2026-11-16:4:3:2:5;harbour:normal:-1.00:2026-11-16:2:3:2:3;ground:normal:-1.35:2026-11-16:27:29:27:33
 souda,normal,2026-11-16,2026-11-16,2026-11-15,-1.29,apron,,apron:normal:-1.29:2026-11-16:29:31:29:34;harbour:normal:0.00:2026-11-16:0:0:0:1;ground:normal:-1.26:2026-11-16:59:67:57:77
 nevatim,nodata,,2026-10-23,2026-11-15,-1.35,apron,,apron:nodata:-1.35::11:13:10:17;ground:nodata:0.34::181:178:170:184
@@ -93,7 +93,7 @@ sargodha,nodata,,2026-10-17,2026-11-17,-0.67,apron,,apron:nodata:-0.67::4:5:3:8;
 jacobabad,normal,2026-11-12,2026-11-12,2026-11-10,-1.00,apron,,apron:normal:-1.00:2026-11-12:2:3:2:4;ground:normal:0.22:2026-11-12:47:45:37:66
 masroor,normal,2026-11-17,2026-11-17,2026-11-16,0.67,apron,,apron:normal:0.67:2026-11-17:5:4:3:5;ground:normal:1.82:2026-11-17:192:176:161:185
 ambala,normal,2026-11-16,2026-11-16,2026-11-14,-2.02,apron,,apron:normal:-2.02:2026-11-16:8:11:9:17;ground:normal:-0.22:2026-11-16:57:59:49:104
-adampur,nodata,,2026-10-12,2026-11-17,0.50,apron,,apron:nodata:0.50::6:6:4:7;ground:nodata:6.24::157:83:75:142
+adampur,nodata,,2026-10-23,2026-11-17,0.00,apron,,apron:nodata:0.00::6:6:4:8;ground:nodata:0.16::76:73:58:107
 pathankot,normal,2026-11-17,2026-11-17,2026-11-17,0.00,apron,,apron:normal:0.00:2026-11-17:5:5:3:7;ground:normal:-0.82:2026-11-17:103:125:107:169
 bhuj,normal,2026-11-15,2026-11-15,2026-11-17,0.67,apron,,apron:normal:0.67:2026-11-15:2:1:0:2;ground:normal:-0.42:2026-11-15:52:55:48:68
 al_khadim,normal,2026-11-15,2026-11-15,2026-11-17,0.00,apron,,apron:normal:0.00:2026-11-15:5:5:3:6;ground:normal:-0.67:2026-11-15:50:52:47:55
@@ -106,16 +106,16 @@ port_sudan,normal,2026-11-12,2026-11-12,2026-11-06,0.00,apron,,apron:normal:0.00
 nyala,nodata,,2026-10-20,2026-11-18,0.00,apron,,apron:nodata:0.00::0:0:0:0;ground:nodata:-0.67::9:10:7:11
 tiyas,normal,2026-11-17,2026-11-17,2026-11-12,-0.67,apron,,apron:normal:-0.67:2026-11-17:1:2:1:3;ground:normal:-0.34:2026-11-17:20:21:19:27
 tartus,changed,2026-11-16,2026-11-16,2026-11-15,-2.70,harbour,,harbour:changed:-2.70:2026-11-16:10:14:11:18;ground:normal:-1.35:2026-11-16:19:23:20:26
-erbil,nodata,,2026-10-15,2026-11-16,0.00,apron,,apron:nodata:0.00::22:22:19:28;ground:nodata:-2.21::262:297:270:319
+erbil,nodata,,2026-10-20,2026-11-16,-2.36,apron,,apron:nodata:-2.36::12:20:16:25;ground:nodata:-3.37::224:293:249:309
 tel_nof,normal,2026-11-16,2026-11-16,2026-11-15,0.34,apron,,apron:normal:0.34:2026-11-16:43:42:36:46;ground:changed:2.61:2026-11-16:169:150:143:161
 ramat_david,normal,2026-11-16,2026-11-16,2026-11-15,1.00,apron,,apron:normal:1.00:2026-11-16:1:0:0:2;ground:normal:0.22:2026-11-16:114:114:104:125
 palmachim,nodata,,2026-10-21,2026-11-15,0.00,apron,,apron:nodata:0.00::0:0:0:0;ground:nodata:1.39::219:204:191:227
 haifa_naval,normal,2026-11-16,2026-11-16,2026-11-15,0.45,harbour,,harbour:normal:0.45:2026-11-16:82:80:73:89;ground:normal:0.67:2026-11-16:13:11:9:14
 sanaa_dulaimi,normal,2026-11-11,2026-11-11,2026-11-17,1.69,apron,,apron:normal:1.69:2026-11-11:31:26:24:31;ground:normal:0.48:2026-11-11:77:75:70:80
 shiraz_7tab,normal,2026-11-16,2026-11-16,2026-11-14,0.67,apron,,apron:normal:0.67:2026-11-16:8:7:5:8;ground:normal:-1.32:2026-11-16:113:121:114:132
-mashhad_14tab,normal,2026-11-08,2026-11-08,2026-11-15,-1.12,apron,,apron:normal:-1.12:2026-11-08:11:14:11:17;ground:normal:-1.31:2026-11-08:57:61:55:66
+mashhad_14tab,nodata,,2026-11-08,2026-11-15,-1.12,apron,,apron:nodata:-1.12::11:14:11:17;ground:nodata:-1.31::57:61:55:66
 omidiyeh_5tab,normal,2026-11-09,2026-11-09,2026-11-17,-1.00,apron,,apron:normal:-1.00:2026-11-09:1:2:2:2;ground:changed:5.92:2026-11-09:335:259:251:278
-konarak,normal,2026-11-08,2026-11-08,2026-11-17,-1.01,harbour,,harbour:normal:-1.01:2026-11-08:7:10:7:12;ground:changed:-3.37:2026-11-08:19:24:20:26
+konarak,nodata,,2026-11-08,2026-11-17,-1.01,harbour,,harbour:nodata:-1.01::7:10:7:12;ground:nodata:-3.37::19:24:20:26
 duqm,nodata,,2026-11-06,2026-11-10,-0.27,harbour,,harbour:nodata:-0.27::22:23:19:29;ground:nodata:-2.02::16:19:16:21
 berbera,normal,2026-11-17,2026-11-17,2026-11-17,-0.67,apron,,apron:normal:-0.67:2026-11-17:6:7:5:8;harbour:normal:0.50:2026-11-17:6:6:4:6;ground:normal:0.00:2026-11-17:2:2:2:3
 assab,normal,2026-11-16,2026-11-16,2026-11-17,0.00,apron,,apron:normal:0.00:2026-11-16:1:1:1:1;harbour:normal:1.35:2026-11-16:4:2:0:3;ground:normal:2.02:2026-11-16:28:25:24:28
