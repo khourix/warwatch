@@ -8,7 +8,7 @@ nsa_bahrain,normal,2026-11-18,2026-11-18,,0.67,harbour,,harbour:normal:0.67:2026
 diego_garcia,optical,,,2026-11-08,,apron,,
 akrotiri,normal,2026-11-14,2026-11-14,2026-11-18,0.34,apron,,apron:normal:0.34:2026-11-14:14:13:10:16;ground:normal:-0.72:2026-11-14:187:194:177:203
 incirlik,nodata,,2026-11-08,2026-11-15,2.02,apron,,apron:nodata:2.02::12:8:5:12;ground:nodata:-2.68::209:270:229:285
-lemonnier,normal,2026-11-16,2026-11-16,2026-11-20,0.67,apron,,apron:normal:0.67:2026-11-16:4:3:2:5;harbour:normal:-1.00:2026-11-16:2:3:2:3;ground:normal:-1.35:2026-11-16:27:29:27:33
+lemonnier,normal,2026-11-21,2026-11-21,2026-11-20,-1.00,apron,,apron:normal:-1.00:2026-11-21:3:4:3:6;harbour:normal:0.00:2026-11-21:0:0:0:0;ground:normal:2.02:2026-11-21:38:32:28:37
 souda,normal,2026-11-16,2026-11-16,2026-11-15,-1.29,apron,,apron:normal:-1.29:2026-11-16:29:31:29:34;harbour:normal:0.00:2026-11-16:0:0:0:1;ground:normal:-1.26:2026-11-16:59:67:57:77
 nevatim,nodata,,2026-10-23,2026-11-20,-1.35,apron,,apron:nodata:-1.35::11:13:10:17;ground:nodata:0.34::181:178:170:184
 ramon,normal,2026-11-21,2026-11-21,2026-11-20,0.00,apron,,apron:normal:0.00:2026-11-21:1:1:1:2
@@ -111,7 +111,7 @@ tel_nof,normal,2026-11-16,2026-11-16,2026-11-20,0.34,apron,,apron:normal:0.34:20
 ramat_david,normal,2026-11-16,2026-11-16,2026-11-20,1.00,apron,,apron:normal:1.00:2026-11-16:1:0:0:2;ground:normal:0.22:2026-11-16:114:114:104:125
 palmachim,nodata,,2026-10-21,2026-11-20,0.00,apron,,apron:nodata:0.00::0:0:0:0;ground:nodata:1.39::219:204:191:227
 haifa_naval,normal,2026-11-16,2026-11-16,2026-11-20,0.45,harbour,,harbour:normal:0.45:2026-11-16:82:80:73:89;ground:normal:0.67:2026-11-16:13:11:9:14
-sanaa_dulaimi,normal,2026-11-11,2026-11-11,2026-11-20,1.69,apron,,apron:normal:1.69:2026-11-11:31:26:24:31;ground:normal:0.48:2026-11-11:77:75:70:80
+sanaa_dulaimi,nodata,,2026-11-11,2026-11-20,1.69,apron,,apron:nodata:1.69::31:26:24:31;ground:nodata:0.48::77:75:70:80
 shiraz_7tab,normal,2026-11-16,2026-11-16,2026-11-21,0.67,apron,,apron:normal:0.67:2026-11-16:8:7:5:8;ground:normal:-1.32:2026-11-16:113:121:114:132
 mashhad_14tab,nodata,,2026-11-08,2026-11-15,-1.12,apron,,apron:nodata:-1.12::11:14:11:17;ground:nodata:-1.31::57:61:55:66
 omidiyeh_5tab,nodata,,2026-11-09,2026-11-17,-1.00,apron,,apron:nodata:-1.00::1:2:2:2;ground:nodata:5.92::335:259:251:278
@@ -134,7 +134,7 @@ israel_sdot_micha,normal,2026-11-16,2026-11-16,2026-11-20,0.37,ground,,ground:no
 ru_luga_26_missile_brigade,normal,2026-11-21,2026-11-21,2026-10-22,0.31,ground,,ground:normal:0.31:2026-11-21:182:168:134:245
 by_asipovichy_465_missile_brigade,normal,2026-11-21,2026-11-21,2026-11-10,0.29,ground,,ground:normal:0.29:2026-11-21:138:136:130:142
 ru_yelnya_camp,normal,2026-11-18,2026-11-18,2026-10-28,-0.38,ground,Burn scars seen on 2026-10-28 (761.8 ha).,ground:normal:-0.38:2026-11-18:143:171:118:1956
-crimea_kurhanne_s400,nodata,,2026-10-22,2026-11-08,0.87,ground,,ground:nodata:0.87::137:120:102:152
+crimea_kurhanne_s400,nodata,,2026-10-26,2026-11-08,0.71,ground,,ground:nodata:0.71::132:128:121:144
 crimea_cape_zyuk_airdef,in,2026-11-16;2026-11-21,2026-11-21,2026-11-16,2.70,ground,Burn scars seen on 2026-11-06 (3.8 ha).,ground:in:2.70:2026-11-16/2026-11-21:18:14:13:15
 ru_gelendzhik_s400,normal,2026-11-21,2026-11-21,2026-11-08,1.90,ground,,ground:normal:1.90:2026-11-21:122:107:100:119
 kp_sino_ri,normal,2026-11-16,2026-11-16,2026-11-20,-0.33,ground,,ground:normal:-0.33:2026-11-16:27:37:14:214
