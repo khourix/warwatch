@@ -1,6 +1,6 @@
 site,state,dates,last_radar,last_optical,z,part,note,parts
 al_udeid,normal,2026-11-21,2026-11-21,2026-11-21,0.84,apron,New construction or earthworks seen on 2026-11-14 and 2026-11-21 (29 ha of the base changed).,apron:normal:0.84:2026-11-21:35:30:23:38;ground:normal:-0.23:2026-11-21:611:620:606:632
-al_dhafra,nodata,,2026-10-24,2026-11-18,1.80,apron,,apron:nodata:1.80::36:32:30:37;ground:nodata:0.49::483:473:455:496
+al_dhafra,nodata,,2026-10-27,2026-11-18,0.67,apron,,apron:nodata:0.67::39:35:28:44;ground:nodata:0.52::435:418:196:438
 prince_sultan,nodata,,2026-10-14,2026-11-22,1.35,apron,,apron:nodata:1.35::44:38:33:44
 ali_al_salem,normal,2026-11-16,2026-11-16,2026-11-20,1.35,apron,,apron:normal:1.35:2026-11-16:21:19:18:21;ground:normal:-1.04:2026-11-16:254:268:254:279
 muwaffaq_salti,normal,2026-11-21,2026-11-21,2026-11-22,0.00,apron,,apron:normal:0.00:2026-11-21:4:4:2:7;ground:normal:0.03:2026-11-21:290:290:272:304
@@ -10,7 +10,7 @@ akrotiri,normal,2026-11-14,2026-11-14,2026-11-18,0.34,apron,,apron:normal:0.34:2
 incirlik,nodata,,2026-11-08,2026-11-15,2.02,apron,,apron:nodata:2.02::12:8:5:12;ground:nodata:-2.68::209:270:229:285
 lemonnier,normal,2026-11-21,2026-11-21,2026-11-20,-1.00,apron,,apron:normal:-1.00:2026-11-21:3:4:3:6;harbour:normal:0.00:2026-11-21:0:0:0:0;ground:normal:2.02:2026-11-21:38:32:28:37
 souda,normal,2026-11-21,2026-11-21,2026-11-15,0.00,apron,,apron:normal:0.00:2026-11-21:15:15:12:18;harbour:normal:-1.00:2026-11-21:0:1:0:1;ground:normal:-0.93:2026-11-21:52:62:52:72
-nevatim,nodata,,2026-10-28,2026-11-22,0.00,apron,,apron:nodata:0.00::10:10:9:13;ground:nodata:33.57::521:195:182:222
+nevatim,nodata,,2026-10-29,2026-11-22,0.22,apron,,apron:nodata:0.22::13:13:10:17;ground:nodata:1.57::192:178:170:184
 ramon,normal,2026-11-21,2026-11-21,2026-11-22,0.00,apron,,apron:normal:0.00:2026-11-21:1:1:1:2
 hatzerim,nodata,,2026-10-23,2026-11-20,-1.00,apron,,apron:nodata:-1.00::2:3:2:4;ground:nodata:-0.51::218:238:202:257
 bandar_abbas,normal,2026-11-14,2026-11-14,2026-11-18,1.35,apron,,apron:normal:1.35:2026-11-14:5:3:1:4;harbour:normal:0.67:2026-11-14:38:36:33:43;ground:normal:1.35:2026-11-14:44:40:38:45
