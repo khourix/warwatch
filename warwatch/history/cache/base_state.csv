@@ -10,7 +10,7 @@ akrotiri,normal,2026-11-14,2026-11-14,2026-11-18,0.34,apron,,apron:normal:0.34:2
 incirlik,nodata,,2026-11-08,2026-11-15,2.02,apron,,apron:nodata:2.02::12:8:5:12;ground:nodata:-2.68::209:270:229:285
 lemonnier,normal,2026-11-21,2026-11-21,2026-11-20,-1.00,apron,,apron:normal:-1.00:2026-11-21:3:4:3:6;harbour:normal:0.00:2026-11-21:0:0:0:0;ground:normal:2.02:2026-11-21:38:32:28:37
 souda,normal,2026-11-21,2026-11-21,2026-11-15,0.00,apron,,apron:normal:0.00:2026-11-21:15:15:12:18;harbour:normal:-1.00:2026-11-21:0:1:0:1;ground:normal:-0.93:2026-11-21:52:62:52:72
-nevatim,nodata,,2026-11-03,2026-11-22,2.02,apron,,apron:nodata:2.02::13:10:9:13;ground:nodata:1.44::212:197:182:223
+nevatim,nodata,,2026-11-04,2026-11-22,0.67,apron,,apron:nodata:0.67::14:13:10:17;ground:nodata:1.01::188:180:170:192
 ramon,normal,2026-11-21,2026-11-21,2026-11-22,0.00,apron,,apron:normal:0.00:2026-11-21:1:1:1:2
 hatzerim,nodata,,2026-10-23,2026-11-20,-1.00,apron,,apron:nodata:-1.00::2:3:2:4;ground:nodata:-0.51::218:238:202:257
 bandar_abbas,normal,2026-11-14,2026-11-14,2026-11-23,1.35,apron,,apron:normal:1.35:2026-11-14:5:3:1:4;harbour:normal:0.67:2026-11-14:38:36:33:43;ground:normal:1.35:2026-11-14:44:40:38:45
@@ -26,7 +26,7 @@ hmeimim,normal,2026-11-21,2026-11-21,2026-11-15,0.00,apron,,apron:normal:0.00:20
 hodeidah,normal,2026-11-16,2026-11-16,2026-11-20,0.00,harbour,,harbour:normal:0.00:2026-11-16:0:0:0:1;ground:normal:-0.27:2026-11-16:20:21:17:26
 engels,normal,2026-11-18,2026-11-18,2026-11-22,-1.35,apron,,apron:normal:-1.35:2026-11-18:8:10:5:13;ground:normal:0.37:2026-11-18:57:52:40:142
 olenya,nodata,,2026-11-01,2026-10-23,0.00,apron,,apron:nodata:0.00::0:0:0:1;ground:nodata:0.36::35:32:25:52
-shaykovka,nodata,,2026-10-23,2026-10-28,0.00,apron,Burn scars seen on 2026-10-28 (114.8 ha).,apron:nodata:0.00::2:2:1:38;ground:nodata:-0.34::14:19:10:174
+shaykovka,nodata,,2026-10-25,2026-10-28,-1.50,apron,Burn scars seen on 2026-10-28 (114.8 ha).,apron:nodata:-1.50::2:4:2:6;ground:nodata:0.34::34:34:28:54
 mozdok,normal,2026-11-19,2026-11-19,2026-11-11,0.00,apron,,apron:normal:0.00:2026-11-19:1:1:0:3;ground:normal:0.84:2026-11-19:69:65:58:83
 novorossiysk,normal,2026-11-21,2026-11-21,,-1.85,harbour,,harbour:normal:-1.85:2026-11-21:23:29:23:34;ground:normal:-0.50:2026-11-21:0:1:0:1
 longtian,nodata,,2026-11-12,2026-10-29,0.00,apron,,apron:nodata:0.00::1:1:0:1;ground:nodata:-0.97::18:26:18:66
@@ -68,7 +68,7 @@ saky,normal,2026-11-21,2026-11-21,2026-11-09,1.35,apron,,apron:normal:1.35:2026-
 sevastopol,nodata,,2026-10-26,2026-11-08,0.11,harbour,,harbour:nodata:0.11::43:43:37:47;ground:nodata:-1.00::2:3:3:4
 baltiysk,normal,2026-11-21,2026-11-21,2026-11-15,-0.34,harbour,,harbour:normal:-0.34:2026-11-21:19:20:18:25;ground:normal:0.00:2026-11-21:1:1:1:2
 chkalovsk,normal,2026-11-21,2026-11-21,2026-11-20,0.00,apron,,apron:normal:0.00:2026-11-21:14:14:11:19;ground:changed:6.58:2026-11-21:84:45:40:107
-soltsy,nodata,,2026-10-23,2026-11-06,0.00,apron,,apron:nodata:0.00::0:0:0:1;ground:nodata:-0.42::25:28:18:56
+soltsy,nodata,,2026-10-28,2026-11-06,0.00,apron,,apron:nodata:0.00::0:0:0:0;ground:nodata:-0.94::19:32:20:52
 severomorsk,normal,2026-11-21,2026-11-21,,-0.22,harbour,,harbour:normal:-0.22:2026-11-21:15:16:14:19;ground:normal:-1.00:2026-11-21:4:5:4:6
 morozovsk,changed,2026-11-19,2026-11-19,2026-11-20,3.50,apron,,apron:changed:3.50:2026-11-19:9:6:5:15;ground:changed:9.25:2026-11-19:73:26:0:32
 millerovo,changed,2026-11-19,2026-11-19,2026-11-02,2.70,apron,Burn scars seen on 2026-10-29 (65.6 ha).,apron:changed:2.70:2026-11-19:11:7:6:9;ground:in:4.22:2026-11-16/2026-11-19:72:35:27:57
