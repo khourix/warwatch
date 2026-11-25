@@ -81,8 +81,8 @@ haifa_naval,ground,2026-11-22,2026-11-16,13,2,2
 haifa_naval,harbour,2026-11-22,2026-11-16,84,42,39
 hamadan_3tab,apron,2026-11-22,2026-11-16,4,4,5
 hamadan_3tab,ground,2026-11-22,2026-11-16,85,78,86
-hatzerim,apron,2026-11-21,2026-11-15,1,0,2
-hatzerim,ground,2026-11-21,2026-11-15,272,33,60
+hatzerim,apron,2026-11-22,2026-11-16,2,0,0
+hatzerim,ground,2026-11-22,2026-11-16,255,91,53
 hmeimim,apron,2026-11-22,2026-11-16,3,0,0
 hmeimim,ground,2026-11-22,2026-11-16,67,20,14
 hodeidah,ground,2026-11-16,2026-11-04,20,9,10
@@ -171,8 +171,8 @@ muwaffaq_salti,apron,2026-11-23,2026-11-17,4,1,2
 muwaffaq_salti,ground,2026-11-23,2026-11-17,180,41,30
 myrhorod,apron,2026-11-25,2026-11-19,3,0,2
 myrhorod,ground,2026-11-25,2026-11-19,6,1,17
-nevatim,apron,2026-11-21,2026-11-15,14,6,2
-nevatim,ground,2026-11-21,2026-11-15,197,32,56
+nevatim,apron,2026-11-22,2026-11-16,14,5,4
+nevatim,ground,2026-11-22,2026-11-16,171,22,34
 ningbo_zhuangqiao,apron,2026-11-14,2026-11-02,12,4,0
 ningbo_zhuangqiao,ground,2026-11-14,2026-11-02,168,85,34
 ningbo_zhuangqiao,harbour,2026-11-14,2026-11-02,10,2,1
@@ -195,9 +195,9 @@ palmachim,ground,2026-11-21,2026-11-15,259,49,76
 pathankot,apron,2026-11-17,2026-11-05,5,0,0
 pathankot,ground,2026-11-17,2026-11-05,103,33,47
 pk_akro_garrison,ground,2026-11-17,2026-11-05,35,13,11
-pk_gujranwala_garrison,ground,2026-11-21,2026-11-09,76,44,49
+pk_gujranwala_garrison,ground,2026-11-22,2026-11-10,84,37,43
 pk_khuzdar_garrison,ground,2026-11-25,2026-11-13,239,81,43
-pk_sargodha_garrison,ground,2026-11-14,2026-11-02,89,44,41
+pk_sargodha_garrison,ground,2026-11-22,2026-11-10,58,17,17
 port_sudan,apron,2026-11-24,2026-11-18,2,1,1
 port_sudan,ground,2026-11-24,2026-11-18,17,8,8
 port_sudan,harbour,2026-11-24,2026-11-18,203,79,63
@@ -221,8 +221,8 @@ saky,apron,2026-11-25,2026-11-19,15,1,0
 saky,ground,2026-11-25,2026-11-19,54,15,13
 sanaa_dulaimi,apron,2026-11-23,2026-11-11,29,0,2
 sanaa_dulaimi,ground,2026-11-23,2026-11-11,80,16,12
-sargodha,apron,2026-11-14,2026-11-02,5,0,0
-sargodha,ground,2026-11-14,2026-11-02,80,21,18
+sargodha,apron,2026-11-22,2026-11-10,4,0,0
+sargodha,ground,2026-11-22,2026-11-10,60,13,13
 savasleyka,apron,2026-11-23,2026-11-17,2,1,0
 savasleyka,ground,2026-11-23,2026-11-17,25,8,5
 semnan_space,ground,2026-11-24,2026-11-12,0,0,0
@@ -242,8 +242,8 @@ siauliai,harbour,2026-11-25,2026-11-19,0,0,0
 sinpo,ground,2026-11-17,2026-11-05,54,12,6
 sinpo,harbour,2026-11-17,2026-11-05,17,6,5
 sohae,ground,2026-11-16,2026-11-04,108,80,108
-soltsy,apron,2026-11-21,2026-11-15,1,0,0
-soltsy,ground,2026-11-21,2026-11-15,23,9,16
+soltsy,apron,2026-11-22,2026-11-16,0,0,0
+soltsy,ground,2026-11-22,2026-11-16,21,8,4
 souda,apron,2026-11-22,2026-11-16,32,4,3
 souda,ground,2026-11-22,2026-11-16,61,14,13
 souda,harbour,2026-11-22,2026-11-16,1,1,0
