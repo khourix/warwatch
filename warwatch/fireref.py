@@ -9,6 +9,7 @@ in the dashboard build.
     python3 warwatch/fireref.py check                         # spot checks: flares are routine, city centres are not
     python3 warwatch/fireref.py cases                         # the class each case in data/fire_cases.csv gets on its day
     python3 warwatch/fireref.py econ                          # The Economist's war-related fires, last 21 days -> history/cache (every 6 h)
+    python3 warwatch/fireref.py hazards                       # GDACS and NASA EONET wildfires and volcanoes, last 30 days -> history/cache
     python3 warwatch/fireref.py replay [--box iran] [--from 2018]   # classify the archive day by day -> backfill/data/firecls/firms_anom_<box>.csv
 
 Archive: https://firms.modaps.eosdis.nasa.gov/data/country/viirs-snpp/<year>/viirs-snpp_<year>_<Country>.csv
@@ -916,7 +917,7 @@ def probe():
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["probe", "build", "sites", "check", "replay", "econ", "cases", "osm-part", "merge-osm", "tune"])
+    ap.add_argument("cmd", choices=["probe", "build", "sites", "check", "replay", "econ", "hazards", "cases", "osm-part", "merge-osm", "tune"])
     ap.add_argument("paths", nargs="*")
     ap.add_argument("--box", default=",".join(C.FIRMS_BOX))
     ap.add_argument("--years", default=f"2012-{dt.date.today().year - 1}")
@@ -941,6 +942,9 @@ def main(argv=None):
         cases(a.cache)
     elif a.cmd == "econ":
         log("Economist war fires, last 21 days:", F.econ_refresh())
+    elif a.cmd == "hazards":
+        import openfeeds
+        log("natural hazards (GDACS, EONET), last 30 days:", openfeeds.hazards_refresh())
     elif a.cmd == "tune":
         tune(a.cache)
     elif a.cmd == "replay":

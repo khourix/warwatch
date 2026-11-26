@@ -44,6 +44,10 @@ jobs:
         if: env.ONLY == 'all' || env.ONLY == 'econ'
         continue-on-error: true
         run: python3 warwatch/fireref.py econ
+      - name: Wildfires and volcanoes listed by GDACS and NASA EONET (natural heat for the fire classifier)
+        if: env.ONLY == 'all' || env.ONLY == 'econ'
+        continue-on-error: true
+        run: python3 warwatch/fireref.py hazards
       - name: Satellite check of unusual fires
         if: env.ONLY == 'all' || env.ONLY == 'fires'
         continue-on-error: true
@@ -62,7 +66,8 @@ jobs:
           # one path at a time: a single unmatched pattern (bases_*.csv is not written while alerts are off) makes git add
           # stage nothing at all
           for f in warwatch/history/basewatch_*.csv warwatch/history/cache/base_*.csv warwatch/history/cache/bases_*.csv \
-                   warwatch/history/cache/fire_review.csv warwatch/history/cache/econ_war_fires.csv; do
+                   warwatch/history/cache/fire_review.csv warwatch/history/cache/econ_war_fires.csv \
+                   warwatch/history/cache/natural_hazards.csv; do
             if [ -e "$f" ]; then git add "$f"; fi
           done
           if ! git diff --cached --quiet; then
