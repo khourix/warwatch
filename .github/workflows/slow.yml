@@ -1,14 +1,14 @@
 name: slow-sources
 # Rate-limited and slow sources run here, away from the dashboard build, and cache their last good result in
 # warwatch/history/cache: SAM.gov tenders, and Global Fishing Watch ships (dark ships on radar, loitering, port calls;
-# warwatch/gfw.py), whose first run reads history back to September 2023.
+# warwatch/gfw.py), whose first run reads history back to September 2023, and the US sanctions list (warwatch/sanctions.py).
 on:
   schedule:
     - cron: "0 4 * * *"      # SAM.gov (about 10 requests a day allowed) and Global Fishing Watch (posts daily, about four days late)
   workflow_dispatch:
     inputs:
       which:
-        description: "sam | gfw | all"
+        description: "sam | gfw | sanctions | all"
         required: false
         default: "all"
 permissions:
@@ -37,10 +37,15 @@ jobs:
             GFW=$(python3 -c "import sys; sys.path.insert(0, '$WW'); import gfw; print(','.join(f'{k}_{t}' for t in gfw.BOX for k in ('darkships', 'darkshare', 'loiter', 'portcalls')))")
             IDS="${IDS:+$IDS,}$GFW";;
           esac
-          python3 $WW/run.py --only "$IDS" --fetch-only
+          [ -z "$IDS" ] || python3 $WW/run.py --only "$IDS" --fetch-only
+      - name: US sanctions list (ships and aircraft, OFAC SDN, public domain)
+        if: (github.event.inputs.which || 'all') == 'all' || github.event.inputs.which == 'sanctions'
+        continue-on-error: true
+        run: python3 $WW/sanctions.py refresh
       - name: Commit cache (public data only)
         run: |
           git config user.name "warwatch-bot"
           git config user.email "warwatch-bot@users.noreply.github.com"
           git add $WW/history/cache 2>/dev/null || true
+          git add $WW/data/sanctions_ofac.csv 2>/dev/null || true
           git diff --cached --quiet || (git commit -m "cache: $(date -u +%FT%H:%MZ)" && git pull --rebase -q && git push -q) || (git rebase --abort; echo "cache push skipped")

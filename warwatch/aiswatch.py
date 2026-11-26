@@ -102,6 +102,8 @@ def fold(state, msgs, now=None):
             s["t"] = sd.get("Type") or s["t"]
             s["dest"] = (sd.get("Destination") or "").strip()
             s["n"] = (sd.get("Name") or s["n"] or "").strip()
+            if sd.get("ImoNumber"):
+                s["imo"] = int(sd["ImoNumber"])
         s["n"] = s["n"] or (meta.get("ShipName") or "").strip()
         la, lo = meta.get("latitude"), meta.get("longitude")
         if la is None or lo is None or not (-90 <= la <= 90 and -180 <= lo <= 180):
@@ -135,12 +137,18 @@ def fold(state, msgs, now=None):
     return heard
 
 
-def counts(today, cross):
-    """{series id: value} for one day: ships seen per region and class, and strait crossings per direction."""
+def counts(today, cross, ships=None, watch=None):
+    """{series id: value} for one day: ships seen per region and class, strait crossings per direction, and (once the sanctions
+    list is downloaded) ships on the US sanctions list seen per region, matched by IMO number or MMSI."""
     out = {}
     for r in REGIONS:
         for k in CLASSES:
             out[f"aisday_{k}_{r}"] = float(len((today.get(r) or {}).get(k) or []))
+    if ships is not None and watch:
+        import sanctions
+        for r in REGIONS:
+            seen = {mm for lst in (today.get(r) or {}).values() for mm in lst}
+            out[f"aisday_sanctioned_{r}"] = float(sum(1 for mm in seen if sanctions.ship_match((ships.get(mm) or {}).get("imo"), mm, watch)))
     for g, (_, _, name) in GATES.items():
         other = "south" if name == "north" else "north"
         for d in (name, other):
@@ -153,7 +161,8 @@ def close_day(state):
     c = state.pop("closed", None)
     if not c:
         return None
-    for sid, v in counts(c["today"], c["cross"]).items():
+    import sanctions
+    for sid, v in counts(c["today"], c["cross"], state.get("ships") or {}, sanctions.watch()).items():
         pts = dict(store.cache_load(sid))
         pts[c["day"]] = v
         store.cache_save(sid, sorted(pts.items()), stamp=False)
