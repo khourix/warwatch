@@ -109,6 +109,25 @@ class TestDeepState(_TmpHistory, unittest.TestCase):
         self.assertEqual(O.deepstate_gain(rows), [("2026-11-24", 30.0)])
 
 
+class TestWarSpotting(_TmpHistory, unittest.TestCase):
+    def test_pages_until_short_and_weekly_sum(self):
+        calls = []
+
+        def get(url, **kw):
+            calls.append(url)
+            self.assertIn("User-Agent", kw["headers"])
+            day, page = url.split("/")[-2:]
+            n = 100 if (day == "2026-11-20" and page == "1") else 5 if day == "2026-11-20" else 2
+            return {"losses": [{"id": i, "date": day} for i in range(n)]}
+        have = O.warspot_update(today=dt.date(2026, 11, 25), recent=10, older=3, get=get, sleep=lambda s: None)
+        self.assertEqual(have["2026-11-20"], 105.0)
+        self.assertEqual(len(calls), 14)          # 13 days, one of them with a second page
+        self.assertIn("2026-11-13", have)         # older days filled after the recent window
+        got = dict(O.warspot_series(today=dt.date(2026, 11, 25), have=have))
+        self.assertEqual(got["2026-11-25"], 6 * 2 + 105.0)
+        self.assertNotIn("2026-11-12", got)       # its week is not all kept yet
+
+
 class TestAdvisories(_TmpHistory, unittest.TestCase):
     def test_canada_levels_and_missing_country(self):
         lv = O.parse_canada({"metadata": {}, "data": {"UA": {"advisory-state": 3}, "BY": {"advisory-state": 3}, "MD": {"advisory-state": 1}}})

@@ -161,7 +161,7 @@ def _km(la1, lo1, la2, lo2):
 
 # ---- DeepStateMap: the Ukraine front, one map version per update (public API) ----
 # /api/history/public lists every version (id = its unix time); /api/history/<id>/areas gives the km² of each kind of area.
-# Not on the page yet: the project's terms for reuse are still to be confirmed (Argos review, item 4).
+# Reuse confirmed with the project by Anthony on 26 November 2026.
 DEEPSTATE = "https://deepstatemap.live/api/history"
 OCCUPIED = ("occupied_after_24_02_2022", "occupied_to_24_02_2022")
 
@@ -205,6 +205,11 @@ def deepstate_update(max_new=150, get=None, sleep=None):
     return out
 
 
+def deepstate_series():
+    """Km² Russia gained over 7 days (catalog deepstate_gain_ukraine), reading new map versions first."""
+    return deepstate_gain(_once("deepstate", deepstate_update))
+
+
 def deepstate_gain(rows, days=7):
     """Km² Russia gained (negative: lost) over the last `days` days, per day with a map version -> [(date, km²)]."""
     last = {}
@@ -232,7 +237,7 @@ ISO2 = {"ukraine": ["UA", "BY", "MD"], "europe_east": ["PL", "LT", "LV", "EE", "
 AU_SLUG = {"UA": "ukraine", "BY": "belarus", "MD": "moldova", "PL": "poland", "LT": "lithuania", "LV": "latvia", "EE": "estonia",
            "FI": "finland", "IR": "iran", "IQ": "iraq", "SA": "saudi-arabia", "AE": "united-arab-emirates", "QA": "qatar", "BH": "bahrain",
            "KW": "kuwait", "OM": "oman", "LB": "lebanon", "SY": "syria", "YE": "yemen", "DJ": "djibouti", "IL": "israel", "JO": "jordan",
-           "EG": "egypt", "TW": "taiwan", "PH": "philippines", "VN": "vietnam", "KR": "south-korea", "KP": "north-korea", "IN": "india",
+           "EG": "egypt", "TW": "taiwan", "PH": "philippines", "VN": "vietnam", "KR": "south-korea-republic-korea", "KP": "north-korea-democratic-peoples-republic-korea", "IN": "india",
            "PK": "pakistan", "LY": "libya", "SD": "sudan", "SS": "south-sudan", "CD": "democratic-republic-congo", "VE": "venezuela",
            "CO": "colombia", "CU": "cuba"}
 AU_LEVEL = (("do not travel", 4), ("reconsider your need to travel", 3), ("high degree of caution", 2), ("normal safety precautions", 1))
@@ -278,8 +283,67 @@ def canada_level(theatre):
 
 
 def australia_level(theatre):
-    return level_sum(_once("smartraveller", lambda: parse_smartraveller(S.get(AU_URL, retries=2, raw=True, timeout=90))),
+    return level_sum(_once("smartraveller", lambda: parse_smartraveller(S.get(AU_URL, retries=1, raw=True, timeout=60))),
                      ISO2[theatre], AU_SLUG)
+
+
+# ---- WarSpotting: Russian equipment losses documented with photo or video (public API, named User-Agent required) ----
+# /api/losses/russia/<date>/<page> lists up to 100 losses lost on that day per page. Losses are documented days to weeks after
+# they happen, so recent days are re-read on every update and the newest week is dropped from the score (catalog drop).
+# The service asks for at most 10 requests per 10 seconds. Only Russian losses are counted.
+WARSPOT = "https://ukr.warspotting.net/api/losses/russia/{}/{}"
+WARSPOT_FROM = dt.date(2022, 2, 24)
+WARSPOT_UA = {"User-Agent": C.USER_AGENT, "Accept": "application/json"}
+
+
+def warspot_day(day, get, sleep):
+    """Losses dated `day`, all pages."""
+    n, page = 0, 1
+    while True:
+        got = (get(WARSPOT.format(day.isoformat(), page), retries=2, headers=WARSPOT_UA) or {}).get("losses")
+        if not isinstance(got, list):
+            raise RuntimeError("WarSpotting: no losses list in the answer")
+        sleep(1.1)
+        n += len(got)
+        if len(got) < 100:
+            return n
+        page += 1
+
+
+def warspot_update(today=None, recent=21, older=40, get=None, sleep=None):
+    """Re-reads the last `recent` days and fills up to `older` days of history not yet kept (the history fills over a few weeks).
+    Rows in history/cache/warspot_days.csv: date, losses. -> {date: losses}."""
+    import store
+    import time
+    get = get or S.get
+    sleep = time.sleep if sleep is None else sleep
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    have = {r[0]: float(r[1]) for r in store.cache_rows("warspot_days") if len(r) == 2}
+    todo = [today - dt.timedelta(days=i) for i in range(recent)]
+    d, gaps = today - dt.timedelta(days=recent), []
+    while d >= WARSPOT_FROM and len(gaps) < older:
+        if d.isoformat() not in have:
+            gaps.append(d)
+        d -= dt.timedelta(days=1)
+    for day in todo + gaps:
+        have[day.isoformat()] = float(warspot_day(day, get, sleep))
+    store.cache_rows_save("warspot_days", [[k, f"{v:.0f}"] for k, v in sorted(have.items())])
+    return have
+
+
+def warspot_series(today=None, days=7, have=None):
+    """Documented losses dated in the last 7 days -> [(date, count)], from the first day with the whole week kept."""
+    have = have if have is not None else _once("warspot", warspot_update)
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    out, d = [], WARSPOT_FROM + dt.timedelta(days=days - 1)
+    while d <= today:
+        week = [(d - dt.timedelta(days=i)).isoformat() for i in range(days)]
+        if all(w in have for w in week):
+            out.append((d.isoformat(), float(sum(have[w] for w in week))))
+        d += dt.timedelta(days=1)
+    if not out:
+        raise C.Pending("archive building: no full week of losses kept yet")
+    return out
 
 
 # ---- Natural hazards for the fire classifier: GDACS (CC BY 4.0) and NASA EONET wildfires and volcanoes ----

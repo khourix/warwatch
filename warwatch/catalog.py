@@ -31,7 +31,7 @@ SCALE = (("adsb_", "count"), ("package_", "count"), ("civil_", "count"), ("firms
          ("news_", "count"), ("ports_", "count"), ("portwatch_", "count"), ("fcdo_", "count"),
          ("nga_", "window"), ("navwarn_", "window"), ("notam_", "window"), ("msa_", "window"), ("jcg_", "window"), ("ukmto_", "window"),
          ("czib_", "window"), ("tzeva_", "window"), ("uaair_", "window"), ("geoconf_", "window"),
-         ("hormuz_", "count"), ("aisday_", "count"),
+         ("hormuz_", "count"), ("aisday_", "count"), ("warspot_", "count"), ("deepstate_", "count"),
          ("gpsjam_", ("share", 1.0)), ("gnss_", ("share", 1.0)),        # percent
          ("gdeltshare_", ("share", 10.0)),                               # per 1,000 events
          ("ooni_", ("share", 0.01)))                                     # a fraction
@@ -891,6 +891,19 @@ for th in openfeeds.ISO2:
         "Canada's advice per country (1 normal precautions to 4 avoid all travel), summed over the theatre's countries, beside the US and UK "
         "advice: a raise by a third government makes an evacuation signal stronger. Snapshots start now.",
         _snap(f"ca_{th}", lambda t=th: openfeeds.canada_level(t)), url="https://travel.gc.ca/travelling/advisories", sub="Advisories")
+for th in openfeeds.ISO2:
+    add(f"au_{th}", f"Australia travel-advisory level sum: {TH[th]} (Smartraveller)", "behavioral", th, "daily", False,
+        "Australia's overall advice per country (1 normal precautions to 4 do not travel), summed over the theatre's countries: a fourth "
+        "government beside the US, UK and Canada. Snapshots start now. Smartraveller, CC BY 4.0.",
+        _snap(f"au_{th}", lambda t=th: openfeeds.australia_level(t)), url=openfeeds.AU_URL, sub="Advisories")
+add("deepstate_gain_ukraine", "Ukrainian territory Russia took in the last 7 days, km² (DeepStateMap)", "geospatial", "ukraine", "daily", False,
+    "Change in the area DeepStateMap marks as occupied (since and before 24 February 2022) against the map a week earlier; negative when "
+    "Ukraine takes ground back. Measures the ground war, so it confirms rather than leads. History from every map version DeepStateMap keeps.",
+    openfeeds.deepstate_series, url="https://deepstatemap.live/", sub="Ground war")
+add("warspot_ukraine", "Russian equipment losses documented with photo or video, last 7 days (WarSpotting)", "geospatial", "ukraine", "daily", False,
+    "Tanks, armoured vehicles, artillery and other Russian equipment shown destroyed, damaged, abandoned or captured, counted on the day it was "
+    "lost. Losses are documented days to weeks later, so the newest week is left out. Measures the intensity of ground fighting; coincident.",
+    openfeeds.warspot_series, drop=7, url="https://ukr.warspotting.net/", sub="Ground war")
 
 
 def _ais_sanctioned(sid):
@@ -924,9 +937,11 @@ for _s in SERIES:
         _s["every"] = 6       # daily closes
     elif _id.startswith(("portwatch_", "fcdo_", "crisiswatch_")):
         _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely, CrisisWatch is monthly
+    elif _id.startswith("deepstate_"):
+        _s["every"] = 3       # a new map version most days; the first runs read the back history 150 versions at a time
     elif _id.startswith(("ioda_", "ooni_", "ports_", "cfr_", "gas_", "power_", "fx_", "msa_", "jcg_", "navwarn_")):
         _s["every"] = 3
-    elif _id.startswith(("geoconf_", "ca_")):
+    elif _id.startswith(("geoconf_", "ca_", "au_", "warspot_")):
         _s["every"] = 6       # GeoConfirmed's files are large; Canada rewrites advice rarely
     elif _id.startswith(("ais_presence_", "choke_")):
         _s["every"] = 12      # one call per box; the source posts daily with a ~5 day delay
@@ -954,7 +969,7 @@ for _s in SERIES:
     _s["cached"] = _s["local"] or bool(getattr(_s["fetch"], "cached", False))
 
 NOT_TESTED = ("flights_", "bizjet_", "darkships_", "darkshare_", "loiter_", "portcalls_", "choke_", "navwarn_",
-              "hormuz_", "geoconf_", "ca_", "aisday_sanctioned_")   # the last four from the Argos Atlas review, November 2026
+              "hormuz_", "geoconf_", "ca_", "au_", "deepstate_", "warspot_", "aisday_sanctioned_")   # the last seven from the Argos Atlas review, November 2026
 for _s in SERIES:
     if _s["id"].startswith(NOT_TESTED):
         _s["scored"] = False
@@ -978,7 +993,7 @@ for _s in SERIES:
 # decision is made and goes quiet after. A CrisisWatch rating is already a monthly judgement, so its newest value is the
 # reading (it could never have been scored as a level: that needs 40 issues). stats._scored_as_event has the scales.
 for _s in SERIES:
-    if _s["id"].startswith(("state_", "ca_")) and not _s["id"].startswith(TELL_ONLY):
+    if _s["id"].startswith(("state_", "ca_", "au_")) and not _s["id"].startswith(TELL_ONLY):
         _s["transform"] = "step"
     elif _s["id"].startswith("crisiswatch_"):
         _s["transform"] = "event"
