@@ -100,10 +100,17 @@ export const statusRows = (st: Record<string, number>) => STATUS.filter(([k]) =>
 export function LateBanner({ brief }: { brief: Brief }) {
   const { prefs } = usePrefs()
   const age = useAge(brief)
+  const [open, setOpen] = useState(false)
   if (age <= lateAfter(brief)) return null
+  const every = brief.health?.everyMinutes ?? EVERY
   return (
-    <div role="status" className="border-b border-line bg-s2 px-4 py-2 text-[12.5px] leading-[1.4] text-fg">
-      This data is from {fmtAsOf(brief.generated, prefs.tz)}, {ageWords(age)}. WarWatch normally updates every {brief.health?.everyMinutes ?? EVERY} minutes, so the latest runs have not come through and what you see may be out of date.
+    <div role="status" className="border-b border-line bg-s2 px-4 py-[7px] text-[12.5px] leading-[1.4] text-fg">
+      <p className="flex min-w-0 items-baseline gap-2">
+        <span className="h-[7px] w-[7px] shrink-0 translate-y-[-1px] self-center rounded-full border border-fg2" aria-hidden />
+        <span className="min-w-0 flex-1 truncate">Data is {ageWords(age).replace(/ ago$/, '')} old. Updates every {every} min.</span>
+        <button onClick={() => setOpen(o => !o)} aria-expanded={open} className="lnk shrink-0 text-fg2">{open ? 'Less' : 'Why'}</button>
+      </p>
+      {open && <p className="mt-1 pl-[15px] text-fg2">The last update came in at {fmtAsOf(brief.generated, prefs.tz)}. The page is working; newer runs have not reached it yet, so what you see may be out of date.</p>}
     </div>
   )
 }

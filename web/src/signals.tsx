@@ -370,7 +370,7 @@ function SignalList({ list, total, pending, brief, go, q, setQ, only, setOnly, g
         <span className="num ml-auto text-[12px] text-fg3" aria-live="polite">{pending ? 'Loading…' : total ? `${list.length} shown, most unusual first` : ''}</span>
       </div>
       <div className={`mt-2.5 grid ${cols} items-end gap-3 border-b border-line2 px-2 pb-1.5 text-[11px] text-fg3`} aria-hidden>
-        <span>Signal</span>{!phone && <span>Recent</span>}<span>Unusualness</span>
+        <span>Signal</span>{!phone && <span>Recent</span>}<span title="How far the signal sits from its own usual, in standard deviations">SD from usual</span>
       </div>
       {pending ? <Skeleton lines={10} /> : total === 0 ? <p className="px-2 py-6 text-[12.5px] text-fg3">No signal is in this data run.</p>
         : list.length === 0 ? <p className="px-2 py-6 text-[12.5px] text-fg3">No signal matches. Clear a filter to see more.</p> : (

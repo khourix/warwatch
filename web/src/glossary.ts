@@ -7,11 +7,20 @@ export type Term = { term: string; says: string; from: string; see?: string }
 export const TERMS = {
   /* engine.logistic_score: 0 to 100, 50 at the Watch threshold and 90 at the Critical one; the thresholds are percentiles of a
      simulated calm world (engine.PCTS 0.90, 0.95, 0.99) */
-  unusual: { term: 'Unusual readings', says: 'A number from 0 to 100 for each theatre that says how far its signals sit from their own usual levels today, taken together. It is not a chance of war.',
-    from: 'Built every run from the five signal groups. It has not shown that it can forecast, so it is drawn in grey.' },
+  unusual: { term: 'Reading', says: 'A number from 0 to 100 for each theatre that says how far its signals sit from their own usual levels today, taken together. It is not a chance of war.',
+    from: 'Built every run from the five signal groups. It has not shown that it can forecast, so it is drawn in grey. The change beside it compares today with 7 days ago, both rebuilt from each signal\'s own history with today\'s lines.' },
   lines: { term: 'Watch, Elevated and Critical', says: 'Lines on the 0 to 100 reading. In a simulated world with no build-up, a theatre reads below Watch (50) on 90% of days, below Elevated on 95% and below Critical (90) on 99%.',
     from: 'Where Elevated sits differs a little by theatre, because each theatre has its own mix of signals. While the 30-day model is off, the reading against these lines sets the level.' },
-  quiet: { term: 'Quiet', says: 'The level of a theatre whose reading is below its Watch line.', from: 'It says the signals are near their usual levels, not that nothing is happening there.' },
+  quiet: { term: 'Steady', says: 'The build-up level of a theatre whose reading is below its Watch line: its signals are not moving away from their usual levels.',
+    from: 'It says nothing about fighting already under way. A theatre at war can read Steady, because the war is already in its usual levels; the Now answer says what is happening.' },
+  now: { term: 'Now', says: 'What is happening in a theatre today, set by hand: War (fighting under way), Strikes (strikes or attacks, not a war) or Tension (a stand-off with no fighting). A dash means none of these.',
+    from: 'Checked every month with the theatre\'s context line. It never changes the build-up level, and the build-up level never changes it.' },
+  buildup: { term: 'Build-up', says: 'Whether a theatre\'s signals are building: Steady, Watch, Elevated or Critical, from the reading against its lines.',
+    from: 'It answers "is something building?", not "is something happening?". The two answers sit side by side on every theatre.' },
+  evidence: { term: 'Evidence grade', says: 'How much weight a news report carries, from its source alone: Official (an authority that answers for it, such as UKMTO), Corroborated (two or more outlets at the same place on the same day), One source, and Claim (state media of a party to the fighting). WarWatch checks none of them, and none is in the reading.',
+    from: 'Graded from who reported it, not from what it says. A grade is not a judgement of whether the report is true.' },
+  context: { term: 'Context number', says: 'A number shown beside a theatre, such as ships crossing the Strait of Hormuz, that is not part of its reading.',
+    from: 'New sources start as context. They only join the reading, and only get warning colour, once they pass the same tests as the other signals.' },
   tripwire: { term: 'Tripwire', says: 'A fixed yes or no rule over the last 7 days on a costly, hard to reverse step, such as a US embassy departure order, airliners thinning out or airspace closing.',
     from: 'Each is replayed on the stored history to show how often it fired before past events. Tripwires never set a level and do not enter the model.' },
   standing: { term: 'Standing risk', says: "The 30-day model's chance for a theatre divided by that theatre's usual chance, so 1.5 means one and a half times its usual.",
@@ -46,4 +55,4 @@ export const TERMS = {
 export type TermKey = keyof typeof TERMS
 export const term = (k: TermKey): Term => TERMS[k]
 /* the order the glossary page lists them in */
-export const ORDER: TermKey[] = ['unusual', 'lines', 'quiet', 'sd', 'strong', 'group', 'Logistics', 'Markets', 'People', 'News', 'Physical', 'tripwire', 'standing', 'forward', 'bright', 'scar', 'dark', 'loiter']
+export const ORDER: TermKey[] = ['now', 'buildup', 'unusual', 'lines', 'quiet', 'sd', 'strong', 'group', 'Logistics', 'Markets', 'People', 'News', 'Physical', 'tripwire', 'standing', 'forward', 'bright', 'scar', 'dark', 'loiter', 'evidence', 'context']

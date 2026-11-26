@@ -2,7 +2,7 @@ import { motion } from 'motion/react'
 import { Component, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type KeyboardEvent, type ErrorInfo } from 'react'
 import { createPortal } from 'react-dom'
 import { Link2 } from 'lucide-react'
-import { levelVar, levelWord, zColor, routeHref, shortDate, parseGen, type Level, type Route } from './data'
+import { levelVar, levelWord, zColor, routeHref, shortDate, parseGen, NOW_WORD, type Now, type Level, type Route } from './data'
 import { term, type TermKey } from './glossary'
 import { usePrefs, fmtTime } from './settings'
 
@@ -250,4 +250,11 @@ export class Boundary extends Component<BoundaryProps, { error: unknown }> {
 
 export function Failed({ what, error }: { what: string; error: unknown }) {
   return <div className="m-5 rounded-xl border border-line bg-raised px-3.5 py-3 text-[13px] text-fg2">Could not load {what}. {error instanceof Error ? error.message : ''} The next run rebuilds it within 30 minutes.</div>
+}
+
+/* the Now answer as a mark and a word, in the ivory kept for things that happened; the mark reads without colour */
+export function NowMark({ now, word = true, className = '' }: { now?: Now | null; word?: boolean; className?: string }) {
+  if (!now) return word ? <span className={`text-fg3 ${className}`}>–</span> : null
+  const fill = now === 'war' ? 'var(--happened)' : now === 'strikes' ? 'linear-gradient(90deg, var(--happened) 50%, transparent 50%)' : 'transparent'
+  return <span className={`inline-flex items-center gap-[5px] whitespace-nowrap text-happened ${className}`}><i aria-hidden className="block h-[8px] w-[8px] shrink-0 border-[1.5px] border-happened" style={{ background: fill }} />{word && NOW_WORD[now]}</span>
 }

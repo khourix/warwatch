@@ -1924,24 +1924,24 @@ class ShareCard(unittest.TestCase):
 
     def test_headline_words_the_levels_and_tells(self):
         import share
-        self.assertEqual(share.summary(self._data())[0], "Every theatre reads quiet. No tripwires fired this week.")
+        self.assertEqual(share.summary(self._data())[0], "Every theatre reads steady. No tripwires fired this week.")
         head, f = share.summary(self._data({"yemen": "Elevated"}))
-        self.assertTrue(head.startswith("Yemen is the only theatre above quiet."))
+        self.assertTrue(head.startswith("Yemen is the only theatre above steady."))
         head, _ = share.summary(self._data({"iran": "Watch", "israel": "Critical", "sudan": "Elevated", "libya": "Watch"}))
-        self.assertTrue(head.startswith("Four theatres are above quiet, led by Israel."), head)
+        self.assertTrue(head.startswith("Four theatres are above steady, led by Israel."), head)
         self.assertEqual(f["theatres"], len(C.THEATRES) - 1)     # the global row is not a theatre
 
     def test_card_and_page_tags_render(self):
         import share
         d = self._data({"yemen": "Elevated"})
         card = share.card_html(d, None)
-        self.assertIn("Yemen is the only theatre above quiet.", card)
+        self.assertIn("Yemen is the only theatre above steady.", card)
         self.assertIn("24 Oct 2026 · 01:17 UTC", card)
         self.assertIn("Updated every 30 minutes", share.card_html(d, None, fallback=True))
         page = dashboard.page_html(d, "2026-10-24 01:17 UTC")
         self.assertNotRegex(page, r"__(ABOUT|SHARE|OGALT|OGV)__")
         self.assertIn('og.jpg?v=202610240117"', page)
-        self.assertIn('<meta property="og:description" content="Yemen is the only theatre above quiet.', page)
+        self.assertIn('<meta property="og:description" content="Yemen is the only theatre above steady.', page)
 
     def _quiet(self, scores, active=False):
         """Every theatre quiet, with these readings (others None), and the forecast model on or off."""
@@ -1955,21 +1955,21 @@ class ShareCard(unittest.TestCase):
         """As the app's dispatch words it (watch.tsx): only while the model is off and the reading is under the line of 50."""
         import share
         head = share.summary(self._quiet({"yemen": 45.2, "iraq": 6.5, "southasia": 30}))[0]
-        self.assertEqual(head, "Every theatre reads quiet. Yemen comes closest to Watch, at 45 against a line of 50. No tripwires fired this week.")
+        self.assertEqual(head, "Every theatre reads steady. Yemen comes closest to Watch, at 45 against a line of 50. No tripwires fired this week.")
         d = self._quiet({"yemen": 45.2})   # the tripwires that fired stay in the sentence, after the closest theatre, as in the app
         d["theatres"]["iran"]["tells"] = [{"on": True}] * 3
         d["theatres"]["yemen"]["tells"] = [{"on": True}] * 9 + [{"on": False}]
-        self.assertEqual(share.summary(d)[0], "Every theatre reads quiet. Yemen comes closest to Watch, at 45 against a line of 50. Twelve tripwires fired this week.")
+        self.assertEqual(share.summary(d)[0], "Every theatre reads steady. Yemen comes closest to Watch, at 45 against a line of 50. Twelve tripwires fired this week.")
         d["theatres"]["iran"]["tells"] = [{"on": True}] * 4
         self.assertTrue(share.summary(d)[0].endswith("against a line of 50. 13 tripwires fired this week."))
         self.assertIn("South Asia comes closest to Watch, at 31 against", share.summary(self._quiet({"southasia": 30.5}))[0])   # short name, half up
         self.assertIn("at 49 against a line of 50.", share.summary(self._quiet({"yemen": 49.7}))[0])    # under 50 never reads 50
-        self.assertEqual(share.summary(self._quiet({"yemen": 50.2}))[0], "Every theatre reads quiet. No tripwires fired this week.")
-        self.assertEqual(share.summary(self._quiet({"yemen": 45.2}, active=True))[0], "Every theatre reads quiet. No tripwires fired this week.")
-        self.assertEqual(share.summary(self._quiet({}))[0], "Every theatre reads quiet. No tripwires fired this week.")
+        self.assertEqual(share.summary(self._quiet({"yemen": 50.2}))[0], "Every theatre reads steady. No tripwires fired this week.")
+        self.assertEqual(share.summary(self._quiet({"yemen": 45.2}, active=True))[0], "Every theatre reads steady. No tripwires fired this week.")
+        self.assertEqual(share.summary(self._quiet({}))[0], "Every theatre reads steady. No tripwires fired this week.")
         d = self._quiet({"yemen": 45.2})
         d["theatres"]["iran"]["level"] = "Watch"
-        self.assertEqual(share.summary(d)[0], "Iran is the only theatre above quiet. No tripwires fired this week.")
+        self.assertEqual(share.summary(d)[0], "Iran is the only theatre above steady. No tripwires fired this week.")
 
     def test_whole_matches_the_app(self):
         import share
@@ -2016,8 +2016,9 @@ class ShareCard(unittest.TestCase):
 class ContextLine(unittest.TestCase):
     def test_context_lines_are_well_formed(self):
         import re
-        for t, (line, month) in C.CONTEXT.items():
+        for t, (line, month, now) in C.CONTEXT.items():
             self.assertIn(t, C.THEATRES)
+            self.assertIn(now, C.NOW_TIERS)
             self.assertTrue(line and len(line) <= 40 and not line.endswith("."), line)
             self.assertRegex(month, r"^20\d\d-(0[1-9]|1[0-2])$")
         v = {"doms": {d: {"z": None, "n": 0, "fast": False, "drivers": [], "w": 0, "contrib": 0} for d in C.DOMAINS}, "level": "Normal",
@@ -2052,6 +2053,46 @@ class DataContract(unittest.TestCase):
         self.assertTrue(any("missing level" in p for p in contract.validate(b)))
         self.assertTrue(any("brief.regions" in p for p in contract.validate(b)))
         self.assertEqual(contract.validate({"schema": "warwatch/v0"}), ["schema is 'warwatch/v0', not 'warwatch/v1'"])
+
+    def test_now_trend_and_change(self):
+        import contract
+        self.assertEqual(contract.now_tier("ukraine"), "war")
+        self.assertIsNone(contract.now_tier("libya"))
+        self.assertIsNone(contract.change7([["2026-10-20", 5.0]]))
+        tr = [[f"2026-10-{d:02d}", float(d)] for d in range(1, 25)]
+        self.assertEqual(contract.change7(tr), 7.0)
+        for t in C.THEATRES:
+            if t == "global":
+                continue
+            th = self.files[f"theatres/{t}.json"]
+            self.assertLessEqual(len(th["trend"]), contract.TREND_DAYS)
+            self.assertTrue(all(x is None or 0 <= x <= 100 for _, x in th["trend"]))
+            if th["shares"]:
+                self.assertAlmostEqual(sum(th["shares"].values()), 100, delta=0.6)
+
+    def test_feed_tiers(self):
+        import contract
+        T = contract.tier
+        self.assertEqual(T({"kind": "tell", "title": "x"}), "key")
+        self.assertEqual(T({"kind": "level", "title": "Build-up rose to Watch"}), "key")
+        self.assertEqual(T({"kind": "base", "title": "x", "detail": "Satellite radar, two passes"}), "key")
+        self.assertEqual(T({"kind": "base", "title": "x", "detail": "Satellite radar, one pass"}), "routine")
+        self.assertEqual(T({"kind": "fire", "title": "x"}), "routine")
+        self.assertEqual(T({"kind": "official", "title": "US travel advisories raised: Iran"}), "key")
+        self.assertEqual(T({"kind": "official", "title": "US ordered or authorised departures went from 2 to 3"}), "key")
+        self.assertEqual(T({"kind": "official", "title": "US ordered or authorised departures went from 3 to 2"}), "routine")
+        self.assertTrue(all(f.get("tier") in ("key", "routine") for f in self.files["brief.json"]["feed"]))
+
+    def test_status_and_badge(self):
+        import contract
+        st = contract.status(self.data, "ukraine")
+        self.assertEqual(st["theatre"], "ukraine")
+        self.assertEqual(st["now"], "war")
+        self.assertNotEqual(st["buildup"], "Normal")
+        svg = contract.badge(dict(st, name="A <b> & \"c\""))
+        self.assertTrue(svg.startswith("<svg") and svg.endswith("</svg>"))
+        self.assertNotIn("<b>", svg)
+        self.assertIn("&lt;b&gt; &amp;", svg)
 
     def test_positions_are_lon_lat(self):
         m = self.files["map/live.json"]
@@ -2479,10 +2520,10 @@ class TheatreCards(unittest.TestCase):
 
     def test_headline_words_level_and_tells(self):
         import share
-        self.assertEqual(share.theatre_headline("Iran", "Normal", 0), "Iran reads quiet. No tripwires fired this week.")
+        self.assertEqual(share.theatre_headline("Iran", "Normal", 0), "Iran reads steady. No tripwires fired this week.")
         self.assertEqual(share.theatre_headline("Yemen", "Elevated", 1), "Yemen reads elevated. One tripwire fired this week.")
-        self.assertEqual(share.theatre_headline("Korea", "Odd", 12), "Korea reads quiet. Twelve tripwires fired this week.")
-        self.assertEqual(share.theatre_headline("Korea", "Odd", 13), "Korea reads quiet. 13 tripwires fired this week.")
+        self.assertEqual(share.theatre_headline("Korea", "Odd", 12), "Korea reads steady. Twelve tripwires fired this week.")
+        self.assertEqual(share.theatre_headline("Korea", "Odd", 13), "Korea reads steady. 13 tripwires fired this week.")
         self.assertEqual(share.theatre_headline("South Asia (India-Pakistan)", "Watch", 2), "South Asia reads watch. Two tripwires fired this week.")   # the short name, as on the card's name row
 
     def test_cards_render_for_every_theatre(self):
@@ -2606,9 +2647,9 @@ class Pages(unittest.TestCase):
         site, dist = self._site()
         pages.build(site, dist, today=dt.date(2026, 11, 1))
         g = self._read(site, "glossary", "index.html")
-        self.assertIn("<title>Glossary · WarWatch</title>", g)
+        self.assertIn("<title>Guide · WarWatch</title>", g)
         self.assertIn('<link rel="canonical" href="https://khourix.github.io/warwatch/glossary/">', g)
-        self.assertIn('<meta property="og:title" content="Glossary · WarWatch">', g)
+        self.assertIn('<meta property="og:title" content="Guide · WarWatch">', g)
         import html
         self.assertIn(f'<meta name="description" content="{html.escape(pages.GLOSSARY, quote=True)}">', g)
         self.assertIn(f'<meta property="og:description" content="{html.escape(pages.GLOSSARY, quote=True)}">', g)

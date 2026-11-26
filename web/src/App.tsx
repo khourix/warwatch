@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback, lazy, Suspense } from 'react'
 import { motion, AnimatePresence, useDragControls, animate, useMotionValue, MotionConfig } from 'motion/react'
-import { Globe, Activity, ClipboardCheck, Sun, Moon, Search, SlidersHorizontal, Link2 } from 'lucide-react'
+import { Globe, Activity, ClipboardCheck, Sun, Moon, Search, SlidersHorizontal, Link2, BookOpen, X } from 'lucide-react'
 import { usePrefs, SettingsSheet, reducedMotion } from './settings'
 import { TheatreView } from './views'
 import { BaseView } from './ground'
@@ -39,7 +39,7 @@ function GroundIcon({ size = 19, strokeWidth = 1.6, className }: { size?: number
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinejoin="round" className={className} aria-hidden><path d="M12 3l9 9-9 9-9-9z" /><path d="M12 9l3 3-3 3-3-3z" /></svg>
 }
 type Nav = [Route['v'], string, (p: { size?: number; strokeWidth?: number }) => React.ReactNode][]
-const NAV: Nav = [['brief', 'Watch', Globe], ['signals', 'Signals', Activity], ['ground', 'Ground', GroundIcon], ['record', 'Record', ClipboardCheck]]
+const NAV: Nav = [['brief', 'Watch', Globe], ['signals', 'Signals', Activity], ['ground', 'Ground', GroundIcon], ['record', 'Record', ClipboardCheck], ['glossary', 'Guide', BookOpen]]
 
 /* The view in the address, so a copied link reopens it: the theatre and its tab are the path; on Watch (the home, a theatre, a
    base, the map) the picked day is ?d=2026-11-10 and the map layers, when they differ from the usual set, ?l=bases.fires.
@@ -90,7 +90,7 @@ function Shell({ brief }: { brief: Brief }) {
   /* the board's order and the feed's kind outlive the columns that show them (the feed moves between columns at 1200 px) */
   const [order, setOrder] = useState<Order>(prefs.order)
   useEffect(() => setOrder(prefs.order), [prefs.order])
-  const [kind, setKind] = useState<Kind>('all')
+  const [kind, setKind] = useState<Kind>('key')
   const panelRef = useRef<HTMLDivElement>(null)
   const { since, dismiss: dismissSince } = useSinceLastVisit(brief)
   const [newOnly, setNewOnly] = useState(false)
@@ -138,6 +138,7 @@ function Shell({ brief }: { brief: Brief }) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !(e.target as HTMLElement).closest('input,textarea,select'))) { e.preventDefault(); setCmd(c => !c) }
+      else if (e.key === '?' && !cmd && !e.metaKey && !e.ctrlKey && !(e.target as HTMLElement).closest('input,textarea,select,[contenteditable]')) { e.preventDefault(); go({ v: 'glossary', term: 'read' }) }
       if (e.key === 'Escape' && cmd) { e.preventDefault(); setCmd(false); early.current = ''; return }   // the search closes first
       if (cmd && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !(e.target as HTMLElement).closest('input,textarea')) {
         const field = document.querySelector<HTMLInputElement>('[cmdk-input]')
@@ -152,7 +153,7 @@ function Shell({ brief }: { brief: Brief }) {
     addEventListener('keydown', k); return () => removeEventListener('keydown', k)
   }, [cmd, route, go, day])
   useEffect(() => { document.title = route.v === 'theatre' ? `${brief.theatres.find(t => t.id === route.id)?.name || route.id} · WarWatch` : route.v === 'base' ? `${live?.bases.find(b => b.id === route.id)?.name.split(',')[0] || 'Base'} · WarWatch`
-    : route.v === 'brief' ? 'WarWatch' : `${{ signal: 'Signal', signals: 'Signals', ground: 'Ground', record: 'Track record', map: 'Map', glossary: 'Glossary', wall: 'Wall' }[route.v]} · WarWatch` }, [route, brief, live])
+    : route.v === 'brief' ? 'WarWatch' : `${{ signal: 'Signal', signals: 'Signals', ground: 'Ground', record: 'Track record', map: 'Map', glossary: 'Guide', wall: 'Wall' }[route.v]} · WarWatch` }, [route, brief, live])
 
   const toggleTheme = () => set({ theme: theme === 'dark' ? 'light' : 'dark' })
   /* Watch is the home (brief), the map address and an open theatre or base; Signals, Ground, Record and the glossary are pages */
@@ -179,13 +180,13 @@ function Shell({ brief }: { brief: Brief }) {
   const map = (padBottom: number) => mapOn && <Boundary what="the map" at={wide ? 'm-5' : 'mx-3 mt-[68px]'}><Suspense fallback={null}><MapView brief={brief} live={live} route={route} onPick={go} theme={theme} day={null} flat={prefs.map === 'flat'} onFlat={f => set({ map: f ? 'flat' : 'globe' })} labels={prefs.labels} wide={wide} padBottom={padBottom} layers={layers} onToggle={toggleLayer} /></Suspense></Boundary>
   /* the dispatch is the page's heading only on the Watch home; a dossier or a page (Signals, Record) has its own h1 */
   /* each part of Watch has its own boundary: one that fails to draw leaves the others working */
-  const dispatch = <Boundary what="the dispatch" at="m-3.5"><Dispatch brief={brief} heading={!dossier && !page} /></Boundary>
+  const dispatch = <Boundary what="the dispatch" at="m-3.5"><Dispatch brief={brief} heading={!dossier && !page} /><FirstVisit go={go} /></Boundary>
   const board = <Boundary what="the theatre board" at="m-3.5"><Board brief={brief} sel={sel} go={go} order={order} setOrder={setOrder} /></Boundary>
   const home = <>{dispatch}{board}</>
   const feed = <Boundary what="the feed" at="m-3.5"><Feed brief={brief} day={day} setDay={setDay} kind={kind} setKind={setKind} go={go} since={day ? null : since} dismiss={dismiss} newOnly={newOnly} setNewOnly={setNewOnly} block={wide} /></Boundary>
   /* on phones "since you last looked" sits under the dispatch, above the board; a pick there jumps to the feed it filters */
-  const phoneSince = since && !day && <Boundary what="since you last looked" quiet><SinceBlock since={since} dismiss={dismiss} go={go} className="mx-3.5 mb-1.5 mt-2"
-    picked={newOnly ? kind : null} pick={k => { setDay(null); setKind(k ?? 'all'); setNewOnly(k != null); if (k) requestAnimationFrame(() => document.getElementById('feed')?.scrollIntoView({ block: 'start' })) }} /></Boundary>
+  const phoneSince = since && !day && <Boundary what="since you last looked" quiet><SinceBlock since={since} dismiss={dismiss} className="mx-3.5 mb-1.5 mt-2"
+    newOnly={newOnly} setNewOnly={v => { setDay(null); setNewOnly(v); if (v) requestAnimationFrame(() => document.getElementById('feed')?.scrollIntoView({ block: 'start' })) }} /></Boundary>
   const overlays = <>
     {cmdSeen && <Boundary what="the search" float><Suspense fallback={null}><CommandMenu open={cmd} setOpen={setCmd} early={early} go={go} toggleTheme={toggleTheme} openSettings={() => setSettings(true)} copyLink={copyLink} brief={brief} live={live} /></Suspense></Boundary>}
     <Boundary what="the settings" float><SettingsSheet open={settings} onClose={() => setSettings(false)} go={go} /></Boundary>
@@ -245,12 +246,12 @@ function Shell({ brief }: { brief: Brief }) {
   return (
     <MotionConfig reducedMotion={mc}>
     <ReplayProvider brief={brief} day={replaying ? day : null}>
-    <div className="ww-wide grid h-full grid-cols-[64px_minmax(0,1fr)] overflow-hidden bg-bg text-fg">
+    <div className="ww-wide grid h-full grid-cols-[72px_minmax(0,1fr)] overflow-hidden bg-bg text-fg">
       <nav aria-label="Pages" className="z-20 flex flex-col items-center gap-1 border-r border-line bg-bg py-3">
         <button onClick={() => go({ v: 'brief' })} aria-label="WarWatch, back to Watch" className="mb-2.5 grid h-9 w-10 place-items-center rounded-r2 text-fg"><Mark size={24} /></button>
         {NAV.map(([k, label, I]) => <RailButton key={k} label={label} on={navActive(k)} onClick={() => go({ v: k } as Route)}><I size={19} strokeWidth={1.6} /></RailButton>)}
         <div className="flex-1" />
-        <RailButton label={theme === 'dark' ? 'Switch to light' : 'Switch to dark'} onClick={toggleTheme}>{theme === 'dark' ? <Sun size={17} strokeWidth={1.6} /> : <Moon size={17} strokeWidth={1.6} />}</RailButton>
+        <RailButton label={theme === 'dark' ? 'Light' : 'Dark'} hint={theme === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme'} onClick={toggleTheme}>{theme === 'dark' ? <Sun size={17} strokeWidth={1.6} /> : <Moon size={17} strokeWidth={1.6} />}</RailButton>
         <RailButton label="Settings" onClick={() => setSettings(true)}><SlidersHorizontal size={17} strokeWidth={1.6} /></RailButton>
       </nav>
       <div className="grid min-h-0 min-w-0 grid-rows-[52px_auto_minmax(0,1fr)]">
@@ -259,7 +260,7 @@ function Shell({ brief }: { brief: Brief }) {
           <i className="h-4 w-px shrink-0 bg-line2" aria-hidden />
           <p className="min-w-0 flex-1 truncate text-[12.5px] text-fg2"><Boundary what="the status line" quiet><Status brief={brief} /></Boundary></p>
           <button onClick={() => setCmd(true)} aria-keyshortcuts="Control+K Meta+K /" className="flex h-8 w-[min(300px,26vw)] shrink-0 items-center gap-2 rounded-r2 border border-line bg-s1 px-2.5 text-[12.5px] text-fg2 transition-colors duration-[120ms] hover:border-line2">
-            <Search size={14} aria-hidden /><span className="min-w-0 flex-1 truncate text-left">Search theatres, bases, signals</span><kbd className="rounded-[3px] border border-line2 px-1 py-0.5 font-mono text-[10.5px] leading-none">⌘K</kbd>
+            <Search size={14} aria-hidden /><span className="min-w-0 flex-1 truncate text-left">Search theatres, places, signals</span><kbd className="rounded-[3px] border border-line2 px-1 py-0.5 font-mono text-[10.5px] leading-none">⌘K</kbd>
           </button>
           <button onClick={copyLink} aria-label="Copy link to this view" title="Copy link to this view" className={icon}><Link2 size={15} /></button>
           <NotificationBell brief={brief} live={live} go={go} />
@@ -297,13 +298,14 @@ function Shell({ brief }: { brief: Brief }) {
 }
 
 /* a rail icon, named by a tip on hover and focus; the current page carries an ivory bar */
-function RailButton({ label, on, onClick, children }: { label: string; on?: boolean; onClick: () => void; children: React.ReactNode }) {
+/* A rail entry: icon over a short label, so nothing on the rail has to be guessed. The box never changes size; only colour moves. */
+function RailButton({ label, hint, on, onClick, children }: { label: string; hint?: string; on?: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} aria-label={label} aria-current={on ? 'page' : undefined}
-      className={`group relative grid h-11 w-11 place-items-center rounded-r2 transition-colors duration-[120ms] ${on ? 'bg-s3 text-fg' : 'text-fg2 hover:bg-s2 hover:text-fg'}`}>
-      {on && <motion.i layoutId="rail" className="absolute -left-2.5 bottom-2.5 top-2.5 w-[2px] rounded-[2px] bg-sel" transition={{ duration: .2, ease: EASE }} />}
-      {children}
-      <span className="pointer-events-none absolute left-12 top-1/2 z-30 -translate-y-1/2 whitespace-nowrap rounded-r1 bg-sel px-[7px] py-[3px] text-[11.5px] font-medium text-selink opacity-0 transition-opacity delay-200 duration-[120ms] group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden>{label}</span>
+    <button onClick={onClick} aria-label={hint ?? label} title={hint} aria-current={on ? 'page' : undefined}
+      className={`relative flex h-[50px] w-[60px] flex-col items-center justify-center gap-[3px] rounded-r2 transition-colors duration-[120ms] ${on ? 'bg-s3 text-fg' : 'text-fg2 hover:bg-s2 hover:text-fg'}`}>
+      {on && <motion.i layoutId="rail" className="absolute -left-1.5 bottom-3 top-3 w-[2px] rounded-[2px] bg-sel" transition={{ duration: .2, ease: EASE }} />}
+      <span className="grid h-5 place-items-center" aria-hidden>{children}</span>
+      <span className="text-[10.5px] font-medium leading-none" aria-hidden>{label}</span>
     </button>
   )
 }
@@ -317,10 +319,16 @@ function PhoneShell({ route, go, navActive, openCmd, openSettings, children, pan
   useEffect(() => { const f = () => setH(innerHeight); addEventListener('resize', f); return () => removeEventListener('resize', f) }, [])
   const top = 60, bar = 64, sheetH = H - top - bar
   const snaps = [0, sheetH * .45, sheetH - 132]
-  const y = useMotionValue(snaps[1])
+  const y = useMotionValue(snaps[route.v === 'map' ? 2 : route.v === 'theatre' || route.v === 'base' ? 1 : 0])
   const controls = useDragControls()
   const snapTo = (i: number) => reducedMotion() ? y.set(snaps[i]) : animate(y, snaps[i], { duration: .22, ease: EASE })
-  useEffect(() => { if (route.v === 'map') snapTo(2); else if (y.get() > snaps[1] + 10) snapTo(1) }, [route])
+  /* where the sheet rests for each view: the map gets the screen, a theatre or base shares it, the brief and the pages read full
+     height with a strip at the top that opens the map */
+  const rest = route.v === 'map' ? 2 : route.v === 'theatre' || route.v === 'base' ? 1 : 0
+  const [at, setAt] = useState(rest)
+  useEffect(() => y.on('change', v => setAt(snaps.reduce((b, s, k) => Math.abs(s - v) < Math.abs(snaps[b] - v) ? k : b, 0))), [H])
+  useEffect(() => { snapTo(rest) }, [route.v, (route as { id?: string }).id])
+  const mapped = route.v !== 'signals' && route.v !== 'signal' && route.v !== 'record' && route.v !== 'ground' && route.v !== 'glossary'
   useEffect(() => {   // a fire picked in a list, or a card opened on the map: lower the sheet so the map shows it
     const f = () => snapTo(2)
     addEventListener('ww-focus', f); addEventListener('ww-peek', f)
@@ -341,7 +349,8 @@ function PhoneShell({ route, go, navActive, openCmd, openSettings, children, pan
       <motion.section style={{ y, height: sheetH, top }} drag="y" dragListener={false} dragControls={controls} dragConstraints={{ top: 0, bottom: snaps[2] }} dragElastic={.08}
         onDragEnd={(_, i) => { const p = y.get() + i.velocity.y * .18; let best = 0; snaps.forEach((s, k) => { if (Math.abs(s - p) < Math.abs(snaps[best] - p)) best = k }); snapTo(best) }}
         className="absolute inset-x-0 z-20 flex flex-col overflow-hidden rounded-t-[18px] border border-b-0 border-line bg-s1 shadow-[0_-12px_40px_-12px_rgba(0,0,0,.5)]">
-        <button type="button" aria-label="Move the panel up or down" onPointerDown={e => controls.start(e)} onClick={step} className="relative flex h-6 shrink-0 cursor-grab touch-none items-start justify-center pt-2.5 after:absolute after:inset-x-0 after:-bottom-5 after:top-0 after:content-['']"><i className="h-1 w-10 rounded-full bg-line2" /></button>
+        <button type="button" aria-label="Move the panel up or down" onPointerDown={e => controls.start(e)} onClick={step} className={`relative flex ${mapped && at === 0 ? 'h-10' : 'h-6'} shrink-0 cursor-grab touch-none items-start justify-center pt-2.5 after:absolute after:inset-x-0 after:-bottom-5 after:top-0 after:content-['']`}><i className="h-1 w-10 rounded-full bg-line2" /></button>
+        {mapped && at === 0 && <button type="button" onClick={() => snapTo(2)} className="absolute right-3 top-[7px] z-10 flex h-7 items-center gap-1.5 rounded-full border border-line px-2.5 text-[11.5px] font-medium leading-none text-fg2 transition-colors duration-[120ms] hover:text-fg"><Globe size={13} strokeWidth={1.7} aria-hidden />Open map</button>}
         <div ref={panelRef} data-scroll className="scroll-thin min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-6">{children}</div>
       </motion.section>
       <nav aria-label="Pages" className="absolute inset-x-0 bottom-0 z-30 flex h-16 border-t border-line bg-bg px-2" style={{ paddingBottom: 'env(safe-area-inset-bottom,0px)' }}>
@@ -353,5 +362,18 @@ function PhoneShell({ route, go, navActive, openCmd, openSettings, children, pan
         ))}
       </nav>
     </>
+  )
+}
+
+/* a single line under the dispatch on the first visit, pointing to how to read the page; gone for good once closed or followed */
+function FirstVisit({ go }: { go: (r: Route) => void }) {
+  const [on, setOn] = useState(() => { try { return !localStorage.getItem('ww-hinted') } catch { return false } })
+  if (!on) return null
+  const done = () => { try { localStorage.setItem('ww-hinted', '1') } catch { /* private mode */ } setOn(false) }
+  return (
+    <p className="mx-3.5 mb-1.5 flex min-h-9 items-center gap-2 rounded-r2 border border-line px-3 text-[12.5px] text-fg2">
+      <span className="min-w-0 flex-1">New here? <button onClick={() => { done(); go({ v: 'glossary', term: 'read' }) }} className="lnk text-fg">How to read WarWatch</button><span className="max-[899px]:hidden">, or press <kbd className="rounded-[3px] border border-line2 px-1 font-mono text-[10.5px]">?</kbd> any time</span></span>
+      <button onClick={done} aria-label="Close the tip" className="-mr-1.5 grid h-7 w-7 shrink-0 place-items-center rounded-r1 text-fg3 hover:bg-s2 hover:text-fg"><X size={14} /></button>
+    </p>
   )
 }

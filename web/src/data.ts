@@ -4,7 +4,12 @@ import { useQuery } from '@tanstack/react-query'
 export type Level = 'Normal' | 'Watch' | 'Elevated' | 'Critical'
 export type LonLat = [number, number]
 export type Route = { v: 'brief' } | { v: 'theatre'; id: string; tab?: string } | { v: 'base'; id: string } | { v: 'signal'; id: string } | { v: 'signals'; th?: string } | { v: 'record' } | { v: 'map' } | { v: 'ground' } | { v: 'glossary'; term?: string } | { v: 'wall' }
-export type FeedItem = { date: string; kind: 'tell' | 'base' | 'fire' | 'official'; theatre: string; title: string; detail: string; to: { view: string; id: string; tab?: string } }
+/* tier (added November 2026, contract.tier): 'key' for the few changes worth a notification, 'routine' for the rest; older data has
+   none, and then a tripwire is key and everything else routine. kind 'level' (added November 2026) is a build-up level change. */
+export type FeedItem = { date: string; kind: 'tell' | 'base' | 'fire' | 'official' | 'level'; theatre: string; title: string; detail: string; to: { view: string; id: string; tab?: string }; tier?: 'key' | 'routine' }
+export const isKey = (f: FeedItem) => f.tier ? f.tier === 'key' : f.kind === 'tell' || f.kind === 'level'
+/* the "Now" answer, set by hand with the context line (config.CONTEXT, added November 2026) */
+export type Now = 'war' | 'strikes' | 'tension'
 export type BriefTheatre = {
   id: string; name: string; region: string; level: Level; score: number | null; standingRisk: number | null; tellsOn: number; tellsTotal: number; strong: number
   context: string | null; contextChecked: string | null; spillover: boolean; parents: string[]; center: LonLat | null; groups: Record<Group, number | null>
@@ -17,6 +22,9 @@ export type BriefTheatre = {
   wires?: [string, string[]][]
   /* Added November 2026: the ids of the tripwires lit now, so a notification is sent when one turns on, not every day it stays lit */
   tellsLit?: string[]
+  /* Added November 2026: what is happening now (set by hand), the reading over the last 30 days rebuilt from the group histories
+     (contract.trend; the last value is on trendEnd) and its change over 7 days. Older data has none: the board then shows no change. */
+  now?: Now | null; trend?: (number | null)[]; trendEnd?: string | null; change7?: number | null
 }
 export type Brief = {
   generated: string; demo: boolean; eventsThrough: string; headline: string
@@ -54,7 +62,14 @@ export type Theatre = {
   events: { date: string; kind: string; text: string }[]
   aircraft48h?: Air48 | null
   lines?: Lines | null
+  /* Added November 2026 (all optional): the Now answer, the rebuilt 30-day reading, each group's share of the reading, the page's
+     question with its answer, and the context numbers of the Situation panel */
+  now?: Now | null; trend?: [string, number | null][]; shares?: Partial<Record<Group, number>> | null
+  question?: Question | null; situation?: ContextNumber[]
 }
+export type Usual = { median: number; low: number; high: number; days: number }
+export type Question = { q: string; word: string; say: string; series: string; label: string; url: string; last: string; value: number; usual: Usual | null }
+export type ContextNumber = { id: string; label: string; value: number; last: string; change7: number | null; usual: Usual | null; source: string; licence: string; url: string; untested: boolean }
 export type Signal = { id: string; label: string; group: Group; sub: string; theatre: string; z: number | null; status: string; stale: string; last: string; lagging: boolean; kind: string; why: string; url: string; event: string | null; untested?: boolean; spark: (number | null)[] }
 export type Signals = { generated: string; groups: Record<Group, string>; signals: Signal[] }
 /* west, south, east, north: the ground a satellite chip covers, so the map can lay it in place */
@@ -146,12 +161,17 @@ export const baseState = (s: string) => BASE_STATE[s] || [s, 'var(--fg3)']
 export const emergency = (a: MapAircraft) => a.emergency || ['7500', '7600', '7700'].includes(a.sq || '')
 /* heat follows the fire score everywhere (map, lists, cards): orange from 70, faint orange from 40, grey below */
 export const HEAT = { faint: 40, strong: 70 }
-export const heatColour = (score: number) => score >= HEAT.strong ? 'var(--z3)' : score >= HEAT.faint ? 'color-mix(in oklab, var(--z3) 45%, var(--fg3))' : 'var(--fg3)'
+/* natural heat (a volcano) is drawn grey whatever its score: it is not a sign of anything people did */
+export const NATURAL = new Set(['volc'])
+export const heatColour = (score: number, cls?: string) => cls && NATURAL.has(cls) ? 'var(--fg3)' : score >= HEAT.strong ? 'var(--z3)' : score >= HEAT.faint ? 'color-mix(in oklab, var(--z3) 45%, var(--fg3))' : 'var(--fg3)'
 
 /* Words and colours (text colours: the level word and base state are read as text) */
 export const LEVELS: Level[] = ['Normal', 'Watch', 'Elevated', 'Critical']
 export const levelVar = (l: string) => l === 'Critical' ? 'var(--crit)' : l === 'Elevated' ? 'var(--z3-text)' : l === 'Watch' ? 'var(--z2-text)' : 'var(--fg3)'
-export const levelWord = (l: string) => l === 'Normal' ? 'Quiet' : l
+export const levelWord = (l: string) => l === 'Normal' ? 'Steady' : l
+export const NOW_WORD: Record<Now, string> = { war: 'War', strikes: 'Strikes', tension: 'Tension' }
+/* the 7-day change of a reading, signed, to a whole number; "0" when it held */
+export const fmtChange = (d: number | null | undefined) => d == null ? '–' : Math.round(d) === 0 ? '0' : (d > 0 ? '+' : '−') + Math.abs(Math.round(d))
 /* "South Asia (India-Pakistan)" reads "South Asia" on the board, the map and in sentences */
 export const short = (name: string) => name.replace(/\s*\(.*\)/, '')
 /* a signal group's cell on the board: below 1 SD plain, then three steps of warmth */
@@ -190,9 +210,9 @@ export const countWord = (n: number) => NUM[n] ?? String(n)
 export function summary(t: Theatre, modelActive: boolean): string {
   const s = t.score
   let a: string
-  if (s == null) a = 'There is no unusual-readings number for this theatre today.'
-  else if (!modelActive && s < 50) { const gap = 50 - wholeScore(s); a = `Unusual readings stand at ${wholeScore(s)} of 100, ${gap < 10 ? `${gap} ${gap === 1 ? 'point' : 'points'} below Watch` : 'far below Watch'}.` }
-  else a = `Unusual readings stand at ${wholeScore(s)} of 100.`
+  if (s == null) a = 'There is no reading for this theatre today.'
+  else if (!modelActive && s < 50) { const gap = 50 - wholeScore(s); a = `The reading stands at ${wholeScore(s)} of 100, ${gap < 10 ? `${gap} ${gap === 1 ? 'point' : 'points'} below Watch` : 'far below Watch'}.` }
+  else a = `The reading stands at ${wholeScore(s)} of 100.`
   const on = t.tells.filter(x => x.on)
   const b = on.length ? ` ${countWord(on.length)} ${on.length === 1 ? 'tripwire' : 'tripwires'} fired this week: ${on.map(x => wireName(x).toLowerCase()).join(', ')}.` : ' No tripwire has fired this week.'
   const top = GROUPS.map(g => [g, t.groups[g]?.z ?? 0] as const).sort((x, y) => y[1] - x[1])[0]

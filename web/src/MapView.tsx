@@ -1,3 +1,4 @@
+import { gradeAll, gradeClass, GRADE_WORD, GRADE_SAYS } from './grade'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import { Protocol, PMTiles } from 'pmtiles'
@@ -6,12 +7,12 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import { feature } from 'topojson-client'
 import type { FeatureCollection } from 'geojson'
 import coarse from 'world-atlas/countries-110m.json'
-import { levelVar, levelWord, short, asset, baseState, shortDate, useBase, emergency, heatColour, HEAT, type Brief, type LiveMap, type LonLat, type Route, type MapBase, type MapFire, type MapAircraft, type MapShip, type MapWarning, type MapAirport, type MapDiversion, type MapDark, type MapLoiter, type MapIncident, wholeScore } from './data'
+import { levelVar, levelWord, short, asset, baseState, shortDate, useBase, emergency, heatColour, HEAT, NATURAL, type Brief, type LiveMap, type LonLat, type Route, type MapBase, type MapFire, type MapAircraft, type MapShip, type MapWarning, type MapAirport, type MapDiversion, type MapDark, type MapLoiter, type MapIncident, wholeScore } from './data'
 import { fireImages, baseImages, copernicusUrl, worldviewUrl, type SatImage, type Focus } from './sat'
 import { baseWord, fireWord } from './ground'
 import { reducedMotion as reduced, usePrefs, fmtAlt, fmtSpeed, useDialogFocus } from './settings'
 import { motion, AnimatePresence } from 'motion/react'
-import { LAYERS, type Layer, type Layers } from './layers'
+import { LAYERS, LAYER_GROUPS, type Layer, type Layers } from './layers'
 // the map's own styles load with the map, not with the first paint
 import 'maplibre-gl/dist/maplibre-gl.css'
 
@@ -270,7 +271,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
     const pt = (ll: LonLat, x: object, extra: object = {}) => ({ type: 'Feature' as const, geometry: { type: 'Point' as const, coordinates: ll }, properties: { json: JSON.stringify(x), ...extra } })
     const fc = (f: any[]) => ({ type: 'FeatureCollection' as const, features: f })
     const set = (id: string, d: any) => (m.getSource(id) as maplibregl.GeoJSONSource | undefined)?.setData(d)
-    set('fires', fc(live.fires.filter(f => !day || f.date === day).map(f => pt(f.ll, f, { mw: f.mw, s: f.score }))))
+    set('fires', fc(live.fires.filter(f => !day || f.date === day).map(f => pt(f.ll, f, { mw: f.mw, s: NATURAL.has(f.class) ? 0 : f.score }))))
     set('bases', fc(live.bases.filter(b => !day || b.last === day).map(b => pt(b.ll, b, { id: b.id, st: b.state, hi: ['out', 'in', 'changed'].includes(b.state) ? 1 : 0 }))))
     set('aircraft', fc(day ? [] : [...live.aircraft, ...live.squawks].map(a => pt(a.ll, a, { trk: a.trk ?? 0, em: emergency(a) ? 1 : 0, key: ['tanker', 'isr', 'lift'].includes(a.class) ? 1 : 0 }))))
     set('ships', fc(day ? [] : live.ships.map(x => pt(x.ll, x, { big: x.k && x.k !== 'navy' ? 1 : 0 }))))
@@ -409,7 +410,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
         {brief.theatres.filter(t => t.center).map(t => { const on = sel === t.id; return (
           <button key={t.id} data-kind="theatre" data-id={t.id} data-prio={100 + (RANK[t.level] || 0) * 20 + t.tellsOn * 4 + (t.spillover ? 0 : 2)} data-lon={t.center![0]} data-lat={t.center![1]}
             onClick={() => onPick({ v: 'theatre', id: t.id })} aria-current={on ? 'true' : undefined}
-            aria-label={`${t.name}, ${levelWord(t.level).toLowerCase()}${t.score != null ? `, unusual readings ${wholeScore(t.score)}` : ''}${t.tellsOn ? `, ${t.tellsOn} ${t.tellsOn === 1 ? 'tripwire' : 'tripwires'} fired` : ''}`}
+            aria-label={`${t.name}, ${levelWord(t.level).toLowerCase()}${t.score != null ? `, reading ${wholeScore(t.score)}` : ''}${t.tellsOn ? `, ${t.tellsOn} ${t.tellsOn === 1 ? 'tripwire' : 'tripwires'} fired` : ''}`}
             className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full transition-opacity duration-200 max-[899px]:after:absolute max-[899px]:after:inset-x-0 max-[899px]:after:-inset-y-[11px] max-[899px]:after:content-['']" style={{ opacity: 0 }}>
             <span className={`flex h-[calc(22px*var(--lbl))] items-center gap-1.5 whitespace-nowrap rounded-full border px-2 text-[calc(11.5px*var(--lbl))] font-medium backdrop-blur-[6px] transition-colors duration-150 ${on ? 'border-sel bg-sel text-selink' : 'border-line2 bg-[color-mix(in_oklab,var(--bg)_82%,transparent)] text-fg hover:border-fg2'}`}
               style={!on && t.level !== 'Normal' ? { borderColor: levelVar(t.level) } : undefined}>
@@ -429,12 +430,12 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
       </div>
       {tip && <div className="pointer-events-none absolute z-10 max-w-[280px] truncate rounded-r1 border border-line2 bg-[color-mix(in_oklab,var(--s1)_95%,transparent)] px-2 py-1 text-[12px] text-fg shadow-[var(--shadow)]" style={{ left: tip.x + 14, top: tip.y + 14 }}>{tip.text}</div>}
       {wide && live && !wall && <div ref={dock} role="group" aria-label="Map layers and legend" className="absolute inset-x-3.5 top-3.5 z-10 flex flex-wrap content-start gap-1">
-        {LAYERS.filter(([k]) => count[k] > 0).map(([k, name, , hint]) => (
-          <button key={k} aria-pressed={layers[k]} onClick={() => toggle(k)} aria-label={`${name}, ${count[k].toLocaleString('en')} on the map`} title={`${layers[k] ? 'Hide' : 'Show'}: ${hint} (${count[k].toLocaleString('en')})`}
-            className={`inline-flex h-[26px] items-center gap-1 rounded-full pl-1.5 pr-2 text-[11.5px] transition-colors duration-[120ms] hover:border-line2 hover:text-fg ${glass} ${layers[k] ? 'text-fg2' : 'text-fg3'}`}>
-            <Swatch k={k} off={!layers[k]} />{name}
-          </button>))}
-        {layers.bases && count.bases > 0 && <span className={`inline-flex h-[26px] items-center gap-1.5 rounded-full border-dashed px-2 text-[11.5px] text-fg3 ${glass}`}>
+        <LayerPanel layers={layers} toggle={toggle} count={count} />
+        {/* the legend: only the marks now drawn, as plain labels (the switches live in the panel) */}
+        <span className={`inline-flex h-[28px] items-center gap-2.5 rounded-full px-2.5 text-[11.5px] text-fg2 ${glass}`} aria-label="Legend">
+          {LAYERS.filter(([k]) => count[k] > 0 && layers[k]).map(([k, name]) => <span key={k} className="inline-flex items-center gap-1"><Swatch k={k} off={false} />{name}</span>)}
+        </span>
+        {layers.bases && count.bases > 0 && <span className={`inline-flex h-[28px] items-center gap-1.5 rounded-full px-2.5 text-[11.5px] text-fg2 ${glass}`}>
           <i className="h-[7px] w-[7px] rotate-45 bg-z2 ring-1 ring-black/70" aria-hidden />one pass differed<i className="ml-1 h-[7px] w-[7px] rotate-45 bg-z3 ring-1 ring-black/70" aria-hidden />emptier or fuller
         </span>}
       </div>}
@@ -447,7 +448,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
         <button aria-pressed={!shown} onClick={() => setImgKey('off')} className={`shrink-0 rounded-[6px] px-2 py-1 ${!shown ? 'bg-s3 text-fg' : 'text-fg3 hover:bg-s2 hover:text-fg'}`}>Off</button>
         {shown && <span className="num shrink-0 whitespace-nowrap px-1.5 font-mono text-[11px] text-fg3">{shortDate(shown.date)}</span>}
       </div>}
-      {peek && <PeekCard p={peek} cardRef={card} onClose={() => setPeek(null)} onPick={r => { setPeek(null); onPick(r) }} brief={brief} shown={shown} onShow={setImgKey} onEnlarge={setBig}
+      {peek && <PeekCard p={peek} live={live} cardRef={card} onClose={() => setPeek(null)} onPick={r => { setPeek(null); onPick(r) }} brief={brief} shown={shown} onShow={setImgKey} onEnlarge={setBig}
         style={{ left: wide ? 14 : 8, bottom: cardBottom, maxWidth: wide ? 'min(360px, calc(100% - 72px))' : 'calc(100% - 16px)', maxHeight: `calc(100% - ${cardBottom + (wide ? top + 12 : 116)}px)` }} />}
       {big && <Lightbox img={big} onClose={() => setBig(null)} />}
       {/* bottom right, above the timeline, so the legend chips can take the map's full width */}
@@ -462,6 +463,52 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
 }
 
 /* below tablet width: the layer switches as a sheet from the foot of the screen, each row a switch tall enough for a thumb */
+/* the layer switches, grouped (layers.ts LAYER_GROUPS). Each row has a fixed height and only its colours change, so nothing moves
+   under the pointer. Used by the phone sheet and the desktop panel alike. */
+function LayerList({ layers, toggle, count, dense = false }: { layers: Layers; toggle: (k: Layer) => void; count: Record<Layer, number>; dense?: boolean }) {
+  const by = Object.fromEntries(LAYERS.map(l => [l[0], l]))
+  return <div className={dense ? 'grid gap-2.5' : 'grid gap-3 pb-1'}>
+    {LAYER_GROUPS.map(([g, ks]) => { const on = ks.filter(k => count[k] > 0); if (!on.length) return null; return (
+      <section key={g} aria-label={g}>
+        <h3 className="eyebrow mb-1 !text-fg3">{g}</h3>
+        <ul>{on.map(k => { const [, name, , hint] = by[k]; return (
+          <li key={k}>
+            <button role="switch" aria-checked={layers[k]} onClick={() => toggle(k)} title={hint}
+              className={`flex w-full items-center gap-2.5 rounded-r1 text-left transition-colors duration-[120ms] hover:bg-s2 ${dense ? 'h-9 px-1.5' : 'min-h-12 py-1.5'}`}>
+              <Swatch k={k} off={!layers[k]} />
+              <span className="min-w-0 flex-1"><span className={`block leading-[1.2] ${dense ? 'text-[12.5px]' : 'text-[14px]'} ${layers[k] ? 'text-fg' : 'text-fg2'}`}>{name}</span>{!dense && <span className="block truncate text-[11.5px] text-fg2">{hint}</span>}</span>
+              <span className="num shrink-0 text-[11.5px] text-fg2">{count[k].toLocaleString('en')}</span>
+              <span aria-hidden className={`relative h-5 w-[34px] shrink-0 rounded-full border transition-colors duration-[150ms] ${layers[k] ? 'border-sel bg-sel' : 'border-line2 bg-s3'}`}>
+                <i className={`absolute top-[2px] h-3.5 w-3.5 rounded-full transition-[left] duration-[150ms] ${layers[k] ? 'left-[16px] bg-selink' : 'left-[2px] bg-fg2'}`} /></span>
+            </button>
+          </li>) })}</ul>
+      </section>) })}
+  </div>
+}
+
+/* the desktop layer panel: one button that opens the grouped switches; Escape or a click outside closes it */
+function LayerPanel({ layers, toggle, count }: { layers: Layers; toggle: (k: Layer) => void; count: Record<Layer, number> }) {
+  const [open, setOpen] = useState(false)
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false) } }
+    const c = (e: PointerEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false) }
+    addEventListener('keydown', k, true); addEventListener('pointerdown', c, true)
+    return () => { removeEventListener('keydown', k, true); removeEventListener('pointerdown', c, true) }
+  }, [open])
+  const avail = LAYERS.filter(([k]) => count[k] > 0), shownN = avail.filter(([k]) => layers[k]).length
+  return <div ref={box} className="relative">
+    <button onClick={() => setOpen(o => !o)} aria-expanded={open} aria-haspopup="dialog" className={`inline-flex h-[28px] items-center gap-1.5 rounded-full pl-2 pr-2.5 text-[12px] font-medium text-fg transition-colors duration-[120ms] hover:border-line2 ${glass}`}>
+      <LayersIcon size={14} aria-hidden />Layers<span className="num font-normal text-fg2">{shownN} of {avail.length}</span>
+    </button>
+    <AnimatePresence>{open && <motion.div role="dialog" aria-label="Map layers" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: .14, ease: [.2, .8, .2, 1] }}
+      className="absolute left-0 top-[34px] z-20 w-[280px] rounded-r3 border border-line2 bg-s1 p-3 shadow-[var(--shadow)]">
+      <LayerList layers={layers} toggle={toggle} count={count} dense />
+    </motion.div>}</AnimatePresence>
+  </div>
+}
+
 function LayerSheet({ open, onClose, layers, toggle, count }: { open: boolean; onClose: () => void; layers: Layers; toggle: (k: Layer) => void; count: Record<Layer, number> }) {
   const box = useRef<HTMLDivElement>(null), close = useRef<HTMLButtonElement>(null)
   useDialogFocus(open, box)
@@ -478,16 +525,7 @@ function LayerSheet({ open, onClose, layers, toggle, count }: { open: boolean; o
           className="w-full rounded-t-2xl border border-b-0 border-line2 bg-s1 px-4 pt-2 shadow-[var(--shadow)]" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
           <div className="flex items-center justify-between"><h2 id="lay-h" className="text-[15px] font-semibold">Map layers</h2>
             <button ref={close} onClick={onClose} aria-label="Close map layers" className="-mr-2 grid h-11 w-11 place-items-center rounded-r2 text-fg2"><X size={17} /></button></div>
-          <ul className="pb-1">{LAYERS.filter(([k]) => count[k] > 0).map(([k, name, , hint]) => (
-            <li key={k} className="border-t border-line first:border-0">
-              <button role="switch" aria-checked={layers[k]} onClick={() => toggle(k)} className="flex min-h-12 w-full items-center gap-3 py-1.5 text-left">
-                <Swatch k={k} off={!layers[k]} />
-                <span className="min-w-0 flex-1"><span className="block text-[14px] text-fg">{name} <span className="num text-[12px] text-fg2">{count[k].toLocaleString('en')}</span></span><span className="block truncate text-[11.5px] text-fg2">{hint}</span></span>
-                <span aria-hidden className={`relative h-6 w-10 shrink-0 rounded-full border transition-colors duration-[150ms] ${layers[k] ? 'border-sel bg-sel' : 'border-line2 bg-s3'}`}>
-                  <i className={`absolute top-[3px] h-4 w-4 rounded-full transition-[left] duration-[150ms] ${layers[k] ? 'left-[19px] bg-selink' : 'left-[3px] bg-fg2'}`} /></span>
-              </button>
-            </li>))}
-          </ul>
+          <LayerList layers={layers} toggle={toggle} count={count} />
         </motion.div>
       </motion.div>}
     </AnimatePresence>
@@ -627,7 +665,7 @@ function paintBasemap(m: maplibregl.Map) {
 }
 
 /* ---------------------------------------------------------------- peek cards */
-function PeekCard({ p, cardRef, onClose, onPick, brief, style, shown, onShow, onEnlarge }: { p: Peek; cardRef: React.RefObject<HTMLDivElement | null>; onClose: () => void; onPick: (r: Route) => void; brief: Brief
+function PeekCard({ p, live, cardRef, onClose, onPick, brief, style, shown, onShow, onEnlarge }: { p: Peek; live?: LiveMap; cardRef: React.RefObject<HTMLDivElement | null>; onClose: () => void; onPick: (r: Route) => void; brief: Brief
   style: React.CSSProperties; shown: SatImage | null; onShow: (key: string) => void; onEnlarge: (i: SatImage) => void }) {
   const name = (id?: string) => brief.theatres.find(t => t.id === id)?.name || ''
   const { units } = usePrefs().prefs
@@ -640,7 +678,7 @@ function PeekCard({ p, cardRef, onClose, onPick, brief, style, shown, onShow, on
     action = ['Open base', { v: 'base', id: b.id }]
   } else if (p.kind === 'fire') {
     const f = p.x, imgs = fireImages(f), v = f.images?.v
-    icon = <Flame size={15} style={{ color: heatColour(f.score) }} />; title = f.site ? `Heat near ${f.site}` : fireWord(f.class); sub = `${Math.round(f.mw)} MW · ${shortDate(f.date)}${f.time ? ' ' + f.time.slice(11, 16) + ' UTC' : ''}${f.night ? ', night' : ''} · NASA VIIRS`
+    icon = <Flame size={15} style={{ color: heatColour(f.score, f.class) }} />; title = f.site ? `Heat near ${f.site}` : fireWord(f.class); sub = `${Math.round(f.mw)} MW · ${shortDate(f.date)}${f.time ? ' ' + f.time.slice(11, 16) + ' UTC' : ''}${f.night ? ', night' : ''} · NASA VIIRS`
     const link = 'inline-flex items-center gap-1 rounded-r1 border border-line px-2 py-1 text-[11.5px] text-fg2 hover:bg-s2 hover:text-fg'
     body = <>
       <p className={`${row} line-clamp-3`}>{f.why || fireWord(f.class)}</p>
@@ -711,7 +749,8 @@ function PeekCard({ p, cardRef, onClose, onPick, brief, style, shown, onShow, on
     const x = p.x
     icon = <Newspaper size={15} className="text-happened" />; title = (x.t || 'Reported incident').replace(/ - [^-]*$/, ''); sub = [x.loc, x.d && shortDate(x.d.slice(0, 10))].filter(Boolean).join(' · ')
     body = <>
-      <p className={row}>Reported in the news{x.src ? ` by ${x.src.replace(/^https?:\/\//, '').replace(/\/$/, '')}` : ''}. Not verified by WarWatch.</p>
+      {(() => { const g = (live ? gradeAll(live.incidents).get(x) : null) || 'single'; return <p className={`${row} flex items-start gap-2`}><span className={gradeClass(g)}>{GRADE_WORD[g]}</span><span>{GRADE_SAYS[g]}</span></p> })()}
+      <p className={row}>Reported{x.src ? ` by ${x.src.replace(/^https?:\/\//, '').replace(/\/$/, '')}` : ' in the news'}. Not checked by WarWatch.</p>
       {x.u && <a className="mt-2 inline-flex items-center gap-1 rounded-r1 border border-line px-2 py-1 text-[11.5px] text-fg2 hover:bg-s2 hover:text-fg" href={x.u} target="_blank" rel="noreferrer">Read the report <ExternalLink size={11} /></a>}
     </>
     if (x.th && name(x.th)) action = [`Open ${name(x.th)}`, { v: 'theatre', id: x.th, tab: 'ground' }]

@@ -87,7 +87,7 @@ export default function Wall({ brief, live }: { brief: Brief; live?: LiveMap }) 
         <section aria-label="Theatres closest to Watch" className="mt-[1.3em] min-h-0">
           <h2 className={`mb-[.4em] ${LABEL} font-medium uppercase tracking-[.08em] text-fg2`}>Closest to Watch</h2>
           <ol>{rows.map(t => <WallRow key={t.id} t={t} on={wide && t.id === now} />)}</ol>
-          <p className={`mt-[.5em] ${SMALL} leading-[1.35] text-fg2`}>Unusual readings, 0 to 100, grey: not a chance of war. Five cells: Logistics, Markets, People, News, Physical.</p>
+          <p className={`mt-[.5em] ${SMALL} leading-[1.35] text-fg2`}>Reading, 0 to 100, grey: not a chance of war. Five cells: Logistics, Markets, People, News, Physical.</p>
         </section>
 
         <section aria-label="Tripwires this week" className="mt-[1.2em] min-h-0 overflow-hidden">
@@ -126,7 +126,7 @@ function WallRow({ t, on }: { t: BriefTheatre; on: boolean }) {
   const s = t.score == null ? null : Math.max(0, Math.min(100, t.score))
   return (
     <li className={`grid grid-cols-[minmax(0,1fr)_5.2em_7em_2em] items-center gap-[.8em] border-t border-line py-[.42em] ${on ? 'bg-s2' : ''}`}
-      aria-label={`${t.name}, ${levelWord(t.level).toLowerCase()}, unusual readings ${s == null ? 'not available' : wholeScore(s)}${t.tellsOn ? `, ${t.tellsOn} ${t.tellsOn === 1 ? 'tripwire' : 'tripwires'} this week` : ''}`}>
+      aria-label={`${t.name}, ${levelWord(t.level).toLowerCase()}, reading ${s == null ? 'not available' : wholeScore(s)}${t.tellsOn ? `, ${t.tellsOn} ${t.tellsOn === 1 ? 'tripwire' : 'tripwires'} this week` : ''}`}>
       <span className="flex min-w-0 items-baseline gap-[.5em]" aria-hidden>
         <b className="truncate text-[1.15em] font-medium">{short(t.name)}</b>
         {t.level !== 'Normal' && <span className={`shrink-0 ${LABEL} font-medium`} style={{ color: t.level === 'Critical' ? 'var(--crit)' : t.level === 'Elevated' ? 'var(--z3-text)' : 'var(--z2-text)' }}>{t.level}</span>}

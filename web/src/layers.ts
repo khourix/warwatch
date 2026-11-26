@@ -15,6 +15,8 @@ export const LAYERS: [Layer, string, string[], string][] = [
   ['airports', 'Airports', ['airports'], 'Theatre airports, ringed when departures fell or flights were diverted away'],
   ['warnings', 'Sea warnings', ['warnings'], 'Navigational warnings at sea'],
 ]
+/* the panel groups the layers by what they are, so the list reads as places, then what happened, then what moved, then notices */
+export const LAYER_GROUPS: [string, Layer[]][] = [['Sites', ['bases', 'airports']], ['Activity', ['fires', 'incidents']], ['Movement', ['aircraft', 'ships', 'dark']], ['Warnings', ['warnings']]]
 export type Layers = Record<Layer, boolean>
 const KEYS = LAYERS.map(l => l[0])
 export const DEFAULT_LAYERS: Layers = { bases: true, fires: true, aircraft: true, ships: true, incidents: true, dark: true, airports: false, warnings: false }

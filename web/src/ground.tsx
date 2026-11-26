@@ -1,10 +1,11 @@
+import { gradeAll, gradeClass, GRADE_WORD, GRADE_SAYS } from './grade'
 import { useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { Satellite, Flame, Plane, Ship, TriangleAlert, ExternalLink, ImageIcon } from 'lucide-react'
 import { focusOnMap } from './sat'
 import { useBase, asset, baseState, shortDate, short, ago, parseGen, emergency, heatColour,
   type Brief, type LiveMap, type Route, type BasePart, type BaseFile, type Pic, type MapBase, type Theatre, type AirKey, type MapAirport } from './data'
-import { Spark, Lnk, Tag, Facts, Block, Note, Skeleton, Failed, listAnim, useWidth } from './ui'
+import { Spark, Lnk, Tag, Facts, Block, Note, Skeleton, Failed, listAnim, useWidth, Explain } from './ui'
 import { Crumbs } from './views'
 import { usePrefs, fmtAlt } from './settings'
 
@@ -29,6 +30,7 @@ export function GroundTab({ id, t, live, brief, go }: { id: string; t: Theatre; 
   if (!live) return <Skeleton lines={6} />
   const bases = live.bases.filter(b => b.theatres.includes(id)).sort((a, b) => rankBase(b) - rankBase(a) || a.name.localeCompare(b.name))
   const news = live.incidents.filter(x => x.th === id && x.t).sort((a, b) => (b.d || '').localeCompare(a.d || ''))
+  const grades = gradeAll(live.incidents)
   const fires = live.fires.filter(f => f.theatre === id).sort((a, b) => b.score - a.score || b.mw - a.mw)
   const ships = live.ships.filter(s => s.th === id)
   const warn = live.warnings.filter(w => w.theatre === id)
@@ -39,13 +41,13 @@ export function GroundTab({ id, t, live, brief, go }: { id: string; t: Theatre; 
         : <ul>{shown.map((b, i) => <li key={b.id} className="border-t border-line first:border-0"><BaseRow b={b} i={i} go={go} /></li>)}</ul>}
       {bases.length > 8 && <button onClick={() => setAll(!all)} aria-expanded={all} className="lnk mt-2 text-[12px]">{all ? 'Show the first 8' : `Show all ${bases.length} bases`}</button>}
     </Block>
-    {news.length > 0 && <Block title="Reported on the ground" aside="news reports, unverified">
+    {news.length > 0 && <Block title="Reported on the ground" aside={<><Explain k="evidence">graded by source</Explain>, not checked by WarWatch</>}>
       <ol className="relative ml-[5px] border-l border-line2 pl-4">
         {news.slice(0, 8).map((x, i) => (
           <li key={i} className="relative pb-3 last:pb-0">
-            <i aria-hidden className="absolute -left-[20.5px] top-[4px] h-[7px] w-[7px] rounded-full border-[1.5px] border-fg3 bg-s1" />
-            <p className="font-mono text-[10.5px] leading-none text-fg3">{[x.d && shortDate(x.d.slice(0, 10)), x.loc, x.src].filter(Boolean).join(' · ')}</p>
-            <p className="mt-0.5 text-[12.5px] leading-[1.35] text-fg">{x.u ? <a href={x.u} target="_blank" rel="noreferrer" className="hover:underline hover:decoration-line2 hover:underline-offset-[3px]">{(x.t || '').replace(/ - [^-]*$/, '')}<span className="sr-only"> (opens the report)</span></a> : (x.t || '').replace(/ - [^-]*$/, '')}</p>
+            <i aria-hidden className="absolute -left-[20.5px] top-[6px] h-[7px] w-[7px] rounded-full border-[1.5px] border-fg3 bg-s1" />
+            <p className="flex min-w-0 items-center gap-2 text-[11px] leading-none text-fg3">{(() => { const g = grades.get(x) || 'single'; return <span className={gradeClass(g)} title={GRADE_SAYS[g]}>{GRADE_WORD[g]}</span> })()}<span className="min-w-0 truncate">{[x.d && shortDate(x.d.slice(0, 10)), x.loc, x.src].filter(Boolean).join(' · ')}</span></p>
+            <p className="mt-1 text-[12.5px] leading-[1.35] text-fg">{x.u ? <a href={x.u} target="_blank" rel="noreferrer" className="hover:underline hover:decoration-line2 hover:underline-offset-[3px]">{(x.t || '').replace(/ - [^-]*$/, '')}<span className="sr-only"> (opens the report)</span></a> : (x.t || '').replace(/ - [^-]*$/, '')}</p>
           </li>))}
       </ol>
     </Block>}
@@ -53,7 +55,7 @@ export function GroundTab({ id, t, live, brief, go }: { id: string; t: Theatre; 
     {fires.length > 0 && <Block title="Heat, last 48 hours" aside="NASA VIIRS">
       {fires.slice(0, 8).map((f, i) => (
         <motion.button key={i} {...listAnim(i)} onClick={() => focusOnMap({ kind: 'fire', x: f })} className="-mx-2 flex w-[calc(100%+16px)] gap-3 rounded-r2 px-2 py-1.5 text-left text-[12.5px] hover:bg-s2">
-          <Flame size={14} aria-hidden className="mt-0.5 shrink-0" style={{ color: heatColour(f.score) }} />
+          <Flame size={14} aria-hidden className="mt-0.5 shrink-0" style={{ color: heatColour(f.score, f.class) }} />
           <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 text-fg">{f.site ? `Near ${f.site}` : fireWord(f.class)}{f.images && <ImageIcon size={12} className="text-fg3" aria-label="with Sentinel-2 close-ups" />}</span><span className="line-clamp-2 text-[11.5px] text-fg3">{f.why || fireWord(f.class)}</span></span>
           <span className="num shrink-0 text-right text-[11.5px] text-fg3">{Math.round(f.mw)} MW<span className="block">{ago(now, f.date)}{f.night ? ', night' : ''}</span></span>
           <span className="sr-only">Show it on the map</span>
@@ -279,7 +281,7 @@ function BaseFull({ b, mb, crumbs, th, thName, go }: { b: BaseFile; mb?: MapBase
         {b.note && <p className="mt-1.5 text-[12px] leading-[1.5] text-fg3">{plainDates(b.note)}</p>}
       </Block>}
       <Note><b>What this does not say.</b> A change on radar is a reason to look, not proof. One pass far outside the usual range marks a base as changed; two passes in a row within a week, both far below or both far above it, mark it as far fewer or far more bright objects than usual.
-        {p && !p.tested ? ' This count is not yet tested against past events, so it carries no weight in the unusual readings.' : ''} Coordinates {coords(b.ll)}.</Note>
+        {p && !p.tested ? ' This count is not yet tested against past events, so it carries no weight in the reading.' : ''} Coordinates {coords(b.ll)}.</Note>
       <div className="flex flex-wrap gap-2 px-5 pb-6">
         <a href={`https://browser.dataspace.copernicus.eu/?zoom=14&lat=${b.ll[1]}&lng=${b.ll[0]}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-r2 border border-line px-3 py-1.5 text-[12.5px] text-fg2 hover:bg-s2">Copernicus Browser <ExternalLink size={12} aria-hidden /></a>
         {th && thName && <Lnk to={{ v: 'theatre', id: th, tab: 'ground' }} go={go} className="inline-flex items-center gap-1.5 rounded-r2 bg-sel px-3 py-1.5 text-[12.5px] font-medium text-selink">Open {thName}</Lnk>}

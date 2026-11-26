@@ -89,8 +89,8 @@ def classic(old, until):
 
 
 # the glossary's link preview; its terms are written once, in the app (web/src/glossary.ts)
-GLOSSARY = ("What WarWatch's words and numbers mean, in one plain sentence each: unusual readings, the Watch, Elevated and Critical "
-            "lines, tripwires, standing risk, SD, the five signal groups, bright objects on radar, burn scars, dark ships and loitering.")
+GLOSSARY = ("How to read WarWatch: the two answers each theatre gives (Now and build-up), what its words and numbers mean in one "
+            "plain sentence each, and where the data comes from.")
 # the wall view's link preview: Watch on a spare screen, for a room
 WALL = ("WarWatch on a spare screen: the theatres closest to Watch, the week's tripwires and how old the data is, in large type, "
         "with the globe moving between theatres. It updates itself.")
@@ -136,7 +136,7 @@ def build(site, dist, today=None, until=CLASSIC_UNTIL):
         pages[f"base/{b['id']}/"] = page(shell, f"base/{b['id']}/", f"{name} · WarWatch", why, site_img, site_alt)
     for path, title in (("signals/", "Signals"), ("record/", "Track record"), ("map/", "Map")):
         pages[path] = page(shell, path, f"{title} · WarWatch", f"{head} {about}".strip(), site_img, site_alt)
-    pages["glossary/"] = page(shell, "glossary/", "Glossary · WarWatch", GLOSSARY, site_img, site_alt)
+    pages["glossary/"] = page(shell, "glossary/", "Guide · WarWatch", GLOSSARY, site_img, site_alt)
     pages["wall/"] = page(shell, "wall/", "Wall · WarWatch", WALL, site_img, site_alt)
     n = len(bases)
     watched = (f"{n} {'base is' if n == 1 else 'bases are'}" if n else "Bases are") + " watched on satellite images; most are passed by Sentinel-1 radar every two to three days."

@@ -26,7 +26,7 @@ INK = {"bg": "#080b11", "fg": "#e8ecf2", "fg2": "#a3adbb", "fg3": "#7b8798", "li
 LEVEL_FILL = {"Watch": "#f0b03c", "Elevated": "#ff7438", "Critical": "#ff4a45"}   # --z2, --z3, --crit
 LAND_MIX = {"Watch": .42, "Elevated": .5, "Critical": .55}   # how strongly a theatre's country takes its level colour (MapView.tsx)
 BASE_FILL = {"out": LEVEL_FILL["Elevated"], "in": LEVEL_FILL["Elevated"], "changed": LEVEL_FILL["Watch"]}   # as the app's base diamonds
-LEVEL_WORD = {"Normal": "Quiet", "Watch": "Watch", "Elevated": "Elevated", "Critical": "Critical"}
+LEVEL_WORD = {"Normal": "Steady", "Watch": "Watch", "Elevated": "Elevated", "Critical": "Critical"}
 WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"]   # as word() in web/src/data.ts
 SITE = "khourix.github.io/warwatch"
 FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "src", "fonts")
@@ -77,11 +77,11 @@ def summary(data):
         if _level(v) == "Normal" and v.get("score") is not None and (near is None or v["score"] > near["score"]):
             near = v
     if not up:
-        a = "Every theatre reads quiet."
+        a = "Every theatre reads steady."
     elif len(up) == 1:
-        a = f"{short(up[0][1]['name'])} is the only theatre above quiet."
+        a = f"{short(up[0][1]['name'])} is the only theatre above steady."
     else:
-        a = f"{_join([short(v['name']) for _, v in up])} are above quiet." if len(up) <= 3 else f"{WORDS[len(up)] if len(up) < len(WORDS) else len(up)} theatres are above quiet, led by {short(up[0][1]['name'])}."
+        a = f"{_join([short(v['name']) for _, v in up])} are above steady." if len(up) <= 3 else f"{WORDS[len(up)] if len(up) < len(WORDS) else len(up)} theatres are above steady, led by {short(up[0][1]['name'])}."
     word = WORDS[tells] if tells < len(WORDS) else str(tells)
     b = f" {word} tripwire{'' if tells == 1 else 's'} fired this week."
     if not up and near is not None and not (data.get("model") or {}).get("active") and near["score"] < 50:
@@ -311,11 +311,11 @@ def card_html(data, topo, fallback=False):
 # ---- one card per theatre, for /warwatch/<theatre>/ ----
 
 def theatre_headline(name, level, tells):
-    """'Iran reads quiet. No tripwires fired this week.' Also the share text on the theatre's page (pages.py)."""
+    """'Iran reads steady. No tripwires fired this week.' Also the share text on the theatre's page (pages.py)."""
     lv = level if level in LEVEL_FILL else "Normal"
     word = WORDS[tells] if tells < len(WORDS) else str(tells)
     name = short(name)
-    return (f"{name} reads quiet." if lv == "Normal" else f"{name} reads {lv.lower()}.") + f" {word} tripwire{'' if tells == 1 else 's'} fired this week."
+    return (f"{name} reads steady." if lv == "Normal" else f"{name} reads {lv.lower()}.") + f" {word} tripwire{'' if tells == 1 else 's'} fired this week."
 
 
 def theatre_summary(data, t):
