@@ -12,7 +12,7 @@ lemonnier,normal,2026-11-22,2026-11-22,2026-11-20,-0.67,apron,,apron:normal:-0.6
 souda,normal,2026-11-22,2026-11-22,2026-11-25,0.65,apron,,apron:normal:0.65:2026-11-22:32:31:29:34;harbour:normal:1.00:2026-11-22:1:0:0:1;ground:normal:-0.87:2026-11-22:61:66:57:77
 nevatim,nodata,,2026-11-04,2026-11-25,0.67,apron,,apron:nodata:0.67::14:13:10:17;ground:nodata:1.01::188:180:170:192
 ramon,normal,2026-11-22,2026-11-22,2026-11-22,-0.50,apron,,apron:normal:-0.50:2026-11-22:0:1:0:1
-hatzerim,nodata,,2026-10-28,2026-11-20,-2.00,apron,,apron:nodata:-2.00::0:2:1:3;ground:nodata:-0.28::285:290:269:308
+hatzerim,nodata,,2026-10-29,2026-11-20,-1.00,apron,,apron:nodata:-1.00::2:3:2:4;ground:nodata:0.82::257:238:202:257
 bandar_abbas,normal,2026-11-24,2026-11-24,2026-11-23,-0.50,apron,,apron:normal:-0.50:2026-11-24:0:1:0:2;harbour:normal:1.12:2026-11-24:35:33:30:35;ground:normal:-0.34:2026-11-24:33:34:30:40
 isfahan_8tab,normal,2026-11-24,2026-11-24,2026-11-24,0.00,apron,,apron:normal:0.00:2026-11-24:2:2:1:4;ground:normal:0.54:2026-11-24:88:84:72:96
 hamadan_3tab,normal,2026-11-22,2026-11-22,2026-11-25,0.22,apron,,apron:normal:0.22:2026-11-22:4:4:2:5;ground:normal:-1.62:2026-11-22:85:97:88:112
@@ -65,7 +65,7 @@ siauliai,normal,2026-11-25,2026-11-25,2026-11-06,1.12,apron,,apron:normal:1.12:2
 amari,normal,2026-11-25,2026-11-25,2026-10-20,-0.67,apron,,apron:normal:-0.67:2026-11-25:4:5:3:6;ground:normal:0.80:2026-11-25:95:83:72:150
 belbek,changed,2026-11-25,2026-11-25,2026-11-08,3.37,apron,,apron:changed:3.37:2026-11-25:16:11:10:14;ground:normal:2.44:2026-11-25:66:43:37:59
 saky,normal,2026-11-25,2026-11-25,2026-11-24,2.02,apron,,apron:normal:2.02:2026-11-25:15:11:9:14;ground:in:4.35:2026-11-21/2026-11-25:54:25:20:53
-sevastopol,nodata,,2026-10-27,2026-11-08,-1.48,harbour,,harbour:nodata:-1.48::53:59:54:62;ground:nodata:1.00::4:3:2:3
+sevastopol,nodata,,2026-10-28,2026-11-08,-0.08,harbour,,harbour:nodata:-0.08::50:51:42:58;ground:nodata:0.00::3:3:2:4
 baltiysk,normal,2026-11-24,2026-11-24,2026-11-25,1.12,harbour,,harbour:normal:1.12:2026-11-24:25:20:17:26;ground:normal:0.00:2026-11-24:0:0:0:1
 chkalovsk,normal,2026-11-24,2026-11-24,2026-11-20,1.18,apron,,apron:normal:1.18:2026-11-24:19:16:12:21;ground:normal:1.53:2026-11-24:78:54:41:121
 soltsy,nodata,,2026-10-28,2026-11-06,0.00,apron,,apron:nodata:0.00::1:1:1:1;ground:nodata:-0.67::21:25:19:44
