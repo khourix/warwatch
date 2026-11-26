@@ -591,8 +591,27 @@ def parse_ioda(payload):
     return {d: sum(v) / len(v) for d, v in by.items()}
 
 
+IODA_DOWN = {"fails": 0}     # consecutive IODA failures in this run
+IODA_GIVE_UP = 2
+
+
 def fetch_ioda(cc, source="bgp", days=150):
-    """Daily mean of an IODA signal for a country. The API refuses very long ranges, so ask in 60-day chunks."""
+    """Daily mean of an IODA signal for a country. The API refuses very long ranges, so ask in 60-day chunks.
+    Added November 2026: when IODA fails twice in a row in one run, the rest of its series are skipped at once (each keeps its
+    last good copy). On 26 Nov the API answered every request with a timeout or a 504, about 3.5 minutes per series, and the
+    22 series pushed every run past its 55-minute limit, so no run deployed for seven hours."""
+    if IODA_DOWN["fails"] >= IODA_GIVE_UP:
+        raise RuntimeError(f"skipped: IODA failed {IODA_DOWN['fails']} times in a row this run")
+    try:
+        out = _fetch_ioda(cc, source, days)
+    except Exception:
+        IODA_DOWN["fails"] += 1
+        raise
+    IODA_DOWN["fails"] = 0
+    return out
+
+
+def _fetch_ioda(cc, source="bgp", days=150):
     now = int(time.time())
     today = dt.datetime.fromtimestamp(now, dt.timezone.utc).date().isoformat()
     tot = {}

@@ -2780,5 +2780,31 @@ class TelegramPoster(unittest.TestCase):
             os.environ.update(env)
 
 
+class IodaBreaker(unittest.TestCase):
+    """Added November 2026: two IODA failures in a row skip the rest of its series in that run, without a request."""
+    def test_skips_after_two_failures_and_resets_on_success(self):
+        import sources as S
+        calls = []
+        def bad(*a, **k):
+            calls.append(1)
+            raise RuntimeError("HTTP Error 504")
+        old, S._fetch_ioda = S._fetch_ioda, bad
+        S.IODA_DOWN["fails"] = 0
+        try:
+            for _ in range(2):
+                with self.assertRaises(RuntimeError):
+                    S.fetch_ioda("IR")
+            with self.assertRaisesRegex(RuntimeError, "skipped"):
+                S.fetch_ioda("UA")
+            self.assertEqual(len(calls), 2)
+            S.IODA_DOWN["fails"] = 1
+            S._fetch_ioda = lambda *a, **k: [("2026-11-25", 1.0)]
+            self.assertEqual(S.fetch_ioda("IR"), [("2026-11-25", 1.0)])
+            self.assertEqual(S.IODA_DOWN["fails"], 0)
+        finally:
+            S._fetch_ioda = old
+            S.IODA_DOWN["fails"] = 0
+
+
 if __name__ == "__main__":
     unittest.main()
