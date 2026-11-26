@@ -190,6 +190,28 @@ jobs:
     steps:
       - id: d
         uses: actions/deploy-pages@v5
+  telegram:
+    # Added November 2026: posts the key changes of this run to a Telegram channel, after the page is live so the links work.
+    # Does nothing until the TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID secrets are set. At most 6 messages a day; what was sent is
+    # carried between runs in the cache (a lost cache only means the next run marks everything as sent and posts nothing).
+    needs: deploy
+    if: github.event.inputs.only == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: warwatch/telegram_post.py
+      - uses: actions/cache@v5
+        with:
+          path: tg_state.json
+          key: tg-state-${{ github.run_id }}
+          restore-keys: tg-state-
+      - env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 warwatch/telegram_post.py --state tg_state.json
   next:
     # Self-scheduling: queue the next full run 30 minutes after this one started (straight away if the build ran longer).
     # A run dispatched with the workflow token is allowed to start a workflow, unlike a push made with it.

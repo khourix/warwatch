@@ -258,3 +258,16 @@ export function NowMark({ now, word = true, className = '' }: { now?: Now | null
   const fill = now === 'war' ? 'var(--happened)' : now === 'strikes' ? 'linear-gradient(90deg, var(--happened) 50%, transparent 50%)' : 'transparent'
   return <span className={`inline-flex items-center gap-[5px] whitespace-nowrap text-happened ${className}`}><i aria-hidden className="block h-[8px] w-[8px] shrink-0 border-[1.5px] border-happened" style={{ background: fill }} />{word && NOW_WORD[now]}</span>
 }
+
+/* The board and the map point at each other: resting on a theatre in one lights its twin in the other, in colour only, so nothing
+   moves or changes size. A short delay keeps a pointer passing across the board from flickering the map. */
+let hoverTimer = 0
+export const hoverTheatre = (id: string | null) => {
+  clearTimeout(hoverTimer)
+  hoverTimer = window.setTimeout(() => dispatchEvent(new CustomEvent<string | null>('ww-hover', { detail: id })), id ? 90 : 0)
+}
+export function useHoveredTheatre() {
+  const [id, setId] = useState<string | null>(null)
+  useEffect(() => { const f = (e: Event) => setId((e as CustomEvent<string | null>).detail); addEventListener('ww-hover', f); return () => removeEventListener('ww-hover', f) }, [])
+  return id
+}

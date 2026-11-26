@@ -13,6 +13,7 @@ import { baseWord, fireWord } from './ground'
 import { reducedMotion as reduced, usePrefs, fmtAlt, fmtSpeed, useDialogFocus } from './settings'
 import { motion, AnimatePresence } from 'motion/react'
 import { LAYERS, LAYER_GROUPS, type Layer, type Layers } from './layers'
+import { hoverTheatre, useHoveredTheatre } from './ui'
 // the map's own styles load with the map, not with the first paint
 import 'maplibre-gl/dist/maplibre-gl.css'
 
@@ -110,6 +111,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
   const [basemap, setBasemap] = useState(false)
   /* below tablet width the legend chips give way to a Layers button and a sheet of the same switches */
   const [sheet, setSheet] = useState(false)
+  const hovered = useHoveredTheatre()
   const selBase = route.v === 'base' ? route.id : null
   const primaryRef = useRef(primary); primaryRef.current = primary
   const peekRef = useRef(peek); peekRef.current = peek
@@ -407,13 +409,14 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
       <div ref={box} style={{ position: 'absolute', inset: 0 }} role="region" aria-label="Map of the watched theatres. Every theatre on it is also listed on the board." />
       {/* on a phone the labels never draw under the header, even mid-flight while the collision pass catches up */}
       <div ref={ov} className="pointer-events-none absolute inset-0" style={{ ['--lbl' as string]: labels, clipPath: wide ? undefined : 'inset(60px 0 0 0)' }}>
-        {brief.theatres.filter(t => t.center).map(t => { const on = sel === t.id; return (
+        {brief.theatres.filter(t => t.center).map(t => { const on = sel === t.id, lit = !on && hovered === t.id; return (
           <button key={t.id} data-kind="theatre" data-id={t.id} data-prio={100 + (RANK[t.level] || 0) * 20 + t.tellsOn * 4 + (t.spillover ? 0 : 2)} data-lon={t.center![0]} data-lat={t.center![1]}
             onClick={() => onPick({ v: 'theatre', id: t.id })} aria-current={on ? 'true' : undefined}
+            onPointerEnter={e => { if (e.pointerType === 'mouse') hoverTheatre(t.id) }} onPointerLeave={() => hoverTheatre(null)}
             aria-label={`${t.name}, ${levelWord(t.level).toLowerCase()}${t.score != null ? `, reading ${wholeScore(t.score)}` : ''}${t.tellsOn ? `, ${t.tellsOn} ${t.tellsOn === 1 ? 'tripwire' : 'tripwires'} fired` : ''}`}
             className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full transition-opacity duration-200 max-[899px]:after:absolute max-[899px]:after:inset-x-0 max-[899px]:after:-inset-y-[11px] max-[899px]:after:content-['']" style={{ opacity: 0 }}>
-            <span className={`flex h-[calc(22px*var(--lbl))] items-center gap-1.5 whitespace-nowrap rounded-full border px-2 text-[calc(11.5px*var(--lbl))] font-medium backdrop-blur-[6px] transition-colors duration-150 ${on ? 'border-sel bg-sel text-selink' : 'border-line2 bg-[color-mix(in_oklab,var(--bg)_82%,transparent)] text-fg hover:border-fg2'}`}
-              style={!on && t.level !== 'Normal' ? { borderColor: levelVar(t.level) } : undefined}>
+            <span className={`flex h-[calc(22px*var(--lbl))] items-center gap-1.5 whitespace-nowrap rounded-full border px-2 text-[calc(11.5px*var(--lbl))] font-medium backdrop-blur-[6px] transition-colors duration-150 ${on ? 'border-sel bg-sel text-selink' : lit ? 'border-fg bg-s3 text-fg' : 'border-line2 bg-[color-mix(in_oklab,var(--bg)_82%,transparent)] text-fg hover:border-fg2'}`}
+              style={!on && !lit && t.level !== 'Normal' ? { borderColor: levelVar(t.level) } : undefined}>
               {t.tellsOn > 0 && <i className="h-[5px] w-[5px] rounded-full bg-z2 shadow-[0_0_6px_var(--z2)]" />}
               {short(t.name)}
               {t.score != null && <span className={`num font-mono text-[calc(10.5px*var(--lbl))] font-normal ${on ? 'opacity-70' : 'text-fg3'}`}>{wholeScore(t.score)}</span>}

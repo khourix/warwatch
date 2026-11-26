@@ -44,6 +44,8 @@ export default function CommandMenu({ open, setOpen, go, toggleTheme, openSettin
   const [recent, setRecent] = useState<Pick[]>(loadRecent)
   const box = useRef<HTMLDivElement>(null)
   useDialogFocus(open, box)
+  /* the field takes the focus as the menu opens (autoFocus alone loses it to the motion mount), so typing and Enter go straight to it */
+  useEffect(() => { if (!open) return; let n = 0, id = 0; const f = () => { const i = box.current?.querySelector<HTMLInputElement>('[cmdk-input]'); if (i) i.focus(); else if (n++ < 20) id = requestAnimationFrame(f) }; id = requestAnimationFrame(f); return () => cancelAnimationFrame(id) }, [open])
   /* the field is emptied when the menu closes, not when it opens, so keys typed at once after ⌘K are kept */
   useEffect(() => { if (open) { setRecent(loadRecent()); if (early?.current) { const k = early.current; early.current = ''; setQ(x => k + x) } } else setQ('') }, [open])
   const typed = q.trim().length > 0

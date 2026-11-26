@@ -110,7 +110,7 @@ export function LateBanner({ brief }: { brief: Brief }) {
         <span className="min-w-0 flex-1 truncate">Data is {ageWords(age).replace(/ ago$/, '')} old. Updates every {every} min.</span>
         <button onClick={() => setOpen(o => !o)} aria-expanded={open} className="lnk shrink-0 text-fg2">{open ? 'Less' : 'Why'}</button>
       </p>
-      {open && <p className="mt-1 pl-[15px] text-fg2">The last update came in at {fmtAsOf(brief.generated, prefs.tz)}. The page is working; newer runs have not reached it yet, so what you see may be out of date.</p>}
+      {open && <p className="mt-1 pl-[15px] text-fg2">The last update is from {fmtAsOf(brief.generated, prefs.tz)}. The page is working; newer runs have not reached it yet, so what you see may be out of date.</p>}
     </div>
   )
 }

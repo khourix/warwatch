@@ -2549,7 +2549,7 @@ class TheatreCards(unittest.TestCase):
         self.assertIn("tripwires fired<br>this week" if f["tells"] != 1 else "tripwire fired<br>this week", card)
         self.assertNotIn("<b style", card)
         quiet = share.theatre_card_html(self.data, None, "iran")
-        self.assertIn('>Quiet</span>', quiet)
+        self.assertIn('>Steady</span>', quiet)
 
 
 class Pages(unittest.TestCase):
@@ -2737,6 +2737,46 @@ class MainGuardIsLast(unittest.TestCase):
             src = f.read()
         guard = src.rindex('if __name__ == "__main__":')
         self.assertNotIn("\nclass ", src[guard:])
+
+
+class TelegramPoster(unittest.TestCase):
+    """Added November 2026: telegram_post.pick sends key items once, at most DAILY_CAP a day, and nothing on its first run."""
+    def _brief(self, n=3, tier="key", day="2026-11-26"):
+        return {"theatres": [{"id": "iran", "name": "Iran (and proxies)"}],
+                "feed": [{"date": f"{day}T0{i}:00Z", "kind": "tell", "theatre": "iran", "title": f"Wire {i}", "detail": "Tripwire.",
+                          "to": {"view": "theatre", "id": "iran"}, "tier": tier} for i in range(n)]}
+
+    def test_first_run_sends_nothing_and_marks_all(self):
+        import telegram_post as T
+        out, st = T.pick(self._brief(), {}, "2026-11-26")
+        self.assertEqual(out, [])
+        self.assertEqual(len(st["sent"]), 3)
+
+    def test_sends_new_key_items_once_with_a_link(self):
+        import telegram_post as T
+        out, st = T.pick(self._brief(), {"sent": [], "day": "2026-11-26", "count": 0}, "2026-11-26")
+        self.assertEqual(len(out), 3)
+        self.assertTrue(out[0][1].startswith("Iran · Wire 0\nTripwire.\nhttps://khourix.github.io/warwatch/iran/"))
+        st["sent"] += [k for k, _ in out]
+        again, _ = T.pick(self._brief(), st, "2026-11-26")
+        self.assertEqual(again, [])
+
+    def test_routine_old_and_over_the_cap_are_held(self):
+        import telegram_post as T
+        self.assertEqual(T.pick(self._brief(tier="routine"), {"sent": []}, "2026-11-26")[0], [])
+        self.assertEqual(T.pick(self._brief(day="2026-11-20"), {"sent": []}, "2026-11-26")[0], [])
+        out, st = T.pick(self._brief(n=9), {"sent": [], "day": "2026-11-26", "count": 2}, "2026-11-26")
+        self.assertEqual(len(out), T.DAILY_CAP - 2)
+        self.assertEqual(st["count"], T.DAILY_CAP)
+        self.assertEqual(len(T.pick(self._brief(n=9), {"sent": [], "day": "2026-11-25", "count": 6}, "2026-11-26")[0]), T.DAILY_CAP)
+
+    def test_no_secrets_posts_nothing(self):
+        import telegram_post as T
+        env = {k: os.environ.pop(k) for k in ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID") if k in os.environ}
+        try:
+            self.assertEqual(T.main(["--brief", "/nonexistent", "--state", "/nonexistent"]), 0)
+        finally:
+            os.environ.update(env)
 
 
 if __name__ == "__main__":

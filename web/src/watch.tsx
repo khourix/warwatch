@@ -5,7 +5,7 @@ import { GROUPS, short, levelWord, groupTone, feedDetail, fmtZ, fmtChange, short
 import { usePrefs, fmtTime } from './settings'
 import { toRoute } from './views'
 import { feedKey, type Since } from './since'
-import { Explain, NowMark } from './ui'
+import { Explain, NowMark, hoverTheatre, useHoveredTheatre } from './ui'
 import { X, Pin, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useFollow } from './follow'
 import { useReplay, minusDays, WINDOW, isWave, type Replay, type DayTheatre } from './replay'
@@ -202,6 +202,7 @@ const levelText = (l: string) => l === 'Critical' ? 'var(--crit)' : l === 'Eleva
    page is open (a new run) rolls to its new value and the row washes once in ivory. */
 function BoardRow({ t, i, rise, on, line, go, day }: { t: BriefTheatre; i: number; rise: boolean; on: boolean; line: boolean; go: Go; day: DayTheatre | null }) {
   const { has, toggle } = useFollow()
+  const lit = useHoveredTheatre() === t.id
   const { prefs } = usePrefs()
   const still = prefs.motion === 'reduced' || matchMedia('(prefers-reduced-motion: reduce)').matches
   const pin = has(t.id)
@@ -215,7 +216,8 @@ function BoardRow({ t, i, rise, on, line, go, day }: { t: BriefTheatre; i: numbe
   const say = `${t.name}. Now: ${t.now && !day ? NOW_WORD[t.now].toLowerCase() : 'nothing set'}. Build-up ${lvSay}. ${groups ? groupWords(groups) : 'Group readings not kept for this day'}.${day ? '' : ` Reading ${score == null ? 'not available' : `${wholeScore(score)} of 100`}${ch == null ? '' : `, ${Math.round(ch) === 0 ? 'unchanged' : `${Math.round(ch) > 0 ? 'up' : 'down'} ${Math.abs(Math.round(ch))}`} over 7 days`}.`}${day && !day.wires ? ' Tripwires not kept for this day.' : wires ? ` ${wires} ${wires === 1 ? 'tripwire' : 'tripwires'} ${day ? 'lit at that day\'s run' : 'fired this week'}.` : ''}`
   return (
     <motion.div layout={still ? false : 'position'} transition={{ layout: { duration: .28, ease: EASE } }}
-      className={`group relative grid grid-cols-[minmax(0,1fr)_28px] items-center border-t border-line transition-colors duration-[120ms] ${on ? 'bg-s3' : 'hover:bg-s2'} ${rise ? 'rise' : ''}`} style={{ ['--i' as string]: i }}>
+      className={`group relative grid grid-cols-[minmax(0,1fr)_28px] items-center border-t border-line transition-colors duration-[120ms] ${on ? 'bg-s3' : lit ? 'bg-s2' : 'hover:bg-s2'} ${rise ? 'rise' : ''}`} style={{ ['--i' as string]: i }}
+      onPointerEnter={e => { if (e.pointerType === 'mouse') hoverTheatre(t.id) }} onPointerLeave={() => hoverTheatre(null)}>
       {wash > 0 && !still && <i key={wash} aria-hidden className="ww-wash pointer-events-none absolute inset-0" />}
       <button onClick={() => go({ v: 'theatre', id: t.id })} aria-current={on ? 'true' : undefined} aria-label={say}
         className={`relative grid h-11 w-full ${BOARD_COLS} items-center pl-4 text-left`}>

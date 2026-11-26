@@ -53,7 +53,12 @@ function dayFromAddress(brief: Brief): string | null {
   return Array.from({ length: 29 }, (_, i) => new Date(end - (29 - i) * 864e5).toISOString().slice(0, 10)).includes(d) ? d : null
 }
 
+const Kit = import.meta.env.DEV ? lazy(() => import('./kit')) : null
 export default function App() {
+  if (Kit && new URLSearchParams(location.search).has('kit')) return <Suspense fallback={null}><Kit /></Suspense>
+  return <Main />
+}
+function Main() {
   const brief = useBrief()
   if (brief.isPending) return <div className="grid h-full place-items-center text-fg3"><Mark size={40} /></div>
   /* a failed refresh keeps the data it has (the late banner says how old it is); only a first load that fails shows the error */
