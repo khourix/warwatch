@@ -361,7 +361,7 @@ function SignalList({ list, total, pending, brief, go, q, setQ, only, setOnly, g
         <label data-filter className="flex min-w-[200px] flex-1 items-center gap-2 rounded-r2 border border-line bg-s1 px-2.5 py-[7px] focus-within:border-line2"><Search size={14} className="shrink-0 text-fg3" aria-hidden />
           <input value={q} onChange={e => setQ(e.target.value)} placeholder={total ? `Filter ${total} signals` : 'Filter signals'} aria-label="Filter signals by name, source or theatre" className="w-full bg-transparent text-[13.5px] outline-none placeholder:text-fg3" /></label>
         <span role="group" aria-label="Show" className="inline-flex rounded-r2 border border-line p-0.5 text-[12.5px]">
-          {ONLY.map(([k, l]) => <button key={k} aria-pressed={only === k} onClick={() => setOnly(k)} className={`rounded-[6px] px-2.5 py-1 transition-colors duration-[120ms] ${only === k ? 'bg-s3 text-fg' : 'text-fg2 hover:text-fg'}`}>{l}</button>)}
+          {ONLY.map(([k, l]) => <button key={k} aria-pressed={only === k} onClick={() => setOnly(k)} className={`rounded-[6px] px-2.5 py-1 transition-colors duration-[120ms] ${only === k ? 'bg-sel text-selink' : 'text-fg2 hover:text-fg'}`}>{l}</button>)}
         </span>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -370,7 +370,7 @@ function SignalList({ list, total, pending, brief, go, q, setQ, only, setOnly, g
         <span className="num ml-auto text-[12px] text-fg3" aria-live="polite">{pending ? 'Loading…' : total ? `${list.length} shown, most unusual first` : ''}</span>
       </div>
       <div className={`mt-2.5 grid ${cols} items-end gap-3 border-b border-line2 px-2 pb-1.5 text-[11px] text-fg3`} aria-hidden>
-        <span>Signal</span>{!phone && <span>Recent</span>}<span>Unusualness</span>
+        <span>Signal</span>{!phone && <span>Recent</span>}<span title="How far the signal sits from its own usual, in standard deviations">SD from usual</span>
       </div>
       {pending ? <Skeleton lines={10} /> : total === 0 ? <p className="px-2 py-6 text-[12.5px] text-fg3">No signal is in this data run.</p>
         : list.length === 0 ? <p className="px-2 py-6 text-[12.5px] text-fg3">No signal matches. Clear a filter to see more.</p> : (

@@ -2,7 +2,7 @@ import { motion } from 'motion/react'
 import { Component, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type KeyboardEvent, type ErrorInfo } from 'react'
 import { createPortal } from 'react-dom'
 import { Link2 } from 'lucide-react'
-import { levelVar, levelWord, zColor, routeHref, shortDate, parseGen, type Level, type Route } from './data'
+import { levelVar, levelWord, zColor, routeHref, shortDate, parseGen, NOW_WORD, type Now, type Level, type Route } from './data'
 import { term, type TermKey } from './glossary'
 import { usePrefs, fmtTime } from './settings'
 
@@ -129,7 +129,7 @@ export function Facts({ items, className = '' }: { items: [ReactNode, ReactNode]
   return (
     <dl className={`grid grid-cols-3 border-t border-line pt-2.5 ${className}`}>
       {items.map(([v, label], i) => (
-        <div key={i} className={`flex min-w-0 flex-col-reverse ${i ? 'border-l border-line pl-3' : ''}`}>
+        <div key={i} className={`flex min-w-0 flex-col-reverse justify-end ${i ? 'border-l border-line pl-3' : ''}`}>
           <dt className="mt-1 text-[11px] leading-[1.3] text-fg3">{label}</dt>
           <dd className="num text-[17px] font-medium leading-none tracking-[-0.02em] text-fg">{v}</dd>
         </div>))}
@@ -196,7 +196,7 @@ export function Explain({ k, asOf, children, className = '' }: { k: TermKey; asO
       onFocus={e => { if (e.currentTarget.matches(':focus-visible')) setHover(true) }} onBlur={() => { setHover(false); setPinned(false) }}
       onPointerEnter={e => { if (e.pointerType === 'mouse') setHover(true) }} onPointerLeave={e => { if (e.pointerType === 'mouse') setHover(false) }}
       onKeyDown={e => { if (e.key === 'Escape' && open) { e.preventDefault(); e.stopPropagation(); setHover(false); setPinned(false) } }}
-      className={`cursor-help text-left underline decoration-dotted decoration-[color-mix(in_oklab,currentColor_55%,transparent)] underline-offset-[3px] hover:decoration-current ${className}`}>
+      className={`cursor-help text-left [text-transform:inherit] underline decoration-dotted decoration-[color-mix(in_oklab,currentColor_55%,transparent)] underline-offset-[3px] hover:decoration-current ${className}`}>
       {children ?? t.term}
     </button>
     <span id={id} hidden>{t.says} {t.from}{when ? ` Updated ${when}.` : ''}</span>
@@ -250,4 +250,24 @@ export class Boundary extends Component<BoundaryProps, { error: unknown }> {
 
 export function Failed({ what, error }: { what: string; error: unknown }) {
   return <div className="m-5 rounded-xl border border-line bg-raised px-3.5 py-3 text-[13px] text-fg2">Could not load {what}. {error instanceof Error ? error.message : ''} The next run rebuilds it within 30 minutes.</div>
+}
+
+/* the Now answer as a mark and a word, in the ivory kept for things that happened; the mark reads without colour */
+export function NowMark({ now, word = true, className = '' }: { now?: Now | null; word?: boolean; className?: string }) {
+  if (!now) return word ? <span className={`text-fg3 ${className}`}>–</span> : null
+  const fill = now === 'war' ? 'var(--happened)' : now === 'strikes' ? 'linear-gradient(90deg, var(--happened) 50%, transparent 50%)' : 'transparent'
+  return <span className={`inline-flex items-center gap-[5px] whitespace-nowrap text-happened ${className}`}><i aria-hidden className="block h-[8px] w-[8px] shrink-0 border-[1.5px] border-happened" style={{ background: fill }} />{word && NOW_WORD[now]}</span>
+}
+
+/* The board and the map point at each other: resting on a theatre in one lights its twin in the other, in colour only, so nothing
+   moves or changes size. A short delay keeps a pointer passing across the board from flickering the map. */
+let hoverTimer = 0
+export const hoverTheatre = (id: string | null) => {
+  clearTimeout(hoverTimer)
+  hoverTimer = window.setTimeout(() => dispatchEvent(new CustomEvent<string | null>('ww-hover', { detail: id })), id ? 90 : 0)
+}
+export function useHoveredTheatre() {
+  const [id, setId] = useState<string | null>(null)
+  useEffect(() => { const f = (e: Event) => setId((e as CustomEvent<string | null>).detail); addEventListener('ww-hover', f); return () => removeEventListener('ww-hover', f) }, [])
+  return id
 }

@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Bell, Satellite, Flame, ShieldAlert, FileText, Plane, Anchor } from 'lucide-react'
-import { ago, daysBetween, parseGen, feedDetail, type Brief, type FeedItem, type LiveMap, type Route } from './data'
+import { Bell, Satellite, Flame, ShieldAlert, FileText, Plane, Anchor, TrendingUp } from 'lucide-react'
+import { ago, daysBetween, parseGen, feedDetail, isKey, type Brief, type FeedItem, type LiveMap, type Route } from './data'
 import { toRoute } from './views'
 
-/* The bell (the old page had one): the week's changes from the brief's feed, newest first, with live alerts on top
-   (emergency squawks, incidents at sea). What arrived in the last 48 hours and has not been opened counts on the badge;
-   opening the list marks it read in this browser. */
+/* The bell: the week's changes from the same stream as What changed (contract.tier), newest first, with live alerts on top
+   (emergency squawks, incidents at sea). Only key changes and live alerts from the last 48 hours that have not been opened count on
+   the badge, so it stays small enough to mean something; opening an item marks it read in this browser. */
 
 type Kind = FeedItem['kind'] | 'air' | 'sea'
-type Note = { id: string; kind: Kind; date: string; theatre: string; title: string; detail: string; to: Route; live?: boolean }
+type Note = { id: string; kind: Kind; date: string; theatre: string; title: string; detail: string; to: Route; live?: boolean; key: boolean }
 const KIND: Record<Kind, [typeof Bell, string, string]> = {
-  tell: [ShieldAlert, 'var(--z2)', 'Tripwires'], base: [Satellite, 'var(--z3)', 'Bases'], fire: [Flame, 'var(--z3)', 'Heat'], official: [FileText, 'var(--fg3)', 'Official'],
+  tell: [ShieldAlert, 'var(--z2)', 'Tripwires'], base: [Satellite, 'var(--z3)', 'Bases'], fire: [Flame, 'var(--z3)', 'Heat'], official: [FileText, 'var(--fg3)', 'Official'], level: [TrendingUp, 'var(--z2)', 'Build-up'],
   air: [Plane, 'var(--crit)', 'Live'], sea: [Anchor, 'var(--z3)', 'Live'],
 }
-const TABS = ['All', 'Live', 'Tripwires', 'Bases', 'Heat', 'Official'] as const
+const TABS = ['Key', 'All'] as const
 const KEY = 'ww-read'
 const load = (): Set<string> => { try { return new Set(JSON.parse(localStorage.getItem(KEY) || '[]')) } catch { return new Set() } }
 const save = (s: Set<string>) => { try { localStorage.setItem(KEY, JSON.stringify([...s].slice(-600))) } catch { /* private mode: nothing kept */ } }
@@ -23,10 +23,10 @@ function notes(brief: Brief, live?: LiveMap): Note[] {
   const now = parseGen(brief.generated)
   const out: Note[] = []
   for (const a of live?.squawks || []) out.push({ id: `sq:${a.hex || a.call}:${a.sq}`, kind: 'air', date: brief.generated.slice(0, 10), theatre: a.th || '', live: true,
-    title: `Emergency squawk ${a.sq}${a.call ? `: ${a.call}` : ''}`, detail: [a.t, a.o || a.ct].filter(Boolean).join(' · ') || 'Seen on ADS-B at the last run', to: a.th ? { v: 'theatre', id: a.th, tab: 'ground' } : { v: 'map' } })
+    title: `Emergency squawk ${a.sq}${a.call ? `: ${a.call}` : ''}`, detail: [a.t, a.o || a.ct].filter(Boolean).join(' · ') || 'Seen on ADS-B at the last run', to: a.th ? { v: 'theatre', id: a.th, tab: 'ground' } : { v: 'map' }, key: true })
   for (const x of live?.incidents || []) if (x.d && daysBetween(now, x.d) <= 7) out.push({ id: `inc:${(x.t || '').slice(0, 60)}`, kind: 'sea', date: x.d.slice(0, 10), theatre: x.th || '',
-    title: x.t || 'Incident at sea', detail: [x.src, x.loc].filter(Boolean).join(' · '), to: x.th ? { v: 'theatre', id: x.th, tab: 'ground' } : { v: 'map' } })
-  for (const f of brief.feed) if (daysBetween(now, f.date) <= 7) out.push({ id: `${f.date.slice(0, 10)}|${f.theatre}|${f.kind}|${f.title}`, kind: f.kind, date: f.date, theatre: f.theatre, title: f.title, detail: feedDetail(f.detail), to: toRoute(f.to) })
+    title: x.t || 'Incident at sea', detail: [x.src, x.loc].filter(Boolean).join(' · '), to: x.th ? { v: 'theatre', id: x.th, tab: 'ground' } : { v: 'map' }, key: false })
+  for (const f of brief.feed) if (daysBetween(now, f.date) <= 7) out.push({ id: `${f.date.slice(0, 10)}|${f.theatre}|${f.kind}|${f.title}`, kind: f.kind, date: f.date, theatre: f.theatre, title: f.title, detail: feedDetail(f.detail), to: toRoute(f.to), key: isKey(f) })
   return out.sort((a, b) => Number(!!b.live) - Number(!!a.live) || b.date.localeCompare(a.date))
 }
 
@@ -35,10 +35,10 @@ export function NotificationBell({ brief, live, go, phone = false }: { brief: Br
   const all = useMemo(() => notes(brief, live), [brief, live])
   const [read, setRead] = useState(load)
   const [open, setOpen] = useState(false)
-  const [tab, setTab] = useState<(typeof TABS)[number]>('All')
+  const [tab, setTab] = useState<(typeof TABS)[number]>('Key')
   const box = useRef<HTMLDivElement>(null)
   const fresh = (n: Note) => n.live || daysBetween(now, n.date) <= 1
-  const unread = all.filter(n => fresh(n) && !read.has(n.id)).length
+  const unread = all.filter(n => n.key && fresh(n) && !read.has(n.id)).length
   const markAll = () => { const s = new Set(read); all.forEach(n => s.add(n.id)); setRead(s); save(s) }
   useEffect(() => {
     if (!open) return
@@ -47,8 +47,8 @@ export function NotificationBell({ brief, live, go, phone = false }: { brief: Br
     addEventListener('keydown', k, true); addEventListener('pointerdown', c)
     return () => { removeEventListener('keydown', k, true); removeEventListener('pointerdown', c) }
   }, [open])
-  const tabs = TABS.filter(t => t === 'All' || all.some(n => KIND[n.kind][2] === t))
-  const list = all.filter(n => tab === 'All' || KIND[n.kind][2] === tab)
+  const tabs = TABS
+  const list = all.filter(n => tab === 'All' || n.key)
   const name = (id: string) => brief.theatres.find(t => t.id === id)?.name || ''
   const groups: [string, Note[]][] = [['Last 48 hours', list.filter(fresh)], ['Earlier this week', list.filter(n => !fresh(n))]]
   const btn = phone ? 'relative grid h-9 w-9 place-items-center after:absolute after:-inset-[5px] after:content-[\'\'] rounded-full border border-line bg-panel/80 backdrop-blur' : 'grid h-8 w-8 place-items-center rounded-full border border-line bg-panel/80 text-fg2 backdrop-blur-md hover:text-fg'
@@ -63,19 +63,19 @@ export function NotificationBell({ brief, live, go, phone = false }: { brief: Br
           <motion.div role="dialog" aria-label="Notifications" initial={{ opacity: 0, y: -6, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: .16, ease: [.22, 1, .36, 1] }}
             className={`z-40 flex flex-col overflow-hidden rounded-2xl border border-line2 bg-panel shadow-[var(--shadow)] ${phone ? 'fixed inset-x-2 top-[60px] max-h-[72vh]' : 'absolute right-0 top-10 max-h-[min(640px,calc(100vh-90px))] w-[440px]'}`}>
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3">
-              <div><div className="text-[14px] font-medium">Notifications</div><div className="text-[11.5px] text-fg3">This week, newest first. Live alerts on top.</div></div>
+              <div><div className="text-[14px] font-medium">Notifications</div><div className="text-[11.5px] text-fg3">This week, newest first. The badge counts new key changes only.</div></div>
               {unread > 0 ? <button onClick={markAll} className="shrink-0 text-[12px] lnk">Mark all as read</button> : <span className="shrink-0 text-[12px] text-fg3">All read</span>}
             </div>
             <div className="flex shrink-0 gap-0.5 overflow-x-auto border-b border-line px-3 py-2 text-[12px]">
-              {tabs.map(t => <button key={t} onClick={() => setTab(t)} aria-pressed={tab === t} className={`shrink-0 rounded-full px-2 py-1 ${tab === t ? 'bg-hover text-fg' : 'text-fg3 hover:text-fg2'}`}>
-                {t} <span className="num text-fg3">{t === 'All' ? all.length : all.filter(n => KIND[n.kind][2] === t).length}</span></button>)}
+              {tabs.map(t => <button key={t} onClick={() => setTab(t)} aria-pressed={tab === t} className={`shrink-0 rounded-full px-2 py-1 ${tab === t ? 'bg-sel text-selink' : 'text-fg2 hover:text-fg'}`}>
+                {t} <span className={`num ${tab === t ? 'text-selink/75' : 'text-fg3'}`}>{t === 'All' ? all.length : all.filter(n => n.key).length}</span></button>)}
             </div>
             <div className="scroll-thin min-h-0 flex-1 overflow-y-auto pb-2">
-              {list.length === 0 && <p className="px-4 py-6 text-[13px] text-fg3">Nothing new this week: no tripwire, base change, unusual fire, official step or live alert.</p>}
+              {list.length === 0 && <p className="px-4 py-6 text-[13px] text-fg3">{tab === 'Key' ? 'No key change this week: no tripwire, build-up change, base changed on two passes or raised advice.' : 'Nothing new this week: no tripwire, base change, unusual fire, official step or live alert.'}</p>}
               {groups.map(([g, L]) => L.length > 0 && <div key={g}>
                 <div className="eyebrow px-4 pb-1 pt-3">{g}</div>
                 <ul className="px-2">
-                  {L.map(n => { const [I, tone] = KIND[n.kind], isNew = fresh(n) && !read.has(n.id); return (
+                  {L.map(n => { const [I, tone] = KIND[n.kind] ?? KIND.official, isNew = fresh(n) && !read.has(n.id); return (
                     <li key={n.id}>
                       <button onClick={() => { const s = new Set(read); s.add(n.id); setRead(s); save(s); setOpen(false); go(n.to) }} className="flex w-full items-start gap-3 rounded-lg px-2 py-2 text-left hover:bg-hover">
                         <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md border border-line" style={{ color: tone }}><I size={14} /></span>

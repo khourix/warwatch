@@ -11,6 +11,9 @@ import { baseWord, baseMark, rankBase, plainDates, fireWord, KIND, Compare } fro
 
 type Go = (r: Route, replace?: boolean) => void
 const CHANGED = ['out', 'in', 'changed']
+/* the gallery in sections by state, changed first, each with its count, so the page reads as "what moved, then the rest" */
+const SECTIONS: [string, string[]][] = [['Changed on radar', CHANGED], ['As usual', ['normal']], ['No recent pass', ['nodata']], ['Optical images only', ['optical']], ['Other', []]]
+const KNOWN = SECTIONS.flatMap(x => x[1])
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
 /* the opening sentence, in basewatch's words for each state (STATE_WHY: radar counts bright objects); the first half is the share
@@ -48,9 +51,13 @@ export function GroundView({ brief, live, go }: { brief: Brief; live?: LiveMap; 
             {chips.map(([k, l, n]) => <button key={k} aria-pressed={f === k} onClick={() => setF(k)} className={chip(f === k)}>{l} <span className="num">{n}</span></button>)}
           </div>
           {shown.length === 0 ? <p className="px-5 py-5 text-[12.5px] text-fg3">{f === 'changed' ? 'No base differed from usual on its latest passes.' : 'No base here.'}</p>
-            : <ul className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(176px,1fr))] gap-3 px-5 max-[699px]:grid-cols-1 max-[699px]:gap-2">
-              {shown.map(b => <li key={b.id}><BaseCard b={b} go={go} /></li>)}
-            </ul>}
+            : SECTIONS.map(([label, keys]) => { const L = shown.filter(b => keys.includes(b.state) || (!keys.length && !KNOWN.includes(b.state))); return L.length === 0 ? null : (
+              <div key={label} className="mt-4">
+                <h3 className="mb-2 flex items-baseline gap-2 px-5 text-[13px] font-medium text-fg">{label}<span className="num text-[12px] font-normal text-fg2">{L.length}</span></h3>
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(176px,1fr))] gap-3 px-5 max-[699px]:grid-cols-1 max-[699px]:gap-2">
+                  {L.map(b => <li key={b.id}><BaseCard b={b} go={go} /></li>)}
+                </ul>
+              </div>) })}
           <p className="mt-2.5 px-5 text-[11.5px] leading-[1.45] text-fg3">Changed bases first. Radar counts <Explain k="bright">bright objects</Explain>, and a change is a reason to look, not proof: one pass far outside the usual range marks a base as differing; two in a row within a week mark it as fewer or more than usual.</p>
         </section>
         <Heat live={live} brief={brief} go={go} />
@@ -78,7 +85,7 @@ function BaseCard({ b, go }: { b: MapBase; go: Go }) {
         {tag('absolute left-2 top-2 inline-flex max-w-[calc(100%-16px)] bg-[color-mix(in_oklab,var(--s1)_88%,transparent)] backdrop-blur-[3px] max-[699px]:hidden')}
       </span>
       <span className="block min-w-0 px-2.5 pb-2.5 pt-2 max-[699px]:flex-1 max-[699px]:py-2">
-        <span className="block truncate text-[12.5px] font-medium text-fg group-hover:underline group-hover:decoration-line2 group-hover:underline-offset-[3px]" title={b.name}>{b.name}</span>
+        <span className="line-clamp-2 min-h-[2.6em] text-[12.5px] font-medium leading-[1.3] text-fg max-[699px]:min-h-0 group-hover:underline group-hover:decoration-line2 group-hover:underline-offset-[3px]" title={b.name}>{b.name}</span>
         <span className="mt-0.5 block truncate text-[11px] text-fg3">{[KIND[b.kind] || b.kind || 'Site', b.side].filter(Boolean).join(' · ')}{b.last && b.state !== 'nodata' ? ` · ${shortDate(b.last)}` : ''}</span>
         {tag('mt-1.5 hidden max-w-full max-[699px]:inline-flex')}
       </span>
@@ -128,7 +135,7 @@ function Heat({ live, brief, go }: { live: LiveMap; brief: Brief; go: Go }) {
               <li key={im.a} className="min-w-0 rounded-r3 border border-line bg-s1 p-2.5">
                 <Compare before={im.b && im.bd ? { src: im.b, date: im.bd } : null} after={{ src: im.a, date: im.ad || f.date }} what="Sentinel-2 picture" name={`${place}, ${shortDate(day)}`} className="" lazy words={['Before', 'After']} />
                 <div className="px-0.5 pt-2.5">
-                  <h3 className="flex items-start gap-1.5 text-[13px] font-medium leading-[1.3] text-fg"><Flame size={13} aria-hidden className="mt-[2px] shrink-0" style={{ color: heatColour(f.score) }} /><span className="min-w-0">{place}<span className="num font-normal text-fg2">, {shortDate(day)}</span></span></h3>
+                  <h3 className="flex items-start gap-1.5 text-[13px] font-medium leading-[1.3] text-fg"><Flame size={13} aria-hidden className="mt-[2px] shrink-0" style={{ color: heatColour(f.score, f.class) }} /><span className="min-w-0">{place}<span className="num font-normal text-fg2">, {shortDate(day)}</span></span></h3>
                   <p className="num mt-0.5 text-[11.5px] text-fg3">{[th ? short(th.name) : '', first === last ? (first === day ? '' : `seen ${shortDate(first)}`) : `seen ${shortDate(first)} to ${shortDate(last)}`, `${spots > 1 ? 'strongest ' : ''}${Math.round(mw)} MW`, spots > 1 ? plural(spots, 'hot spot', 'hot spots') : f.night ? 'night' : ''].filter(Boolean).join(' · ')}</p>
                   <p className="mt-1.5 text-[12px] leading-[1.4] text-fg"><b className="font-medium">{v}</b><span className="text-fg2">: {means}.</span></p>
                   {f.why && <p className="mt-1 line-clamp-3 text-[11.5px] leading-[1.45] text-fg3">{plainDates(f.why)}</p>}

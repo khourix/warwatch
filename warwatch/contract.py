@@ -47,6 +47,7 @@ SHAPES = {
     "base": {"id": str, "name": str, "state": str, "ll": list, "radar": list, "why": str, "images": dict, "parts[]": list},
     "record": {"forward": (list, type(None)), "model": (dict, type(None)), "tempo": dict, "health": dict, "past[]": (list, type(None))},
     "events": {"through": str, "events[]": list},
+    "status": {"theatre": str, "name": str, "level": str, "buildup": str, "reading": OPT_NUM, "lit": list, "url": str},
 }
 ITEMS = {
     "brief.regions": {"id": str, "name": str, "theatres": list, "level": str},
@@ -199,7 +200,172 @@ def lines(v):
 
 
 def _ctx(t):
-    return (C.CONTEXT.get(t) or (None, None)) if hasattr(C, "CONTEXT") else (None, None)
+    """-> (context line, month checked) for a theatre, or (None, None)."""
+    v = (C.CONTEXT.get(t) or (None, None)) if hasattr(C, "CONTEXT") else (None, None)
+    return v[0], v[1]
+
+
+def now_tier(t):
+    """Added November 2026: the theatre's "Now" answer, set by hand with its context line (config.CONTEXT): "war", "strikes",
+    "tension", or None when nothing is set. It says what is already happening; the level says whether signals are building."""
+    v = C.CONTEXT.get(t) if hasattr(C, "CONTEXT") else None
+    tier = v[2] if v and len(v) > 2 else None
+    return tier if tier in getattr(C, "NOW_TIERS", ()) else None
+
+
+TREND_DAYS = 30
+
+
+def trend(data, t):
+    """Added November 2026: the theatre's 0 to 100 reading for each of the last TREND_DAYS days, rebuilt from the group histories
+    the build-up strips carry (dashboard.dom_strips: each day as engine.theatre_composite builds today, from every signal's own
+    score history) with today's group weights and today's lines. [[day, reading or None]] oldest first. Display only: it gives the
+    board its direction; no level, chance or record reads it. A day with fewer than two groups reading is None, as it is live."""
+    import dashboard
+    import engine
+    v = data["theatres"][t]
+    th = v.get("th")
+    if not th or len(th) != 3:
+        return []
+    doms = v.get("doms") or {}
+    end = dt.date.fromisoformat(data["strip_end"]) if data.get("strip_end") else dashboard._day(data["generated"])
+    hist = {d: list((doms.get(d) or {}).get("h") or []) for d in C.DOMAINS}
+    n = max((len(h) for h in hist.values()), default=0)
+    if not n:
+        return []
+    out = []
+    for k in range(max(0, n - TREND_DAYS), n):
+        day = (end - dt.timedelta(days=n - 1 - k)).isoformat()
+        vals, ws = [], []
+        for d in C.DOMAINS:
+            h = hist[d]
+            j = k - (n - len(h))
+            z = h[j] if 0 <= j < len(h) else None
+            w = (doms.get(d) or {}).get("w")
+            if z is not None and w:
+                vals.append(z)
+                ws.append(w)
+        if len(vals) < 2:
+            out.append([day, None])
+            continue
+        zc = (engine.mpi(vals, ws)[2] - 100) / 10
+        out.append([day, round(engine.logistic_score(zc, th), 1)])
+    return out
+
+
+def change7(tr):
+    """The reading's change over 7 days from a trend ([[day, reading]]): the latest reading minus the one 7 days before it, to one
+    decimal, or None when either is missing."""
+    by = {d: x for d, x in tr}
+    if not tr or tr[-1][1] is None:
+        return None
+    last = dt.date.fromisoformat(tr[-1][0])
+    prev = by.get((last - dt.timedelta(days=7)).isoformat())
+    return None if prev is None else round(tr[-1][1] - prev, 1)
+
+
+def shares(data, t):
+    """Added November 2026: each group's share of the reading, in percent, from the engine's contributions (weight times the group's
+    reading over the total weight of the groups that read). Only groups that push the reading up count; None when nothing does."""
+    doms = data["theatres"][t].get("doms") or {}
+    c = {GROUPS[d]: max(0.0, (doms.get(d) or {}).get("c") or 0.0) for d in GROUPS}
+    tot = sum(c.values())
+    return {k: round(100 * x / tot, 1) for k, x in c.items()} if tot > 0 else None
+
+
+def _pts(data, sid):
+    s = next((x for x in data["series"] if x["id"] == sid), None)
+    return s, [(p[0], p[1]) for p in (s.get("pts") if s else None) or [] if isinstance(p[1], (int, float))]
+
+
+def _usual(pts, skip=7, days=365):
+    """The usual level of a daily series: the median and the 10th and 90th percentiles of the year before its last `skip` points."""
+    if len(pts) < skip + 20:
+        return None
+    end = dt.date.fromisoformat(pts[-1][0][:10])
+    old = sorted(v for d, v in pts[:-skip] if (end - dt.date.fromisoformat(d[:10])).days <= days)
+    if len(old) < 20:
+        return None
+    q = lambda f: old[min(len(old) - 1, int(f * len(old)))]
+    return {"median": round(q(.5), 2), "low": round(q(.1), 2), "high": round(q(.9), 2), "days": len(old)}
+
+
+def _recent(pts, days=7):
+    if not pts:
+        return None
+    end = dt.date.fromisoformat(pts[-1][0][:10])
+    v = [x for d, x in pts if (end - dt.date.fromisoformat(d[:10])).days < days]
+    return sum(v) / len(v) if v else None
+
+
+def _fmt(x):
+    return f"{x:.0f}" if abs(x) >= 10 else f"{x:.1f}".rstrip("0").rstrip(".")
+
+
+def question(data, t):
+    """Added November 2026: the question a theatre's page opens with (config.QUESTIONS) and a one-line answer from the first of its
+    series that has data. "flow": the last 7 days' mean against the year's usual median; "count": the latest 7-day count. The
+    words follow fixed cut-offs, so the same numbers always read the same way. None when no series answers."""
+    q = getattr(C, "QUESTIONS", {}).get(t)
+    if not q:
+        return None
+    text, ids, how = q
+    for sid in ids:
+        s, pts = _pts(data, sid)
+        if not s or len(pts) < 8:
+            continue
+        u = _usual(pts)
+        src = {"series": sid, "label": s["l"], "url": s.get("url", ""), "last": pts[-1][0]}
+        if how == "flow":
+            r = _recent(pts)
+            if r is None or not u or u["median"] <= 0:
+                continue
+            k = r / u["median"]
+            word = "Barely." if k < .25 else "Partly." if k < .75 else "Yes, much as usual." if k < 1.25 else "Yes, busier than usual."
+            say = f"About {_fmt(r)} a day over the last week, {round(100 * k)}% of the usual {_fmt(u['median'])}."
+            return dict(src, q=text, word=word, say=say, value=round(r, 2), usual=u)
+        last = pts[-1][1]
+        word = "No." if last == 0 else "Yes."
+        say = (f"{_fmt(last)} in the last 7 days" + (f", against a usual {_fmt(u['median'])}." if u else ".")) if last else \
+              ("None in the last 7 days" + (f", against a usual {_fmt(u['median'])}." if u else "."))
+        return dict(src, q=text, word=word, say=say, value=last, usual=u)
+    return None
+
+
+# The Situation panel's context numbers: series id prefix -> (source, licence or terms). Shown on the theatre's Overview with their
+# usual level and their source. None of them is in the reading: most are new families (catalog.NOT_TESTED), the rest are actions.
+SITUATION = (
+    ("hormuz_", "hormuz.now", "CC BY 4.0"),
+    ("portwatch_", "IMF PortWatch", "IMF terms of use"),
+    ("geoconf_", "GeoConfirmed", "Terms being confirmed"),
+    ("aisday_sanctioned_", "OFAC SDN list and AIS", "OFAC: US government work, public domain"),
+    ("flights_sanc_", "OFAC SDN list and adsb.lol", "OFAC: public domain; adsb.lol: ODbL"),
+    ("tzeva_", "Tzeva Adom", "Public alerts"),
+    ("uaair_", "alerts.in.ua", "Public alerts"),
+    ("state_", "US State Department", "US government work, public domain"),
+    ("ca_", "Government of Canada", "Open Government Licence, Canada"),
+)
+SITUATION_SKIP = ("state_dep_", "state_main_", "state_od_")
+
+
+def situation(data, t):
+    """Added November 2026: [{id, label, value, last, change7, usual, source, licence, url, untested}] for the theatre's context
+    numbers (SITUATION), in that order. A series with no points yet is left out, so a card appears with its first data."""
+    out = []
+    for pre, src, lic in SITUATION:
+        for s in data["series"]:
+            if s["t"] != t or not s["id"].startswith(pre) or s["id"].startswith(SITUATION_SKIP):
+                continue
+            _, pts = _pts(data, s["id"])
+            if not pts:
+                continue
+            by = dict(pts)
+            last_d = dt.date.fromisoformat(pts[-1][0][:10]) if len(pts[-1][0]) >= 10 else None
+            prev = by.get((last_d - dt.timedelta(days=7)).isoformat()) if last_d else None
+            out.append({"id": s["id"], "label": s["l"], "value": round(pts[-1][1], 2), "last": pts[-1][0],
+                        "change7": None if prev is None else round(pts[-1][1] - prev, 2), "usual": _usual(pts),
+                        "source": src, "licence": lic, "url": s.get("url", ""), "untested": bool(s.get("ut"))})
+    return out
 
 
 FEED_DAYS = 30    # the strip under the map shows 30 days; the bell, the last 7
@@ -302,7 +468,52 @@ def feed(data):
                 d = o["d"] + ("-01" if len(o["d"]) == 7 else "")
                 if not any(x["theatre"] == t and x["title"].startswith("CrisisWatch") and x["date"][:7] == d[:7] for x in out):
                     add({"date": d, "kind": "official", "theatre": t, "title": f"CrisisWatch: {o['v']}", "detail": "Crisis Group, monthly", "to": {"view": "theatre", "id": t}})
+    for t in data["theatres"]:
+        if t == "global":
+            continue
+        for item in _safe("level changes", level_items, data, t) or []:
+            add(item)
+    for f in out:
+        f["tier"] = tier(f)
     return sorted(out, key=lambda f: f["date"], reverse=True)
+
+
+RANK = {"Normal": 0, "Watch": 1, "Elevated": 2, "Critical": 3}
+WORD = {"Normal": "Steady"}
+
+
+def level_items(data, t):
+    """Added November 2026: a feed item for each day the build-up level changed, from the levels kept for the last FEED_DAYS days
+    (day_levels: each day's first run, only days the model was off). A gap in the kept days is not read as a change."""
+    out, prev = [], None
+    for d, lv in day_levels(data, t):
+        if prev and lv != prev[1] and lv in RANK and prev[1] in RANK and \
+                (dt.date.fromisoformat(d) - dt.date.fromisoformat(prev[0])).days == 1:
+            up = RANK[lv] > RANK[prev[1]]
+            out.append({"date": d, "kind": "level", "theatre": t, "title": f"Build-up {'rose' if up else 'fell'} to {WORD.get(lv, lv)}",
+                        "detail": f"From {WORD.get(prev[1], prev[1])}, at the day's first run", "to": {"view": "theatre", "id": t}})
+        prev = (d, lv)
+    return out
+
+
+def tier(f):
+    """Added November 2026: "key" for the few changes worth a notification (a tripwire or strike wave, a build-up level change, a
+    base that differed on two radar passes, a government raising its advice or ordering departures, a CrisisWatch alert), "routine"
+    for the rest (heat, a single pass, advice rewritten, monthly ratings). The bell counts key items only."""
+    k, title, detail = f["kind"], f["title"], f.get("detail", "")
+    if k in ("tell", "level"):
+        return "key"
+    if k == "base":
+        return "key" if "two passes" in detail else "routine"
+    if k == "official":
+        if title.startswith("US travel advisories raised"):
+            return "key"
+        if title.startswith("US ordered or authorised departures"):
+            n = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", title)]
+            return "key" if len(n) >= 2 and n[1] > n[0] else "routine"
+        if title.startswith("CrisisWatch") and re.search(r"alert", title, re.I):
+            return "key"
+    return "routine"
 
 
 def _replay_since(data):
@@ -374,7 +585,9 @@ def brief(data):
                     "strong": sum(1 for s in sc if abs(s["z"]) >= 3), "context": ctx, "contextChecked": ctxd,
                     "spillover": t in (data.get("spill") or {}), "parents": (data.get("spill") or {}).get(t, []), "center": _box_center(t),
                     "groups": {k: g["z"] for k, g in _groups(data, t).items()}, "lines": lines(v), "levels": _safe("levels", day_levels, data, t) or [],
-                    "wires": _safe("wires", day_wires, data, t) or []})
+                    "wires": _safe("wires", day_wires, data, t) or [], "now": now_tier(t)})
+        tr = _safe("trend", trend, data, t) or []
+        ths[-1].update(trend=[x[1] for x in tr], trendEnd=tr[-1][0] if tr else None, change7=change7(tr))
     mo = data.get("model") or {}
     g = data.get("global") or {}
     return _head("brief", data["generated"], demo=bool(data.get("demo")), eventsThrough=(data.get("events") or {}).get("through", ""),
@@ -405,7 +618,8 @@ def theatre(data, t):
                  items=[{"date": i[0], "kind": i[1], "text": i[2], "signal": i[3] if len(i) > 3 else ""} for i in hist.get("items") or []],
                  aircraft48h=(data.get("adsb") or {}).get(t, {}),
                  events=[{"date": e[0], "kind": e[3], "text": e[4]} for e in ev if t in (e[1], e[2])][-60:],
-                 activity=v.get("act"))
+                 activity=v.get("act"), now=now_tier(t), trend=_safe("trend", trend, data, t) or [], shares=_safe("shares", shares, data, t),
+                 question=_safe("question", question, data, t), situation=_safe("situation", situation, data, t) or [])
 
 
 def signals(data):
@@ -666,6 +880,38 @@ def events(data):
                          for e in ev.get("list") or []])
 
 
+SITE = "https://khourix.github.io/warwatch/"
+
+
+def status(data, t):
+    """Added November 2026: one theatre's state in a few fields, for anyone who wants WarWatch in their own page or bot
+    (data/v1/status/<id>.json) and for the badge (status/<id>.svg). Build-up says Steady where the level is Normal."""
+    v = data["theatres"][t]
+    tr = _safe("trend", trend, data, t) or []
+    ctx, _ = _ctx(t)
+    return _head("status", data["generated"], theatre=t, name=v["name"], now=now_tier(t), context=ctx, level=v["level"],
+                 buildup=WORD.get(v["level"], v["level"]), reading=v.get("score"), change7=change7(tr),
+                 lit=[x["id"] for x in v.get("tells") or [] if x.get("on") and x.get("id")], url=f"{SITE}{t}/")
+
+
+def _esc(x):
+    return str(x).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+def badge(st):
+    """A flat SVG badge: "WarWatch" and "<theatre> · <build-up> <reading>". Ink only, like the board: no warning colour."""
+    left = "WarWatch"
+    name = st["name"].split(" (")[0]
+    right = f"{name} · {st['buildup']}" + ("" if st.get("reading") is None else f" {int(round(st['reading']))}")
+    w1, w2 = 8 + 7 * len(left), 10 + 6.4 * len(right)
+    W = round(w1 + w2)
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="20" role="img" aria-label="{_esc(left)}: {_esc(right)}">'
+            f'<title>{_esc(left)}: {_esc(right)}</title><rect width="{W}" height="20" rx="3" fill="#111822"/>'
+            f'<rect width="{round(w1)}" height="20" rx="3" fill="#e8ecf2"/><rect x="{round(w1) - 3}" width="3" height="20" fill="#e8ecf2"/>'
+            f'<g font-family="Verdana,DejaVu Sans,sans-serif" font-size="11"><text x="{round(w1 / 2)}" y="14" text-anchor="middle" fill="#080b11">{_esc(left)}</text>'
+            f'<text x="{round(w1 + w2 / 2)}" y="14" text-anchor="middle" fill="#e8ecf2">{_esc(right)}</text></g></svg>')
+
+
 def files(data):
     """-> {relative path: object} for the whole contract."""
     out = {"brief.json": brief(data), "signals/index.json": signals(data), "signals/buildup.json": buildup(data), "map/live.json": live_map(data),
@@ -673,6 +919,7 @@ def files(data):
     for t in data["theatres"]:
         if t != "global":
             out[f"theatres/{t}.json"] = theatre(data, t)
+            out[f"status/{t}.json"] = status(data, t)
     for s in data["series"]:
         if s.get("pts"):
             out[f"signals/series/{s['id']}.json"] = series(data, s)
@@ -682,7 +929,7 @@ def files(data):
 
 
 def write(out_dir, data):
-    """Writes data/v1/ under out_dir. Returns the number of files written."""
+    """Writes data/v1/ under out_dir. Returns the number of JSON files written (each status file also gets its SVG badge)."""
     root = os.path.join(out_dir, "data", "v1")
     n = 0
     for rel, obj in files(data).items():
@@ -691,4 +938,7 @@ def write(out_dir, data):
         with open(p, "w", encoding="utf-8") as f:
             json.dump(obj, f, separators=(",", ":"), ensure_ascii=False)
         n += 1
+        if obj.get("kind") == "status":     # its badge beside it: data/v1/status/<id>.svg
+            with open(p[:-5] + ".svg", "w", encoding="utf-8") as f:
+                f.write(badge(obj))
     return n

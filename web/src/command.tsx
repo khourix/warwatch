@@ -1,11 +1,13 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Command } from 'cmdk'
-import { Globe, Activity, ClipboardCheck, Sun, SlidersHorizontal, Search, Satellite, BookOpen, Link2, History, CornerDownLeft, Monitor } from 'lucide-react'
+import { Globe, Activity, ClipboardCheck, Sun, SlidersHorizontal, Search, Satellite, BookOpen, Link2, History, CornerDownLeft, Monitor, MapPin, Newspaper } from 'lucide-react'
 import { useSignals, short, baseState, fmtZ, levelWord, wholeScore, type Brief, type LiveMap, type Route } from './data'
 import { TERMS, ORDER as TERM_ORDER, type TermKey } from './glossary'
 import { useDialogFocus } from './settings'
 import { Skeleton } from './ui'
+import { focusOnMap } from './sat'
+import { gradeAll, GRADE_WORD } from './grade'
 
 /* The command menu (⌘K, Ctrl+K or /): pages and actions first, then what was picked lately, theatres, bases, signals and glossary
    terms. Typing ranks a name that starts with the words first, then a word inside it. Arrow keys move, Enter opens, Escape closes.
@@ -42,6 +44,8 @@ export default function CommandMenu({ open, setOpen, go, toggleTheme, openSettin
   const [recent, setRecent] = useState<Pick[]>(loadRecent)
   const box = useRef<HTMLDivElement>(null)
   useDialogFocus(open, box)
+  /* the field takes the focus as the menu opens (autoFocus alone loses it to the motion mount), so typing and Enter go straight to it */
+  useEffect(() => { if (!open) return; let n = 0, id = 0; const f = () => { const i = box.current?.querySelector<HTMLInputElement>('[cmdk-input]'); if (i) i.focus(); else if (n++ < 20) id = requestAnimationFrame(f) }; id = requestAnimationFrame(f); return () => cancelAnimationFrame(id) }, [open])
   /* the field is emptied when the menu closes, not when it opens, so keys typed at once after ⌘K are kept */
   useEffect(() => { if (open) { setRecent(loadRecent()); if (early?.current) { const k = early.current; early.current = ''; setQ(x => k + x) } } else setQ('') }, [open])
   const typed = q.trim().length > 0
@@ -61,6 +65,19 @@ export default function CommandMenu({ open, setOpen, go, toggleTheme, openSettin
   /* before typing: the bases that changed on radar; once typing: any base that matches, at most BASE_MAX */
   const baseIndex = useMemo(() => (live?.bases || []).map(b => ({ hay: `${b.name} base ${b.side} ${b.id}`.toLowerCase(), x: b })), [live])
   const bases = useMemo(() => dq ? search(baseIndex, dq, BASE_MAX) : baseIndex.map(i => i.x).filter(b => CHANGED.includes(b.state)).slice(0, 5), [baseIndex, dq])
+  /* places (chokepoints and cities) and news reports: picking one opens its theatre and flies the map to it */
+  type Place = { name: string; ll: [number, number]; theatre: string; kind: 'Chokepoint' | 'City' }
+  const placeIndex = useMemo(() => [...(live?.chokepoints || []).map(c => ({ ...c, kind: 'Chokepoint' as const })), ...(live?.cities || []).map(c => ({ ...c, kind: 'City' as const }))]
+    .map(x => ({ hay: `${x.name} ${x.kind}`.toLowerCase(), x: x as Place })), [live])
+  const places = useMemo(() => dq.length >= 2 ? search(placeIndex, dq, 8) : [], [placeIndex, dq])
+  const grades = useMemo(() => gradeAll(live?.incidents || []), [live])
+  const repIndex = useMemo(() => (live?.incidents || []).filter(x => x.t && x.ll).map(x => ({ hay: `${x.t} ${x.loc || ''} ${x.src || ''}`.toLowerCase(), x })), [live])
+  const reports = useMemo(() => dq.length >= 3 ? search(repIndex, dq, 6, (a, b) => (b.d || '').localeCompare(a.d || '')) : [], [repIndex, dq])
+  const flyTo = (ll: [number, number], theatre: string | undefined, tab?: string) => {
+    setOpen(false)
+    if (theatre && brief.theatres.some(t => t.id === theatre)) go({ v: 'theatre', id: theatre, tab }); else go({ v: 'map' })
+    setTimeout(() => focusOnMap({ kind: 'place', ll, zoom: 7 }), 350)
+  }
   const termIndex = useMemo(() => TERM_ORDER.map(k => ({ hay: `${TERMS[k].term} glossary term`.toLowerCase(), x: k })), [])
   const terms = useMemo(() => dq ? search(termIndex, dq, 12) : [], [termIndex, dq])
   type Act = { v: string; on: () => void; node: React.ReactNode }
@@ -69,7 +86,7 @@ export default function CommandMenu({ open, setOpen, go, toggleTheme, openSettin
     { v: 'Signals all signals', on: () => run({ v: 'signals' }), node: <><Activity size={15} aria-hidden />Signals</> },
     { v: 'Ground bases fires heat chokepoints', on: () => run({ v: 'ground' }), node: <><GroundIcon />Ground<span className="ml-auto text-[12px] text-fg2">bases, heat and chokepoints</span></> },
     { v: 'Record track record model data health', on: () => run({ v: 'record' }), node: <><ClipboardCheck size={15} aria-hidden />Record<span className="ml-auto text-[12px] text-fg2">the model's test, data health</span></> },
-    { v: 'Glossary terms words meaning', on: () => run({ v: 'glossary' }), node: <><BookOpen size={15} aria-hidden />Glossary</> },
+    { v: 'Guide how to read glossary terms words meaning sources credits', on: () => run({ v: 'glossary' }), node: <><BookOpen size={15} aria-hidden />Guide<span className="ml-auto text-[12px] text-fg2">how to read it, terms, sources</span></> },
     { v: 'Wall mode spare screen full screen monitor', on: () => run({ v: 'wall' }), node: <><Monitor size={15} aria-hidden />Wall<span className="ml-auto text-[12px] text-fg2 max-[459px]:hidden">Watch for a spare screen</span></> },
     { v: 'Copy link to this view share', on: () => { setOpen(false); copyLink() }, node: <><Link2 size={15} aria-hidden />Copy link to this view</> },
     { v: 'Switch light or dark theme', on: () => { setOpen(false); toggleTheme() }, node: <><Sun size={15} aria-hidden />Switch light or dark</> },
@@ -78,7 +95,7 @@ export default function CommandMenu({ open, setOpen, go, toggleTheme, openSettin
   const actHits = search(acts.map(a => ({ hay: a.v.toLowerCase(), x: a })), dq)
   /* the matching is ours, so the first item is selected here each time the results change: Enter opens the best match */
   const first = (actHits[0] && actHits[0].v) || (!typed && recent[0] && `recent ${recent[0].label} ${recent[0].k} ${recent[0].id}`) || (theatres[0] && `theatre ${theatres[0].id}`)
-    || (bases[0] && `base ${bases[0].id}`) || (sigHits[0] && `signal ${sigHits[0].id}`) || (terms[0] && `term ${terms[0]}`) || ''
+    || (places[0] && `place ${places[0].name}`) || (bases[0] && `base ${bases[0].id}`) || (sigHits[0] && `signal ${sigHits[0].id}`) || (reports[0] && `report ${reports[0].t}`) || (terms[0] && `term ${terms[0]}`) || ''
   const [sel, setSel] = useState('')
   useEffect(() => setSel(first), [first, dq])
   const pickRoute = (p: Pick): Route => p.k === 'theatre' ? { v: 'theatre', id: p.id } : p.k === 'base' ? { v: 'base', id: p.id } : p.k === 'signal' ? { v: 'signal', id: p.id } : { v: 'glossary', term: p.id }
@@ -94,11 +111,11 @@ export default function CommandMenu({ open, setOpen, go, toggleTheme, openSettin
             <Command label="Search WarWatch" loop shouldFilter={false} value={sel} onValueChange={setSel}>
               <div className="flex items-center gap-2.5 border-b border-line px-4">
                 <Search size={16} className="shrink-0 text-fg2" aria-hidden />
-                <Command.Input autoFocus value={q} onValueChange={setQ} placeholder="Go to a theatre, base, signal or term" className="h-12 min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg2" />
+                <Command.Input autoFocus value={q} onValueChange={setQ} placeholder="Go to a theatre, place, base, signal or report" className="h-12 min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg2" />
                 <kbd className="shrink-0 rounded-[4px] border border-line2 px-1.5 py-0.5 font-mono text-[10.5px] leading-none text-fg2">esc</kbd>
               </div>
               <Command.List className="scroll-thin max-h-[min(56vh,520px)] overflow-y-auto p-2 max-[599px]:max-h-[calc(100dvh-140px)]">
-                {dq && !actHits.length && !theatres.length && !bases.length && !sigHits.length && !terms.length && !(dq.length >= 2 && sigs.isPending) &&
+                {dq && !actHits.length && !theatres.length && !places.length && !bases.length && !sigHits.length && !reports.length && !terms.length && !(dq.length >= 2 && sigs.isPending) &&
                   <div className="px-3 py-7 text-center text-[13px] leading-[1.5] text-fg2" role="status">Nothing matches “{q.trim()}”.<br />Try a country, a base, a source such as NOTAM, or a word such as tripwire.</div>}
                 {actHits.length > 0 && <Command.Group heading="Go to" className={grp}>
                   {actHits.map(a => <Command.Item key={a.v} value={a.v} onSelect={a.on} className={item}>{a.node}</Command.Item>)}
@@ -109,7 +126,11 @@ export default function CommandMenu({ open, setOpen, go, toggleTheme, openSettin
                 {theatres.length > 0 && <Command.Group heading="Theatres" className={grp}>
                   {theatres.map(t => <Command.Item key={t.id} value={`theatre ${t.id}`} onSelect={() => run({ v: 'theatre', id: t.id }, { k: 'theatre', id: t.id, label: short(t.name) })} className={item}>
                     <Globe size={15} aria-hidden /><span className="min-w-0 flex-1 truncate">{short(t.name)}<span className="ml-2 text-[12px] text-fg2">{region(t.region)}</span></span>
-                    <span className={side}>{levelWord(t.level)}{t.score != null ? `, readings ${wholeScore(t.score)}` : ''}</span></Command.Item>)}
+                    <span className={side}>{levelWord(t.level)}{t.score != null ? `, reading ${wholeScore(t.score)}` : ''}</span></Command.Item>)}
+                </Command.Group>}
+                {places.length > 0 && <Command.Group heading="Places" className={grp}>
+                  {places.map(p => <Command.Item key={p.kind + p.name} value={`place ${p.name}`} onSelect={() => flyTo(p.ll, p.theatre)} className={item}>
+                    <MapPin size={15} aria-hidden /><span className="min-w-0 flex-1 truncate">{p.name}</span><span className="shrink-0 text-[12px] text-fg2">{p.kind}</span></Command.Item>)}
                 </Command.Group>}
                 {bases.length > 0 && <Command.Group heading={typed ? 'Bases' : 'Bases that changed on radar'} className={grp}>
                   {bases.map(b => <Command.Item key={b.id} value={`base ${b.id}`} onSelect={() => run({ v: 'base', id: b.id }, { k: 'base', id: b.id, label: b.name.split(',')[0] })} className={item}>
@@ -120,7 +141,11 @@ export default function CommandMenu({ open, setOpen, go, toggleTheme, openSettin
                     <Activity size={15} aria-hidden /><span className="min-w-0 flex-1 truncate">{s.label}</span><span className="num shrink-0 font-mono text-[11.5px] text-fg2">{s.z == null ? 'not scored' : fmtZ(s.z)}</span></Command.Item>)}
                 </Command.Group>}
                 {dq.length >= 2 && sigs.isPending && <Skeleton lines={2} />}
-                {terms.length > 0 && <Command.Group heading="Glossary" className={grp}>
+                {reports.length > 0 && <Command.Group heading="Reports" className={grp}>
+                  {reports.map((x, i) => <Command.Item key={i} value={`report ${x.t}`} onSelect={() => flyTo(x.ll, x.th, 'ground')} className={item}>
+                    <Newspaper size={15} aria-hidden /><span className="min-w-0 flex-1 truncate">{(x.t || '').replace(/ - [^-]*$/, '')}</span><span className="shrink-0 text-[12px] text-fg2">{GRADE_WORD[grades.get(x) || 'single']}</span></Command.Item>)}
+                </Command.Group>}
+                {terms.length > 0 && <Command.Group heading="Terms" className={grp}>
                   {terms.map(k => <Command.Item key={k} value={`term ${k}`} onSelect={() => openTerm(k)} className={item}>
                     <BookOpen size={15} aria-hidden /><span className="min-w-0 flex-1 truncate">{TERMS[k].term}<span className="ml-2 text-[12px] text-fg2 max-[459px]:hidden">{TERMS[k].says.split(/[.:]/)[0]}</span></span></Command.Item>)}
                 </Command.Group>}

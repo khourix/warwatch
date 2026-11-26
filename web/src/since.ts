@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { wholeScore, parseGen, type Brief, type FeedItem, type Level } from './data'
+import { wholeScore, parseGen, isKey, type Brief, type FeedItem, type Level } from './data'
 
 /* "Since you last looked": this browser keeps a small snapshot of the last visit (when, each theatre's level and whole-number
    reading, and the keys of the feed's last week). On the next visit, more than an hour later, Watch shows what moved since.
@@ -12,7 +12,7 @@ const HOUR = 36e5
 const WINDOW_DAYS = 7
 type Snap = { v: 1; at: number; gen: string; from: string; th: [string, Level, number | null][]; feed: string[] }
 export type Moved = { id: string; name: string; from: [Level, number | null]; to: [Level, number | null] }
-export type Since = { at: Date; moved: Moved[]; fresh: Set<string>; counts: Record<FeedItem['kind'], number> }
+export type Since = { at: Date; moved: Moved[]; fresh: Set<string>; counts: Record<FeedItem['kind'], number>; key: number }
 
 /* A feed item's identity between runs. Heat titles carry counts and a site name that change from run to run, and a base's
    title carries its words, so those are keyed by what they are about; tripwire and official titles are fixed names. */
@@ -54,9 +54,10 @@ export function diff(prev: Snap, b: Brief): Since {
     || Math.abs((y.to[1] ?? 0) - (y.from[1] ?? 0)) - Math.abs((x.to[1] ?? 0) - (x.from[1] ?? 0)))
   /* counts are rows, so a count matches the rows its chip shows */
   const seen = new Set(prev.feed), fresh = new Set<string>()
-  const counts: Since['counts'] = { tell: 0, base: 0, fire: 0, official: 0 }
-  for (const f of b.feed) { const k = feedKey(f); if (f.date.slice(0, 10) >= prev.from && !seen.has(k)) { fresh.add(k); if (f.kind in counts) counts[f.kind] += 1 } }
-  return { at: new Date(prev.at), moved, fresh, counts }
+  const counts: Since['counts'] = { tell: 0, base: 0, fire: 0, official: 0, level: 0 }
+  let key = 0
+  for (const f of b.feed) { const k = feedKey(f); if (f.date.slice(0, 10) >= prev.from && !seen.has(k)) { if (!fresh.has(k) && isKey(f)) key += 1; fresh.add(k); if (f.kind in counts) counts[f.kind] += 1 } }
+  return { at: new Date(prev.at), moved, fresh, counts, key }
 }
 
 export function useSinceLastVisit(brief: Brief): { since: Since | null; dismiss: () => void } {

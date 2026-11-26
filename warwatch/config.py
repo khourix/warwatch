@@ -51,18 +51,31 @@ THEATRES = {
 }
 # Main tabs: the market-moving theatres. A region with several sub-theatres shows them as a secondary tab row;
 # a region with one sub-theatre is that theatre. Region level = the highest sub-theatre level.
-# theatre -> (context line, month it was last checked). Set by hand, and checked each month by a Claude Code routine that opens a
-# PR when a line should change; never by the model or the scores. It says what is already happening, so a war under way does
-# not read like a calm theatre whose signals happen to sit near their usual range. Theatres without a line show none.
+# theatre -> (context line, month it was last checked, "now" tier). Set by hand, and checked each month by a Claude Code routine
+# that opens a PR when a line should change; never by the model or the scores. It says what is already happening, so a war under
+# way does not read like a calm theatre whose signals happen to sit near their usual range. Theatres without a line show none.
+# The tier is the app's "Now" answer beside the build-up level: "war" (fighting under way), "strikes" (strikes or attacks, not a
+# war) or "tension" (a stand-off with no fighting). It is checked with the line, and like the line it never changes a level.
 CONTEXT = {
-    "ukraine": ("War under way", "2026-11"),
-    "iran": ("Strikes at sea", "2026-11"),
-    "gulf": ("Houthi strikes on Saudi Arabia", "2026-11"),
-    "lebanon": ("Israeli strikes under way", "2026-11"),
-    "yemen": ("Conflict under way", "2026-11"),
-    "israel": ("Conflict under way", "2026-11"),
-    "sudan": ("War under way", "2026-11"),
-    "drc": ("Conflict under way", "2026-11"),
+    "ukraine": ("War under way", "2026-11", "war"),
+    "iran": ("Strikes at sea", "2026-11", "strikes"),
+    "gulf": ("Houthi strikes on Saudi Arabia", "2026-11", "strikes"),
+    "lebanon": ("Israeli strikes under way", "2026-11", "strikes"),
+    "yemen": ("Conflict under way", "2026-11", "war"),
+    "israel": ("Conflict under way", "2026-11", "war"),
+    "sudan": ("War under way", "2026-11", "war"),
+    "drc": ("Conflict under way", "2026-11", "war"),
+}
+NOW_TIERS = ("war", "strikes", "tension")
+# theatre -> (the question the theatre page opens with, the series that answer it, in order of preference, and how to word the
+# answer). Set by hand like CONTEXT. contract.question answers from the first series that has data, and only says what the series
+# says: "flow" compares the last 7 days with the series' usual level, "count" says how many there were in the last 7 days.
+QUESTIONS = {
+    "iran": ("Is the Strait of Hormuz open?", ("hormuz_cross_iran", "portwatch_hormuz"), "flow"),
+    "gulf": ("Is the Strait of Hormuz open?", ("hormuz_cross_iran", "portwatch_hormuz"), "flow"),
+    "yemen": ("Are ships using the Red Sea?", ("portwatch_bab",), "flow"),
+    "israel": ("Are sirens sounding?", ("tzeva_israel",), "count"),
+    "ukraine": ("Are air-raid alerts sounding across Ukraine?", ("uaair_ukraine",), "count"),
 }
 REGIONS = [
     ("mideast", "Middle East", ["iran", "israel", "yemen", "iraq", "gulf", "lebanon", "syria"]),

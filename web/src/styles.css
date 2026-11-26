@@ -12,7 +12,7 @@
   --bg: #080b11; --s1: #0c1119; --s2: #111822; --s3: #18212e; --line: rgba(160,190,230,.085); --line2: rgba(160,190,230,.17);
   --fg: #e8ecf2; --fg2: #a3adbb; --fg3: #7b8798;
   --paper: #111a27; --ink: #e8ecf2; --ink2: #a3adbb; --ink-line: rgba(160,195,240,.13);
-  --z0: rgba(160,190,230,.08); --z1: #5a4a1e; --z2: #f0b03c; --z3: #ff7438; --crit: #ff4a45;
+  --z0: rgba(160,190,230,.08); --z1: #86702c; --z2: #f0b03c; --z3: #ff7438; --crit: #ff4a45;
   --z2-text: #f0b03c; --z3-text: #ff7438;
   --happened: #f4ecdc; --cool: #9fb9d6; --ok: #52cf9d;
   --ocean: #06090e; --land: #0f151e; --land2: #18212e; --border: #2a3545; --grat: rgba(160,190,230,.04);
@@ -100,3 +100,10 @@ button { cursor: pointer; }
 
 /* a dossier's tab bar sticks to the top of its scroll panel: keep focused content clear of it when tabbing backwards */
 [data-scroll]:has([role="tablist"].sticky) { scroll-padding-top: 52px; }
+
+/* Motion tokens (one set for the whole app). instant 80 ms: hover, focus, pressed. quick 120 ms ease-out: toggles, chips, tips.
+   base 200 ms: a page or a sheet, a number rolling. move 280 ms: rows reordering. camera 600 to 1200 ms by distance: map flights.
+   wash 1.8 s, once: a value a new run changed. Reduced motion turns every move into a cut (the rules above). */
+:root { --t-instant: 80ms; --t-quick: 120ms; --t-base: 200ms; --t-move: 280ms; --t-wash: 1.8s; --ease-out: cubic-bezier(.2,.8,.2,1); }
+@keyframes ww-wash { from { background: color-mix(in srgb, var(--happened) 14%, transparent); } to { background: transparent; } }
+.ww-wash { animation: ww-wash var(--t-wash) var(--ease-out) both; }
