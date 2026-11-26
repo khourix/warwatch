@@ -290,6 +290,8 @@ class Day:
         self.events = []       # diversions and turnbacks touching a theatre airport
         self.th = {}           # (theatre, name) -> count
         self.legs = 0          # airline legs touching a theatre airport
+        import sanctions
+        self.watch = sanctions.watch()   # US-sanctioned aircraft (tail number, Mode S); {} until the list is downloaded
 
     def _a(self, icao):
         return self.apt.setdefault(icao, {"dep": 0, "arr": 0, "div_away": 0, "div_in": 0, "turnback": 0, "hold": 0, "bizjet_dep": 0, "bizjet_out": 0})
@@ -304,11 +306,16 @@ class Day:
         hidden = int(header.get("dbFlags") or 0) & (4 | 8)
         if int(header.get("dbFlags") or 0) & 1 or not self.ap.touches(trace):
             return    # military aircraft are counted elsewhere
+        import sanctions
+        sanc = bool(self.watch) and bool(sanctions.aircraft_match(header, self.watch))
         for lg in legs(trace, self.ap, float(header.get("timestamp") or 0)):
             dep, arr = lg["dep"], lg["arr"]
             tdep, tarr = self.ap.theatre(dep), self.ap.theatre(arr)
             if not tdep and not tarr:
                 continue
+            if sanc:     # any leg, airline or not: sanctioned carriers fly cargo under their own or no callsign
+                for th in {tdep, tarr} - {None, ""}:
+                    self._t(th, "sanc")
             if biz and tdep:
                 self._a(dep)["bizjet_dep"] += 1
                 self._t(tdep, "bizjet_dep")
@@ -371,6 +378,8 @@ class Day:
             for name, sid in (("dep", "flights_dep"), ("div", "flights_div"), ("turnback", "flights_turnback"), ("hold", "flights_hold"),
                               ("bizjet_dep", "bizjet_dep"), ("bizjet_out", "bizjet_out")):
                 out[f"{sid}_{th}"] = float(self.th.get((th, name), 0))
+            if self.watch:
+                out[f"flights_sanc_{th}"] = float(self.th.get((th, "sanc"), 0))
         out[DONE] = float(self.legs)
         return out
 

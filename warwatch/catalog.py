@@ -13,6 +13,7 @@ import os
 import config as C
 import extras
 import flights
+import openfeeds
 import gfw
 import sources as S
 import store
@@ -29,7 +30,8 @@ SCALE = (("adsb_", "count"), ("package_", "count"), ("civil_", "count"), ("firms
          ("darkshare_", ("share", 1.0)),
          ("news_", "count"), ("ports_", "count"), ("portwatch_", "count"), ("fcdo_", "count"),
          ("nga_", "window"), ("navwarn_", "window"), ("notam_", "window"), ("msa_", "window"), ("jcg_", "window"), ("ukmto_", "window"),
-         ("czib_", "window"), ("tzeva_", "window"), ("uaair_", "window"),
+         ("czib_", "window"), ("tzeva_", "window"), ("uaair_", "window"), ("geoconf_", "window"),
+         ("hormuz_", "count"), ("aisday_", "count"), ("warspot_", "count"), ("deepstate_", "count"),
          ("gpsjam_", ("share", 1.0)), ("gnss_", ("share", 1.0)),        # percent
          ("gdeltshare_", ("share", 10.0)),                               # per 1,000 events
          ("ooni_", ("share", 0.01)))                                     # a fraction
@@ -865,6 +867,65 @@ for th, box in C.BOXES.items():
         "Uppsala's event-by-event conflict dataset: best-estimate deaths from battles, one-sided attacks and non-state clashes inside the theatre box. Reactive, so it confirms escalation. Runs two to three months behind and is revised.",
         _slow(f"ucdp_deaths_{th}", lambda b=box: S.fetch_ucdp(b, _key("UCDP_TOKEN"))), drop=0, needs=["UCDP_TOKEN"], url="https://ucdp.uu.se/", sub="Conflict events")
 
+# ============ Open sources found in the Argos Atlas review (November 2026; warwatch/openfeeds.py, warwatch/sanctions.py) ============
+# All new and untested (NOT_TESTED below): on the page, the map and the forward record, outside the score.
+HZ = "https://hormuz.now/"
+add("hormuz_cross_iran", "Ships crossing the Strait of Hormuz per day (hormuz.now)", "geospatial", "iran", "daily", False,
+    "Crossings both ways, counted by hormuz.now from several AIS feeds; free AIS hears almost nothing in the Gulf, and PortWatch posts a week late. "
+    "A fall means shipping is avoiding the strait. History from 19 October 2026, so it is a forward record, not a backtest. "
+    + openfeeds.HORMUZ_CREDIT + ".", openfeeds.hormuz_crossings, direction="down", url=HZ, sub="Sea")
+add("hormuz_silent_iran", "Ships near the Strait of Hormuz whose AIS went silent (hormuz.now)", "geospatial", "iran", "daily", False,
+    "Ships that stopped transmitting near the strait: masters switch AIS off under threat or to hide a crossing. Snapshots start now. "
+    + openfeeds.HORMUZ_CREDIT + ".", _snap("hormuz_silent_iran", lambda: openfeeds.hormuz_now("silent")), url=HZ, sub="Sea")
+add("hormuz_waiting_iran", "Ships waiting to cross the Strait of Hormuz (hormuz.now)", "geospatial", "iran", "daily", False,
+    "Ships holding off the strait rather than crossing: a queue builds when owners wait for escorts or for a threat to pass. Snapshots start now. "
+    + openfeeds.HORMUZ_CREDIT + ".", _snap("hormuz_waiting_iran", lambda: openfeeds.hormuz_now("waiting")), url=HZ, sub="Sea")
+for th in C.BOXES:
+    add(f"geoconf_{th}", f"Events geolocated from photo or video, last 30 days, {TH[th]} (GeoConfirmed)", "geospatial", th, "daily", False,
+        "Strikes, clashes and damage that GeoConfirmed's volunteers placed on the map from footage, inside the theatre box. Verified, so it "
+        "confirms rather than leads; volunteer effort varies, so the count partly measures attention. Volunteers geolocate days after the event, "
+        "so the last week is left out. History from January 2023.",
+        (lambda t=th: openfeeds.geoconf_series(t)), drop=7, url="https://geoconfirmed.org/", sub="Conflict events")
+for th in openfeeds.ISO2:
+    add(f"ca_{th}", f"Canada travel-advisory level sum: {TH[th]}", "behavioral", th, "daily", False,
+        "Canada's advice per country (1 normal precautions to 4 avoid all travel), summed over the theatre's countries, beside the US and UK "
+        "advice: a raise by a third government makes an evacuation signal stronger. Snapshots start now.",
+        _snap(f"ca_{th}", lambda t=th: openfeeds.canada_level(t)), url="https://travel.gc.ca/travelling/advisories", sub="Advisories")
+for th in openfeeds.ISO2:
+    add(f"au_{th}", f"Australia travel-advisory level sum: {TH[th]} (Smartraveller)", "behavioral", th, "daily", False,
+        "Australia's overall advice per country (1 normal precautions to 4 do not travel), summed over the theatre's countries: a fourth "
+        "government beside the US, UK and Canada. Snapshots start now. Smartraveller, CC BY 4.0.",
+        _snap(f"au_{th}", lambda t=th: openfeeds.australia_level(t)), url=openfeeds.AU_URL, sub="Advisories")
+add("deepstate_gain_ukraine", "Ukrainian territory Russia took in the last 7 days, km² (DeepStateMap)", "geospatial", "ukraine", "daily", False,
+    "Change in the area DeepStateMap marks as occupied (since and before 24 February 2022) against the map a week earlier; negative when "
+    "Ukraine takes ground back. Measures the ground war, so it confirms rather than leads. History from every map version DeepStateMap keeps.",
+    openfeeds.deepstate_series, url="https://deepstatemap.live/", sub="Ground war")
+add("warspot_ukraine", "Russian equipment losses documented with photo or video, last 7 days (WarSpotting)", "geospatial", "ukraine", "daily", False,
+    "Tanks, armoured vehicles, artillery and other Russian equipment shown destroyed, damaged, abandoned or captured, counted on the day it was "
+    "lost. Losses are documented days to weeks later, so the newest week is left out. Measures the intensity of ground fighting; coincident.",
+    openfeeds.warspot_series, drop=7, url="https://ukr.warspotting.net/", sub="Ground war")
+
+
+def _ais_sanctioned(sid):
+    def go():
+        pts = store.cache_load(sid)
+        if not pts:
+            raise C.Pending("first day pending (the AIS job writes a day once the sanctions list is downloaded)")
+        return pts
+    return _cached(go)
+
+
+for _r, (_box, th) in __import__("aiswatch").REGIONS.items():
+    add(f"aisday_sanctioned_{_r}", f"Ships on the US sanctions list heard on AIS per day, {_r} waters", "logistics", th, "daily", False,
+        "Tankers and cargo ships named on the US Treasury's sanctions list (matched by IMO number or MMSI) heard in the region each day: the "
+        "shadow fleet that carries Russian and Iranian oil. Free AIS hears the Baltic, the Black Sea and the eastern Mediterranean well.",
+        _ais_sanctioned(f"aisday_sanctioned_{_r}"), url="https://sanctionssearch.ofac.treas.gov/", sub="Sea")
+for th in sorted(set(flights.THEATRE_ISO.values())):
+    add(f"flights_sanc_{th}", f"Flights by US-sanctioned aircraft at {TH[th]} airports (adsb.lol)", "logistics", th, "daily", False,
+        "Take-offs and landings at the theatre's airports by aircraft on the US Treasury's sanctions list, matched by tail number or Mode S code. "
+        "Sanctioned cargo carriers fly arms and parts without a military flag, so the military-aircraft counts miss them. One day behind.",
+        _flights(f"flights_sanc_{th}"), url=ADS, sub="Air")
+
 # ============ How often each source is worth fetching (hours between full fetches) ============
 # Slow-moving sources are re-read from their cache in between, so the page can rebuild every 30 minutes
 # for the live layers without hammering rate-limited APIs.
@@ -876,8 +937,12 @@ for _s in SERIES:
         _s["every"] = 6       # daily closes
     elif _id.startswith(("portwatch_", "fcdo_", "crisiswatch_")):
         _s["every"] = 12      # PortWatch posts weekly, FCDO rewrites advice rarely, CrisisWatch is monthly
+    elif _id.startswith("deepstate_"):
+        _s["every"] = 3       # a new map version most days; the first runs read the back history 150 versions at a time
     elif _id.startswith(("ioda_", "ooni_", "ports_", "cfr_", "gas_", "power_", "fx_", "msa_", "jcg_", "navwarn_")):
         _s["every"] = 3
+    elif _id.startswith(("geoconf_", "ca_", "au_", "warspot_")):
+        _s["every"] = 6       # GeoConfirmed's files are large; Canada rewrites advice rarely
     elif _id.startswith(("ais_presence_", "choke_")):
         _s["every"] = 12      # one call per box; the source posts daily with a ~5 day delay
 
@@ -903,7 +968,8 @@ for _s in SERIES:
     _s["local"] = _s["id"].startswith(LOCAL)
     _s["cached"] = _s["local"] or bool(getattr(_s["fetch"], "cached", False))
 
-NOT_TESTED = ("flights_", "bizjet_", "darkships_", "darkshare_", "loiter_", "portcalls_", "choke_", "navwarn_")
+NOT_TESTED = ("flights_", "bizjet_", "darkships_", "darkshare_", "loiter_", "portcalls_", "choke_", "navwarn_",
+              "hormuz_", "geoconf_", "ca_", "au_", "deepstate_", "warspot_", "aisday_sanctioned_")   # the last seven from the Argos Atlas review, November 2026
 for _s in SERIES:
     if _s["id"].startswith(NOT_TESTED):
         _s["scored"] = False
@@ -927,7 +993,7 @@ for _s in SERIES:
 # decision is made and goes quiet after. A CrisisWatch rating is already a monthly judgement, so its newest value is the
 # reading (it could never have been scored as a level: that needs 40 issues). stats._scored_as_event has the scales.
 for _s in SERIES:
-    if _s["id"].startswith("state_") and not _s["id"].startswith(TELL_ONLY):
+    if _s["id"].startswith(("state_", "ca_", "au_")) and not _s["id"].startswith(TELL_ONLY):
         _s["transform"] = "step"
     elif _s["id"].startswith("crisiswatch_"):
         _s["transform"] = "event"

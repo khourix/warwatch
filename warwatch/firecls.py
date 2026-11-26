@@ -486,6 +486,7 @@ def classify(pts, box, today=None, ref=None):
             day = today
         classify_one(p, ref, near.get(id(p), 1), day)
     econ_check(pts, box)
+    natural_check(pts, box)
     assign_clusters(pts, box)
     review(pts)
     return pts
@@ -698,4 +699,54 @@ def econ_check(pts, box):
                 p["c"] = "anom"
             p["why"] += " The Economist's war-fire model also marks this fire as war-related."
             p["econ"] = 1
+    return pts
+
+
+# ---------------------------------------------------------------- natural hazards (GDACS and NASA EONET; Argos review, item 6)
+NATURAL_KM = {"fire": 25.0, "volc": 15.0}   # a listed wildfire's point is its centre or origin, and big fires run for tens of km
+NATURAL_CUT = 30                            # an unexplained detection inside a listed wildfire loses this much score
+_NAT = {}
+
+
+def natural_index():
+    if "s" not in _NAT:
+        import store
+        import openfeeds
+        rows = [r for r in store.cache_rows(openfeeds.HAZARDS) if len(r) == 7]
+        _NAT["s"] = [{"a": dt.date.fromisoformat(r[0]), "b": dt.date.fromisoformat(r[1]), "lat": float(r[2]), "lon": float(r[3]),
+                      "kind": r[4], "name": r[5], "src": r[6]} for r in rows]
+    return _NAT["s"]
+
+
+def natural_check(pts, box, idx=None):
+    """A detection near a wildfire or volcano that GDACS or NASA EONET lists for that day is marked as a natural event: a volcano
+    makes it 'volc', a wildfire takes NATURAL_CUT off its score (an anomaly can fall to unexplained) and adds a note.
+    Not in Ukraine, where The Economist's model already judges which fires are war-related and fields burn from shelling."""
+    if box == "ukraine":
+        return pts
+    idx = natural_index() if idx is None else idx
+    if not idx:
+        return pts
+    for p in pts:
+        if p.get("c") not in ("anom", "unex", "seas") or p.get("econ"):
+            continue
+        try:
+            day = dt.date.fromisoformat(p["date"])
+        except (KeyError, ValueError):
+            continue
+        for h in idx:
+            if not (h["a"] - dt.timedelta(days=1) <= day <= h["b"] + dt.timedelta(days=1)):
+                continue
+            if km(p["lat"], p["lon"], h["lat"], h["lon"]) > NATURAL_KM.get(h["kind"], 0):
+                continue
+            name = f" ({h['name']})" if h["name"] else ""
+            if h["kind"] == "volc":
+                _set(p, "volc", 5, f"Volcano: {h['src']} lists an active volcano here{name}.")
+            elif p["c"] != "seas":
+                p["a"] = max(0, p["a"] - NATURAL_CUT)
+                if p["c"] == "anom" and p["a"] < ANOM_AT:
+                    p["c"] = "unex"
+                p["why"] += f" {h['src']} lists a wildfire nearby on these dates{name}."
+            p["natural"] = 1
+            break
     return pts

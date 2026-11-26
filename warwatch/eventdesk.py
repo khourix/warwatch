@@ -244,6 +244,23 @@ def validate(raw, heads, start, end):
     return kept, rejected
 
 
+# ---------------------------------------------------------------- evidence grade (Argos review, item 7)
+# Outlets owned or run by the state of a party to the theatres WarWatch watches. A claim carried only by them is graded apart.
+STATE_MEDIA = re.compile(r"\b(TASS|RIA|Sputnik|RT|Rossiyskaya|Izvestia|Xinhua|CGTN|Global Times|China Daily|People's Daily|CCTV|IRNA|Press ?TV|"
+                         r"Tasnim|Fars|Mehr|IRIB|Al[- ]Masirah|Saba|KCNA|Rodong|SANA|BelTA|Telesur|VTV)\b", re.I)
+GRADES = ("several outlets", "one outlet", "state media only")
+
+
+def grade(evidence):
+    """The cited headlines -> (grade, outlets): several independent outlets, one, or only state media. 'verified with media' is not
+    graded here: a person sets it on review, when footage of this event is geolocated (GeoConfirmed, for instance)."""
+    outlets = sorted({(h.get("src") or "").strip() for h in evidence if (h.get("src") or "").strip()})
+    free = [o for o in outlets if not STATE_MEDIA.search(o)]
+    if not free:
+        return ("state media only" if outlets else "one outlet"), len(outlets)
+    return ("several outlets" if len(free) >= 2 else "one outlet"), len(outlets)
+
+
 # ---------------------------------------------------------------- listed events and matching
 def listed_events(path=EVENTS):
     """-> [(date, set of areas it labels, type, description)]: the theatre plus any sub-theatre sites."""
@@ -486,13 +503,14 @@ def propose(start=None, end=None, ask=llm.ask, news=fetch_news, sleep=time.sleep
                 if any(abs((d - x).days) <= MATCH_DAYS for x in near):
                     continue
                 note = "may continue the listed event of " + max(near).isoformat() if near else ""
+                g, n = grade(k["evidence"])
                 rows.append({"date": k["date"], "area": unit, "type": k["type"], "description": k["description"], "source": k["source"],
-                             "note": note, "model": version})
+                             "grade": g, "outlets": n, "note": note, "model": version})
             sleep(llm.PROVIDERS[provider]["pause"])
     rows.sort(key=lambda r: (r["date"], r["area"]))
     for i, r in enumerate(rows, 1):
         r["n"] = i
-    cols = ["n", "date", "area", "type", "description", "source", "note", "model"]
+    cols = ["n", "date", "area", "type", "description", "source", "grade", "outlets", "note", "model"]
     with open(out_csv, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
@@ -502,10 +520,11 @@ def propose(start=None, end=None, ask=llm.ask, news=fetch_news, sleep=time.sleep
          "before it is added to `warwatch/data/events.csv` under `docs/EVENTS.md`.", "",
          *([f"**Incomplete:** the provider's daily limit stopped the run in the window ending {stopped}; later days were not read.", ""]
            if stopped else []),
-         "| # | Date | Area | Type | Event | Source | Note |", "|---:|---|---|---|---|---|---|"]
-    L += [f"| {r['n']} | {r['date']} | {r['area']} | {r['type']} | {r['description']} | {r['source']} | {r['note']} |" for r in rows]
+         "| # | Date | Area | Type | Event | Source | Evidence | Note |", "|---:|---|---|---|---|---|---|---|"]
+    L += [f"| {r['n']} | {r['date']} | {r['area']} | {r['type']} | {r['description']} | {r['source']} | {r['grade']}, {r['outlets']} "
+          f"outlet{'s' if r['outlets'] != 1 else ''} | {r['note']} |" for r in rows]
     if not rows:
-        L.append("| | | | | No candidates. | | |")
+        L.append("| | | | | No candidates. | | | |")
     with open(out_doc, "w") as f:
         f.write("\n".join(L) + "\n")
     return len(rows)
