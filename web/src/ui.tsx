@@ -129,7 +129,7 @@ export function Facts({ items, className = '' }: { items: [ReactNode, ReactNode]
   return (
     <dl className={`grid grid-cols-3 border-t border-line pt-2.5 ${className}`}>
       {items.map(([v, label], i) => (
-        <div key={i} className={`flex min-w-0 flex-col-reverse ${i ? 'border-l border-line pl-3' : ''}`}>
+        <div key={i} className={`flex min-w-0 flex-col-reverse justify-end ${i ? 'border-l border-line pl-3' : ''}`}>
           <dt className="mt-1 text-[11px] leading-[1.3] text-fg3">{label}</dt>
           <dd className="num text-[17px] font-medium leading-none tracking-[-0.02em] text-fg">{v}</dd>
         </div>))}
@@ -196,7 +196,7 @@ export function Explain({ k, asOf, children, className = '' }: { k: TermKey; asO
       onFocus={e => { if (e.currentTarget.matches(':focus-visible')) setHover(true) }} onBlur={() => { setHover(false); setPinned(false) }}
       onPointerEnter={e => { if (e.pointerType === 'mouse') setHover(true) }} onPointerLeave={e => { if (e.pointerType === 'mouse') setHover(false) }}
       onKeyDown={e => { if (e.key === 'Escape' && open) { e.preventDefault(); e.stopPropagation(); setHover(false); setPinned(false) } }}
-      className={`cursor-help text-left underline decoration-dotted decoration-[color-mix(in_oklab,currentColor_55%,transparent)] underline-offset-[3px] hover:decoration-current ${className}`}>
+      className={`cursor-help text-left [text-transform:inherit] underline decoration-dotted decoration-[color-mix(in_oklab,currentColor_55%,transparent)] underline-offset-[3px] hover:decoration-current ${className}`}>
       {children ?? t.term}
     </button>
     <span id={id} hidden>{t.says} {t.from}{when ? ` Updated ${when}.` : ''}</span>

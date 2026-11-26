@@ -250,7 +250,7 @@ function BaseFull({ b, mb, crumbs, th, thName, go }: { b: BaseFile; mb?: MapBase
       {pair ? <>
         {radarPair && optPair && <div className="mx-5 mb-2 flex items-center justify-between gap-2">
           <span className="inline-flex rounded-r2 border border-line p-0.5 text-[11.5px]" role="group" aria-label="Kind of image">
-            {([[false, 'Radar'], [true, 'Optical']] as const).map(([k, l]) => <button key={l} aria-pressed={showOpt === k} onClick={() => setOptical(k)} className={`rounded-[6px] px-2 py-0.5 transition-colors duration-[120ms] ${showOpt === k ? 'bg-s3 text-fg' : 'text-fg3 hover:text-fg2'}`}>{l}</button>)}
+            {([[false, 'Radar'], [true, 'Optical']] as const).map(([k, l]) => <button key={l} aria-pressed={showOpt === k} onClick={() => setOptical(k)} className={`rounded-[6px] px-2 py-0.5 transition-colors duration-[120ms] ${showOpt === k ? 'bg-sel text-selink' : 'text-fg2 hover:text-fg'}`}>{l}</button>)}
           </span>
           {b.parts.length > 1 && !showOpt && p && <span className="truncate text-[11.5px] text-fg3">{PART_TITLE[p.part] || p.what} {p.where}</span>}
         </div>}

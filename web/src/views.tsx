@@ -246,8 +246,9 @@ function Situation({ t }: { t: Theatre; go: Go }) {
           <li key={c.id} className="flex min-w-0 flex-col gap-1 rounded-r2 border border-line bg-s2 px-3 py-2.5">
             <span className="flex items-baseline gap-2"><b className="num text-[20px] font-medium leading-none tracking-[-0.02em]">{fmtN(c.value)}</b>
               {c.change7 != null && <span className="num text-[11.5px] text-fg2">{c.change7 === 0 ? '0' : (c.change7 > 0 ? '+' : '−') + fmtN(Math.abs(c.change7))} in 7 days</span>}</span>
-            <span className="line-clamp-2 text-[12px] leading-[1.35] text-fg2">{c.label.replace(/\s*\([^)]*\)\s*$/, '')}</span>
-            <span className="mt-auto text-[11px] leading-[1.4] text-fg3">{c.usual ? `Usual ${fmtN(c.usual.median)} (${fmtN(c.usual.low)}–${fmtN(c.usual.high)})` : 'No usual level yet'} · {shortDate(c.last.slice(0, 10))}</span>
+            {/* the label always takes two lines, so the usual line and the source sit at the same height in every card of a row */}
+            <span className="line-clamp-2 min-h-[calc(2*1.35em)] text-[12px] leading-[1.35] text-fg2">{c.label.replace(/\s*\([^)]*\)\s*$/, '')}</span>
+            <span className="text-[11px] leading-[1.4] text-fg3">{c.usual ? `Usual ${fmtN(c.usual.median)} (${fmtN(c.usual.low)}–${fmtN(c.usual.high)})` : 'No usual level yet'} · {shortDate(c.last.slice(0, 10))}</span>
             <span className="text-[11px] leading-[1.4] text-fg3">{c.url ? <a href={c.url} target="_blank" rel="noreferrer" className="lnk !text-fg3">{c.source}</a> : c.source}, {c.licence}</span>
           </li>))}
       </ul>

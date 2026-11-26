@@ -434,13 +434,16 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
       {tip && <div className="pointer-events-none absolute z-10 max-w-[280px] truncate rounded-r1 border border-line2 bg-[color-mix(in_oklab,var(--s1)_95%,transparent)] px-2 py-1 text-[12px] text-fg shadow-[var(--shadow)]" style={{ left: tip.x + 14, top: tip.y + 14 }}>{tip.text}</div>}
       {wide && live && !wall && <div ref={dock} role="group" aria-label="Map layers and legend" className="absolute inset-x-3.5 top-3.5 z-10 flex flex-wrap content-start gap-1">
         <LayerPanel layers={layers} toggle={toggle} count={count} />
-        {/* the legend: only the marks now drawn, as plain labels (the switches live in the panel) */}
-        <span className={`inline-flex h-[28px] items-center gap-2.5 rounded-full px-2.5 text-[11.5px] text-fg2 ${glass}`} aria-label="Legend">
+        {/* the legend: only the marks now drawn, as plain labels on one flat strip. Square corners and no outline, unlike the Layers
+            button beside it, so it never reads as something to press (the switches live in the panel) */}
+        <span className="inline-flex min-h-[28px] max-w-full flex-wrap items-center gap-x-2.5 gap-y-1 rounded-r1 bg-[color-mix(in_oklab,var(--bg)_74%,transparent)] px-2.5 py-1 text-[11.5px] leading-[1.3] text-fg2 backdrop-blur-[10px]" aria-label="Legend">
           {LAYERS.filter(([k]) => count[k] > 0 && layers[k]).map(([k, name]) => <span key={k} className="inline-flex items-center gap-1"><Swatch k={k} off={false} />{name}</span>)}
+          {/* the two base keys wrap together, so neither is left alone on a line */}
+          {layers.bases && count.bases > 0 && <span className="inline-flex items-center gap-2.5 whitespace-nowrap">
+            <span className="inline-flex items-center gap-1.5"><i className="h-[7px] w-[7px] rotate-45 bg-z2 ring-1 ring-black/70" aria-hidden />one pass differed</span>
+            <span className="inline-flex items-center gap-1.5"><i className="h-[7px] w-[7px] rotate-45 bg-z3 ring-1 ring-black/70" aria-hidden />emptier or fuller</span>
+          </span>}
         </span>
-        {layers.bases && count.bases > 0 && <span className={`inline-flex h-[28px] items-center gap-1.5 rounded-full px-2.5 text-[11.5px] text-fg2 ${glass}`}>
-          <i className="h-[7px] w-[7px] rotate-45 bg-z2 ring-1 ring-black/70" aria-hidden />one pass differed<i className="ml-1 h-[7px] w-[7px] rotate-45 bg-z3 ring-1 ring-black/70" aria-hidden />emptier or fuller
-        </span>}
       </div>}
       {!wide && live && !wall && <button onClick={() => setSheet(true)} aria-label={`Map layers, ${LAYERS.filter(([k]) => layers[k] && count[k] > 0).length} of ${LAYERS.filter(([k]) => count[k] > 0).length} shown`} aria-haspopup="dialog"
         className={`absolute right-4 top-[66px] z-10 grid h-11 w-11 place-items-center rounded-full text-fg2 shadow-[var(--shadow)] ${glass}`}><LayersIcon size={18} /></button>}
@@ -448,7 +451,7 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
       {imgs.length > 0 && <div role="group" aria-label="Satellite picture on the map" className={`absolute z-10 flex items-center gap-0.5 overflow-x-auto rounded-r2 p-1 text-[12px] shadow-[var(--shadow)] ${glass}`} style={{ left: wide ? 14 : 16, top: wide ? dockH + 22 : 66, maxWidth: 'calc(100% - 72px)' }}>
         <ImageIcon size={14} className="mx-1.5 shrink-0 text-fg3" />
         {imgs.map(i => <button key={i.key} aria-pressed={shown?.key === i.key} onClick={() => setImgKey(i.key)} title={i.caption} className={`shrink-0 whitespace-nowrap rounded-[6px] px-2 py-1 ${shown?.key === i.key ? 'bg-sel text-selink' : 'text-fg2 hover:bg-s2 hover:text-fg'}`}>{i.label}</button>)}
-        <button aria-pressed={!shown} onClick={() => setImgKey('off')} className={`shrink-0 rounded-[6px] px-2 py-1 ${!shown ? 'bg-s3 text-fg' : 'text-fg3 hover:bg-s2 hover:text-fg'}`}>Off</button>
+        <button aria-pressed={!shown} onClick={() => setImgKey('off')} className={`shrink-0 rounded-[6px] px-2 py-1 ${!shown ? 'bg-sel text-selink' : 'text-fg2 hover:bg-s2 hover:text-fg'}`}>Off</button>
         {shown && <span className="num shrink-0 whitespace-nowrap px-1.5 font-mono text-[11px] text-fg3">{shortDate(shown.date)}</span>}
       </div>}
       {peek && <PeekCard p={peek} live={live} cardRef={card} onClose={() => setPeek(null)} onPick={r => { setPeek(null); onPick(r) }} brief={brief} shown={shown} onShow={setImgKey} onEnlarge={setBig}

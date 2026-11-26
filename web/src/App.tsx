@@ -234,7 +234,8 @@ function Shell({ brief }: { brief: Brief }) {
           <div style={replaying ? { ['--stick' as string]: '44px' } : undefined}>
             <LateBanner brief={brief} />
             {phoneBanner}
-            {dossier || page ? view : <>{dispatch}{phoneSince}<Boundary what="the 30-day timeline" at="m-3.5"><Timeline brief={brief} day={day} setDay={setDay} inline /></Boundary>{board}{feed}</>}
+            {/* phones answer first (proposal 4): one status line and the board, then the dispatch, the timeline and the feed */}
+            {dossier || page ? view : <>{!replaying && <p className="mx-4 mt-2.5 text-[12.5px] leading-[1.45] text-fg2"><Status brief={brief} /></p>}{board}{dispatch}{phoneSince}<Boundary what="the 30-day timeline" at="m-3.5"><Timeline brief={brief} day={day} setDay={setDay} inline /></Boundary>{feed}</>}
           </div>
         </PhoneShell>
         {overlays}
@@ -377,7 +378,9 @@ function FirstVisit({ go }: { go: (r: Route) => void }) {
   const done = () => { try { localStorage.setItem('ww-hinted', '1') } catch { /* private mode */ } setOn(false) }
   return (
     <p className="mx-3.5 mb-1.5 flex min-h-9 items-center gap-2 rounded-r2 border border-line px-3 text-[12.5px] text-fg2">
-      <span className="min-w-0 flex-1">New here? <button onClick={() => { done(); go({ v: 'glossary', term: 'read' }) }} className="lnk text-fg">How to read WarWatch</button><span className="max-[899px]:hidden">, or press <kbd className="rounded-[3px] border border-line2 px-1 font-mono text-[10.5px]">?</kbd> any time</span></span>
+      {/* one line at any width: the ? shortcut sits at the end like the ⌘K hint in the search box, not inside the sentence */}
+      <span className="min-w-0 flex-1 truncate">New here? <button onClick={() => { done(); go({ v: 'glossary', term: 'read' }) }} className="lnk text-fg">How to read WarWatch</button></span>
+      <kbd title="Press ? any time to open it" className="shrink-0 rounded-[3px] border border-line2 px-1 py-0.5 font-mono text-[10.5px] leading-none text-fg3 max-[899px]:hidden">?</kbd>
       <button onClick={done} aria-label="Close the tip" className="-mr-1.5 grid h-7 w-7 shrink-0 place-items-center rounded-r1 text-fg3 hover:bg-s2 hover:text-fg"><X size={14} /></button>
     </p>
   )
