@@ -361,7 +361,7 @@ function SignalList({ list, total, pending, brief, go, q, setQ, only, setOnly, g
         <label data-filter className="flex min-w-[200px] flex-1 items-center gap-2 rounded-r2 border border-line bg-s1 px-2.5 py-[7px] focus-within:border-line2"><Search size={14} className="shrink-0 text-fg3" aria-hidden />
           <input value={q} onChange={e => setQ(e.target.value)} placeholder={total ? `Filter ${total} signals` : 'Filter signals'} aria-label="Filter signals by name, source or theatre" className="w-full bg-transparent text-[13.5px] outline-none placeholder:text-fg3" /></label>
         <span role="group" aria-label="Show" className="inline-flex rounded-r2 border border-line p-0.5 text-[12.5px]">
-          {ONLY.map(([k, l]) => <button key={k} aria-pressed={only === k} onClick={() => setOnly(k)} className={`rounded-[6px] px-2.5 py-1 transition-colors duration-[120ms] ${only === k ? 'bg-s3 text-fg' : 'text-fg2 hover:text-fg'}`}>{l}</button>)}
+          {ONLY.map(([k, l]) => <button key={k} aria-pressed={only === k} onClick={() => setOnly(k)} className={`rounded-[6px] px-2.5 py-1 transition-colors duration-[120ms] ${only === k ? 'bg-sel text-selink' : 'text-fg2 hover:text-fg'}`}>{l}</button>)}
         </span>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">

@@ -36,7 +36,7 @@ export function Status({ brief }: { brief: Brief }) {
   if (rp) return <ReplayStatus brief={brief} rp={rp} />
   const up = above(brief), near = closest(brief), n = brief.theatres.length
   const sep = <i className="mx-2 inline-block h-3.5 w-px translate-y-[2px] bg-line2" aria-hidden />
-  if (up.length) return <><b className="font-medium text-fg">{up.length} of {n} theatres at Watch or above</b>{sep}<span>{up.slice(0, 3).map(t => `${short(t.name)}, ${t.level}`).join(' · ')}{up.length > 3 ? ' …' : ''}</span></>
+  if (up.length) return <><b className="font-medium text-fg">{up.length} of {n} theatres at Watch or above</b>{sep}<span>{up.slice(0, 3).map((t, i) => <span key={t.id}>{i > 0 && ' · '}<span className="whitespace-nowrap">{short(t.name)}, {t.level}</span></span>)}{up.length > 3 ? ' …' : ''}</span></>
   return <><b className="font-medium text-fg">{n} of {n} theatres steady</b>{near && <>{sep}<span>{underLine(brief, near) ? `Closest to Watch: ${short(near.name)}, ${wholeScore(near.score!)} against 50` : `Highest reading: ${short(near.name)}, ${wholeScore(near.score!)}`}</span></>}</>
 }
 
@@ -159,7 +159,7 @@ export function Board({ brief, sel, go, order, setOrder }: { brief: Brief; sel: 
         <h2 className="text-[13px] font-semibold tracking-[-0.005em]">Theatres{rp && <span className="font-normal text-fg2">, {shortDate(rp.day)}</span>}</h2>
         <span className="inline-flex rounded-r2 border border-line p-0.5 text-[11.5px]" role="group" aria-label="Order of the board">
           {([['closest', rp ? 'By level' : 'Closest to Watch'], ['region', 'By region']] as const).map(([k, label]) => (
-            <button key={k} aria-pressed={order === k} onClick={() => setOrder(k)} className={`relative rounded-[6px] px-2 py-0.5 after:absolute after:inset-x-0 after:-inset-y-3 after:content-[''] transition-colors duration-[120ms] ${order === k ? 'bg-s3 text-fg' : 'text-fg3 hover:text-fg2'}`}>{label}</button>))}
+            <button key={k} aria-pressed={order === k} onClick={() => setOrder(k)} className={`relative rounded-[6px] px-2 py-0.5 after:absolute after:inset-x-0 after:-inset-y-3 after:content-[''] transition-colors duration-[120ms] ${order === k ? 'bg-sel text-selink' : 'text-fg2 hover:text-fg'}`}>{label}</button>))}
         </span>
       </div>
       {/* the column heads, on the row's own grid (BOARD_COLS), so each head sits over its column */}
@@ -413,12 +413,13 @@ export function Timeline({ brief, day, setDay, inline = false }: { brief: Brief;
           onPointerUp={e => { const g = drag.current; drag.current = null; if (!g || g.on || Math.hypot(e.clientX - g.x, e.clientY - g.y) > 8) return; const k = fromX(e.clientX); if (k >= 0 && k < 30) pick(k, true) }}
           onPointerCancel={() => { drag.current = null }}
           className="grid min-w-0 flex-1 touch-pan-y gap-0.5 py-1" style={{ gridTemplateColumns: 'repeat(30, minmax(0, 1fr))' }}>
+          {/* a hovered day gets a hairline outline; its cells keep their size, so nothing in the strip moves under the pointer */}
           {days.map((d, i) => { const on = i === at && !!day, today = i === 29; return (
             <button key={d} ref={el => { btns.current[i] = el }} role="option" aria-selected={day ? on : today} aria-label={say(i)} title={say(i)} tabIndex={i === at ? 0 : -1}
               onClick={e => { if (e.detail === 0) pick(i, true) }}
-              className={`group flex flex-col gap-[3px] rounded-[3px] outline-offset-1 ${on ? 'outline outline-1 outline-sel' : ''} ${day && i > at ? 'opacity-40' : ''}`}>
+              className={`group flex flex-col gap-[3px] rounded-[3px] outline-offset-1 ${on ? 'outline outline-1 outline-sel' : 'hover:outline hover:outline-1 hover:outline-fg3'} ${day && i > at ? 'opacity-40' : ''}`}>
               {LANES.map(([k, , tone]) => { const n = counts[k][i], mx = Math.max(1, ...counts[k]), open = k === 'fire' && noHeat(i); return (
-                <i key={k} className={`h-[11px] w-full rounded-[2px] transition-transform duration-[120ms] group-hover:scale-y-[1.3] ${open ? 'border border-dashed border-line2' : ''}`} style={{ background: open ? 'transparent' : n ? tone : 'var(--z0)', opacity: !n ? 1 : n / mx > .6 ? 1 : n / mx > .25 ? .7 : .45 }} />) })}
+                <i key={k} className={`h-[11px] w-full rounded-[2px] ${open ? 'border border-dashed border-line2' : ''}`} style={{ background: open ? 'transparent' : n ? tone : 'var(--z0)', opacity: !n ? 1 : n / mx > .6 ? 1 : n / mx > .25 ? .7 : .45 }} />) })}
             </button>) })}
         </div>
       </div>

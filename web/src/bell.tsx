@@ -67,8 +67,8 @@ export function NotificationBell({ brief, live, go, phone = false }: { brief: Br
               {unread > 0 ? <button onClick={markAll} className="shrink-0 text-[12px] lnk">Mark all as read</button> : <span className="shrink-0 text-[12px] text-fg3">All read</span>}
             </div>
             <div className="flex shrink-0 gap-0.5 overflow-x-auto border-b border-line px-3 py-2 text-[12px]">
-              {tabs.map(t => <button key={t} onClick={() => setTab(t)} aria-pressed={tab === t} className={`shrink-0 rounded-full px-2 py-1 ${tab === t ? 'bg-hover text-fg' : 'text-fg3 hover:text-fg2'}`}>
-                {t} <span className="num text-fg3">{t === 'All' ? all.length : all.filter(n => n.key).length}</span></button>)}
+              {tabs.map(t => <button key={t} onClick={() => setTab(t)} aria-pressed={tab === t} className={`shrink-0 rounded-full px-2 py-1 ${tab === t ? 'bg-sel text-selink' : 'text-fg2 hover:text-fg'}`}>
+                {t} <span className={`num ${tab === t ? 'text-selink/75' : 'text-fg3'}`}>{t === 'All' ? all.length : all.filter(n => n.key).length}</span></button>)}
             </div>
             <div className="scroll-thin min-h-0 flex-1 overflow-y-auto pb-2">
               {list.length === 0 && <p className="px-4 py-6 text-[13px] text-fg3">{tab === 'Key' ? 'No key change this week: no tripwire, build-up change, base changed on two passes or raised advice.' : 'Nothing new this week: no tripwire, base change, unusual fire, official step or live alert.'}</p>}
