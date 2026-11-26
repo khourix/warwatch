@@ -438,9 +438,8 @@ export function MapView({ brief, live, route, theme, wide, padBottom, onPick, fl
             button beside it, so it never reads as something to press (the switches live in the panel) */}
         <span className="inline-flex min-h-[28px] max-w-full flex-wrap items-center gap-x-2.5 gap-y-1 rounded-r1 bg-[color-mix(in_oklab,var(--bg)_74%,transparent)] px-2.5 py-1 text-[11.5px] leading-[1.3] text-fg2 backdrop-blur-[10px]" aria-label="Legend">
           {LAYERS.filter(([k]) => count[k] > 0 && layers[k]).map(([k, name]) => <span key={k} className="inline-flex items-center gap-1"><Swatch k={k} off={false} />{name}</span>)}
-          {/* the two base keys wrap together, after a hairline */}
+          {/* the two base keys wrap together, so neither is left alone on a line */}
           {layers.bases && count.bases > 0 && <span className="inline-flex items-center gap-2.5 whitespace-nowrap">
-            <i className="h-3 w-px bg-line2" aria-hidden />
             <span className="inline-flex items-center gap-1.5"><i className="h-[7px] w-[7px] rotate-45 bg-z2 ring-1 ring-black/70" aria-hidden />one pass differed</span>
             <span className="inline-flex items-center gap-1.5"><i className="h-[7px] w-[7px] rotate-45 bg-z3 ring-1 ring-black/70" aria-hidden />emptier or fuller</span>
           </span>}
