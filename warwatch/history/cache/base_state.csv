@@ -65,7 +65,7 @@ siauliai,normal,2026-11-25,2026-11-25,2026-11-06,1.12,apron,,apron:normal:1.12:2
 amari,normal,2026-11-25,2026-11-25,2026-10-20,-0.67,apron,,apron:normal:-0.67:2026-11-25:4:5:3:6;ground:normal:0.80:2026-11-25:95:83:72:150
 belbek,changed,2026-11-25,2026-11-25,2026-11-08,3.37,apron,,apron:changed:3.37:2026-11-25:16:11:10:14;ground:normal:2.44:2026-11-25:66:43:37:59
 saky,normal,2026-11-25,2026-11-25,2026-11-24,2.02,apron,,apron:normal:2.02:2026-11-25:15:11:9:14;ground:in:4.35:2026-11-21/2026-11-25:54:25:20:53
-sevastopol,nodata,,2026-10-28,2026-11-08,-0.08,harbour,,harbour:nodata:-0.08::50:51:42:58;ground:nodata:0.00::3:3:2:4
+sevastopol,nodata,,2026-11-01,2026-11-08,0.67,harbour,,harbour:nodata:0.67::45:43:37:47;ground:nodata:-1.00::2:3:3:4
 baltiysk,normal,2026-11-24,2026-11-24,2026-11-25,1.12,harbour,,harbour:normal:1.12:2026-11-24:25:20:17:26;ground:normal:0.00:2026-11-24:0:0:0:1
 chkalovsk,normal,2026-11-24,2026-11-24,2026-11-20,1.18,apron,,apron:normal:1.18:2026-11-24:19:16:12:21;ground:normal:1.53:2026-11-24:78:54:41:121
 soltsy,nodata,,2026-10-28,2026-11-06,0.00,apron,,apron:nodata:0.00::1:1:1:1;ground:nodata:-0.67::21:25:19:44
@@ -145,8 +145,8 @@ kp_sinpung_dong,normal,2026-11-16,2026-11-16,2026-10-21,-1.57,ground,,ground:nor
 kp_hoejung_ni,nodata,,2026-10-29,2026-10-28,-0.55,ground,,ground:nodata:-0.55::300:386:191:561
 kp_yongjo_ri,nodata,,2026-10-29,2026-11-25,-0.38,ground,Burn scars seen on 2026-10-28 (258.9 ha).,ground:nodata:-0.38::300:362:206:625
 kr_seongju_thaad,normal,2026-11-24,2026-11-24,2026-11-22,-2.47,ground,,ground:normal:-2.47:2026-11-24:20:42:32:69
-cn_613_brigade_shangrao,normal,2026-11-24,2026-11-24,2026-11-21,-0.53,ground,,ground:normal:-0.53:2026-11-24:365:375:344:409
-cn_614_brigade_yongan,normal,2026-11-17,2026-11-17,2026-11-21,-0.41,ground,,ground:normal:-0.41:2026-11-17:252:274:228:354
+cn_613_brigade_shangrao,normal,2026-11-24,2026-11-24,2026-11-26,-0.53,ground,,ground:normal:-0.53:2026-11-24:365:375:344:409
+cn_614_brigade_yongan,normal,2026-11-17,2026-11-17,2026-11-26,-0.41,ground,,ground:normal:-0.41:2026-11-17:252:274:228:354
 cn_615_brigade_meizhou,normal,2026-11-22,2026-11-22,2026-11-21,-0.96,ground,,ground:normal:-0.96:2026-11-22:239:276:154:331
 cn_616_brigade_ganzhou,normal,2026-11-22,2026-11-22,2026-10-30,-1.49,ground,,ground:normal:-1.49:2026-11-22:267:342:280:591
 cn_617_brigade_jinhua,normal,2026-11-19,2026-11-19,2026-11-10,-1.55,ground,,ground:normal:-1.55:2026-11-19:250:324:291:444
