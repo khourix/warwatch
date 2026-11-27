@@ -59,7 +59,7 @@ osan,normal,2026-11-17,2026-11-17,2026-11-24,1.35,apron,,apron:normal:1.35:2026-
 kunsan,changed,2026-11-23,2026-11-23,2026-11-22,5.40,apron,,apron:changed:5.40:2026-11-23:13:5:4:13;ground:normal:1.15:2026-11-23:222:205:192:229
 jinhae,normal,2026-11-24,2026-11-24,2026-11-11,-1.85,harbour,,harbour:normal:-1.85:2026-11-24:82:93:82:99;ground:normal:-1.41:2026-11-24:316:404:345:491
 rzeszow,normal,2026-11-25,2026-11-25,2026-11-21,-0.67,apron,,apron:normal:-0.67:2026-11-25:5:6:4:8;ground:changed:-4.38:2026-11-25:15:28:24:34
-powidz,nodata,,2026-10-29,2026-11-20,0.67,apron,,apron:nodata:0.67::13:12:11:18;ground:nodata:0.15::118:114:86:221
+powidz,nodata,,2026-10-30,2026-11-20,-1.57,apron,,apron:nodata:-1.57::10:14:11:16;ground:nodata:2.11::105:93:82:110
 kogalniceanu,normal,2026-11-24,2026-11-24,2026-11-12,0.45,apron,,apron:normal:0.45:2026-11-24:11:10:8:14;ground:normal:1.50:2026-11-24:78:68:61:76
 siauliai,normal,2026-11-25,2026-11-25,2026-11-06,1.12,apron,,apron:normal:1.12:2026-11-25:8:6:4:8;harbour:normal:0.00:2026-11-25:0:0:0:0;ground:normal:0.67:2026-11-25:34:31:27:46
 amari,normal,2026-11-25,2026-11-25,2026-11-26,-0.67,apron,,apron:normal:-0.67:2026-11-25:4:5:3:6;ground:normal:0.80:2026-11-25:95:83:72:150
