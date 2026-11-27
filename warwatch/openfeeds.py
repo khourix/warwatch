@@ -233,6 +233,7 @@ def deepstate_gain(rows, days=7):
 # Australia's (Smartraveller, CC BY 4.0): exercise normal safety precautions, high degree of caution, reconsider, do not travel.
 CA_URL = "https://data.international.gc.ca/travel-voyage/index-alpha-eng.json"
 AU_URL = "https://www.smartraveller.gov.au/destinations"
+AU_EXPORT = "https://www.smartraveller.gov.au/destinations-export"   # Smartraveller's public JSON export, one row per destination
 ISO2 = {"ukraine": ["UA", "BY", "MD"], "europe_east": ["PL", "LT", "LV", "EE", "FI"], "iran": ["IR", "IQ"], "iraq": ["IQ"],
         "gulf": ["SA", "AE", "QA", "BH", "KW", "OM"], "lebanon": ["LB"], "syria": ["SY"], "yemen": ["YE", "SA", "OM", "DJ"],
         "israel": ["IL", "LB", "JO", "EG"], "taiwan": ["TW"], "scs": ["PH", "VN"], "korea": ["KR", "KP"], "southasia": ["IN", "PK"],
@@ -272,6 +273,19 @@ def parse_smartraveller(page):
     return out
 
 
+def parse_smartraveller_export(rows):
+    """destinations-export JSON -> {slug: level 1 to 4}. The slug is the last part of field_url, as on the destinations page."""
+    out = {}
+    for r in rows or []:
+        slug = str(r.get("field_url") or "").rstrip("/").rsplit("/", 1)[-1].lower()
+        text = html.unescape(str(r.get("field_overall_advice_level") or "")).lower()
+        for words, n in AU_LEVEL:
+            if slug and words in text:
+                out[slug] = n
+                break
+    return out
+
+
 def level_sum(levels, codes, slug=None):
     """Sum of the levels of a theatre's countries. Raises when one is missing, so a renamed country never reads as a fall."""
     keys = [slug[c] for c in codes] if slug else codes
@@ -292,8 +306,15 @@ AU_FRESH_H = 36
 
 
 def smartraveller_fetch():
-    """Reads the site -> {slug: level}. Raises unless every country WarWatch uses has a level."""
-    levels = parse_smartraveller(S.get(AU_URL, retries=1, raw=True, timeout=60))
+    """Reads the JSON export (the destinations page if that fails) -> {slug: level}. Raises unless every country WarWatch
+    uses has a level. The page timed out from GitHub and from the home runner on 27 Nov 2026; the export is a lighter 300 KB."""
+    try:
+        levels = parse_smartraveller_export(S.get(AU_EXPORT, retries=2, timeout=90))
+    except Exception as e:
+        try:
+            levels = parse_smartraveller(S.get(AU_URL, retries=1, raw=True, timeout=60))
+        except Exception as e2:
+            raise RuntimeError(f"Smartraveller export: {str(e)[:120]}; page: {str(e2)[:120]}")
     missing = sorted(set(AU_SLUG.values()) - set(levels))
     if missing:
         raise RuntimeError(f"Smartraveller parsed {len(levels)} countries, missing {', '.join(missing)}")
