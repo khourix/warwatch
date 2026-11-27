@@ -6,8 +6,11 @@ All series built here are new and untested (catalog.NOT_TESTED): on the page and
 """
 import datetime as dt
 import html
+import json
 import math
+import os
 import re
+import sys
 
 import config as C
 import sources as S
@@ -282,9 +285,47 @@ def canada_level(theatre):
     return level_sum(_once("canada", lambda: parse_canada(S.get(CA_URL, retries=2))), ISO2[theatre])
 
 
+# Smartraveller does not answer GitHub's runners, so the home runner (khourix/warwatch-collect, workflow smartraveller.yml)
+# reads it every 6 hours and pushes the levels here. The build reads that file while it is fresh and tries the site itself if not.
+AU_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "smartraveller.json")
+AU_FRESH_H = 36
+
+
+def smartraveller_fetch():
+    """Reads the site -> {slug: level}. Raises unless every country WarWatch uses has a level."""
+    levels = parse_smartraveller(S.get(AU_URL, retries=1, raw=True, timeout=60))
+    missing = sorted(set(AU_SLUG.values()) - set(levels))
+    if missing:
+        raise RuntimeError(f"Smartraveller parsed {len(levels)} countries, missing {', '.join(missing)}")
+    return levels
+
+
+def smartraveller_save(path=AU_FILE, now=None, fetch=None):
+    """Home runner: fetch and write {"fetched": UTC time, "levels": {slug: level}}. -> number of countries."""
+    levels = (fetch or smartraveller_fetch)()
+    now = now or dt.datetime.now(dt.timezone.utc)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump({"fetched": now.strftime("%Y-%m-%dT%H:%MZ"), "source": AU_URL, "licence": "CC BY 4.0",
+                   "levels": dict(sorted(levels.items()))}, f, indent=0)
+        f.write("\n")
+    return len(levels)
+
+
+def smartraveller_saved(path=AU_FILE, now=None):
+    """The levels the home runner saved, or None when the file is missing or older than AU_FRESH_H hours."""
+    try:
+        with open(path) as f:
+            got = json.load(f)
+        when = dt.datetime.strptime(got["fetched"], "%Y-%m-%dT%H:%MZ").replace(tzinfo=dt.timezone.utc)
+    except (OSError, ValueError, KeyError):
+        return None
+    now = now or dt.datetime.now(dt.timezone.utc)
+    return got.get("levels") if now - when <= dt.timedelta(hours=AU_FRESH_H) else None
+
+
 def australia_level(theatre):
-    return level_sum(_once("smartraveller", lambda: parse_smartraveller(S.get(AU_URL, retries=1, raw=True, timeout=60))),
-                     ISO2[theatre], AU_SLUG)
+    return level_sum(_once("smartraveller", lambda: smartraveller_saved() or smartraveller_fetch()), ISO2[theatre], AU_SLUG)
 
 
 # ---- WarSpotting: Russian equipment losses documented with photo or video (public API, named User-Agent required) ----
@@ -416,3 +457,10 @@ def hazards_refresh(today=None, days=30, get=None):
     rows = sorted(r for r in rows if r[1] >= a)
     store.cache_rows_save(HAZARDS, rows)
     return len(rows), errs
+
+
+if __name__ == "__main__":
+    if sys.argv[1:2] == ["smartraveller"]:
+        print("smartraveller: countries saved", smartraveller_save(*sys.argv[2:3]))
+    else:
+        sys.exit("usage: python3 warwatch/openfeeds.py smartraveller [out.json]   # the home runner, every 6 hours")

@@ -149,6 +149,26 @@ class TestAdvisories(_TmpHistory, unittest.TestCase):
             for c in codes:
                 self.assertIn(c, O.AU_SLUG)
 
+    def test_smartraveller_file_from_home_runner(self):
+        full = {slug: 2 for slug in O.AU_SLUG.values()}
+        t = dt.datetime(2026, 11, 27, 6, 0, tzinfo=dt.timezone.utc)
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "smartraveller.json")
+            self.assertIsNone(O.smartraveller_saved(path, now=t))
+            self.assertEqual(O.smartraveller_save(path, now=t, fetch=lambda: full), len(full))
+            self.assertEqual(O.smartraveller_saved(path, now=t + dt.timedelta(hours=30)), full)
+            self.assertIsNone(O.smartraveller_saved(path, now=t + dt.timedelta(hours=40)))   # stale: the build tries the site
+
+    def test_smartraveller_fetch_refuses_a_partial_table(self):
+        old = O.S.get
+        O.S.get = lambda *a, **k: ('<tr><td><a href="/destinations/europe/ukraine">Ukraine</a></td>'
+                                   '<td class="views-field-field-overall-advice-level">Do not travel</td></tr>')
+        try:
+            with self.assertRaises(RuntimeError):
+                O.smartraveller_fetch()
+        finally:
+            O.S.get = old
+
 
 class TestHazards(_TmpHistory, unittest.TestCase):
     def test_gdacs_and_eonet_rows(self):
