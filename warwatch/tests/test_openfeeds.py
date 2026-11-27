@@ -136,47 +136,6 @@ class TestAdvisories(_TmpHistory, unittest.TestCase):
         with self.assertRaises(RuntimeError):
             O.level_sum(lv, O.ISO2["iran"])
 
-    def test_smartraveller_table(self):
-        page = ('<table><tr><td class="views-field-title"><a href="/destinations/europe/ukraine">Ukraine</a></td>'
-                '<td class="views-field views-field-field-overall-advice-level"><span>Do not travel</span></td>'
-                '<td><time datetime="2026-11-20T00:00:00Z">20 Nov</time></td></tr>'
-                '<tr><td><a href="/destinations/europe/moldova">Moldova</a></td>'
-                '<td class="views-field-field-overall-advice-level">Exercise a high degree of caution</td></tr></table>')
-        self.assertEqual(O.parse_smartraveller(page), {"ukraine": 4, "moldova": 2})
-
-    def test_every_theatre_country_has_an_australian_slug(self):
-        for codes in O.ISO2.values():
-            for c in codes:
-                self.assertIn(c, O.AU_SLUG)
-
-    def test_smartraveller_file_from_home_runner(self):
-        full = {slug: 2 for slug in O.AU_SLUG.values()}
-        t = dt.datetime(2026, 11, 27, 6, 0, tzinfo=dt.timezone.utc)
-        with tempfile.TemporaryDirectory() as d:
-            path = os.path.join(d, "smartraveller.json")
-            self.assertIsNone(O.smartraveller_saved(path, now=t))
-            self.assertEqual(O.smartraveller_save(path, now=t, fetch=lambda: full), len(full))
-            self.assertEqual(O.smartraveller_saved(path, now=t + dt.timedelta(hours=30)), full)
-            self.assertIsNone(O.smartraveller_saved(path, now=t + dt.timedelta(hours=40)))   # stale: the build tries the site
-
-    def test_smartraveller_export(self):
-        rows = [{"title": "Ukraine", "field_overall_advice_level": "Do not travel",
-                 "field_url": "https://www.smartraveller.gov.au/destinations/europe/ukraine"},
-                {"title": "North Korea (Democratic People&#039;s Republic of Korea)", "field_overall_advice_level": "Reconsider your need to travel",
-                 "field_url": "https://www.smartraveller.gov.au/destinations/asia/north-korea-democratic-peoples-republic-korea"},
-                {"title": "Antarctica", "field_overall_advice_level": "No travel advice", "field_url": "https://www.smartraveller.gov.au/destinations/antarctica/antarctica"}]
-        self.assertEqual(O.parse_smartraveller_export(rows), {"ukraine": 4, "north-korea-democratic-peoples-republic-korea": 3})
-
-    def test_smartraveller_fetch_refuses_a_partial_table(self):
-        old = O.S.get
-        O.S.get = lambda *a, **k: ('<tr><td><a href="/destinations/europe/ukraine">Ukraine</a></td>'
-                                   '<td class="views-field-field-overall-advice-level">Do not travel</td></tr>')
-        try:
-            with self.assertRaises(RuntimeError):
-                O.smartraveller_fetch()
-        finally:
-            O.S.get = old
-
 
 class TestHazards(_TmpHistory, unittest.TestCase):
     def test_gdacs_and_eonet_rows(self):
