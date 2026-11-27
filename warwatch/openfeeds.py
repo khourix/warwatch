@@ -1,16 +1,13 @@
 """Open sources found through the Argos Atlas review (November 2026): the Strait of Hormuz from hormuz.now, verified events from
-GeoConfirmed, the Ukraine front from DeepStateMap, Canada's and Australia's travel advice, and natural-hazard lists (GDACS,
+GeoConfirmed, the Ukraine front from DeepStateMap, Canada's travel advice, and natural-hazard lists (GDACS,
 NASA EONET) for the fire classifier. Every fetcher raises when its source fails, so a gap is never read as "nothing happened".
 
 All series built here are new and untested (catalog.NOT_TESTED): on the page and the forward record, outside the score.
 """
 import datetime as dt
 import html
-import json
 import math
-import os
 import re
-import sys
 
 import config as C
 import sources as S
@@ -228,23 +225,15 @@ def deepstate_gain(rows, days=7):
     return out
 
 
-# ---- Canada and Australia travel advice (a third and fourth government beside the US and the UK) ----
+# ---- Canada's travel advice (a third government beside the US and the UK) ----
 # Canada's levels: 0 normal precautions, 1 high degree of caution, 2 avoid non-essential travel, 3 avoid all travel.
-# Australia's (Smartraveller, CC BY 4.0): exercise normal safety precautions, high degree of caution, reconsider, do not travel.
+# Australia's Smartraveller was tried and dropped on 27 Nov 2026: its page and JSON export time out for scripts, from GitHub
+# and from the home runner alike, so only a browser could read it.
 CA_URL = "https://data.international.gc.ca/travel-voyage/index-alpha-eng.json"
-AU_URL = "https://www.smartraveller.gov.au/destinations"
-AU_EXPORT = "https://www.smartraveller.gov.au/destinations-export"   # Smartraveller's public JSON export, one row per destination
 ISO2 = {"ukraine": ["UA", "BY", "MD"], "europe_east": ["PL", "LT", "LV", "EE", "FI"], "iran": ["IR", "IQ"], "iraq": ["IQ"],
         "gulf": ["SA", "AE", "QA", "BH", "KW", "OM"], "lebanon": ["LB"], "syria": ["SY"], "yemen": ["YE", "SA", "OM", "DJ"],
         "israel": ["IL", "LB", "JO", "EG"], "taiwan": ["TW"], "scs": ["PH", "VN"], "korea": ["KR", "KP"], "southasia": ["IN", "PK"],
         "libya": ["LY"], "sudan": ["SD", "SS"], "drc": ["CD"], "venezuela": ["VE", "CO", "CU"]}   # as C.STATE_ISO, in ISO codes
-AU_SLUG = {"UA": "ukraine", "BY": "belarus", "MD": "moldova", "PL": "poland", "LT": "lithuania", "LV": "latvia", "EE": "estonia",
-           "FI": "finland", "IR": "iran", "IQ": "iraq", "SA": "saudi-arabia", "AE": "united-arab-emirates", "QA": "qatar", "BH": "bahrain",
-           "KW": "kuwait", "OM": "oman", "LB": "lebanon", "SY": "syria", "YE": "yemen", "DJ": "djibouti", "IL": "israel", "JO": "jordan",
-           "EG": "egypt", "TW": "taiwan", "PH": "philippines", "VN": "vietnam", "KR": "south-korea-republic-korea", "KP": "north-korea-democratic-peoples-republic-korea", "IN": "india",
-           "PK": "pakistan", "LY": "libya", "SD": "sudan", "SS": "south-sudan", "CD": "democratic-republic-congo", "VE": "venezuela",
-           "CO": "colombia", "CU": "cuba"}
-AU_LEVEL = (("do not travel", 4), ("reconsider your need to travel", 3), ("high degree of caution", 2), ("normal safety precautions", 1))
 
 
 def parse_canada(payload):
@@ -257,96 +246,16 @@ def parse_canada(payload):
     return out
 
 
-def parse_smartraveller(page):
-    """The destinations table -> {slug: level 1 to 4}. Each row links /destinations/<region>/<slug> and names the overall level."""
-    out = {}
-    for row in re.findall(r"<tr[^>]*>(.*?)</tr>", page or "", re.S | re.I):
-        m = re.search(r'href="/destinations/[^"/]+/([^"/?#]+)"', row)
-        lv = re.search(r'views-field-field-overall-advice-level[^>]*>(.*?)</td>', row, re.S | re.I)
-        if not (m and lv):
-            continue
-        text = html.unescape(re.sub(r"<[^>]+>", " ", lv.group(1))).lower()
-        for words, n in AU_LEVEL:
-            if words in text:
-                out[m.group(1).lower()] = n
-                break
-    return out
-
-
-def parse_smartraveller_export(rows):
-    """destinations-export JSON -> {slug: level 1 to 4}. The slug is the last part of field_url, as on the destinations page."""
-    out = {}
-    for r in rows or []:
-        slug = str(r.get("field_url") or "").rstrip("/").rsplit("/", 1)[-1].lower()
-        text = html.unescape(str(r.get("field_overall_advice_level") or "")).lower()
-        for words, n in AU_LEVEL:
-            if slug and words in text:
-                out[slug] = n
-                break
-    return out
-
-
-def level_sum(levels, codes, slug=None):
+def level_sum(levels, codes):
     """Sum of the levels of a theatre's countries. Raises when one is missing, so a renamed country never reads as a fall."""
-    keys = [slug[c] for c in codes] if slug else codes
-    missing = [k for k in keys if k not in levels]
+    missing = [k for k in codes if k not in levels]
     if missing:
         raise RuntimeError(f"no advisory level for {', '.join(missing)}")
-    return float(sum(levels[k] for k in keys))
+    return float(sum(levels[k] for k in codes))
 
 
 def canada_level(theatre):
     return level_sum(_once("canada", lambda: parse_canada(S.get(CA_URL, retries=2))), ISO2[theatre])
-
-
-# Smartraveller does not answer GitHub's runners, so the home runner (khourix/warwatch-collect, workflow smartraveller.yml)
-# reads it every 6 hours and pushes the levels here. The build reads that file while it is fresh and tries the site itself if not.
-AU_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "smartraveller.json")
-AU_FRESH_H = 36
-
-
-def smartraveller_fetch():
-    """Reads the JSON export (the destinations page if that fails) -> {slug: level}. Raises unless every country WarWatch
-    uses has a level. The page timed out from GitHub and from the home runner on 27 Nov 2026; the export is a lighter 300 KB."""
-    try:
-        levels = parse_smartraveller_export(S.get(AU_EXPORT, retries=2, timeout=90))
-    except Exception as e:
-        try:
-            levels = parse_smartraveller(S.get(AU_URL, retries=1, raw=True, timeout=60))
-        except Exception as e2:
-            raise RuntimeError(f"Smartraveller export: {str(e)[:120]}; page: {str(e2)[:120]}")
-    missing = sorted(set(AU_SLUG.values()) - set(levels))
-    if missing:
-        raise RuntimeError(f"Smartraveller parsed {len(levels)} countries, missing {', '.join(missing)}")
-    return levels
-
-
-def smartraveller_save(path=AU_FILE, now=None, fetch=None):
-    """Home runner: fetch and write {"fetched": UTC time, "levels": {slug: level}}. -> number of countries."""
-    levels = (fetch or smartraveller_fetch)()
-    now = now or dt.datetime.now(dt.timezone.utc)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as f:
-        json.dump({"fetched": now.strftime("%Y-%m-%dT%H:%MZ"), "source": AU_URL, "licence": "CC BY 4.0",
-                   "levels": dict(sorted(levels.items()))}, f, indent=0)
-        f.write("\n")
-    return len(levels)
-
-
-def smartraveller_saved(path=AU_FILE, now=None):
-    """The levels the home runner saved, or None when the file is missing or older than AU_FRESH_H hours."""
-    try:
-        with open(path) as f:
-            got = json.load(f)
-        when = dt.datetime.strptime(got["fetched"], "%Y-%m-%dT%H:%MZ").replace(tzinfo=dt.timezone.utc)
-    except (OSError, ValueError, KeyError):
-        return None
-    now = now or dt.datetime.now(dt.timezone.utc)
-    return got.get("levels") if now - when <= dt.timedelta(hours=AU_FRESH_H) else None
-
-
-def australia_level(theatre):
-    return level_sum(_once("smartraveller", lambda: smartraveller_saved() or smartraveller_fetch()), ISO2[theatre], AU_SLUG)
 
 
 # ---- WarSpotting: Russian equipment losses documented with photo or video (public API, named User-Agent required) ----
@@ -478,10 +387,3 @@ def hazards_refresh(today=None, days=30, get=None):
     rows = sorted(r for r in rows if r[1] >= a)
     store.cache_rows_save(HAZARDS, rows)
     return len(rows), errs
-
-
-if __name__ == "__main__":
-    if sys.argv[1:2] == ["smartraveller"]:
-        print("smartraveller: countries saved", smartraveller_save(*sys.argv[2:3]))
-    else:
-        sys.exit("usage: python3 warwatch/openfeeds.py smartraveller [out.json]   # the home runner, every 6 hours")
