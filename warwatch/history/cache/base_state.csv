@@ -59,7 +59,7 @@ osan,nodata,,2026-11-17,2026-11-27,1.35,apron,,apron:nodata:1.35::6:4:3:6;ground
 kunsan,changed,2026-11-23,2026-11-23,2026-11-27,5.40,apron,Burn scars seen on 2026-11-27 (46.2 ha).,apron:changed:5.40:2026-11-23:13:5:4:13;ground:normal:1.15:2026-11-23:222:205:192:229
 jinhae,normal,2026-11-24,2026-11-24,2026-11-11,-1.85,harbour,,harbour:normal:-1.85:2026-11-24:82:93:82:99;ground:normal:-1.41:2026-11-24:316:404:345:491
 rzeszow,normal,2026-11-25,2026-11-25,2026-11-21,-0.67,apron,,apron:normal:-0.67:2026-11-25:5:6:4:8;ground:changed:-4.38:2026-11-25:15:28:24:34
-powidz,nodata,,2026-11-05,2026-11-20,0.00,apron,,apron:nodata:0.00::13:13:10:16;ground:nodata:-0.51::90:93:82:110
+powidz,nodata,,2026-11-08,2026-11-20,0.00,apron,,apron:nodata:0.00::8:8:5:12;ground:nodata:-0.58::73:79:68:102
 kogalniceanu,normal,2026-11-24,2026-11-24,2026-11-12,0.45,apron,,apron:normal:0.45:2026-11-24:11:10:8:14;ground:normal:1.50:2026-11-24:78:68:61:76
 siauliai,normal,2026-11-25,2026-11-25,2026-11-27,1.12,apron,,apron:normal:1.12:2026-11-25:8:6:4:8;harbour:normal:0.00:2026-11-25:0:0:0:0;ground:normal:0.67:2026-11-25:34:31:27:46
 amari,normal,2026-11-25,2026-11-25,2026-11-26,-0.67,apron,,apron:normal:-0.67:2026-11-25:4:5:3:6;ground:normal:0.80:2026-11-25:95:83:72:150
@@ -93,7 +93,7 @@ sargodha,nodata,,2026-10-17,2026-11-25,-0.67,apron,,apron:nodata:-0.67::4:5:3:8;
 jacobabad,normal,2026-11-24,2026-11-24,2026-11-23,-2.00,apron,,apron:normal:-2.00:2026-11-24:1:3:2:4;ground:normal:0.00:2026-11-24:45:45:37:66
 masroor,nodata,,2026-11-17,2026-11-26,0.67,apron,,apron:nodata:0.67::5:4:3:5;ground:nodata:1.82::192:176:161:185
 ambala,normal,2026-11-24,2026-11-24,2026-11-24,0.00,apron,,apron:normal:0.00:2026-11-24:8:8:6:11;ground:normal:0.27:2026-11-24:68:66:59:73
-adampur,nodata,,2026-11-04,2026-11-27,-0.67,apron,,apron:nodata:-0.67::5:6:4:8;ground:nodata:-0.40::70:76:58:107
+adampur,nodata,,2026-11-05,2026-11-27,0.00,apron,,apron:nodata:0.00::6:6:4:7;ground:nodata:0.08::90:91:75:143
 pathankot,nodata,,2026-11-17,2026-11-27,0.00,apron,,apron:nodata:0.00::5:5:3:7;ground:nodata:-0.82::103:125:107:169
 bhuj,nodata,,2026-11-15,2026-11-25,0.67,apron,,apron:nodata:0.67::2:1:0:2;ground:nodata:-0.42::52:55:48:68
 al_khadim,normal,2026-11-21,2026-11-21,2026-11-27,1.35,apron,,apron:normal:1.35:2026-11-21:7:5:3:6;ground:normal:1.35:2026-11-21:56:52:47:55
@@ -134,7 +134,7 @@ israel_sdot_micha,normal,2026-11-22,2026-11-22,2026-11-22,-1.20,ground,,ground:n
 ru_luga_26_missile_brigade,normal,2026-11-22,2026-11-22,2026-11-26,-0.16,ground,,ground:normal:-0.16:2026-11-22:161:171:128:277
 by_asipovichy_465_missile_brigade,normal,2026-11-22,2026-11-22,2026-11-10,-0.22,ground,,ground:normal:-0.22:2026-11-22:157:160:147:178
 ru_yelnya_camp,changed,2026-11-24,2026-11-24,2026-10-28,-2.88,ground,Burn scars seen on 2026-10-28 (761.8 ha).,ground:changed:-2.88:2026-11-24:0:170:118:1956
-crimea_kurhanne_s400,nodata,,2026-11-01,2026-11-08,3.69,ground,,ground:nodata:3.69::151:128:121:144
+crimea_kurhanne_s400,nodata,,2026-11-02,2026-11-08,-1.04,ground,,ground:nodata:-1.04::2:71:0:115
 crimea_cape_zyuk_airdef,in,2026-11-21;2026-11-22,2026-11-22,2026-11-26,7.42,ground,Burn scars seen on 2026-11-06 (3.8 ha).,ground:in:7.42:2026-11-21/2026-11-22:31:20:19:23
 ru_gelendzhik_s400,normal,2026-11-23,2026-11-23,2026-11-25,1.57,ground,,ground:normal:1.57:2026-11-23:117:109:102:114
 kp_sino_ri,nodata,,2026-11-16,2026-11-20,-0.33,ground,,ground:nodata:-0.33::27:37:14:214
@@ -151,6 +151,6 @@ cn_615_brigade_meizhou,normal,2026-11-22,2026-11-22,2026-11-21,-0.96,ground,,gro
 cn_616_brigade_ganzhou,normal,2026-11-22,2026-11-22,2026-10-30,-1.49,ground,,ground:normal:-1.49:2026-11-22:267:342:280:591
 cn_617_brigade_jinhua,normal,2026-11-19,2026-11-19,2026-11-10,-1.55,ground,,ground:normal:-1.55:2026-11-19:250:324:291:444
 pk_akro_garrison,nodata,,2026-11-17,2026-11-23,-0.67,ground,,ground:nodata:-0.67::35:37:34:42
-pk_gujranwala_garrison,nodata,,2026-11-05,2026-11-27,-0.45,ground,,ground:nodata:-0.45::76:100:64:174
+pk_gujranwala_garrison,nodata,,2026-11-09,2026-11-27,1.05,ground,,ground:nodata:1.05::81:50:30:93
 pk_sargodha_garrison,nodata,,2026-11-02,2026-11-25,-0.79,ground,,ground:nodata:-0.79::87:94:77:135
 pk_khuzdar_garrison,normal,2026-11-25,2026-11-25,2026-11-26,0.93,ground,,ground:normal:0.93:2026-11-25:239:188:130:232
